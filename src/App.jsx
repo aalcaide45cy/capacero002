@@ -15,6 +15,7 @@ function App() {
     const [activeCategory, setActiveCategory] = useState(null);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSticky, setIsSticky] = useState(false);
 
     // Load all products on mount
     useEffect(() => {
@@ -27,6 +28,15 @@ function App() {
         }
 
         fetchProducts();
+    }, []);
+
+    // Scroll listener for sticky header
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsSticky(window.scrollY > 300);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     // Derive unique categories from products
@@ -71,21 +81,24 @@ function App() {
 
     return (
         <div className="min-h-screen bg-black">
-            <Header />
+            <Header isSticky={isSticky} />
 
             <div style={{ paddingTop: '15px' }}>
-                <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+                <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSticky={isSticky} />
+                {isSticky && <div className="h-24" />}
 
-                <FilterButtons
-                    activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
-                />
+                <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                    <FilterButtons
+                        activeFilter={activeFilter}
+                        onFilterChange={setActiveFilter}
+                    />
 
-                <CategoryFilters
-                    categories={categories}
-                    activeCategory={activeCategory}
-                    onCategoryChange={setActiveCategory}
-                />
+                    <CategoryFilters
+                        categories={categories}
+                        activeCategory={activeCategory}
+                        onCategoryChange={setActiveCategory}
+                    />
+                </div>
 
                 {isLoading ? (
                     <div className="text-center py-20">

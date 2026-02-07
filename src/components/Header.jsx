@@ -13,7 +13,7 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function Header() {
+export default function Header({ isSticky }) {
     return (
         <header className="w-full p-6 bg-gradient-to-b from-black to-transparent">
             <div className="max-w-7xl mx-auto">
@@ -27,16 +27,16 @@ export default function Header() {
                 </div>
 
                 {/* Social Buttons */}
-                <div className="flex items-center justify-center gap-4 -mb-6">
+                <div className={`flex items-center justify-center gap-4 -mb-6 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                     {/* TikTok - Left */}
                     <a
                         href="https://www.tiktok.com/@capacero"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full hover:bg-capaBlue transition-all duration-300 hover:scale-110 breathe-animation group"
+                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group"
                         aria-label="TikTok"
                     >
-                        <span className="text-capaBlue group-hover:text-black transition-colors">
+                        <span className="text-capaBlue group-hover:text-white transition-colors">
                             <TikTokIcon color="currentColor" />
                         </span>
                     </a>
@@ -46,10 +46,10 @@ export default function Header() {
                         href="https://www.youtube.com/@CapaCero0"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full hover:bg-capaBlue transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
+                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
                         aria-label="YouTube"
                     >
-                        <Youtube className="w-6 h-6 text-capaBlue group-hover:text-black transition-colors" />
+                        <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
                     </a>
                 </div>
             </div>
