@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import FilterButtons from './components/FilterButtons';
+import CategoryFilters from './components/CategoryFilters';
 import ProductGrid from './components/ProductGrid';
 import ProductModal from './components/ProductModal';
 import { loadProducts, filterProducts } from './utils/loadProducts';
@@ -11,6 +12,7 @@ function App() {
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState(null);
+    const [activeCategory, setActiveCategory] = useState(null);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -27,18 +29,37 @@ function App() {
         fetchProducts();
     }, []);
 
-    // Filter products when search query or active filter changes
+    // Derive unique categories from products
+    const categories = useMemo(() => {
+        const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+        return uniqueCategories.sort((a, b) => {
+            // Remove emojis and leading whitespace for sorting
+            const cleanA = a.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
+            const cleanB = b.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
+            return cleanA.localeCompare(cleanB);
+        });
+    }, [allProducts]);
+
+    // Filter products when search query, active filter, or active category changes
     useEffect(() => {
         let filtered = filterProducts(allProducts, searchQuery);
 
+        // Filter by Tag (Top, Oferta, Nuevo)
         if (activeFilter) {
             filtered = filtered.filter(product =>
                 product.tag && product.tag.toLowerCase().includes(activeFilter.toLowerCase())
             );
         }
 
+        // Filter by Category
+        if (activeCategory) {
+            filtered = filtered.filter(product =>
+                product.category === activeCategory
+            );
+        }
+
         setFilteredProducts(filtered);
-    }, [searchQuery, activeFilter, allProducts]);
+    }, [searchQuery, activeFilter, activeCategory, allProducts]);
 
     const handleProductClick = (product) => {
         setSelectedProduct(product);
@@ -58,6 +79,12 @@ function App() {
                 <FilterButtons
                     activeFilter={activeFilter}
                     onFilterChange={setActiveFilter}
+                />
+
+                <CategoryFilters
+                    categories={categories}
+                    activeCategory={activeCategory}
+                    onCategoryChange={setActiveCategory}
                 />
 
                 {isLoading ? (

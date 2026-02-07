@@ -1,8 +1,8 @@
 [
     {
         "id": "Amz-001",
-        "name": "SUNLU PLA+ 2.0",
-        "category": "Filamentos",
+        "name": "Filamento SUNLU PLA+ 2.0",
+        "category": "🧵 Filamentos",
         "image": [
             "https://m.media-amazon.com/images/I/81tR26aXCvL._AC_SL1500_.jpg",
             "https://m.media-amazon.com/images/I/71uUMuZ7vWL._AC_SL1500_.jpg",
@@ -12,7 +12,7 @@
             "https://m.media-amazon.com/images/I/71lBY1wmOKL._AC_SL1500_.jpg",
             "https://m.media-amazon.com/images/I/71+PMPU7HcL._AC_SL1500_.jpg"
         ],
-        "price": "499€",
+        "price": "50€",
         "showPrice": false,
         "link": "https://amzn.to/4ciHSNs",
         "description": "Impresora 3D de alta velocidad con sistema de calibración automática. Perfecta para principiantes y profesionales.",
@@ -23,49 +23,47 @@
     },
     {
         "id": "Amz-002",
-        "name": "Hollyland Lark Max",
-        "category": "Audio",
+        "name": "Filamento SUNLU PLA",
+        "category": "🧵 Filamentos",
         "image": [
-            "https://m.media-amazon.com/images/I/61t3VoHJwEL._AC_SL1500_.jpg"
+            "https://m.media-amazon.com/images/I/71eNCIPfYRL._SL1500_.jpg"
         ],
-        "price": "149€",
-        "showPrice": true,
-        "link": "https://amzn.to/3Zr2Hs4",
-        "description": "Micrófono inalámbrico profesional con cancelación de ruido y hasta 250m de alcance. Ideal para creadores de contenido.",
-        "tag": "🔥 INDISPENSABLE",
+        "price": "50€",
+        "showPrice": false,
+        "link": "https://amzn.to/4cd9eEP",
+        "description": "Filamento PLA fiable, versátil y fácil de usar. Perfecto para principiantes y usuarios experimentados.",
+        "tag": "💶 ECONOMICO",
         "buttonText": "¡VER OFERTA!",
         "order": 2
     },
     {
         "id": "Amz-003",
-        "name": "Filamento PLA+ eSun",
-        "category": "Filamentos",
+        "name": "Filamento SUNLU Brillante",
+        "category": "🧵 Filamentos",
         "image": [
-            "https://m.media-amazon.com/images/I/71KqVD+uBuL._AC_SL1500_.jpg"
+            "https://m.media-amazon.com/images/I/61pB7yvz-cL._AC_SL1500_.jpg"
         ],
-        "price": "22€",
-        "showPrice": true,
-        "link": "https://amzn.to/example",
-        "description": "Filamento PLA+ de alta calidad con excelente adhesión y acabado premium. Compatible con todas las impresoras FDM.",
-        "tag": "✨ NUEVO",
-        "buttonText": "VER OFERTA",
-        "carouselInterval": 5000,
+        "price": "50€",
+        "showPrice": false,
+        "link": "https://amzn.to/4r11pXi",
+        "description": "El filamento PLA que brilla en la oscuridad SUNLU contiene materiales fosforescentes, que pueden brillar en la oscuridad después de absorber la energía de la luz",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
         "order": 3
     },
     {
         "id": "Amz-004",
-        "name": "Guía Gratis: Optimización de Impresoras 3D",
-        "category": "Recursos",
+        "name": "Filamento SUNLU PETG",
+        "category": "🧵 Filamentos",
         "image": [
-            "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
-            "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&h=600&fit=crop&q=80"
+            "https://m.media-amazon.com/images/I/71aHd86EXxL._AC_SL1500_.jpg"
         ],
-        "price": "",
+        "price": "50€",
         "showPrice": false,
-        "link": "https://capacero.com/guia-gratuita",
-        "description": "Descarga GRATIS nuestra guía completa con todos los secretos para optimizar tu impresora 3D y obtener impresiones perfectas. Incluye perfiles de temperatura, velocidad y tips profesionales.",
-        "tag": "✨ GRATIS",
-        "buttonText": "¡DESCARGAR GRATIS!",
-        "order": 1
+        "link": "https://amzn.to/46jbyq4",
+        "description": "Experimenta una impresión 3D más rápida con el filamento PETG de alta velocidad SUNLU. Diseñado para mejorar la fluidez, el filamento RAPID PETG SUNLU se funde rápidamente y fluye suavemente, permitiendo una velocidad de impresión de hasta 600mm/s. Puedes completar tus proyectos más rápido sin sacrificar la calidad.",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
+        "order": 4
     }
 ]

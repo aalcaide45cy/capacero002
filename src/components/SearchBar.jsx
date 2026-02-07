@@ -4,7 +4,7 @@ import Typewriter from 'typewriter-effect';
 
 export default function SearchBar({ searchQuery, setSearchQuery }) {
     return (
-        <div className="w-full max-w-3xl mx-auto px-4 mb-12">
+        <div className="w-full max-w-3xl mx-auto px-4 mb-6">
             <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                     <Search className="w-6 h-6 text-capaBlue" />
@@ -24,12 +24,12 @@ export default function SearchBar({ searchQuery, setSearchQuery }) {
                         <Typewriter
                             options={{
                                 strings: [
-                                    'Busca Impresora 3D...',
                                     'Busca Filamento...',
-                                    'Busca Micrófono...',
-                                    'Busca Gadgets...',
-                                    'Busca Gaming...',
-                                    'Busca Tech...'
+                                    'Busca Componentes...',
+                                    'Busca Herramientas...',
+                                    'Busca Recambios...',
+                                    'Busca Accesorios...',
+                                    'Busca Tutoriales...'
                                 ],
                                 autoStart: true,
                                 loop: true,

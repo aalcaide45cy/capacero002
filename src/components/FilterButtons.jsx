@@ -10,7 +10,7 @@ export default function FilterButtons({ activeFilter, onFilterChange }) {
     ];
 
     return (
-        <div className="flex flex-wrap justify-center gap-4 mt-6 mb-8 px-4">
+        <div className="flex flex-wrap justify-center gap-4 mt-2 mb-4 px-4">
             {filters.map((filter) => {
                 const isActive = activeFilter === filter.id;
                 const Icon = filter.icon;

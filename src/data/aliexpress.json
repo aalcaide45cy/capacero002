@@ -1,47 +1,194 @@
 [
     {
         "id": "Aliexp-001",
-        "name": "Lámpara LED Inteligente RGB",
-        "category": "Iluminación",
+        "name": "Imanes",
+        "category": "⚙️ Componentes",
         "image": [
-            "https://ae01.alicdn.com/kf/S7c8e5f5e0c8f4e5a8b9c0d1e2f3a4b5c/Smart-RGB-LED-Bulb.jpg"
+            "https://ae-pic-a1.aliexpress-media.com/kf/Sf645da87a27f44f284eb65994d86c804I.jpg?has_lang=1&ver=1_220x220q75.jpg_.avif"
         ],
-        "price": "35€",
-        "showPrice": true,
-        "link": "https://s.click.aliexpress.com/example1",
-        "description": "Bombilla LED inteligente con 16 millones de colores y control por app. Compatible con Alexa y Google Home.",
-        "tag": "💰 OFERTA",
-        "buttonText": "¡APROVECHA!",
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Imanes de Alta calidad, para tus proyectos impresos en 3D",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
         "order": 2
     },
     {
         "id": "Aliexp-002",
-        "name": "Webcam 4K Ultra HD",
-        "category": "Periféricos",
+        "name": "Tira Led COB",
+        "category": "⚙️ Componentes",
         "image": [
-            "https://ae01.alicdn.com/kf/example-webcam-1.jpg",
-            "https://ae01.alicdn.com/kf/example-webcam-2.jpg",
-            "https://ae01.alicdn.com/kf/example-webcam-3.jpg"
+            "https://ae-pic-a1.aliexpress-media.com/kf/Sa5547f721b86452695ff1ebc773fa5fbq.jpg?has_lang=1&ver=4_220x220q75.jpg_.avif"
         ],
-        "price": "89€",
-        "showPrice": true,
-        "link": "https://s.click.aliexpress.com/example2",
-        "description": "Webcam profesional 4K con enfoque automático y micrófono dual con cancelación de ruido. Perfecta para streaming y videoconferencias.",
-        "tag": "✨ NUEVO",
-        "buttonText": "VER OFERTA",
-        "order": 1
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "LED COB PCB de 5V USB de 3mm con interruptor atenuador Control remoto 320 LED iluminación lineal de alta densidad lámpara de cinta Flexible",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 2
     },
     {
         "id": "Aliexp-003",
-        "name": "Teclado Mecánico Gaming RGB",
-        "category": "Gaming",
+        "name": "Tornillos y Tuercas",
+        "category": "⚙️ Componentes",
         "image": [
-            "https://ae01.alicdn.com/kf/example-keyboard.jpg"
+            "https://ae-pic-a1.aliexpress-media.com/kf/Sedd2c4e226464f1c8451d2346901c0e7W.png?has_lang=1&ver=2_220x220.png_.avif"
         ],
-        "price": "79€",
-        "showPrice": true,
-        "link": "https://s.click.aliexpress.com/example3",
-        "description": "Teclado mecánico con switches blue, iluminación RGB personalizable y 87 teclas. Diseño compacto y duradero.",
-        "buttonText": "COMPRAR AHORA"
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Tornillos y Tuercas para tus proyectos, SUPER ECONOMICOS",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 3
+    },
+    {
+        "id": "Aliexp-004",
+        "name": "Termo-Retractil",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S64c07c1604534b10b9b2e4cc434fe1f88.png?has_lang=1&ver=2_220x220.png_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Protege tus empalmes electricos facilmente.",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 4
+    },
+    {
+        "id": "Aliexp-005",
+        "name": "Lampara Led",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S0cc8946bf57e462fba8b41e2a83f0fb22.jpg?has_lang=1&ver=1_220x220q75.jpg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Kit de lámpara Led para laboratorio Bambu, Kit de luz ajustable, piezas de luz Led, Hardware, modelo DIY, luz blanca/fría/cálida sin carcasa de lámpara",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 5
+    },
+    {
+        "id": "Aliexp-006",
+        "name": "Luces parpadeantes para Globos",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S8d52ead0545b44efbdb1b8b2b8f2100fa.jpg_220x220q75.jpg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Mini luces LED parpadeantes con baterías para globos, linternas de papel, decoración Floral para fiestas, sumergibles, impermeables",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 6
+    },
+    {
+        "id": "Aliexp-007",
+        "name": "USB C - para Alimentacion",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S7bedd2595afe4d499e1bec2354077a93d.jpg_220x220q75.jpg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "tipo C hembra conector USB de 2 pines tipo C impermeable con enchufe hembra conector de carga rápida puerto de carga USB-C enchufe del cargador",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 7
+    },
+    {
+        "id": "Aliexp-008",
+        "name": "Tuercas de inserción",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S02cbef750ff2403e98b01036f57446854.png_220x220.png_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "De latón y Kit de tornillos de acero inoxidable M2 M3 M4, juego de calor roscado, insertos de impresión, tuercas de fusión en caliente de cobre 3D",
+        "tag": "💶 ECONOMICO",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 8
+    },
+    {
+        "id": "Aliexp-009",
+        "name": "Anillas para Llaveros",
+        "category": "⚙️ Componentes",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S3a48ea0d8a424dd2979cbbdd8db57163P.jpg_220x220q75.jpg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "lavero de Metal de acero inoxidable en blanco anillos divididos con cadena hebillas de escalada mosquetón llavero anillos Accesorios",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 9
+    },
+    {
+        "id": "Aliexp-010",
+        "name": "Kit de Herramientas - Desbarbador",
+        "category": "🛠️ Herramientas",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/Sce8d409c4657486eb83cf4913c17d0eco.jpeg?has_lang=1&ver=2_220x220q75.jpeg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Kit de herramientas de desbarbado para reparación de Metal, broca enrutadora NB1100, desbarbado rotativo BS1010, herramienta manual para madera y plástico",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 10
+    },
+    {
+        "id": "Aliexp-011",
+        "name": "Cuchillas Cortador de Filamentos",
+        "category": "🔩 Recambios",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/S48ae3cd7807244f2bc4e6fe82e302cd2F.jpg?has_lang=1&ver=2_220x220q75.jpg_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": " Bambu Lab X1/X1C/P1S/P1P/A1/A1 Mini cortador de filamentos impresoras 3D cortador de filamento repuestos para impresoras 3D Bambu",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 11
+    },
+    {
+        "id": "Aliexp-012",
+        "name": "Panasonic Enelop",
+        "category": "🔩 Recambios",
+        "image": [
+            "https://ae-pic-a1.aliexpress-media.com/kf/Sa7573b5fe7c44a559705f59b0590487fa.png_220x220.png_.avif"
+        ],
+        "price": "899€",
+        "showPrice": false,
+        "link": "#",
+        "description": "Panasonic Enelop batería recargable Original Pro AA 2550mAh 1,2 V NI-MH cámara ratón aire acondicionado",
+        "tag": "🔥 TOP",
+        "buttonText": "¡VER OFERTA!",
+        "carouselInterval": 3000,
+        "order": 12
     }
 ]
