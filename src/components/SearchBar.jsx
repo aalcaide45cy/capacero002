@@ -56,16 +56,16 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
 
                     {/* Typewriter effect for placeholder */}
                     {!searchQuery && (
-                        <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none text-gray-500 text-lg">
+                        <div className="absolute inset-y-0 left-14 right-14 flex items-center pointer-events-none text-gray-500 text-lg overflow-hidden whitespace-nowrap">
                             <Typewriter
                                 options={{
                                     strings: [
-                                        'Busca Filamento...',
-                                        'Busca Componentes...',
-                                        'Busca Herramientas...',
-                                        'Busca Recambios...',
-                                        'Busca Accesorios...',
-                                        'Busca Tutoriales...'
+                                        'Filamento...',
+                                        'Componentes...',
+                                        'Herramientas...',
+                                        'Recambios...',
+                                        'Accesorios...',
+                                        'Tutoriales...'
                                     ],
                                     autoStart: true,
                                     loop: true,
