@@ -1,0 +1,28 @@
+[
+    {
+        "id": "ali-001",
+        "title": "Lámpara LED Inteligente RGB",
+        "price": "35€",
+        "image": "https://images.unsplash.com/photo-1550985616-10810253b84d?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://aliexpress.com/led-rgb-smart",
+        "description": "Iluminación RGB para tu setup. Control por app y 16 millones de colores.",
+        "badge": "Oferta"
+    },
+    {
+        "id": "ali-002",
+        "title": "Webcam 4K Ultra HD",
+        "price": "89€",
+        "image": "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://aliexpress.com/webcam-4k",
+        "description": "Calidad 4K para streaming y videollamadas. Enfoque automático y micrófono dual.",
+        "badge": "Nuevo"
+    },
+    {
+        "id": "ali-003",
+        "title": "Teclado Mecánico Gaming RGB",
+        "price": "79€",
+        "image": "https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://aliexpress.com/mechanical-keyboard",
+        "description": "Switches mecánicos blue. RGB personalizable y construcción premium."
+    }
+]

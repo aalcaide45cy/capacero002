@@ -1,0 +1,29 @@
+[
+    {
+        "id": "amz-001",
+        "title": "Bambu Lab A1 Mini Combo",
+        "price": "499€",
+        "image": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://amazon.es/bambulab-a1-mini",
+        "description": "La mejor impresora para empezar en el mundo 3D. Rápida y fiable.",
+        "badge": "Top"
+    },
+    {
+        "id": "amz-002",
+        "title": "Micrófono Hollyland Lark Max",
+        "price": "149€",
+        "image": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://amazon.es/hollyland-lark-max",
+        "description": "Audio profesional para tus videos de TikTok. Cancelación de ruido top.",
+        "badge": "Indispensable"
+    },
+    {
+        "id": "amz-003",
+        "title": "Filamento PLA+ eSun",
+        "price": "22€",
+        "image": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
+        "affiliateLink": "https://amazon.es/esun-pla-plus",
+        "description": "Filamento de alta calidad para impresión 3D. Compatible con todas las impresoras.",
+        "badge": "Eco"
+    }
+]
