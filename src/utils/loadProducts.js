@@ -37,7 +37,15 @@ function normalizeProduct(product) {
     };
 }
 
+import { SHEETS_CONFIG } from '../config/sheets';
+import { fetchGoogleSheetsProducts } from './googleSheets';
+
 export async function loadProducts() {
+    // Si el modo Google Sheets está activo, cargar desde CSVs
+    if (SHEETS_CONFIG.isActive) {
+        return await fetchGoogleSheetsProducts();
+    }
+
     const productFiles = import.meta.glob('/src/data/*.json');
     const allProducts = [];
 
