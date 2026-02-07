@@ -11,7 +11,8 @@
         "link": "https://s.click.aliexpress.com/example1",
         "description": "Bombilla LED inteligente con 16 millones de colores y control por app. Compatible con Alexa y Google Home.",
         "tag": "💰 OFERTA",
-        "buttonText": "¡APROVECHA!"
+        "buttonText": "¡APROVECHA!",
+        "order": 2
     },
     {
         "id": "Aliexp-002",
@@ -27,7 +28,8 @@
         "link": "https://s.click.aliexpress.com/example2",
         "description": "Webcam profesional 4K con enfoque automático y micrófono dual con cancelación de ruido. Perfecta para streaming y videoconferencias.",
         "tag": "✨ NUEVO",
-        "buttonText": "VER OFERTA"
+        "buttonText": "VER OFERTA",
+        "order": 1
     },
     {
         "id": "Aliexp-003",

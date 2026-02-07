@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
+import FilterButtons from './components/FilterButtons';
 import ProductGrid from './components/ProductGrid';
 import ProductModal from './components/ProductModal';
 import { loadProducts, filterProducts } from './utils/loadProducts';
@@ -9,6 +10,7 @@ function App() {
     const [allProducts, setAllProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState(null);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -25,11 +27,18 @@ function App() {
         fetchProducts();
     }, []);
 
-    // Filter products when search query changes
+    // Filter products when search query or active filter changes
     useEffect(() => {
-        const filtered = filterProducts(allProducts, searchQuery);
+        let filtered = filterProducts(allProducts, searchQuery);
+
+        if (activeFilter) {
+            filtered = filtered.filter(product =>
+                product.tag && product.tag.toLowerCase().includes(activeFilter.toLowerCase())
+            );
+        }
+
         setFilteredProducts(filtered);
-    }, [searchQuery, allProducts]);
+    }, [searchQuery, activeFilter, allProducts]);
 
     const handleProductClick = (product) => {
         setSelectedProduct(product);
@@ -45,6 +54,11 @@ function App() {
 
             <div style={{ paddingTop: '15px' }}>
                 <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+                <FilterButtons
+                    activeFilter={activeFilter}
+                    onFilterChange={setActiveFilter}
+                />
 
                 {isLoading ? (
                     <div className="text-center py-20">

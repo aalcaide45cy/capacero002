@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
 
 export default function SearchBar({ searchQuery, setSearchQuery }) {
@@ -38,6 +38,17 @@ export default function SearchBar({ searchQuery, setSearchQuery }) {
                             }}
                         />
                     </div>
+                )}
+
+                {/* Clear Button */}
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-white transition-colors"
+                        aria-label="Limpiar búsqueda"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 )}
             </div>
         </div>

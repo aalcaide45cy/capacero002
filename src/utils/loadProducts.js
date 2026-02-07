@@ -33,6 +33,7 @@ function normalizeProduct(product) {
         tag: product.tag || product.badge || null, // Soporta 'tag' y 'badge' antiguo
         buttonText: product.buttonText || 'VER OFERTA',
         carouselInterval: product.carouselInterval || 3000, // Tiempo en ms para el auto-play
+        order: product.order !== undefined ? product.order : null, // Orden de visualización
     };
 }
 
@@ -54,6 +55,23 @@ export async function loadProducts() {
             console.error(`Error loading ${path}:`, error);
         }
     }
+
+    // Ordenar productos:
+    // 1. Por 'order' ascendente (los que tienen número van primero)
+    // 2. Si no tienen 'order' (null), se consideran Infinity para ir al final
+    // 3. Empate o sin 'order': por orden alfabético de 'name'
+    allProducts.sort((a, b) => {
+        const orderA = (a.order !== null && a.order !== undefined) ? a.order : Infinity;
+        const orderB = (b.order !== null && b.order !== undefined) ? b.order : Infinity;
+
+        // Si tienen diferente orden (y no son ambos Infinity/null)
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+
+        // Si tienen el mismo orden o ambos son null -> Alfabético
+        return a.name.localeCompare(b.name);
+    });
 
     return allProducts;
 }
