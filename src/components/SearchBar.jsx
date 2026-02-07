@@ -6,7 +6,7 @@ export default function SearchBar({ searchQuery, setSearchQuery }) {
     return (
         <div className="w-full max-w-3xl mx-auto px-4 mb-6">
             <div className="relative">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
                     <Search className="w-6 h-6 text-capaBlue" />
                 </div>
 
@@ -14,13 +14,13 @@ export default function SearchBar({ searchQuery, setSearchQuery }) {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-zinc-900 text-white text-lg px-14 py-4 rounded-full border-2 border-zinc-800 focus:border-capaBlue focus:outline-none transition-all duration-300 search-focus"
+                    className="w-full bg-zinc-900 text-white text-lg px-14 py-2 rounded-full border-2 border-zinc-800 focus:border-capaBlue focus:outline-none transition-all duration-300 search-focus glow-blue-static"
                     placeholder=""
                 />
 
                 {/* Typewriter effect for placeholder */}
                 {!searchQuery && (
-                    <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none text-gray-500">
+                    <div className="absolute inset-y-0 left-14 flex items-center pointer-events-none text-gray-500 text-lg">
                         <Typewriter
                             options={{
                                 strings: [

@@ -30,6 +30,15 @@ body {
   animation: breathe 3s ease-in-out infinite;
 }
 
+.glow-blue-static {
+  transition: all 0.3s ease;
+}
+
+.glow-blue-static:hover {
+  box-shadow: 0 0 20px rgba(37, 117, 196, 0.6), 0 0 40px rgba(37, 117, 196, 0.3);
+  animation: breathe 3s ease-in-out infinite;
+}
+
 /* Breathing animation for social buttons */
 @keyframes breathe {
 

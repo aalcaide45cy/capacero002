@@ -29,7 +29,7 @@ export default function ProductCard({ product, onClick }) {
             {/* Product Info */}
             <div className="p-4">
                 {/* Title - truncated to 2 lines */}
-                <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 min-h-[3.5rem]">
+                <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 min-h-[3.5rem] text-center">
                     {product.name}
                 </h3>
 

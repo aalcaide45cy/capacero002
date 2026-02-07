@@ -5,6 +5,61 @@ import { X, Hash, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
 export default function CategoryFilters({ categories, activeCategory, onCategoryChange }) {
     const scrollRef = useRef(null);
     const [showHint, setShowHint] = useState(true);
+    const [isScrollable, setIsScrollable] = useState(false);
+
+    // Drag to scroll state
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+    const isDown = useRef(false);
+
+    // Check if scrolling is needed
+    useEffect(() => {
+        const checkScroll = () => {
+            if (scrollRef.current) {
+                const { scrollWidth, clientWidth } = scrollRef.current;
+                setIsScrollable(scrollWidth > clientWidth);
+            }
+        };
+
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [categories]);
+
+    const handleMouseDown = (e) => {
+        isDown.current = true;
+        setStartX(e.pageX - scrollRef.current.offsetLeft);
+        setScrollLeft(scrollRef.current.scrollLeft);
+    };
+
+    const handleMouseLeave = () => {
+        isDown.current = false;
+        setIsDragging(false);
+    };
+
+    const handleMouseUp = () => {
+        isDown.current = false;
+        // Delay resetting isDragging to ensure onClick doesn't fire if it was dragging
+        setTimeout(() => setIsDragging(false), 50);
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDown.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 1; // 1:1 movement speed
+
+        // Only start dragging if moved more than 5px
+        if (!isDragging && Math.abs(x - startX) > 5) {
+            setIsDragging(true);
+        }
+
+        // Scroll if dragging active (or just activated)
+        if (isDragging || Math.abs(x - startX) > 5) {
+            scrollRef.current.scrollLeft = scrollLeft - walk;
+        }
+    };
 
     // Hide hint after 4.5 seconds
     useEffect(() => {
@@ -27,11 +82,11 @@ export default function CategoryFilters({ categories, activeCategory, onCategory
     if (!categories || categories.length === 0) return null;
 
     return (
-        <div className="w-full max-w-4xl mx-auto mb-4 relative group px-4">
+        <div className="w-full max-w-3xl mx-auto mb-4 relative group px-4">
 
             {/* Hand Animation Hint */}
             <AnimatePresence>
-                {showHint && !activeCategory && (
+                {showHint && !activeCategory && isScrollable && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -66,8 +121,15 @@ export default function CategoryFilters({ categories, activeCategory, onCategory
             {/* Scroll Container */}
             <div
                 ref={scrollRef}
-                className="flex items-center overflow-x-auto py-2 gap-3 no-scrollbar scroll-smooth px-4 w-fit mx-auto max-w-full"
+                className={`
+                    flex items-center overflow-x-auto py-2 gap-3 no-scrollbar px-4 w-fit mx-auto max-w-full select-none
+                    ${isScrollable ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}
+                `}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
             >
                 {categories.map((category) => {
                     const isActive = activeCategory === category;
@@ -82,11 +144,12 @@ export default function CategoryFilters({ categories, activeCategory, onCategory
                             whileTap={{ scale: 0.95 }}
                             onClick={() => onCategoryChange(isActive ? null : category)}
                             className={`
-                                flex-shrink-0 relative flex items-center gap-2 px-6 py-2 rounded-full border text-sm font-bold transition-all duration-300
+                                flex-shrink-0 relative flex items-center gap-2 px-6 py-2 rounded-full border text-sm font-bold transition-all duration-300 whitespace-nowrap
                                 ${isActive
                                     ? 'bg-zinc-800 border-capaBlue text-white shadow-[0_0_15px_rgba(0,163,255,0.5)] scale-105'
                                     : 'bg-zinc-900/50 border-zinc-800 text-gray-400 hover:border-capaBlue/50 hover:text-white hover:shadow-[0_0_15px_rgba(0,163,255,0.3)]'
                                 }
+                                ${isDragging ? 'pointer-events-none' : ''}
                             `}
                         >
                             <span>{category}</span>
