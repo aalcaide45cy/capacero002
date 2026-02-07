@@ -1,28 +1,45 @@
 [
     {
-        "id": "ali-001",
-        "title": "Lámpara LED Inteligente RGB",
+        "id": "Aliexp-001",
+        "name": "Lámpara LED Inteligente RGB",
+        "category": "Iluminación",
+        "image": [
+            "https://ae01.alicdn.com/kf/S7c8e5f5e0c8f4e5a8b9c0d1e2f3a4b5c/Smart-RGB-LED-Bulb.jpg"
+        ],
         "price": "35€",
-        "image": "https://images.unsplash.com/photo-1550985616-10810253b84d?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://aliexpress.com/led-rgb-smart",
-        "description": "Iluminación RGB para tu setup. Control por app y 16 millones de colores.",
-        "badge": "Oferta"
+        "showPrice": true,
+        "link": "https://s.click.aliexpress.com/example1",
+        "description": "Bombilla LED inteligente con 16 millones de colores y control por app. Compatible con Alexa y Google Home.",
+        "tag": "💰 OFERTA",
+        "buttonText": "¡APROVECHA!"
     },
     {
-        "id": "ali-002",
-        "title": "Webcam 4K Ultra HD",
+        "id": "Aliexp-002",
+        "name": "Webcam 4K Ultra HD",
+        "category": "Periféricos",
+        "image": [
+            "https://ae01.alicdn.com/kf/example-webcam-1.jpg",
+            "https://ae01.alicdn.com/kf/example-webcam-2.jpg",
+            "https://ae01.alicdn.com/kf/example-webcam-3.jpg"
+        ],
         "price": "89€",
-        "image": "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://aliexpress.com/webcam-4k",
-        "description": "Calidad 4K para streaming y videollamadas. Enfoque automático y micrófono dual.",
-        "badge": "Nuevo"
+        "showPrice": true,
+        "link": "https://s.click.aliexpress.com/example2",
+        "description": "Webcam profesional 4K con enfoque automático y micrófono dual con cancelación de ruido. Perfecta para streaming y videoconferencias.",
+        "tag": "✨ NUEVO",
+        "buttonText": "VER OFERTA"
     },
     {
-        "id": "ali-003",
-        "title": "Teclado Mecánico Gaming RGB",
+        "id": "Aliexp-003",
+        "name": "Teclado Mecánico Gaming RGB",
+        "category": "Gaming",
+        "image": [
+            "https://ae01.alicdn.com/kf/example-keyboard.jpg"
+        ],
         "price": "79€",
-        "image": "https://images.unsplash.com/photo-1595225476474-87563907a212?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://aliexpress.com/mechanical-keyboard",
-        "description": "Switches mecánicos blue. RGB personalizable y construcción premium."
+        "showPrice": true,
+        "link": "https://s.click.aliexpress.com/example3",
+        "description": "Teclado mecánico con switches blue, iluminación RGB personalizable y 87 teclas. Diseño compacto y duradero.",
+        "buttonText": "COMPRAR AHORA"
     }
 ]

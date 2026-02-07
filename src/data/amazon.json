@@ -1,29 +1,67 @@
 [
     {
-        "id": "amz-001",
-        "title": "Bambu Lab A1 Mini Combo",
+        "id": "Amz-001",
+        "name": "SUNLU PLA+ 2.0",
+        "category": "Filamentos",
+        "image": [
+            "https://m.media-amazon.com/images/I/81tR26aXCvL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71uUMuZ7vWL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71GJjeRxTAL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71jEKjtKDNL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71Bg+iYjltL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71lBY1wmOKL._AC_SL1500_.jpg",
+            "https://m.media-amazon.com/images/I/71+PMPU7HcL._AC_SL1500_.jpg"
+        ],
         "price": "499€",
-        "image": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://amazon.es/bambulab-a1-mini",
-        "description": "La mejor impresora para empezar en el mundo 3D. Rápida y fiable.",
-        "badge": "Top"
+        "showPrice": false,
+        "link": "https://amzn.to/4ciHSNs",
+        "description": "Impresora 3D de alta velocidad con sistema de calibración automática. Perfecta para principiantes y profesionales.",
+        "tag": "⭐ TOP",
+        "buttonText": "VER OFERTA",
+        "carouselInterval": 2000
     },
     {
-        "id": "amz-002",
-        "title": "Micrófono Hollyland Lark Max",
+        "id": "Amz-002",
+        "name": "Hollyland Lark Max",
+        "category": "Audio",
+        "image": [
+            "https://m.media-amazon.com/images/I/61t3VoHJwEL._AC_SL1500_.jpg"
+        ],
         "price": "149€",
-        "image": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://amazon.es/hollyland-lark-max",
-        "description": "Audio profesional para tus videos de TikTok. Cancelación de ruido top.",
-        "badge": "Indispensable"
+        "showPrice": true,
+        "link": "https://amzn.to/3Zr2Hs4",
+        "description": "Micrófono inalámbrico profesional con cancelación de ruido y hasta 250m de alcance. Ideal para creadores de contenido.",
+        "tag": "🔥 INDISPENSABLE",
+        "buttonText": "¡VER OFERTA!"
     },
     {
-        "id": "amz-003",
-        "title": "Filamento PLA+ eSun",
+        "id": "Amz-003",
+        "name": "Filamento PLA+ eSun",
+        "category": "Filamentos",
+        "image": [
+            "https://m.media-amazon.com/images/I/71KqVD+uBuL._AC_SL1500_.jpg"
+        ],
         "price": "22€",
-        "image": "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
-        "affiliateLink": "https://amazon.es/esun-pla-plus",
-        "description": "Filamento de alta calidad para impresión 3D. Compatible con todas las impresoras.",
-        "badge": "Eco"
+        "showPrice": true,
+        "link": "https://amzn.to/example",
+        "description": "Filamento PLA+ de alta calidad con excelente adhesión y acabado premium. Compatible con todas las impresoras FDM.",
+        "tag": "✨ NUEVO",
+        "buttonText": "VER OFERTA",
+        "carouselInterval": 5000
+    },
+    {
+        "id": "Amz-004",
+        "name": "Guía Gratis: Optimización de Impresoras 3D",
+        "category": "Recursos",
+        "image": [
+            "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=600&h=600&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&h=600&fit=crop&q=80"
+        ],
+        "price": "",
+        "showPrice": false,
+        "link": "https://capacero.com/guia-gratuita",
+        "description": "Descarga GRATIS nuestra guía completa con todos los secretos para optimizar tu impresora 3D y obtener impresiones perfectas. Incluye perfiles de temperatura, velocidad y tips profesionales.",
+        "tag": "✨ GRATIS",
+        "buttonText": "¡DESCARGAR GRATIS!"
     }
 ]
