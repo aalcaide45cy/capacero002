@@ -6,15 +6,14 @@ He integrado Google Analytics 4 para que puedas medir el comportamiento de tus u
 
 He configurado eventos automáticos para las acciones más importantes:
 
-### 1. BúsquedasRealizadas
+### 1. Búsquedas Realizadas
 - **Evento**: `search`
-- **Dato**: El término que la gente escribe en el buscador (ej: "PLA", "Ender 3").
-- **Nota**: He añadido un retraso inteligente (debounce) para que solo se guarde la palabra completa y no cada letra que escriben.
+- **Dato**: El término que la gente escribe en el buscador.
+- **Dónde verlo**: Ve a **Informes > Interacción > Eventos > search**. Verás una tarjeta llamada **search_term** con la lista de palabras.
 
 ### 2. Clicks en Productos
 - **Evento**: `select_content`
-- **Datos**: Nombre del producto, su categoría y el ID.
-- **Utilidad**: Sabrás qué tarjetas "venden" más o despiertan más curiosidad.
+- **Dónde verlo**: Haz clic en el evento en la misma sección de informes para ver qué productos son los más populares.
 
 ### 3. Filtros y Categorías
 - **Evento**: `select_category` y `select_filter`
@@ -35,7 +34,13 @@ He configurado eventos automáticos para las acciones más importantes:
 
 ---
 
-## 🛠️ Configuración Técnica
-- **Measurement ID**: `G-Y8RT9QWCD9`
-- **Archivo Principal**: `index.html` (contiene el script de carga).
-- **Lógica de Eventos**: `src/utils/analytics.js` y componentes individuales.
+---
+
+## � Tip: Cómo usar el DebugView para pruebas
+
+Para ver tus propios clics en tiempo real exactamente como los recibe Google:
+
+1. Ve a **Administración** > **Visualización de datos** > **DebugView**.
+2. Realiza una búsqueda en tu web.
+3. En el panel, verás aparecer el evento `search`.
+4. Pincha en el evento y entra en la pestaña **Parámetros** > **search_term**. ¡Ahí verás lo que acabas de escribir!
