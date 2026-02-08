@@ -115,6 +115,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
                         href="https://www.youtube.com/@CapaCero0"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackSocialClick('YouTube')}
                         className="flex items-center justify-center w-9 h-9 bg-black border border-capaBlue rounded-full group transition-all duration-300 hover:scale-110"
                     >
                         <Youtube className="w-5 h-5 text-capaBlue group-hover:text-red-500 transition-colors" />
