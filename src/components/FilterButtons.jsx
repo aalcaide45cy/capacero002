@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy, Tag, Sparkles } from 'lucide-react';
+import { trackFilterSelect } from '../utils/analytics';
 
 export default function FilterButtons({ activeFilter, onFilterChange }) {
     const filters = [
@@ -8,6 +9,14 @@ export default function FilterButtons({ activeFilter, onFilterChange }) {
         { id: 'Oferta', label: 'Oferta', icon: Tag, color: 'text-green-500' },
         { id: 'Nuevo', label: 'Nuevo', icon: Sparkles, color: 'text-purple-500' }
     ];
+
+    const handleFilterClick = (filterId) => {
+        const nextFilter = activeFilter === filterId ? null : filterId;
+        if (nextFilter) {
+            trackFilterSelect(nextFilter);
+        }
+        onFilterChange(nextFilter);
+    };
 
     return (
         <div className="flex flex-wrap justify-center gap-4 mt-2 mb-4 px-4">
@@ -22,7 +31,7 @@ export default function FilterButtons({ activeFilter, onFilterChange }) {
                         animate={{ opacity: 1, y: 0 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => onFilterChange(isActive ? null : filter.id)}
+                        onClick={() => handleFilterClick(filter.id)}
                         className={`
                             relative flex items-center gap-2 px-6 py-2 rounded-full font-bold text-sm tracking-wide transition-all duration-300 border
                             ${isActive

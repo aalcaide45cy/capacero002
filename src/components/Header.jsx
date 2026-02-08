@@ -1,5 +1,6 @@
 import React from 'react';
 import { Youtube } from 'lucide-react';
+import { trackSocialClick } from '../utils/analytics';
 
 // TikTok icon SVG component (Lucide doesn't have TikTok)
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -33,6 +34,7 @@ export default function Header({ isSticky }) {
                         href="https://www.tiktok.com/@capacero"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackSocialClick('TikTok')}
                         className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group"
                         aria-label="TikTok"
                     >
@@ -46,6 +48,7 @@ export default function Header({ isSticky }) {
                         href="https://www.youtube.com/@CapaCero0"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackSocialClick('YouTube')}
                         className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
                         aria-label="YouTube"
                     >

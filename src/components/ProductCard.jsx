@@ -1,13 +1,19 @@
 import React from 'react';
 import { Eye } from 'lucide-react';
+import { trackProductClick } from '../utils/analytics';
 
 export default function ProductCard({ product, onClick }) {
     // Obtener la primera imagen del array
     const displayImage = Array.isArray(product.image) ? product.image[0] : product.image;
 
+    const handleCardClick = () => {
+        trackProductClick(product);
+        onClick(product);
+    };
+
     return (
         <div
-            onClick={() => onClick(product)}
+            onClick={handleCardClick}
             className="bg-zinc-900 rounded-lg overflow-hidden cursor-pointer glow-blue-hover border border-zinc-800 relative"
         >
             {/* Tag personalizada en esquina superior derecha */}

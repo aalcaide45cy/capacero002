@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Youtube } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
+import { trackSearch, trackSocialClick } from '../utils/analytics';
 
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -26,6 +27,15 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
             setAllowOverflow(false);
         }
     }, [isSticky]);
+
+    // Track search query with debounce
+    useEffect(() => {
+        if (!searchQuery.trim()) return;
+        const timer = setTimeout(() => {
+            trackSearch(searchQuery.trim());
+        }, 1500); // 1.5s delay to be sure it's a "real" search
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     return (
         <div className={`${isSticky ? 'transition-all duration-300 ease-in-out fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md py-2 border-b border-zinc-800 shadow-2xl' : 'w-full max-w-3xl mx-auto px-4 mb-6 relative z-10'}`}>
@@ -94,6 +104,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
                         href="https://www.tiktok.com/@capacero"
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => trackSocialClick('TikTok')}
                         className="flex items-center justify-center w-9 h-9 bg-black border border-capaBlue rounded-full group transition-all duration-300 hover:scale-110"
                     >
                         <span className="text-capaBlue group-hover:text-white transition-colors">

@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Hash, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
+import { trackCategorySelect } from '../utils/analytics';
 
 export default function CategoryFilters({ categories, activeCategory, onCategoryChange }) {
     const scrollRef = useRef(null);
@@ -79,6 +80,14 @@ export default function CategoryFilters({ categories, activeCategory, onCategory
         }
     }, [activeCategory]);
 
+    const handleCategoryClick = (category) => {
+        const nextCategory = activeCategory === category ? null : category;
+        if (nextCategory) {
+            trackCategorySelect(nextCategory);
+        }
+        onCategoryChange(nextCategory);
+    };
+
     if (!categories || categories.length === 0) return null;
 
     return (
@@ -142,7 +151,7 @@ export default function CategoryFilters({ categories, activeCategory, onCategory
                             animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => onCategoryChange(isActive ? null : category)}
+                            onClick={() => handleCategoryClick(category)}
                             className={`
                                 flex-shrink-0 relative flex items-center gap-2 px-6 py-2 rounded-full border text-sm font-bold transition-all duration-300 whitespace-nowrap
                                 ${isActive
