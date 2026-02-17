@@ -50,6 +50,14 @@ function App() {
         });
     }, [allProducts]);
 
+    // Generate dynamic search terms from product names
+    const searchTerms = useMemo(() => {
+        if (allProducts.length === 0) return [];
+        // Get 6 random product names
+        const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 6).map(p => `${p.name}...`);
+    }, [allProducts]);
+
     // Filter products when search query, active filter, or active category changes
     useEffect(() => {
         let filtered = filterProducts(allProducts, searchQuery);
@@ -84,7 +92,12 @@ function App() {
             <Header isSticky={isSticky} />
 
             <div style={{ paddingTop: '15px' }}>
-                <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} isSticky={isSticky} />
+                <SearchBar
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    isSticky={isSticky}
+                    placeholderTerms={searchTerms}
+                />
                 {isSticky && <div className="h-24" />}
 
                 <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>

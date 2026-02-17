@@ -24,8 +24,9 @@ function normalizeProduct(product) {
 
         // Precio y visualización
         price: product.price || '',
-        // Por defecto false, salvo que sea explícitamente true (o string "true" desde Sheets)
-        showPrice: (product.showPrice === true || String(product.showPrice).toLowerCase() === 'true'),
+        // Por defecto false. SOLO true si es boolean true o string "true" (ignorando mayúsculas/espacios)
+        // Esto asegura que si la celda está vacía, es false.
+        showPrice: product.showPrice === true || (typeof product.showPrice === 'string' && product.showPrice.trim().toLowerCase() === 'true'),
 
         // Link de afiliado
         link: product.link || product.affiliateLink, // Soporta 'link' y 'affiliateLink' antiguo

@@ -15,8 +15,19 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
+export default function SearchBar({ searchQuery, setSearchQuery, isSticky, placeholderTerms = [] }) {
     const [allowOverflow, setAllowOverflow] = useState(false);
+
+    // Default terms if no products are loaded yet
+    const defaultTerms = [
+        'Filamento...',
+        'Componentes...',
+        'Herramientas...',
+        'Recambios...',
+        'Accesorios...'
+    ];
+
+    const displayTerms = placeholderTerms.length > 0 ? placeholderTerms : defaultTerms;
 
     // Enable overflow after transition to allow hover effects
     useEffect(() => {
@@ -69,14 +80,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky }) {
                         <div className="absolute inset-y-0 left-14 right-14 flex items-center pointer-events-none text-gray-500 text-lg overflow-hidden whitespace-nowrap">
                             <Typewriter
                                 options={{
-                                    strings: [
-                                        'Filamento...',
-                                        'Componentes...',
-                                        'Herramientas...',
-                                        'Recambios...',
-                                        'Accesorios...',
-                                        'Tutoriales...'
-                                    ],
+                                    strings: displayTerms,
                                     autoStart: true,
                                     loop: true,
                                     delay: 80,
