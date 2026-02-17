@@ -9,7 +9,8 @@ He configurado eventos automáticos para las acciones más importantes:
 ### 1. Búsquedas Realizadas
 - **Evento**: `search`
 - **Dato**: El término que la gente escribe en el buscador.
-- **Dónde verlo**: Ve a **Informes > Interacción > Eventos > search**. Verás una tarjeta llamada **search_term** con la lista de palabras.
+- **En Tiempo Real**: Ve a **Resumen en tiempo real > Tarjeta de Eventos > search > search_term**.
+- **En Histórico (mañana)**: Ve a **Informes > Interacción > Eventos > search > Tarjeta de search_term**.
 
 ### 2. Clicks en Productos
 - **Evento**: `select_content`
