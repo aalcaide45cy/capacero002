@@ -3,7 +3,7 @@ import { SHEETS_CONFIG } from '../config/sheets';
 
 // Función auxiliar para parsear booleanos de Sheets (TRUE/FALSE)
 const parseBoolean = (value) => {
-    if (!value) return true; // Default to true if empty (like showPrice)
+    if (!value) return false; // Default to FALSE if empty
     const normalized = String(value).trim().toUpperCase();
     return normalized === 'TRUE' || normalized === 'VERDADERO' || normalized === '1';
 };
@@ -58,7 +58,7 @@ export async function fetchGoogleSheetsProducts() {
                     category: extractCategory(sheetName), // Categoría = Nombre de la Pestaña
                     image: parseImages(row),
                     price: row.price ? String(row.price) : '',
-                    showPrice: row.showPrice !== undefined ? parseBoolean(row.showPrice) : true,
+                    showPrice: row.showPrice !== undefined ? parseBoolean(row.showPrice) : false,
                     link: row.link || '',
                     description: row.description || '',
                     tag: row.tag || null,
