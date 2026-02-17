@@ -189,7 +189,7 @@ export default function ProductModal({ product, onClose }) {
 
                         {/* Title */}
                         <h2 className="text-3xl font-bold text-white mb-4">
-                            {product.name}
+                            {product.order !== null ? `${product.order.toString().padStart(2, '0')} - ` : ''}{product.name}
                         </h2>
 
                         {/* Price - Solo si showPrice es true */}

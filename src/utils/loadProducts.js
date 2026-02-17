@@ -24,7 +24,8 @@ function normalizeProduct(product) {
 
         // Precio y visualización
         price: product.price || '',
-        showPrice: product.showPrice !== undefined ? product.showPrice : true,
+        // Por defecto false, salvo que sea explícitamente true (o string "true" desde Sheets)
+        showPrice: (product.showPrice === true || String(product.showPrice).toLowerCase() === 'true'),
 
         // Link de afiliado
         link: product.link || product.affiliateLink, // Soporta 'link' y 'affiliateLink' antiguo
@@ -92,8 +93,10 @@ export function filterProducts(products, query) {
     return products.filter(product => {
         const normalizedName = normalizeText(product.name);
         const normalizedDesc = normalizeText(product.description);
+        const orderStr = product.order ? product.order.toString() : '';
 
         return normalizedName.includes(normalizedQuery) ||
-            normalizedDesc.includes(normalizedQuery);
+            normalizedDesc.includes(normalizedQuery) ||
+            orderStr.includes(normalizedQuery);
     });
 }

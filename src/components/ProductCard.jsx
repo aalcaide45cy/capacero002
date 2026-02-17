@@ -36,7 +36,7 @@ export default function ProductCard({ product, onClick }) {
             <div className="p-4">
                 {/* Title - truncated to 2 lines */}
                 <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 min-h-[3.5rem] text-center">
-                    {product.name}
+                    {product.order !== null ? `${product.order.toString().padStart(2, '0')} - ` : ''}{product.name}
                 </h3>
 
                 {/* Price and Action - Layout condicional */}
