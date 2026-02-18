@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as XLSX from 'xlsx';
 import { SHEETS_CONFIG } from '../src/config/sheets.js';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,17 +16,26 @@ const OUTPUT_FILE = path.join(DATA_DIR, 'products.json');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(PUBLIC_IMG_DIR)) fs.mkdirSync(PUBLIC_IMG_DIR, { recursive: true });
 
-// Helper to download image
+// Helper to download and optimize image
 async function downloadImage(url, filename) {
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const filePath = path.join(PUBLIC_IMG_DIR, filename);
-        fs.writeFileSync(filePath, buffer);
-        console.log(`✅ Downloaded: ${filename}`);
-        return `/images/products/${filename}`;
+
+        // Optimize with sharp
+        // Change extension to .webp
+        const optimizedFilename = filename.replace(/\.[^.]+$/, '.webp');
+        const filePath = path.join(PUBLIC_IMG_DIR, optimizedFilename);
+
+        await sharp(buffer)
+            .resize(800, null, { withoutEnlargement: true }) // Max width 800px (sufficient for mobile)
+            .webp({ quality: 80 }) // Convert to modern WebP format
+            .toFile(filePath);
+
+        console.log(`✅ Optimized: ${optimizedFilename}`);
+        return `/images/products/${optimizedFilename}`;
     } catch (error) {
         console.error(`❌ Error downloading ${url}:`, error.message);
         return null;
