@@ -55,7 +55,7 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky, place
                 {/* Logo (Left - Visible only when sticky) */}
                 <div className={`transition-all ease-in-out overflow-hidden ${isSticky ? 'duration-700 max-w-[150px] opacity-100 mr-4' : 'duration-0 max-w-0 opacity-0'}`}>
                     <img
-                        src="/logo-capa-cero.png"
+                        src="/logo-capa-cero.webp"
                         alt="Capa Cero"
                         className={`w-auto object-contain transition-all duration-300 ${isSticky ? 'h-14' : 'h-10'}`}
                     />

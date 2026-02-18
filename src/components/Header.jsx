@@ -21,7 +21,7 @@ export default function Header({ isSticky }) {
                 {/* Logo */}
                 <div className="flex items-center justify-center mb-10 px-4">
                     <img
-                        src="/logo-capa-cero.png"
+                        src="/logo-capa-cero.webp"
                         alt="CAPA CERO"
                         className="w-full max-w-sm h-auto breathe-animation rounded-2xl"
                     />
