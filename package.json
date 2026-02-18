@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "update-products": "node scripts/update-products.js",
+    "prebuild": "npm run update-products"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.24",

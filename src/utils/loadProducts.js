@@ -43,7 +43,25 @@ import { SHEETS_CONFIG } from '../config/sheets';
 import { fetchGoogleSheetsProducts } from './googleSheets';
 
 export async function loadProducts() {
-    // Si el modo Google Sheets está activo, cargar desde CSVs
+    // 1. MODO VELOCIDAD (Static Build) - Prioridad Absoluta
+    if (SHEETS_CONFIG.STATIC_BUILD) {
+        try {
+            // Intentar cargar el archivo generado
+            const glob = import.meta.glob('/src/data/products.json');
+            for (const path in glob) {
+                const module = await glob[path]();
+                const products = module.default || module;
+                if (Array.isArray(products) && products.length > 0) {
+                    console.log("🚀 Carga Ultra-Rápida: Usando caché local");
+                    return products;
+                }
+            }
+        } catch (e) {
+            console.warn("⚠️ No se encontró caché local. Usando método lento...");
+        }
+    }
+
+    // 2. MODO LIVE (Google Sheets)
     if (SHEETS_CONFIG.isActive) {
         return await fetchGoogleSheetsProducts();
     }

@@ -4,6 +4,10 @@ export const SHEETS_CONFIG = {
     // false = La web carga productos desde los archivos JSON locales (src/data/*.json)
     isActive: true,
 
+    // true = Usa el archivo src/data/products.json generado (¡VELOCIDAD MÁXIMA!)
+    // false = Usa la conexión en tiempo real (más lento)
+    STATIC_BUILD: true,
+
     // Enlace PUBLICADO de Google Sheets (Archivo completo)
     // 1. Ve a Archivo > Compartir > Publicar en la web
     // 2. En "Enlace", selecciona "Todo el documento" y "Libro de Microsoft Excel (.xlsx)"
