@@ -18,7 +18,8 @@ He configurado eventos automáticos para las acciones más importantes:
 
 ### 4. Conversión Real (Botón "VER OFERTA")
 - **Evento**: `click_offer`
-- **Dato**: Qué producto ha convencido al usuario para ir a la tienda (Amazon/AliExpress).
+- **Dato**: Qué producto ha convencido al usuario para ir a la tienda.
+- **Cómo ver el nombre**: Al hacer clic en el evento `click_offer`, busca la tarjeta llamada **ITEM_NAME**. Ahí verás el nombre exacto del producto (ej: "01 - Filamento..."), en lugar del enlace de afiliado.
 - **Utilidad**: ¡Este es el dato de oro! Muestra intención de compra real.
 
 ### 5. Filtros y Categorías
