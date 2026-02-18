@@ -16,7 +16,12 @@ He configurado eventos automáticos para las acciones más importantes:
 - **Evento**: `select_content`
 - **Dónde verlo**: Haz clic en el evento en la misma sección de informes para ver qué productos son los más populares.
 
-### 3. Filtros y Categorías
+### 4. Conversión Real (Botón "VER OFERTA")
+- **Evento**: `click_offer`
+- **Dato**: Qué producto ha convencido al usuario para ir a la tienda (Amazon/AliExpress).
+- **Utilidad**: ¡Este es el dato de oro! Muestra intención de compra real.
+
+### 5. Filtros y Categorías
 - **Evento**: `select_category` y `select_filter`
 - **Datos**: Qué categorías (Filamentos, Electrónica...) o filtros (Top, Oferta, Nuevo) se activan.
 

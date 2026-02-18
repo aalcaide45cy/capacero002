@@ -48,3 +48,14 @@ export const trackFilterSelect = (filterType) => {
         filter_type: filterType
     });
 };
+
+// Track affiliate link clicks (Final conversion click)
+export const trackAffiliateClick = (product) => {
+    trackEvent('click_offer', {
+        item_id: product.id,
+        item_name: product.name,
+        item_category: product.category,
+        destination: product.link,
+        price: product.price
+    });
+};

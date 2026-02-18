@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { trackAffiliateClick } from '../utils/analytics';
 
 export default function ProductModal({ product, onClose }) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -96,6 +97,7 @@ export default function ProductModal({ product, onClose }) {
     };
 
     const handleCTAClick = () => {
+        trackAffiliateClick(product);
         window.open(product.link, '_blank', 'noopener,noreferrer');
     };
 
