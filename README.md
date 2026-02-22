@@ -1,4 +1,4 @@
-# 🚀 CAPA CERO -# Affiliate Link Hub - CAPA CERO (✅ PROYECTO COMPLETADO)
+# 🚀 CAPA CERO -# Affiliate Link Hub - CAPA CERO (🚀 PROYECTO COMPLETADO)
 
 > Hub de enlaces de afiliados optimizado para viralizar productos de TikTok
 
