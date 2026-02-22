@@ -129,7 +129,80 @@ async function main() {
 
         // Write to file
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allProducts, null, 2));
-        console.log(`\n✨ Success! Generated ${allProducts.length} products in src/data/products.json`);
+        console.log(`\n✨ Generated ${allProducts.length} products in src/data/products.json`);
+
+        // ============================================
+        // 🚀 SEO INJECTION (JSON-LD & STATIC FALLBACK)
+        // ============================================
+        console.log('🔍 Generating SEO metadata...');
+        const INDEX_HTML_PATH = path.resolve(__dirname, '../index.html');
+        let indexHtml = fs.readFileSync(INDEX_HTML_PATH, 'utf-8');
+
+        // 1. Generate JSON-LD (Structured Data)
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": allProducts.map((p, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "url": `https://capacero.vercel.app/?p=${p.id}`,
+                "item": {
+                    "@type": "Product",
+                    "name": p.name,
+                    "description": p.description || p.name,
+                    "image": p.image && p.image.length > 0 ? `https://capacero.vercel.app${p.image[0]}` : "https://capacero.vercel.app/logo-capa-cero-small.png",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": p.price ? p.price.replace(/[^\d.,]/g, '').replace(',', '.') || '0' : '0',
+                        "priceCurrency": "EUR",
+                        "availability": "https://schema.org/InStock"
+                    }
+                }
+            }))
+        };
+
+        const jsonLdScript = `\n  <script type="application/ld+json" id="seo-jsonld">\n${JSON.stringify(jsonLd, null, 2)}\n  </script>\n`;
+
+        // 2. Generate Fallback HTML (For crawlers that don't execute JS)
+        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/?p=${p.id}">${p.name}</a> - ${p.price}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
+
+        // Remove old injections if they exist to prevent duplicates
+        indexHtml = indexHtml.replace(/[\s]*<script type="application\/ld\+json" id="seo-jsonld">[\s\S]*?<\/script>[\s]*/, '');
+        indexHtml = indexHtml.replace(/[\s]*<noscript id="seo-fallback"[\s\S]*?<\/noscript>[\s]*/, '');
+
+        // Inject new blocks
+        indexHtml = indexHtml.replace('</head>', `${jsonLdScript}</head>`);
+        indexHtml = indexHtml.replace('</body>', `${fallbackHtml}</body>`);
+
+        fs.writeFileSync(INDEX_HTML_PATH, indexHtml);
+        console.log('✅ Injected structured JSON-LD and HTML Fallback into index.html');
+
+        // ============================================
+        // 🗺️ SITEMAP GENERATION
+        // ============================================
+        const SITEMAP_PATH = path.resolve(__dirname, '../public/sitemap.xml');
+        const today = new Date().toISOString().split('T')[0];
+
+        const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://capacero.vercel.app/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>${allProducts.map(p => `
+  <url>
+    <loc>https://capacero.vercel.app/?p=${p.id}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('')}
+</urlset>`;
+
+        fs.writeFileSync(SITEMAP_PATH, sitemapXml);
+        console.log(`✅ Generated sitemap.xml with ${allProducts.length + 1} URLs`);
+
+        console.log('\n🎉 ALL DONE! System is ready for production.\n');
 
     } catch (error) {
         console.error('🔥 Fatal Error:', error);

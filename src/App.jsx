@@ -25,6 +25,16 @@ function App() {
             setAllProducts(products);
             setFilteredProducts(products);
             setIsLoading(false);
+
+            // SEO Routing: Check if URL contains a product ID
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('p');
+            if (productId) {
+                const targetProduct = products.find(p => p.id === productId);
+                if (targetProduct) {
+                    setSelectedProduct(targetProduct);
+                }
+            }
         }
 
         fetchProducts();
@@ -81,10 +91,14 @@ function App() {
 
     const handleProductClick = (product) => {
         setSelectedProduct(product);
+        // SEO: Update URL to allow easy sharing and indexing
+        window.history.replaceState({}, '', `/?p=${product.id}`);
     };
 
     const handleCloseModal = () => {
         setSelectedProduct(null);
+        // SEO: Revert URL when closing modal
+        window.history.replaceState({}, '', '/');
     };
 
     return (
