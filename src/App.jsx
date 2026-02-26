@@ -49,6 +49,16 @@ function App() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Derive unique tags from products
+    const tags = useMemo(() => {
+        const uniqueTags = [...new Set(allProducts.map(p => p.tag).filter(Boolean))];
+        return uniqueTags.sort((a, b) => {
+            const cleanA = a.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
+            const cleanB = b.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
+            return cleanA.localeCompare(cleanB);
+        });
+    }, [allProducts]);
+
     // Derive unique categories from products
     const categories = useMemo(() => {
         const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
@@ -75,7 +85,7 @@ function App() {
         // Filter by Tag (Top, Oferta, Nuevo)
         if (activeFilter) {
             filtered = filtered.filter(product =>
-                product.tag && product.tag.toLowerCase().includes(activeFilter.toLowerCase())
+                product.tag && product.tag.toLowerCase() === activeFilter.toLowerCase()
             );
         }
 
@@ -116,6 +126,7 @@ function App() {
 
                 <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                     <FilterButtons
+                        tags={tags}
                         activeFilter={activeFilter}
                         onFilterChange={setActiveFilter}
                     />
