@@ -15,14 +15,14 @@ const getUserId = () => {
     return uid;
 };
 
-// Detect where the user came from (e.g., TikTok, YouTube)
+// Detect where the user came from
 const getOrigin = () => {
-    // Check if there is an explicit UTM or origin parameter
+    // 1. Check if there is an explicit UTM or origin parameter (e.g. ?origen=tiktok)
     const params = new URLSearchParams(window.location.search);
     const paramOrigin = params.get('origen') || params.get('utm_source');
     if (paramOrigin) return paramOrigin;
 
-    // Fallback to referrer
+    // 2. Check the browser's implicit referrer
     const referrer = document.referrer;
     if (referrer) {
         if (referrer.includes('tiktok.com')) return 'TikTok';
@@ -36,6 +36,16 @@ const getOrigin = () => {
         } catch (e) {
             return referrer;
         }
+    }
+
+    // 3. (Fallback) Check User Agent for embedded social media browsers
+    // Apps like TikTok often strip the referrer completely but leave their signature in the UA
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    if (ua) {
+        const uaLower = ua.toLowerCase();
+        if (uaLower.includes('tiktok')) return 'TikTok (App)';
+        if (uaLower.includes('instagram')) return 'Instagram (App)';
+        if (uaLower.includes('fban') || uaLower.includes('fbav')) return 'Facebook (App)';
     }
 
     return 'Directo / Desconocido';
