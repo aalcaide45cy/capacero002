@@ -6,8 +6,15 @@ import CategoryFilters from './components/CategoryFilters';
 import ProductGrid from './components/ProductGrid';
 import ProductModal from './components/ProductModal';
 import { loadProducts, filterProducts } from './utils/loadProducts';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 function App() {
+    // Intercepción de ruta para el Panel Privado de Estadísticas
+    const currentPath = window.location.pathname;
+    if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
+        return <AnalyticsDashboard />;
+    }
+
     const [allProducts, setAllProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
