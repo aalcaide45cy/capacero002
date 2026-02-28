@@ -25,12 +25,13 @@ const getOrigin = () => {
     // 2. Check the browser's implicit referrer
     const referrer = document.referrer;
     if (referrer) {
-        if (referrer.includes('tiktok.com')) return 'TikTok';
-        if (referrer.includes('youtube.com')) return 'YouTube';
-        if (referrer.includes('instagram.com')) return 'Instagram';
-        if (referrer.includes('facebook.com')) return 'Facebook';
-        if (referrer.includes('t.co') || referrer.includes('twitter.com')) return 'X / Twitter';
-        if (referrer.includes('google.')) return 'Google Search';
+        const refLower = referrer.toLowerCase();
+        if (refLower.includes('tiktok.com') || refLower.includes('vm.tiktok.com')) return 'TikTok';
+        if (refLower.includes('youtube.com')) return 'YouTube';
+        if (refLower.includes('instagram.com')) return 'Instagram';
+        if (refLower.includes('facebook.com')) return 'Facebook';
+        if (refLower.includes('t.co') || refLower.includes('twitter.com')) return 'X / Twitter';
+        if (refLower.includes('google.')) return 'Google Search';
         try {
             return new URL(referrer).hostname;
         } catch (e) {
@@ -39,11 +40,10 @@ const getOrigin = () => {
     }
 
     // 3. (Fallback) Check User Agent for embedded social media browsers
-    // Apps like TikTok often strip the referrer completely but leave their signature in the UA
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     if (ua) {
         const uaLower = ua.toLowerCase();
-        if (uaLower.includes('tiktok')) return 'TikTok (App)';
+        if (uaLower.includes('tiktok') || uaLower.includes('bytedance') || uaLower.includes('musical_ly') || uaLower.includes('trill')) return 'TikTok (App)';
         if (uaLower.includes('instagram')) return 'Instagram (App)';
         if (uaLower.includes('fban') || uaLower.includes('fbav')) return 'Facebook (App)';
     }
