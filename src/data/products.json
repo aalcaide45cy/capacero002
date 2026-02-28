@@ -14,7 +14,7 @@
     ],
     "price": "15,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4tOuaIO",
+    "link": "https://amzn.to/4sbMIkn",
     "description": "Experimenta una impresión 3D más rápida con el filamento PETG de alta velocidad SUNLU.",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -36,7 +36,7 @@
     ],
     "price": "17,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4rj2xpw",
+    "link": "https://amzn.to/3OTqghD",
     "description": "El filamento SUNLU PLA Plus 2.0 es una versión mejorada del filamento PLA+ clásico 1.75mm, con 12 veces más tenacidad (vs PLA estándar) y flujo de fusión optimizado para impresión de alta velocidad...",
     "tag": "🔥TOP",
     "buttonText": "VER OFERTA",
@@ -45,7 +45,7 @@
   },
   {
     "id": "Amz-003",
-    "name": "SUNLU PLA Plus 2.0 Filamento para Impresora 3D Rápido 1.75mm",
+    "name": "SUNLU 8 Paquetes Filamento ASA de 1,75 mm",
     "category": "🧵 Filamentos",
     "image": [
       "/images/products/Amz-003-1.webp",
@@ -53,12 +53,13 @@
       "/images/products/Amz-003-3.webp",
       "/images/products/Amz-003-4.webp",
       "/images/products/Amz-003-5.webp",
-      "/images/products/Amz-003-6.webp"
+      "/images/products/Amz-003-6.webp",
+      "/images/products/Amz-003-7.webp"
     ],
-    "price": "17,99€",
+    "price": "47,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4rh0sKM",
-    "description": "El filamento SUNLU PLA Plus 2.0 es una versión mejorada del filamento PLA+ clásico 1.75mm, con 12 veces más tenacidad (vs PLA estándar) y flujo de fusión optimizado para impresión de alta velocidad...",
+    "link": "https://amzn.to/4u1VdAc",
+    "description": "El filamento ASA es una especie de filamento muy fuerte y resistente, más fuerte que el filamento PLA y el filamento ABS.",
     "tag": "🔥TOP",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
@@ -66,7 +67,7 @@
   },
   {
     "id": "Amz-004",
-    "name": "GEEETECH 3D Filament PETG 1,75 mm 1 kg para impresora 3D",
+    "name": "SUNLU PLA Plus 2.0 Filamento para Impresora 3D Rápido 1.75mm",
     "category": "🧵 Filamentos",
     "image": [
       "/images/products/Amz-004-1.webp",
@@ -74,13 +75,12 @@
       "/images/products/Amz-004-3.webp",
       "/images/products/Amz-004-4.webp",
       "/images/products/Amz-004-5.webp",
-      "/images/products/Amz-004-6.webp",
-      "/images/products/Amz-004-7.webp"
+      "/images/products/Amz-004-6.webp"
     ],
-    "price": "21,99€",
+    "price": "17,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4cbsH99",
-    "description": "Sin enredos: filamento PETG de 1.75 mm de alta calidad GEEETECH, el producto impreso es suave, brillante y libre de impurezas..",
+    "link": "https://amzn.to/4smg8fX",
+    "description": "El filamento SUNLU PLA Plus 2.0 es una versión mejorada del filamento PLA+ clásico 1.75mm, con 12 veces más tenacidad (vs PLA estándar) y flujo de fusión optimizado para impresión de alta velocidad...",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
@@ -88,7 +88,7 @@
   },
   {
     "id": "Amz-005",
-    "name": "SUNLU Filamento PLA Brillo en la Oscuridad",
+    "name": "GEEETECH 3D Filament PETG 1,75 mm 1 kg para impresora 3D",
     "category": "🧵 Filamentos",
     "image": [
       "/images/products/Amz-005-1.webp",
@@ -99,10 +99,10 @@
       "/images/products/Amz-005-6.webp",
       "/images/products/Amz-005-7.webp"
     ],
-    "price": "25,99€",
+    "price": "21,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4aA4mr1",
-    "description": "El filamento PLA que brilla en la oscuridad SUNLU contiene materiales fosforescentes, que pueden brillar en la oscuridad después de absorber la energía de la luz..",
+    "link": "https://amzn.to/4sefdxM",
+    "description": "Sin enredos: filamento PETG de 1.75 mm de alta calidad GEEETECH, el producto impreso es suave, brillante y libre de impurezas..",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
@@ -110,7 +110,7 @@
   },
   {
     "id": "Amz-006",
-    "name": "SUNLU Silk Rainbow PLA PLUS Filament",
+    "name": "SUNLU Filamento PLA Brillo en la Oscuridad",
     "category": "🧵 Filamentos",
     "image": [
       "/images/products/Amz-006-1.webp",
@@ -121,10 +121,10 @@
       "/images/products/Amz-006-6.webp",
       "/images/products/Amz-006-7.webp"
     ],
-    "price": "16,99€",
+    "price": "25,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4kvWFqe",
-    "description": "El filamento SUNLU Silk Rainbow cambia de color cada 8 metros.",
+    "link": "https://amzn.to/4cSHOo0",
+    "description": "El filamento PLA que brilla en la oscuridad SUNLU contiene materiales fosforescentes, que pueden brillar en la oscuridad después de absorber la energía de la luz..",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
@@ -145,7 +145,7 @@
     ],
     "price": "22,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4rREYEg",
+    "link": "https://amzn.to/3MXnKWZ",
     "description": "El filamento para impresora 3D Silk PLA Plus Triple Color de SUNLU, un solo filamento 3D, ofrece una experiencia de triple color.",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -167,7 +167,7 @@
     ],
     "price": "15,99€",
     "showPrice": false,
-    "link": "https://amzn.to/46FmSwT",
+    "link": "https://amzn.to/3MQ49Io",
     "description": "Experimente una fiabilidad de impresión excepcional con el filamento compuesto SUNLU PLA PLUS, diseñado para una excelente adhesión entre capas y acabados brillantes..",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -187,9 +187,9 @@
       "/images/products/Amz-009-6.webp",
       "/images/products/Amz-009-7.webp"
     ],
-    "price": "41,54€",
+    "price": "31,33€",
     "showPrice": false,
-    "link": "https://amzn.to/4qsH8c5",
+    "link": "https://amzn.to/4aVimeT",
     "description": "Filamento PLA+2.0 mejorado: en comparación con PLA+, SUNLU PLA+ 2.0 es más resistente a la fragilidad y al agrietamiento, lo que hace que tus productos impresos sean más fuertes y duraderos..",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -211,7 +211,7 @@
     ],
     "price": "29,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4rTz8lL",
+    "link": "https://amzn.to/4l2qXRU",
     "description": "Filamento SUNLU 3D PLA Plus: SUNLU PLA plus tiene una mayor dureza que el PLA normal. Di adiós a los filamentos frágiles. El filamento SUNLU PLA+ tiene alta resistencia, excelente adherencia, menor contracción, sin burbujas, sin obstrucciones.",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -233,7 +233,7 @@
     ],
     "price": "29,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4aJKrqN",
+    "link": "https://amzn.to/4aXSPC8",
     "description": "Anycubic ASA Filamento de impresora 3D se desarrolla con una excelente resistencia a la luz solar, el agua y el envejecimiento.",
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
@@ -241,336 +241,181 @@
     "order": 11
   },
   {
-    "id": "Aliexp-001",
-    "name": "Ventilador Turbo para coche",
+    "id": "Amz-029",
+    "name": "Soplador de aire eléctrico turbo",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-001-1.webp",
-      "/images/products/Aliexp-001-2.webp",
-      "/images/products/Aliexp-001-3.webp"
+      "/images/products/Amz-029-1.webp",
+      "/images/products/Amz-029-2.webp",
+      "/images/products/Amz-029-3.webp",
+      "/images/products/Amz-029-4.webp",
+      "/images/products/Amz-029-5.webp",
+      "/images/products/Amz-029-6.webp"
     ],
-    "price": "8.58 EUR",
+    "price": "36,08€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3Qoa7Ar",
-    "description": "Ventilador Turbo para coche, herramienta de limpieza, carga tipo C, 130000RPM, 5 boquillas de salida, soplado de nieve, plumero de aire eléctrico portátil",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/47ivjhV",
+    "description": "Flujo de aire violento de hasta 130000 RPM para una rápida eliminación del polvo de las rejillas de ventilación del coche, consolas centrales, alfombrillas y...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 12
   },
   {
-    "id": "Aliexp-002",
-    "name": "Linterna UV recargable por USB de 365nm",
+    "id": "Amz-030",
+    "name": "Linterna UV 2 en 1",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-002-1.webp",
-      "/images/products/Aliexp-002-2.webp",
-      "/images/products/Aliexp-002-3.webp"
+      "/images/products/Amz-030-1.webp",
+      "/images/products/Amz-030-2.webp",
+      "/images/products/Amz-030-3.webp",
+      "/images/products/Amz-030-4.webp",
+      "/images/products/Amz-030-5.webp",
+      "/images/products/Amz-030-6.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "13,99€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4mMP5cb",
-    "description": "Linterna UV recargable por USB de 365nm, linterna de luz ultravioleta portátil de aluminio, luz negra, Detector de orina para mascotas, linternas negras",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/3ZYplPp",
+    "description": "2 en 1, 4 modos: la luz LED es una combinación de blanco y morado.",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 13
   },
   {
-    "id": "Aliexp-003",
-    "name": "Kit de herramientas de desbarbado para reparación de Metal",
+    "id": "Amz-031",
+    "name": "Herramienta de Desbarbado",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-003-1.webp",
-      "/images/products/Aliexp-003-2.webp",
-      "/images/products/Aliexp-003-3.webp"
+      "/images/products/Amz-031-1.webp",
+      "/images/products/Amz-031-2.webp",
+      "/images/products/Amz-031-3.webp",
+      "/images/products/Amz-031-4.webp",
+      "/images/products/Amz-031-5.webp",
+      "/images/products/Amz-031-6.webp",
+      "/images/products/Amz-031-7.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "7,49€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4NnLSuB",
-    "description": "Kit de herramientas de desbarbado para reparación de Metal, broca enrutadora NB1100, desbarbado rotativo BS1010, herramienta manual para madera y plástico",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4rHOZE4",
+    "description": "El mango está hecho de aluminio, cómodo de sostener, y las hojas están hechas de acero de alta velocidad, muy afiladas, de alta dureza, resistentes al desgaste y al calor, duraderas y de larga du...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 14
   },
   {
-    "id": "Aliexp-004",
-    "name": "Juego de calor de inserción de punta de pistola para soldar",
+    "id": "Amz-032",
+    "name": "Swpeet Kit de Herramientas de Desborrado",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-004-1.webp",
-      "/images/products/Aliexp-004-2.webp",
-      "/images/products/Aliexp-004-3.webp"
+      "/images/products/Amz-032-1.webp",
+      "/images/products/Amz-032-2.webp",
+      "/images/products/Amz-032-3.webp",
+      "/images/products/Amz-032-4.webp",
+      "/images/products/Amz-032-5.webp",
+      "/images/products/Amz-032-6.webp",
+      "/images/products/Amz-032-7.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "17,99€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3cqMcYr",
-    "description": "Juego de calor de inserción de punta de pistola para soldar, cabezal M2 M2.5 M3 M4 M5 M6, tuerca de insertos de fusión en caliente, Kit de inserción de hilo integrado de latón para plástico",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/3OQNEfE",
+    "description": "Lo Que Obtienes: en este kit recibirás 27 piezas de kit de herramientas de impresora 3D, lo que significa 5 piezas de archivo de mano con un mango rojo, 6 piezas de cuchillos de tallado, 1 x cuchil...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 15
   },
   {
-    "id": "Aliexp-005",
-    "name": "Boquilla de cepillo de dientes de",
+    "id": "Amz-033",
+    "name": "Juego de herramientas de inserción de calor",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-005-1.webp",
-      "/images/products/Aliexp-005-2.webp",
-      "/images/products/Aliexp-005-3.webp"
+      "/images/products/Amz-033-1.webp",
+      "/images/products/Amz-033-2.webp",
+      "/images/products/Amz-033-3.webp",
+      "/images/products/Amz-033-4.webp",
+      "/images/products/Amz-033-5.webp",
+      "/images/products/Amz-033-6.webp",
+      "/images/products/Amz-033-7.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "32,99€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4TW9hj1",
-    "description": "Boquilla de cepillo de dientes de alambre de cobre para accesorios de impresora 3D Ender 3 CR10 MK8 E3D, herramienta limpiadora extrusora, mango de cepillo de cobre, 1/2/3 Uds",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/3N52pem",
+    "description": "Soldador digital de 0 W y kit de 380 piezas de insertos roscados",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 16
   },
   {
-    "id": "Aliexp-006",
-    "name": "Bolsa de almacenamiento de filamentos para impresora 3D",
+    "id": "Amz-034",
+    "name": "3 cepillos de limpieza de boquillas de impresión 3D",
     "category": "🛠️ Herramientas",
     "image": [
-      "/images/products/Aliexp-006-1.webp",
-      "/images/products/Aliexp-006-2.webp",
-      "/images/products/Aliexp-006-3.webp"
+      "/images/products/Amz-034-1.webp",
+      "/images/products/Amz-034-2.webp",
+      "/images/products/Amz-034-3.webp",
+      "/images/products/Amz-034-4.webp",
+      "/images/products/Amz-034-5.webp",
+      "/images/products/Amz-034-6.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "7,80€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4d64BXZ",
-    "description": "Bolsa de almacenamiento de filamentos para impresora 3D, bolsa de vacío PLA ABS PETG, secadora, bolsas de sellado resistentes a la humedad, mantiene el filamento sellado en seco",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/47ivlq3",
+    "description": "3 Cepillos de limpieza de boquilla con alambre de cobre.",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 17
   },
   {
-    "id": "Aliexp-007",
-    "name": "3/6/9 Uds para Bambu Lab X1/X1C/P1S/P1P/A1/A1",
+    "id": "Amz-035",
+    "name": "Juego de bolsas de almacenamiento de filamentos",
+    "category": "🛠️ Herramientas",
+    "image": [
+      "/images/products/Amz-035-1.webp",
+      "/images/products/Amz-035-2.webp",
+      "/images/products/Amz-035-3.webp",
+      "/images/products/Amz-035-4.webp",
+      "/images/products/Amz-035-5.webp",
+      "/images/products/Amz-035-6.webp",
+      "/images/products/Amz-035-7.webp"
+    ],
+    "price": "20,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/3N9XJnx",
+    "description": "Bolsas de almacenamiento al vacío de filamento (34 x 30 cm)] + 10 x [desecantes] + 4 x [clips] + 1 x [bomba de mano (13,65 x 4,35 cm)] + 2 x [pegatinas mágicas (negro)]..",
+    "tag": "✨NUEVO",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 18
+  },
+  {
+    "id": "Amz-012",
+    "name": "100 Piezas 25 mm Anillas Llaveros",
     "category": "⚙️ Componentes",
     "image": [
-      "/images/products/Aliexp-007-1.webp",
-      "/images/products/Aliexp-007-2.webp",
-      "/images/products/Aliexp-007-3.webp"
+      "/images/products/Amz-012-1.webp",
+      "/images/products/Amz-012-2.webp",
+      "/images/products/Amz-012-3.webp",
+      "/images/products/Amz-012-4.webp",
+      "/images/products/Amz-012-5.webp",
+      "/images/products/Amz-012-6.webp",
+      "/images/products/Amz-012-7.webp"
     ],
-    "price": "0.99 EUR",
+    "price": "6,99€",
     "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c39srIix",
-    "description": "3/6/9 Uds para Bambu Lab X1/X1C/P1S/P1P/A1/A1 Mini cortador de filamentos impresoras 3D cortador de filamento repuestos para impresoras 3D Bambu",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4rC1YHv",
+    "description": "Kits de Llavero: El paquete viene con 100 piezas de anillos de llavero divididos con anillos de salto abiertos que satisfarán sus necesidades para proyectos de artesanía de bricolaje..",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
     "order": 19
   },
   {
-    "id": "Aliexp-008",
-    "name": "50 Uds llavero de Metal de",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-008-1.webp",
-      "/images/products/Aliexp-008-2.webp",
-      "/images/products/Aliexp-008-3.webp",
-      "/images/products/Aliexp-008-4.webp",
-      "/images/products/Aliexp-008-5.webp",
-      "/images/products/Aliexp-008-6.webp",
-      "/images/products/Aliexp-008-7.webp",
-      "/images/products/Aliexp-008-8.webp",
-      "/images/products/Aliexp-008-9.webp",
-      "/images/products/Aliexp-008-10.webp"
-    ],
-    "price": "N/A",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3wVonTp",
-    "description": "50 Uds llavero de Metal de acero inoxidable en blanco anillos divididos con cadena hebillas de escalada mosquetón llavero anillos Accesorios",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 20
-  },
-  {
-    "id": "Aliexp-009",
-    "name": "Tuerca de inserción de latón y",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-009-1.webp",
-      "/images/products/Aliexp-009-2.webp",
-      "/images/products/Aliexp-009-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3eWVgqF",
-    "description": "Tuerca de inserción de latón y Kit de tornillos de acero inoxidable M2 M3 M4, juego de calor roscado, insertos de impresión, tuercas de fusión en caliente de cobre 3D, perno de máquina",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 21
-  },
-  {
-    "id": "Aliexp-010",
-    "name": "Conjunto completo de Hotend para Bambu",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-010-1.webp",
-      "/images/products/Aliexp-010-2.webp",
-      "/images/products/Aliexp-010-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4oog4AT",
-    "description": "Conjunto completo de Hotend para Bambu Lab X1 X1C P1P P1S con actualización de ventilador 2,0 con boquilla completa de laboratorio de bambú X1 de carbono",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 22
-  },
-  {
-    "id": "Aliexp-011",
-    "name": "imanes imanes para refrigerador",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-011-1.webp",
-      "/images/products/Aliexp-011-2.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c30t8YZt",
-    "description": "imanes imanes para refrigerador, pizarra blanca para oficina DIY, taller, 2x2/4x2/5x2/6x2/8x2/10x2/12x2/15x2/20x2/25x2mm",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 23
-  },
-  {
-    "id": "Aliexp-012",
-    "name": "Kit de lámpara Led para laboratorio Bambu",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-012-1.webp",
-      "/images/products/Aliexp-012-2.webp",
-      "/images/products/Aliexp-012-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4M5wvLZ",
-    "description": "Kit de lámpara Led para laboratorio Bambu, Kit de luz ajustable, piezas de luz Led, Hardware, modelo DIY, luz blanca/fría/cálida sin carcasa de lámpara 001",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 24
-  },
-  {
-    "id": "Aliexp-013",
-    "name": "Kit de Tubo termorretráctil negro",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-013-1.webp",
-      "/images/products/Aliexp-013-2.webp",
-      "/images/products/Aliexp-013-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4PZ6M39",
-    "description": "Kit de Tubo termorretráctil negro, tubo termorresistente, envoltura de cables retráctiles, Cable de conexión eléctrica, protector de manguitos aislantes",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 25
-  },
-  {
-    "id": "Aliexp-014",
-    "name": "Cable eléctrico de 2 pines de cobre estañado",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-014-1.webp",
-      "/images/products/Aliexp-014-2.webp",
-      "/images/products/Aliexp-014-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4SQfueL",
-    "description": "Cable eléctrico de 2 pines de cobre estañado, Cable de tira LED de extensión de PVC aislado, Cable rojo y negro, 18/20/22/24/26 AWG",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 26
-  },
-  {
-    "id": "Aliexp-015",
-    "name": "Terminal termorretráctil de anillo de soldadura",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-015-1.webp",
-      "/images/products/Aliexp-015-2.webp",
-      "/images/products/Aliexp-015-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c4ERobRt",
-    "description": "Terminal termorretráctil de anillo de soldadura, resistente al agua IP67, tubo termorretráctil de conexión de equipo eléctrico, Terminal de conector de cable",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 27
-  },
-  {
-    "id": "Aliexp-016",
-    "name": "Tira de luces LED COB PCB",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-016-1.webp",
-      "/images/products/Aliexp-016-2.webp",
-      "/images/products/Aliexp-016-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3Xfvk7H",
-    "description": "Tira de luces LED COB PCB de 5V USB de 3mm con interruptor atenuador Control remoto 320 LED iluminación lineal de alta densidad lámpara de cinta Flexible",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 28
-  },
-  {
-    "id": "Aliexp-017",
-    "name": "Kit surtido de tornillos para computadora",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Aliexp-017-1.webp",
-      "/images/products/Aliexp-017-2.webp",
-      "/images/products/Aliexp-017-3.webp"
-    ],
-    "price": "0.99 EUR",
-    "showPrice": false,
-    "link": "https://s.click.aliexpress.com/e/_c3ad6VXp",
-    "description": "Kit surtido de tornillos para computadora pequeña de 860 piezas, tornillos para gafas pequeños negros M1.2 M1.4 M1.7 M2 M2.5 M3, disco duro SSD para PC y portátil C",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 29
-  },
-  {
-    "id": "Amz-012",
-    "name": "Super Lube® Multipropósito Grasa Sintética",
-    "category": "⚙️ Componentes",
-    "image": [
-      "/images/products/Amz-012-1.webp"
-    ],
-    "price": "8,99€",
-    "showPrice": false,
-    "link": "https://amzn.to/3OaigZr",
-    "description": "Grasa Sintética",
-    "tag": "💶OFERTA",
-    "buttonText": "VER OFERTA",
-    "carouselInterval": 3000,
-    "order": 30
-  },
-  {
     "id": "Amz-013",
-    "name": "72 Colores de Rotuladores Acrílicos para",
+    "name": "Glarks 460 piezas M2 M3 M4",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-013-1.webp",
@@ -581,38 +426,40 @@
       "/images/products/Amz-013-6.webp",
       "/images/products/Amz-013-7.webp"
     ],
-    "price": "37,99€",
+    "price": "16,99€",
     "showPrice": false,
-    "link": "https://amzn.to/3ZDYGam",
-    "description": "Los rotuladores acrílicos y los multibolígrafos ofrecen una flexibilidad increíble Con una punta fina y ancha, puedes trabajar sobre casi cualquier superficie sólida: ¡desde telas hasta cerámica o ...",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/3OHfqv9",
+    "description": "Este juego de tuercas roscadas hembras contiene 15 tamaños diferentes de tuercas M2, M3, M4 y M5, un total de 460 piezas.",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
-    "order": 31
+    "order": 20
   },
   {
     "id": "Amz-014",
-    "name": "40 Piezas Mini Luces LED Luz",
+    "name": "Kit Hotend Completo para 3D Impresora Bambu Lab X1/X1C",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-014-1.webp",
       "/images/products/Amz-014-2.webp",
       "/images/products/Amz-014-3.webp",
       "/images/products/Amz-014-4.webp",
-      "/images/products/Amz-014-5.webp"
+      "/images/products/Amz-014-5.webp",
+      "/images/products/Amz-014-6.webp",
+      "/images/products/Amz-014-7.webp"
     ],
-    "price": "11,99€",
+    "price": "58,94€",
     "showPrice": false,
-    "link": "https://amzn.to/3Orc1Ap",
-    "description": "40 Piezas Mini Luces LED: 40 Piezas luces decorativas LED que miden 0,6 x 0,4 pulgadas.",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4u0O3fz",
+    "description": "Kit completo de Hotend X1/X1C: Conjunto completo de un Hot-End de acero templado con ventilador, termistor, calentador cerámico y boquillas de 0,4/0,6/0,8 mm, incluido el reemplazo del bloque calef...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
-    "order": 32
+    "order": 21
   },
   {
     "id": "Amz-015",
-    "name": "Superpegamento Gel Extra Fuerte",
+    "name": "52 piezas Imanes de neodimio 10x2 mm extremadamente potentes",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-015-1.webp",
@@ -620,21 +467,20 @@
       "/images/products/Amz-015-3.webp",
       "/images/products/Amz-015-4.webp",
       "/images/products/Amz-015-5.webp",
-      "/images/products/Amz-015-6.webp",
-      "/images/products/Amz-015-7.webp"
+      "/images/products/Amz-015-6.webp"
     ],
-    "price": "6,99€",
+    "price": "11,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4rTYsrP",
-    "description": "Formato XXL para uso intensivo: 50g de pegamento en gel – hasta 5× más que los tubos estándar – ideal para talleres, bricolaje y reparaciones frecuentes – siempre disponible cuando más lo necesitas..",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4tV4qu9",
+    "description": "52 imanes + 2 placas metálicas para elevación y blindaje magnético por entrega..",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
-    "order": 33
+    "order": 22
   },
   {
     "id": "Amz-016",
-    "name": "Soldador Estaño Set 24 in 1 con Caja de Herramientas",
+    "name": "Kit de lámpara LED para impresora",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-016-1.webp",
@@ -645,18 +491,18 @@
       "/images/products/Amz-016-6.webp",
       "/images/products/Amz-016-7.webp"
     ],
-    "price": "25,99€",
+    "price": "16,99€",
     "showPrice": false,
-    "link": "https://amzn.to/4re3hMp",
-    "description": "Soldador premium: este soldador de 60 W y 220 V se calienta muy rápidamente gracias a la tecnología cerámica calentada por dentro.",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4ujcgyb",
+    "description": "Este kit de iluminación RGB con control remoto está especialmente diseñado para el kit de iluminación LED Bambu Lab X1C/P1P/P1S/X1/X1E/H2D 001, lo que garantiza una instalación sencilla y sin probl...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
-    "order": 34
+    "order": 23
   },
   {
     "id": "Amz-017",
-    "name": "Alcohol isopropílico 99,99% 5L",
+    "name": "Kit De Tubos Termorretráctiles 650 Piezas 2:1 Negro",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-017-1.webp",
@@ -664,27 +510,236 @@
       "/images/products/Amz-017-3.webp",
       "/images/products/Amz-017-4.webp",
       "/images/products/Amz-017-5.webp",
-      "/images/products/Amz-017-6.webp",
-      "/images/products/Amz-017-7.webp"
+      "/images/products/Amz-017-6.webp"
     ],
-    "price": "23,95€",
+    "price": "12,95€",
     "showPrice": false,
-    "link": "https://amzn.to/4cvzJW6",
-    "description": "Alcohol isopropílico 99,99% 5L | Alcohol isopropilico electronica para limpiar impresoras 3D, móviles, PC, objetivos y pantallas | Isopropanol limpiacristales y desengrasante",
-    "tag": "💶OFERTA",
+    "link": "https://amzn.to/4aJTF6E",
+    "description": "Kit de 650 piezas de tubos termorretráctiles negros organizados en una caja rígida y compartimentada, ideal para aislamiento, reparación y protección de conexiones mediante un tubo termorretráctil ...",
+    "tag": "✨NUEVO",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
-    "order": 35
+    "order": 24
   },
   {
     "id": "Amz-018",
-    "name": "BIQU - Panda CryoGrip Pro - Placa Fria",
+    "name": "15m 2x0.81mm² 18AWG de Extensión Cable",
     "category": "⚙️ Componentes",
     "image": [
       "/images/products/Amz-018-1.webp",
       "/images/products/Amz-018-2.webp",
       "/images/products/Amz-018-3.webp",
-      "/images/products/Amz-018-4.webp"
+      "/images/products/Amz-018-4.webp",
+      "/images/products/Amz-018-5.webp",
+      "/images/products/Amz-018-6.webp"
+    ],
+    "price": "12,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4tZEYUt",
+    "description": "Cable de extensión de cable LED de calibre 18 calibre 18 AWG, 34 piezas de cobre estañado en cada línea..",
+    "tag": "✨NUEVO",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 25
+  },
+  {
+    "id": "Amz-019",
+    "name": "150pcs Terminales Eléctricos Termorretráctiles",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-019-1.webp",
+      "/images/products/Amz-019-2.webp",
+      "/images/products/Amz-019-3.webp",
+      "/images/products/Amz-019-4.webp",
+      "/images/products/Amz-019-5.webp",
+      "/images/products/Amz-019-6.webp",
+      "/images/products/Amz-019-7.webp"
+    ],
+    "price": "10,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4beuN6W",
+    "description": "Estos conectores de soldadura deben calentarse con una pistola caliente.",
+    "tag": "✨NUEVO",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 26
+  },
+  {
+    "id": "Amz-020",
+    "name": "Tira LED COB 3m Tira LED Regulable con Mando e Alimentación",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-020-1.webp",
+      "/images/products/Amz-020-2.webp",
+      "/images/products/Amz-020-3.webp",
+      "/images/products/Amz-020-4.webp",
+      "/images/products/Amz-020-5.webp",
+      "/images/products/Amz-020-6.webp"
+    ],
+    "price": "19,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4cZiWLg",
+    "description": "Tira LED COB 3m: con 960 chips LED, estas tiras LED tienen brillo continuo, mayor eficiencia lumínica, CRI 90+, ángulo de haz de 180°.",
+    "tag": "✨NUEVO",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 27
+  },
+  {
+    "id": "Amz-021",
+    "name": "700 piezas de tornillos Phillips de cabeza avellanada",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-021-1.webp",
+      "/images/products/Amz-021-2.webp",
+      "/images/products/Amz-021-3.webp",
+      "/images/products/Amz-021-4.webp",
+      "/images/products/Amz-021-5.webp",
+      "/images/products/Amz-021-6.webp",
+      "/images/products/Amz-021-7.webp"
+    ],
+    "price": "7,28€",
+    "showPrice": false,
+    "link": "https://amzn.to/4bfpVhZ",
+    "description": "Material de primera calidad: los kits de clasificación de tornillos de la placa base están todos hechos de material de aleación de acero de alta calidad, con bordes lisos, robustos, resistentes a l...",
+    "tag": "✨NUEVO",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 28
+  },
+  {
+    "id": "Amz-022",
+    "name": "Super Lube® Multipropósito Grasa Sintética",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-022-1.webp"
+    ],
+    "price": "8,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4aI8tTg",
+    "description": "Grasa Sintética (NLGI 2)",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 29
+  },
+  {
+    "id": "Amz-023",
+    "name": "72 Colores de Rotuladores Acrílicos para",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-023-1.webp",
+      "/images/products/Amz-023-2.webp",
+      "/images/products/Amz-023-3.webp",
+      "/images/products/Amz-023-4.webp",
+      "/images/products/Amz-023-5.webp",
+      "/images/products/Amz-023-6.webp",
+      "/images/products/Amz-023-7.webp"
+    ],
+    "price": "39,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4skndxC",
+    "description": "Los rotuladores acrílicos y los multibolígrafos ofrecen una flexibilidad increíble Con una punta fina y ancha, puedes trabajar sobre casi cualquier superficie sólida: ¡desde telas hasta cerámica o ...",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 30
+  },
+  {
+    "id": "Amz-024",
+    "name": "40 Piezas Mini Luces LED Luz",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-024-1.webp",
+      "/images/products/Amz-024-2.webp",
+      "/images/products/Amz-024-3.webp",
+      "/images/products/Amz-024-4.webp",
+      "/images/products/Amz-024-5.webp"
+    ],
+    "price": "11,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4aJTHLO",
+    "description": "40 Piezas Mini Luces LED: 40 Piezas luces decorativas LED que miden 0,6 x 0,4 pulgadas.",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 31
+  },
+  {
+    "id": "Amz-025",
+    "name": "Superpegamento Gel Extra Fuerte",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-025-1.webp",
+      "/images/products/Amz-025-2.webp",
+      "/images/products/Amz-025-3.webp",
+      "/images/products/Amz-025-4.webp",
+      "/images/products/Amz-025-5.webp",
+      "/images/products/Amz-025-6.webp",
+      "/images/products/Amz-025-7.webp"
+    ],
+    "price": "6,99€",
+    "showPrice": false,
+    "link": "https://amzn.to/4bcSf4y",
+    "description": "Formato XXL para uso intensivo: 50g de pegamento en gel – hasta 5× más que los tubos estándar – ideal para talleres, bricolaje y reparaciones frecuentes – siempre disponible cuando más lo necesitas..",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 32
+  },
+  {
+    "id": "Amz-026",
+    "name": "Soldador Estaño Set 24 in 1 con Caja de Herramientas",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-026-1.webp",
+      "/images/products/Amz-026-2.webp",
+      "/images/products/Amz-026-3.webp",
+      "/images/products/Amz-026-4.webp",
+      "/images/products/Amz-026-5.webp",
+      "/images/products/Amz-026-6.webp",
+      "/images/products/Amz-026-7.webp"
+    ],
+    "price": "24,69€",
+    "showPrice": false,
+    "link": "https://amzn.to/4kXO2VE",
+    "description": "Soldador premium: este soldador de 60 W y 220 V se calienta muy rápidamente gracias a la tecnología cerámica calentada por dentro.",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 33
+  },
+  {
+    "id": "Amz-027",
+    "name": "Alcohol isopropílico 99,99% 5L",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-027-1.webp",
+      "/images/products/Amz-027-2.webp",
+      "/images/products/Amz-027-3.webp",
+      "/images/products/Amz-027-4.webp",
+      "/images/products/Amz-027-5.webp",
+      "/images/products/Amz-027-6.webp",
+      "/images/products/Amz-027-7.webp"
+    ],
+    "price": "23,95€",
+    "showPrice": false,
+    "link": "https://amzn.to/46tdsof",
+    "description": "MÁXIMA LIMPIEZA: el alcohol isopropílico al 99,9% es eficaz para eliminar en profundidad la suciedad, grasa, residuos secos, polvo en superficies gracias a su poder desinfectante..",
+    "tag": "💶OFERTA",
+    "buttonText": "VER OFERTA",
+    "carouselInterval": 3000,
+    "order": 34
+  },
+  {
+    "id": "Amz-028",
+    "name": "BIQU - Panda CryoGrip Pro - Placa Fria",
+    "category": "⚙️ Componentes",
+    "image": [
+      "/images/products/Amz-028-1.webp",
+      "/images/products/Amz-028-2.webp",
+      "/images/products/Amz-028-3.webp",
+      "/images/products/Amz-028-4.webp"
     ],
     "price": "",
     "showPrice": false,
@@ -693,6 +748,70 @@
     "tag": "💶OFERTA",
     "buttonText": "VER OFERTA",
     "carouselInterval": 3000,
+    "order": 35
+  },
+  {
+    "id": "Ude-001",
+    "name": "Blender - EXPERTO en Modelado Hard Surface",
+    "category": "🎓Cursos",
+    "image": [
+      "/images/products/Ude-001-1.webp"
+    ],
+    "price": "19,99€",
+    "showPrice": false,
+    "link": "https://www.udemy.com/course/blender-experto-en-modelado-hard-surface/?referralCode=5901CB7B8C531CCA0A54",
+    "description": "Aprender a modelar en Hard Surface desde cero, aplicando tecnicas profesionales y evitando los errores mas comunes.",
+    "tag": "✨NUEVO",
+    "buttonText": "IR AL CURSO",
+    "carouselInterval": 3000,
     "order": 36
+  },
+  {
+    "id": "Ude-002",
+    "name": "Blender - EXPERTO en Rig y Animación de Personajes 3D",
+    "category": "🎓Cursos",
+    "image": [
+      "/images/products/Ude-002-1.webp"
+    ],
+    "price": "19,99€",
+    "showPrice": false,
+    "link": "https://www.udemy.com/course/blender-rig-y-animacion-de-personajes/?referralCode=8EFDF6C9BC16A2394711",
+    "description": "Aprende a realizar Rig en personajes 3D con Blender. Técnicas profesionales.",
+    "tag": "✨NUEVO",
+    "buttonText": "IR AL CURSO",
+    "carouselInterval": 3000,
+    "order": 37
+  },
+  {
+    "id": "Ude-003",
+    "name": "Blender Curso Introduccion - Rig y Animacion",
+    "category": "🎓Cursos",
+    "image": [
+      "/images/products/Ude-003-1.webp"
+    ],
+    "price": "0,00€",
+    "showPrice": false,
+    "link": "https://www.udemy.com/course/blender-introduccion-rig-y-animacion-de-personajes/?referralCode=5EC98A2E61AB28DFADB7",
+    "description": "En este curso aprenderás paso a paso como realizar un Rig de un modelo para posteriormente animarlo.",
+    "tag": "✨NUEVO",
+    "buttonText": "GRATIS",
+    "carouselInterval": 3000,
+    "order": 38
+  },
+  {
+    "id": "Ude-004",
+    "name": "Introduccion Hard Surface con Blender",
+    "category": "🎓Cursos",
+    "image": [
+      "/images/products/Ude-004-1.webp"
+    ],
+    "price": "0,00€",
+    "showPrice": false,
+    "link": "https://www.udemy.com/course/introduccion-hard-surface-con-blender/?referralCode=95F2C6A2C3BE850A9BD8",
+    "description": "Aprende los conceptos básicos utilizados en la industria profesional del modelado.",
+    "tag": "✨NUEVO",
+    "buttonText": "GRATIS",
+    "carouselInterval": 3000,
+    "order": 39
   }
 ]
