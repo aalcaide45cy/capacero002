@@ -14,6 +14,41 @@ export default function AnalyticsDashboard() {
     const [statsData, setStatsData] = useState([]);
     const [searchData, setSearchData] = useState([]);
     const [activeTab, setActiveTab] = useState('estadisticas'); // 'estadisticas' | 'buscador'
+    const [tableSearchQuery, setTableSearchQuery] = useState('');
+
+    // Date Formatter: Convierte "2026-02-28T13:45:42.000Z" a "28/02/2026 - 14:45"
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return String(dateStr);
+            return d.toLocaleDateString('es-ES', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }).replace(',', ' -');
+        } catch (e) {
+            return String(dateStr);
+        }
+    };
+
+    // Filter Logic
+    const filteredStats = statsData.filter(row => {
+        const query = tableSearchQuery.toLowerCase();
+        return (
+            (row.name && row.name.toLowerCase().includes(query)) ||
+            (row.id && String(row.id).toLowerCase().includes(query)) ||
+            (row.origin && String(row.origin).toLowerCase().includes(query))
+        );
+    });
+
+    const filteredSearch = searchData.filter(row => {
+        const query = tableSearchQuery.toLowerCase();
+        return (
+            (row.term && row.term.toLowerCase().includes(query)) ||
+            (row.userId && String(row.userId).toLowerCase().includes(query)) ||
+            (row.origin && String(row.origin).toLowerCase().includes(query))
+        );
+    });
 
     // Check localStorage on mount
     useEffect(() => {
@@ -143,28 +178,41 @@ export default function AnalyticsDashboard() {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-6 bg-zinc-900 p-1 rounded-xl w-fit">
-                    <button
-                        onClick={() => setActiveTab('estadisticas')}
-                        className={`px-6 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-all ${activeTab === 'estadisticas'
+                {/* Tabs & Search Bar */}
+                <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center mb-6">
+                    <div className="flex gap-2 bg-zinc-900 p-1 rounded-xl w-full sm:w-fit overflow-x-auto no-scrollbar">
+                        <button
+                            onClick={() => setActiveTab('estadisticas')}
+                            className={`px-4 sm:px-6 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-all whitespace-nowrap ${activeTab === 'estadisticas'
                                 ? 'bg-capaBlue text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white hover:bg-zinc-800'
-                            }`}
-                    >
-                        <BarChart2 className="w-5 h-5" />
-                        Productos (Rendimiento)
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('buscador')}
-                        className={`px-6 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-all ${activeTab === 'buscador'
+                                }`}
+                        >
+                            <BarChart2 className="w-5 h-5" />
+                            Productos (Rendimiento)
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('buscador')}
+                            className={`px-4 sm:px-6 py-2.5 rounded-lg flex items-center gap-2 font-semibold transition-all whitespace-nowrap ${activeTab === 'buscador'
                                 ? 'bg-capaBlue text-black shadow-lg'
                                 : 'text-gray-400 hover:text-white hover:bg-zinc-800'
-                            }`}
-                    >
-                        <Search className="w-5 h-5" />
-                        Búsquedas Analizadas
-                    </button>
+                                }`}
+                        >
+                            <Search className="w-5 h-5" />
+                            Búsquedas Analizadas
+                        </button>
+                    </div>
+
+                    <div className="relative w-full lg:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Buscar en la tabla..."
+                            value={tableSearchQuery}
+                            onChange={(e) => setTableSearchQuery(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-capaBlue transition-colors"
+                        />
+                    </div>
                 </div>
 
                 {/* Loading State */}
@@ -189,9 +237,9 @@ export default function AnalyticsDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-800/50">
-                                        {statsData.map((row, i) => (
+                                        {filteredStats.map((row, i) => (
                                             <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
-                                                <td className="p-4 text-gray-300 text-sm whitespace-nowrap">{row.date}</td>
+                                                <td className="p-4 text-gray-300 text-sm whitespace-nowrap">{formatDate(row.date)}</td>
                                                 <td className="p-4 text-capaBlue font-mono text-xs">{row.id}</td>
                                                 <td className="p-4 font-semibold text-white max-w-[300px] truncate" title={row.name}>{row.name}</td>
                                                 <td className="p-4 text-right">
@@ -205,8 +253,8 @@ export default function AnalyticsDashboard() {
                                                 <td className="p-4 text-gray-400 text-sm">{row.origin}</td>
                                             </tr>
                                         ))}
-                                        {statsData.length === 0 && !isLoading && (
-                                            <tr><td colSpan="6" className="text-center p-8 text-gray-500">No hay datos de productos todavía.</td></tr>
+                                        {filteredStats.length === 0 && !isLoading && (
+                                            <tr><td colSpan="6" className="text-center p-8 text-gray-500">No hay datos que coincidan con la búsqueda.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -229,9 +277,9 @@ export default function AnalyticsDashboard() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-800/50">
-                                        {searchData.map((row, i) => (
+                                        {filteredSearch.map((row, i) => (
                                             <tr key={i} className="hover:bg-zinc-800/50 transition-colors">
-                                                <td className="p-4 text-gray-300 text-sm whitespace-nowrap">{row.date}</td>
+                                                <td className="p-4 text-gray-300 text-sm whitespace-nowrap">{formatDate(row.date)}</td>
                                                 <td className="p-4 text-white font-bold">"{row.term}"</td>
                                                 <td className="p-4 text-gray-400 text-center">{row.count}</td>
                                                 <td className="p-4 text-capaBlue font-mono text-xs">{row.userId}</td>
@@ -244,8 +292,8 @@ export default function AnalyticsDashboard() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {searchData.length === 0 && !isLoading && (
-                                            <tr><td colSpan="7" className="text-center p-8 text-gray-500">No hay búsquedas registradas todavía.</td></tr>
+                                        {filteredSearch.length === 0 && !isLoading && (
+                                            <tr><td colSpan="7" className="text-center p-8 text-gray-500">No hay búsquedas que coincidan.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
