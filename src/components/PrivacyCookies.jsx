@@ -16,7 +16,7 @@ export default function PrivacyCookies() {
                     <p className="text-gray-400">Los datos que nos proporcionas libremente a través de nuestros formularios (nombre, correo electrónico, país, etc.) se guardan y protegen con la única finalidad de:</p>
                     <ul className="list-disc pl-6 mt-4 space-y-3 text-gray-400">
                         <li>Garantizar el acceso a la plataforma y tramitación de compras.</li>
-                        <li>Enviar comunicaciones relevantes, descuentos de lanzamiento y novedades estrcitamente ligadas al ecosistema de la Impresión 3D.</li>
+                        <li>Enviar comunicaciones relevantes, descuentos de lanzamiento y novedades estrictamente ligadas al ecosistema de la Impresión 3D.</li>
                         <li>Proporcionar soporte técnico y resolver tus dudas de alumno.</li>
                     </ul>
                 </section>

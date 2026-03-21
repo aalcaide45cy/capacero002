@@ -5,7 +5,7 @@ const PAISES = [
     "Afganistán", "Albania", "Alemania", "Andorra", "Angola", "Antigua y Barbuda", "Arabia Saudita", "Argelia", "Argentina", "Armenia", "Australia", "Austria", "Azerbaiyán", "Bahamas", "Bangladés", "Barbados", "Baréin", "Bélgica", "Belice", "Benín", "Bielorrusia", "Birmania", "Bolivia", "Bosnia y Herzegovina", "Botsuana", "Brasil", "Brunéi", "Bulgaria", "Burkina Faso", "Burundi", "Bután", "Cabo Verde", "Camboya", "Camerún", "Canadá", "Catar", "Chad", "Chile", "China", "Chipre", "Ciudad del Vaticano", "Colombia", "Comoras", "Corea del Norte", "Corea del Sur", "Costa de Marfil", "Costa Rica", "Croacia", "Cuba", "Dinamarca", "Dominica", "Ecuador", "Egipto", "El Salvador", "Emiratos Árabes Unidos", "Eritrea", "Eslovaquia", "Eslovenia", "España", "Estados Unidos", "Estonia", "Etiopía", "Filipinas", "Finlandia", "Fiyi", "Francia", "Gabón", "Gambia", "Georgia", "Ghana", "Granada", "Grecia", "Guatemala", "Guyana", "Guinea", "Guinea ecuatorial", "Guinea-Bisáu", "Haití", "Honduras", "Hungría", "India", "Indonesia", "Irak", "Irán", "Irlanda", "Islandia", "Islas Marshall", "Islas Salomón", "Israel", "Italia", "Jamaica", "Japón", "Jordania", "Kazajistán", "Kenia", "Kirguistán", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letonia", "Líbano", "Liberia", "Libia", "Liechtenstein", "Lituania", "Luxemburgo", "Macedonia del Norte", "Madagascar", "Malasia", "Malaui", "Maldivas", "Malí", "Malta", "Marruecos", "Mauricio", "Mauritania", "México", "Micronesia", "Moldavia", "Mónaco", "Mongolia", "Montenegro", "Mozambique", "Namibia", "Nauru", "Nepal", "Nicaragua", "Níger", "Nigeria", "Noruega", "Nueva Zelanda", "Omán", "Países Bajos", "Pakistán", "Palaos", "Panamá", "Papúa Nueva Guinea", "Paraguay", "Perú", "Polonia", "Portugal", "Reino Unido", "República Centroafricana", "República Checa", "República del Congo", "República Democrática del Congo", "República Dominicana", "Ruanda", "Rumanía", "Rusia", "Samoa", "San Cristóbal y Nieves", "San Marino", "San Vicente y las Granadinas", "Santa Lucía", "Santo Tomé y Príncipe", "Senegal", "Serbia", "Seychelles", "Sierra Leona", "Singapur", "Siria", "Somalia", "Sri Lanka", "Suazilandia", "Sudáfrica", "Sudán", "Sudán del Sur", "Suecia", "Suiza", "Surinam", "Tailandia", "Tanzania", "Tayikistán", "Timor Oriental", "Togo", "Tonga", "Trinidad y Tobago", "Túnez", "Turkmenistán", "Turquía", "Tuvalu", "Ucrania", "Uganda", "Uruguay", "Uzbekistán", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Yibuti", "Zambia", "Zimbabue"
 ];
 
-export default function CourseLeadForm() {
+export default function CourseLeadForm({ course }) {
     const [status, setStatus] = useState('idle'); // idle, loading, success, error
     const [message, setMessage] = useState('');
 
@@ -38,9 +38,9 @@ export default function CourseLeadForm() {
 
     return (
         <div className="bg-white dark:bg-gray-800 p-8 md:p-10 rounded-3xl shadow-2xl max-w-2xl mx-auto border border-gray-100 dark:border-gray-700">
-            <h3 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3 text-center">Únete a la Lista de Espera</h3>
+            <h3 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-3 text-center">{course?.Titulo_Formulario || "Únete a la Lista de Espera"}</h3>
             <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg mb-8 text-center max-w-lg mx-auto">
-                Apúntate sin compromiso y recibe un descuento exclusivo al abrir plazas.
+                {course?.Subtitulo_Formulario || "Apúntate sin compromiso y recibe un descuento exclusivo al abrir plazas."}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,7 +103,7 @@ export default function CourseLeadForm() {
                     disabled={status === 'loading'}
                     className="w-full text-white bg-blue-600 hover:bg-blue-500 focus:ring-4 focus:outline-none focus:ring-blue-600/50 font-extrabold rounded-xl text-lg md:text-xl px-5 py-4 text-center flex justify-center items-center mt-8 transition-all shadow-[0_0_20px_rgba(59,130,246,0.5)] active:scale-95 cursor-pointer"
                 >
-                    {status === 'loading' ? <Loader2 className="h-6 w-6 animate-spin" /> : 'Reservar mi Plaza Gratis'}
+                    {status === 'loading' ? <Loader2 className="h-6 w-6 animate-spin" /> : (course?.Texto_Boton_Formulario || 'Reservar mi Plaza Gratis')}
                 </button>
 
                 {/* Feedback del sistema */}
