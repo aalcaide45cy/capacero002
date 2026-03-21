@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PlayCircle, CheckCircle2, ChevronRight, Check, ShieldCheck, ExternalLink } from 'lucide-react';
 import CourseLeadForm from './CourseLeadForm';
 
