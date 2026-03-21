@@ -27,34 +27,36 @@ export default function Header({ isSticky, compactLogo = false }) {
                     />
                 </div>
 
-                {/* Social Buttons */}
-                <div className={`flex items-center justify-center gap-4 -mb-6 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-                    {/* TikTok - Left */}
-                    <a
-                        href="https://www.tiktok.com/@capacero"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => trackSocialClick('TikTok')}
-                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group"
-                        aria-label="TikTok"
-                    >
-                        <span className="text-capaBlue group-hover:text-white transition-colors">
-                            <TikTokIcon color="currentColor" />
-                        </span>
-                    </a>
+                {/* Social Buttons (Ocultados en Landing Pages) */}
+                {!compactLogo && (
+                    <div className={`flex items-center justify-center gap-4 -mb-6 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                        {/* TikTok - Left */}
+                        <a
+                            href="https://www.tiktok.com/@capacero"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => trackSocialClick('TikTok')}
+                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group"
+                            aria-label="TikTok"
+                        >
+                            <span className="text-capaBlue group-hover:text-white transition-colors">
+                                <TikTokIcon color="currentColor" />
+                            </span>
+                        </a>
 
-                    {/* YouTube - Right */}
-                    <a
-                        href="https://www.youtube.com/@CapaCero0"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => trackSocialClick('YouTube')}
-                        className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
-                        aria-label="YouTube"
-                    >
-                        <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
-                    </a>
-                </div>
+                        {/* YouTube - Right */}
+                        <a
+                            href="https://www.youtube.com/@CapaCero0"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => trackSocialClick('YouTube')}
+                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
+                            aria-label="YouTube"
+                        >
+                            <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
+                        </a>
+                    </div>
+                )}
             </div>
         </header>
     );

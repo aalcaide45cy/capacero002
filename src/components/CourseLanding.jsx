@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
-import { PlayCircle, CheckCircle2, ChevronRight, MonitorPlay, Zap, Users, ExternalLink, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlayCircle, CheckCircle2, ChevronRight, Check } from 'lucide-react';
 import CourseLeadForm from './CourseLeadForm';
 
 export default function CourseLanding({ course }) {
     const [showVideo, setShowVideo] = useState(false);
+    const [openFaq, setOpenFaq] = useState(null);
     
     // Limpieza de datos
     const discountStr = course.discount_price ? String(course.discount_price).trim() : "";
     const hasDiscount = discountStr !== "" && discountStr !== "0" && discountStr !== "#";
     
     const udemyLink = course.udemy_link ? String(course.udemy_link).trim() : "";
-    const isAvailable = udemyLink.length > 5 && !udemyLink.includes('#');
+    const isUdemyAvailable = udemyLink.length > 5 && !udemyLink.includes('#'); // Renamed to avoid conflict
+    
+    // New primary availability check
+    const isAvailable = course.tags && course.tags.includes('abierto');
 
     const videoUrl = course.video_url ? String(course.video_url).trim() : "";
     const hasVideo = videoUrl.length > 5 && !videoUrl.includes('#');
@@ -46,26 +50,46 @@ export default function CourseLanding({ course }) {
 
     const featureItems = parseList(course.features_desc);
 
+    const faqs = [
+        {
+            q: "¿Necesito tener una impresora Bambu Lab para aprovechar el curso?",
+            a: "Sí, el curso está diseñado específicamente para exprimir al máximo el ecosistema nativo de Bambu Lab y su laminador líder en el sector, Bambu Studio."
+        },
+        {
+            q: "¿Se abordan impresiones multicolores con el AMS?",
+            a: "Por supuesto. Tenemos un módulo entero dedicado a dominar el pintado digital, la purga inteligente y las transiciones para rentabilizar el AMS sin malgastar material."
+        },
+        {
+            q: "¿Es adecuado si soy totalmente principiante al laminador?",
+            a: "Absolutamente sí. Empezamos desde la interfaz más básica de Bambu Studio y escalamos rápidamente hacia calibraciones avanzadas y creación de perfiles de materiales técnicos."
+        },
+        {
+            q: "¿Cuánto tiempo tendré acceso al programa?",
+            a: "El acceso es vitalicio (de por vida). Podrás entrar a repasar las lecciones y acceder a las futuras actualizaciones del software siempre que lo necesites."
+        },
+        {
+            q: "¿Se tratan soluciones a problemas comunes?",
+            a: "Toda una sección de Troubleshooting (Solución de problemas) te enseñará a diagnosticar fallos recurrentes para que no vuelvas a perder impresiones largas de muchísimas horas a ciegas."
+        }
+    ];
+
     return (
         <div className="w-full bg-black min-h-screen text-white font-sans mt-[-80px] selection:bg-blue-600/30">
             
             {/* ====== 1. HERO SECTION (Video Central) ====== */}
-            <div className="relative pt-32 pb-24 px-4 overflow-hidden border-b border-zinc-900">
+            <div className="relative pt-2 pb-24 px-4 overflow-hidden border-b border-zinc-900">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
                     <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-[100%] blur-[150px]"></div>
                 </div>
 
-                <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center text-center">
-                    {course.tag && (
-                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-gray-300 text-sm font-semibold tracking-widest mb-8">
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                            {course.tag.replace('#', 'Exclusivo')}
-                        </div>
-                    )}
-                    
-                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
-                        {course.name}
-                    </h1>
+                {/* Contenedor central acortado en padding y sin margen forzado */}
+                <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col items-center pt-2">
+                    {/* El título sube hacia arriba al quitar el mb-8 del logo (que ahora es compactLogo) */}
+                    <div className="text-center max-w-4xl mx-auto mb-12">
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
+                            {course.name}
+                        </h1>
+                    </div>
                     
                     {course.hero_subtitle && (
                         <p className="text-xl md:text-2xl lg:text-[26px] text-blue-400 font-medium mb-10 max-w-4xl leading-relaxed drop-shadow-sm">
@@ -186,6 +210,40 @@ export default function CourseLanding({ course }) {
                     </div>
                 </div>
             )}
+
+            {/* ====== PREGUNTAS FRECUENTES ====== */}
+            <div className="py-24 md:py-32 bg-black relative z-10 border-t border-zinc-900 border-b">
+                <div className="max-w-3xl mx-auto px-6">
+                    <div className="text-center mb-16">
+                        <div className="inline-block bg-blue-600 text-white font-black px-6 py-2 rounded-full tracking-widest text-sm mb-6 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                            PREGUNTAS
+                        </div>
+                        <h2 className="text-4xl md:text-5xl lg:text-[54px] font-extrabold text-white mb-6 tracking-tight leading-tight">Preguntas Frecuentes</h2>
+                        <p className="text-xl md:text-2xl text-gray-400 font-medium">Todas tus dudas resueltas en un único lugar.</p>
+                    </div>
+                    
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+                        {faqs.map((faq, index) => (
+                            <div key={index} className="border-b border-zinc-800 last:border-0 transition-colors">
+                                <button 
+                                    onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                                    className={`w-full px-6 py-6 md:px-8 md:py-8 text-left flex justify-between items-center bg-transparent cursor-pointer transition-colors ${openFaq === index ? 'bg-zinc-800/30' : 'hover:bg-zinc-800/20'}`}
+                                >
+                                    <span className="font-bold text-white text-lg md:text-xl pr-8">{faq.q}</span>
+                                    <span className="text-gray-400 text-3xl font-light w-8 h-8 flex items-center justify-center flex-shrink-0">
+                                        {openFaq === index ? '−' : '+'}
+                                    </span>
+                                </button>
+                                {openFaq === index && (
+                                    <div className="px-6 pb-6 md:px-8 md:pb-8 text-gray-300 text-lg md:text-xl leading-relaxed bg-zinc-800/10">
+                                        <p>{faq.a}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             {/* ====== 4. ENROLLMENT / CTA FINAL ====== */}
             <div id="enroll-section" className="py-24 md:py-32 relative overflow-hidden bg-black">
