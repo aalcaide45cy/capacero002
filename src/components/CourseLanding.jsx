@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlayCircle, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { PlayCircle, CheckCircle2, ChevronRight, Check, ShieldCheck, ExternalLink } from 'lucide-react';
 import CourseLeadForm from './CourseLeadForm';
 
 export default function CourseLanding({ course }) {
@@ -92,10 +92,22 @@ export default function CourseLanding({ course }) {
                     </div>
                     
                     {course.hero_subtitle && (
-                        <p className="text-xl md:text-2xl lg:text-[26px] text-blue-400 font-medium mb-10 max-w-4xl leading-relaxed drop-shadow-sm">
+                        <p className="text-xl md:text-2xl lg:text-[26px] text-blue-400 font-medium mb-6 max-w-4xl leading-relaxed drop-shadow-sm text-center">
                             {course.hero_subtitle}
                         </p>
                     )}
+
+                    {/* ✅ Ventajas Rápidas Hero */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-10 w-full">
+                        <div className="flex items-center gap-2 text-gray-200 font-semibold text-lg bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800">
+                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-4 h-4 stroke-[4]" /></div>
+                            Sin conocimientos previos
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-200 font-semibold text-lg bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800">
+                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-4 h-4 stroke-[4]" /></div>
+                            Sin malgastar bobinas en pruebas
+                        </div>
+                    </div>
 
                     {/* El Gran Video Central */}
                     <div className="w-full relative aspect-video rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-zinc-800 bg-zinc-950 group">
@@ -141,9 +153,9 @@ export default function CourseLanding({ course }) {
 
             {/* ====== 2. MODULOS (Tarjetas por Temario) ====== */}
             {(modules.length > 0 || course.modules_title) && (
-                <div className="py-24 md:py-32 bg-zinc-950 border-y border-zinc-900">
+                <div className="py-10 md:py-16 bg-zinc-950 border-y border-zinc-900">
                     <div className="max-w-6xl mx-auto px-6">
-                        <div className="text-center mb-16 md:mb-24 px-4">
+                        <div className="text-center mb-12 md:mb-16 px-4">
                             <div className="inline-block bg-blue-600 text-white font-black px-6 py-2 rounded-full uppercase tracking-widest text-sm mb-8 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                                 EL PROGRAMA
                             </div>
@@ -179,8 +191,8 @@ export default function CourseLanding({ course }) {
 
             {/* ====== 3. CARACTERÍSTICAS ACOMPAÑAMIENTO ====== */}
             {(featureItems.length > 0 || course.features_title) && (
-                <div className="py-24 md:py-32 bg-black border-b border-zinc-900">
-                    <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-20 items-center">
+                <div className="py-10 md:py-16 bg-black border-b border-zinc-900">
+                    <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
                         <div className="order-2 md:order-1">
                             <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-10 leading-tight md:leading-[1.15]">
                                 {course.features_title || "Todo lo que necesitas para estar acompañado, en un único lugar."}
@@ -212,9 +224,9 @@ export default function CourseLanding({ course }) {
             )}
 
             {/* ====== PREGUNTAS FRECUENTES ====== */}
-            <div className="py-24 md:py-32 bg-black relative z-10 border-t border-zinc-900 border-b">
+            <div className="py-10 md:py-16 bg-zinc-950 relative z-10 border-b border-zinc-900">
                 <div className="max-w-3xl mx-auto px-6">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-12">
                         <div className="inline-block bg-blue-600 text-white font-black px-6 py-2 rounded-full tracking-widest text-sm mb-6 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                             PREGUNTAS
                         </div>
@@ -246,7 +258,7 @@ export default function CourseLanding({ course }) {
             </div>
 
             {/* ====== 4. ENROLLMENT / CTA FINAL ====== */}
-            <div id="enroll-section" className="py-24 md:py-32 relative overflow-hidden bg-black">
+            <div id="enroll-section" className="py-12 md:py-20 relative overflow-hidden bg-black">
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[300px] max-w-2xl bg-blue-600/20 rounded-[100%] blur-[120px] pointer-events-none"></div>
 
                 <div className="max-w-4xl mx-auto px-4 relative z-10 text-center">
