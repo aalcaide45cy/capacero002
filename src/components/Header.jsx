@@ -14,16 +14,16 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function Header({ isSticky }) {
+export default function Header({ isSticky, compactLogo = false }) {
     return (
         <header className="w-full p-6 bg-gradient-to-b from-black to-transparent">
             <div className="max-w-7xl mx-auto">
                 {/* Logo */}
-                <div className="flex items-center justify-center mb-10 px-4">
+                <div className={`flex items-center justify-center px-4 transition-all duration-300 ${compactLogo ? 'mb-4' : 'mb-10'}`}>
                     <img
                         src="/logo-capa-cero.webp"
                         alt="CAPA CERO"
-                        className="w-full max-w-sm h-auto breathe-animation rounded-2xl"
+                        className={`object-contain breathe-animation transition-all duration-300 ${compactLogo ? 'w-10 h-10 md:w-[50px] md:h-[50px] rounded-lg' : 'w-full max-w-sm h-auto rounded-2xl'}`}
                     />
                 </div>
 

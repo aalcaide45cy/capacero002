@@ -120,9 +120,6 @@ export default function CourseLanding({ course }) {
                 <div className="py-24 md:py-32 bg-zinc-950 border-y border-zinc-900">
                     <div className="max-w-6xl mx-auto px-6">
                         <div className="text-center mb-16 md:mb-24 px-4">
-                            <div className="mb-6 md:mb-8 animate-fade-in flex justify-center">
-                                <img src={course.image_url.startsWith('http') ? course.image_url : `/images/Bambu-Lab-Logo.webp`} alt={`${course.name} Logo`} className="h-[50px] w-auto object-contain mx-auto drop-shadow-[0_0_30px_rgba(59,130,246,0.6)]" />
-                            </div>
                             <div className="inline-block bg-blue-600 text-white font-black px-6 py-2 rounded-full uppercase tracking-widest text-sm mb-8 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                                 EL PROGRAMA
                             </div>
