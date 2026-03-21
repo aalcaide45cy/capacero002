@@ -82,9 +82,9 @@ export default function CourseLeadForm({ course }) {
                         </select>
                     </div>
 
-                    <div className="relative md:col-span-2">
-                        <Calendar className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-                        <input type="date" name="fecha_nacimiento" className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow font-medium" />
+                    <div className="relative md:col-span-2 overflow-hidden rounded-xl">
+                        <Calendar className="absolute left-4 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
+                        <input type="date" name="fecha_nacimiento" className="w-full max-w-full pl-11 pr-2 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-shadow font-medium text-sm md:text-base box-border block" />
                     </div>
                 </div>
 
