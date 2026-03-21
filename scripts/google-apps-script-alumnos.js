@@ -23,14 +23,15 @@ function doPost(e) {
     var timestamp = new Date();
     
     // Añadimos una nueva fila a tu Excel al instante respetando el orden de columnas:
-    // A: timestamp, B: nombre, C: apellidos, D: email, E: telefono, F: fecha_nacimiento
+    // A: timestamp, B: nombre, C: apellidos, D: email, E: telefono, F: fecha_nacimiento, G: pais
     sheet.appendRow([
       timestamp,
       data.nombre || "",
       data.apellidos || "",
       data.email || "",
       data.telefono || "",
-      data.fecha_nacimiento || ""
+      data.fecha_nacimiento || "",
+      data.pais || ""
     ]);
     
     return ContentService.createTextOutput(JSON.stringify({"status": "success"}))
