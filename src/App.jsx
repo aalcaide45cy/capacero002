@@ -8,6 +8,7 @@ import ProductModal from './components/ProductModal';
 import { loadProducts, filterProducts } from './utils/loadProducts';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import CourseGrid from './components/CourseGrid';
+import PrivacyCookies from './components/PrivacyCookies';
 
 function App() {
     // Intercepción de ruta para el Panel Privado de Estadísticas
@@ -23,6 +24,18 @@ function App() {
                 <Header isSticky={false} />
                 <div style={{ paddingTop: '80px' }}>
                     <CourseGrid />
+                </div>
+            </div>
+        );
+    }
+    
+    // Intercepción de ruta para Privacidad y Legal
+    if (currentPath === '/politica-privacidad' || currentPath === '/politica-privacidad/') {
+        return (
+            <div className="min-h-screen bg-black">
+                <Header isSticky={false} />
+                <div style={{ paddingTop: '80px' }}>
+                    <PrivacyCookies />
                 </div>
             </div>
         );

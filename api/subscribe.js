@@ -21,7 +21,18 @@ export default async function handler(req, res) {
         
         const googleResponse = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
-            body: JSON.stringify({ nombre, apellidos, email, telefono, fecha_nacimiento, pais })
+            body: JSON.stringify({ 
+                nombre, 
+                apellidos, 
+                email, 
+                telefono, 
+                fecha_nacimiento, 
+                // Enviar la clave multiplicada previniendo errores tipográficos en el Excel del cliente
+                pais, 
+                "país": pais, 
+                "pais ": pais, 
+                "país ": pais 
+            })
         });
 
         if (!googleResponse.ok) {

@@ -26,7 +26,7 @@ export default function CookieBanner() {
                     <p className="text-sm md:text-base leading-relaxed">
                         Utilizamos cookies propias y de terceros para analizar el tráfico de la web, mejorar la experiencia de usuario y ofrecerte contenido relevante. 
                         Si continúas navegando, consideraremos que aceptas plenamente su uso. 
-                        Puedes consultar los detalles en nuestra <a href="#" className="text-blue-500 font-bold hover:underline">Política de Privacidad y Cookies</a>.
+                        Puedes consultar los detalles en nuestra <a href="/politica-privacidad" className="text-blue-500 font-bold hover:underline">Política de Privacidad y Cookies</a>.
                     </p>
                 </div>
                 <div className="flex w-full md:w-auto gap-4 flex-shrink-0">

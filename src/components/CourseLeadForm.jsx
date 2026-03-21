@@ -94,7 +94,7 @@ export default function CourseLeadForm() {
                         <input required id="privacy" name="privacy" type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 transition-colors cursor-pointer" />
                     </div>
                     <label htmlFor="privacy" className="ms-3 text-xs font-medium text-gray-500 dark:text-gray-400 leading-snug cursor-pointer">
-                        He leído y acepto la <a href="#" className="text-blue-600 hover:underline dark:text-blue-500">Política de Privacidad</a> y consiento recibir información y recursos gratuitos asociados al ecosistema 3D.
+                        He leído y acepto la <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-500">Política de Privacidad</a> y consiento recibir información y recursos gratuitos vinculados.
                     </label>
                 </div>
 
