@@ -98,14 +98,14 @@ export default function CourseLanding({ course }) {
                     )}
 
                     {/* ✅ Ventajas Rápidas Hero */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-10 w-full">
-                        <div className="flex items-center gap-2 text-gray-200 font-semibold text-lg bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800">
-                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-4 h-4 stroke-[4]" /></div>
-                            Sin conocimientos previos
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 w-full">
+                        <div className="flex items-center gap-3 text-gray-200 font-semibold text-[17px] bg-zinc-900 hover:bg-zinc-800 transition-colors px-6 py-2.5 rounded-full border border-zinc-700 shadow-lg">
+                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-5 h-5 stroke-[4]" /></div>
+                            Sin experiencia previa en 3D
                         </div>
-                        <div className="flex items-center gap-2 text-gray-200 font-semibold text-lg bg-zinc-900/50 px-4 py-2 rounded-full border border-zinc-800">
-                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-4 h-4 stroke-[4]" /></div>
-                            Sin malgastar bobinas en pruebas
+                        <div className="flex items-center gap-3 text-gray-200 font-semibold text-[17px] bg-zinc-900 hover:bg-zinc-800 transition-colors px-6 py-2.5 rounded-full border border-zinc-700 shadow-lg">
+                            <div className="bg-green-500 rounded text-black p-0.5"><Check className="w-5 h-5 stroke-[4]" /></div>
+                            Sin ser un experto en mecánica y G-Code
                         </div>
                     </div>
 
