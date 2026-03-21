@@ -21,7 +21,7 @@ function App() {
     if (currentPath === '/cursos' || currentPath === '/cursos/') {
         return (
             <div className="min-h-screen bg-black">
-                <Header isSticky={false} />
+                <Header isSticky={false} compactLogo={true} />
                 <div style={{ paddingTop: '80px' }}>
                     <CourseGrid />
                 </div>
@@ -33,7 +33,7 @@ function App() {
     if (currentPath === '/politica-privacidad' || currentPath === '/politica-privacidad/') {
         return (
             <div className="min-h-screen bg-black">
-                <Header isSticky={false} />
+                <Header isSticky={false} compactLogo={true} />
                 <div style={{ paddingTop: '80px' }}>
                     <PrivacyCookies />
                 </div>
