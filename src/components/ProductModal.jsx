@@ -203,9 +203,33 @@ export default function ProductModal({ product, onClose }) {
 
                         {/* Description */}
                         {product.description && (
-                            <p className="text-gray-300 text-lg leading-relaxed mb-8">
+                            <p className="text-gray-300 text-lg leading-relaxed mb-6">
                                 {product.description}
                             </p>
+                        )}
+
+                        {/* Ventajas y Desventajas (Amazon Affiliates Value-Add) */}
+                        {(product.ventaja_1 || product.ventaja_2 || product.desventaja_1) && (
+                            <div className="mb-8 flex flex-col gap-3">
+                                {product.ventaja_1 && (
+                                    <div className="flex items-start gap-3 text-green-400 bg-green-900/10 p-4 rounded-xl border border-green-800/30">
+                                        <span className="text-xl leading-none mt-0.5">✅</span>
+                                        <span className="text-[15px] font-medium leading-snug">{product.ventaja_1}</span>
+                                    </div>
+                                )}
+                                {product.ventaja_2 && (
+                                    <div className="flex items-start gap-3 text-green-400 bg-green-900/10 p-4 rounded-xl border border-green-800/30">
+                                        <span className="text-xl leading-none mt-0.5">✅</span>
+                                        <span className="text-[15px] font-medium leading-snug">{product.ventaja_2}</span>
+                                    </div>
+                                )}
+                                {product.desventaja_1 && (
+                                    <div className="flex items-start gap-3 text-red-400 bg-red-900/10 p-4 rounded-xl border border-red-800/30">
+                                        <span className="text-xl leading-none mt-0.5">❌</span>
+                                        <span className="text-[15px] font-medium leading-snug">{product.desventaja_1}</span>
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         {/* CTA Button */}

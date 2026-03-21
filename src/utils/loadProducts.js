@@ -18,6 +18,9 @@ function normalizeProduct(product) {
         name: product.name || product.title, // Soporta tanto 'name' como 'title' antiguo
         category: product.category || 'General',
         description: product.description || '',
+        ventaja_1: product.ventaja_1 || '',
+        ventaja_2: product.ventaja_2 || '',
+        desventaja_1: product.desventaja_1 || '',
 
         // Normalizar imágenes: siempre array
         image: Array.isArray(product.image) ? product.image : [product.image],

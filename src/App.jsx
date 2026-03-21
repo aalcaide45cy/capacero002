@@ -7,12 +7,25 @@ import ProductGrid from './components/ProductGrid';
 import ProductModal from './components/ProductModal';
 import { loadProducts, filterProducts } from './utils/loadProducts';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import CourseGrid from './components/CourseGrid';
 
 function App() {
     // Intercepción de ruta para el Panel Privado de Estadísticas
     const currentPath = window.location.pathname;
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return <AnalyticsDashboard />;
+    }
+
+    // Intercepción de ruta para la Academia de Cursos
+    if (currentPath === '/cursos' || currentPath === '/cursos/') {
+        return (
+            <div className="min-h-screen bg-black">
+                <Header isSticky={false} />
+                <div style={{ paddingTop: '80px' }}>
+                    <CourseGrid />
+                </div>
+            </div>
+        );
     }
 
     const [allProducts, setAllProducts] = useState([]);

@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "update-products": "node scripts/update-products.js",
-    "prebuild": "npm run update-products"
+    "update-data": "node scripts/update-products.js && node scripts/update-cursos.js",
+    "prebuild": "npm run update-data"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.24",

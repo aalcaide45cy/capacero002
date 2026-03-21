@@ -1,0 +1,30 @@
+[
+  {
+    "id": "curso-bambu1",
+    "name": "Experto en Bambu Studio y Laminado 3D",
+    "tag": "Acceso VIP",
+    "description": "Domina la impresión 3D paso a paso con proyectos reales y lleva tus impresiones al siguiente nivel entendiendo por fin lo que haces.",
+    "video_url": "#",
+    "image_url": "#",
+    "udemy_link": "#",
+    "price": "60",
+    "discount_price": "20",
+    "order": 1,
+    "hero_subtitle": "Sin necesidad de fallar decenas de impresiones. Sin frustrarte calibrando a ciegas.",
+    "modules_title": "Con una ruta bien guiada, directa al grano y con piezas reales.",
+    "module_1_title": "Bambu Studio en profundidad",
+    "module_1_desc": "Dominio de la interfaz y atajos\nParámetros globales de calidad\nGestión avanzada del ecosistema AMS\nSoportes inteligentes y adherencia perfecta",
+    "module_2_title": "Gestión de Materiales y Perfiles",
+    "module_2_desc": "Entender cómo exprimir PLA, PETG y ABS\nControl absoluto de temperaturas y retracciones\nCurvas de ventilación\nCalibración y perfiles a medida",
+    "module_3_title": "Trucos nivel Pro",
+    "module_3_desc": "Reducir tiempos de impresión un 30%\nUso de modificadores por zonas\nPlanchado (ironing) para acabados a espejo\nCorte de piezas gigantes",
+    "module_4_title": "Impresión Multicolor con AMS",
+    "module_4_desc": "Pintado de modelos digitales\nReducción de residuos (purge depot)\nTorres de purgado eficientes\nTexto y logos incrustados",
+    "module_5_title": "Solución de Problemas (Troubleshooting)",
+    "module_5_desc": "Adiós definitivo al Warping\nCómo evitar el Stringing (hilitos)\nDesatascos en hotends fríos y calientes\nMantenimiento básico de las varillas y correas",
+    "module_6_title": "Rentabiliza tu impresora",
+    "module_6_desc": "Cálculo de costes por pieza\nDónde encontrar nichos para 3D\nPlataformas de modelos comerciales\nCómo presupuestar a un cliente final",
+    "features_title": "Todo lo que necesitas para imprimir tranquilo, sin dolores de cabeza.",
+    "features_desc": "Chat privado directo conmigo\nResolución de dudas sobre impresiones fallidas\nActualizaciones con las nuevas versiones del laminador\nAcceso a perfiles creados por mí\nComunidad de makers para inspirarte"
+  }
+]
