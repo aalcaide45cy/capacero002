@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
         // 2. REENVÍO A GOOGLE SHEETS (VÍA APPS SCRIPT)
         // Usamos la URL que generó el usuario del Apps Script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSRfnlCNi4vDwyPw4e7qIvXo5jn3Yd3WT_h4uwj8-pQf2NRJ-B40uSG2_bzOpbsow0/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzbsue6Q_3_RaxeEpTk-BH6c6X3RffmYEQ5EnxjYGA-7wFa3WIKqJsGgSYXuUyKJbY_/exec";
         
         const googleResponse = await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
