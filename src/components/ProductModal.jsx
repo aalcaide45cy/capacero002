@@ -210,7 +210,11 @@ export default function ProductModal({ product, onClose }) {
 
                         {/* Ventajas y Desventajas (Amazon Affiliates Value-Add) */}
                         {(product.ventaja_1 || product.ventaja_2 || product.desventaja_1) && (
-                            <div className="mb-8 flex flex-col gap-3">
+                            <div className="mb-8">
+                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <span className="text-capaBlue">⭐</span> Análisis Experto
+                                </h3>
+                                <div className="flex flex-col gap-3">
                                 {product.ventaja_1 && (
                                     <div className="flex items-start gap-3 text-green-400 bg-green-900/10 p-4 rounded-xl border border-green-800/30">
                                         <span className="text-xl leading-none mt-0.5">✅</span>
@@ -229,6 +233,7 @@ export default function ProductModal({ product, onClose }) {
                                         <span className="text-[15px] font-medium leading-snug">{product.desventaja_1}</span>
                                     </div>
                                 )}
+                                </div>
                             </div>
                         )}
 
@@ -240,6 +245,13 @@ export default function ProductModal({ product, onClose }) {
                             <span>{product.buttonText}</span>
                             <ExternalLink className="w-6 h-6" />
                         </button>
+
+                        {/* Amazon Affiliate Disclosure (Obligatorio) */}
+                        <div className="mt-4 text-center">
+                            <p className="text-xs text-zinc-500 font-medium px-4">
+                                En calidad de Afiliado de Amazon, Capa Cero obtiene ingresos por las compras adscritas que cumplen los requisitos aplicables.
+                            </p>
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>
