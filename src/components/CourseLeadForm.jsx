@@ -27,12 +27,16 @@ export default function CourseLeadForm({ course }) {
                 setStatus('success');
                 setMessage('¡Plaza reservada! Te avisaremos cuando el curso esté listo.');
                 e.target.reset(); // Vacia los campos tras el éxito
+            } else if (response.status === 409) {
+                const errData = await response.json();
+                setStatus('error'); // Mostramos error o un formato neutral
+                setMessage(errData.message || 'Ya estabas registrado previamente.');
             } else {
                 throw new Error("Error en el servidor");
             }
         } catch (error) {
             setStatus('error');
-            setMessage('Hubo un problema. Por favor, inténtalo más tarde.');
+            setMessage('Hubo un problema. Por favor, inténtalo más tarde. Tal vez ya estés registrado.');
         }
     };
 

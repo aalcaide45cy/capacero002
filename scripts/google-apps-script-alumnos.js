@@ -19,6 +19,20 @@ function doPost(e) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var data = JSON.parse(e.postData.contents);
     
+    // Comprobación de duplicados (Evitar que el mismo email se registre dos veces)
+    if (data.email) {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        var emailData = sheet.getRange(2, 4, lastRow - 1, 1).getValues(); // Columna 4 = D = Email
+        for (var i = 0; i < emailData.length; i++) {
+          if (emailData[i][0].toString().toLowerCase().trim() === data.email.toString().toLowerCase().trim()) {
+            return ContentService.createTextOutput(JSON.stringify({"status": "duplicate"}))
+              .setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+    }
+
     // Generamos la huella temporal (Fecha de suscripción)
     var timestamp = new Date();
     

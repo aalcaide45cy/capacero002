@@ -39,6 +39,11 @@ export default async function handler(req, res) {
             throw new Error(`Error en el destino (Google Sheets): ${googleResponse.status}`);
         }
 
+        const scriptResult = await googleResponse.json();
+        if (scriptResult && scriptResult.status === "duplicate") {
+            return res.status(409).json({ message: "¡Ya estás en nuestra lista prioritaria! No te preocupes, guardamos tu sitio." });
+        }
+
         // 3. (OPCIONAL EN EL FUTURO) REENVÍO A MAILERLITE / BREVO
         // Aquí añadiremos el fetch a la API de MailerLite cuando esté la cuenta creada.
 
