@@ -145,29 +145,35 @@ async function main() {
         const jsonLd = {
             "@context": "https://schema.org",
             "@type": "ItemList",
-            "itemListElement": allProducts.map((p, index) => ({
-                "@type": "ListItem",
-                "position": index + 1,
-                "url": `https://capacero.vercel.app/producto/${p.id}`,
-                "item": {
+            "itemListElement": allProducts.map((p, index) => {
+                const item = {
                     "@type": "Product",
                     "name": p.name,
                     "description": p.description || p.name,
                     "image": p.image && p.image.length > 0 ? `https://capacero.vercel.app${p.image[0]}` : "https://capacero.vercel.app/logo-capa-cero-small.png",
-                    "offers": {
+                };
+                // Only include static price in SEO if showPrice is explicitly true
+                if (p.showPrice && p.price) {
+                    item.offers = {
                         "@type": "Offer",
-                        "price": p.price ? p.price.replace(/[^\d.,]/g, '').replace(',', '.') || '0' : '0',
+                        "price": p.price.replace(/[^\d.,]/g, '').replace(',', '.') || '0',
                         "priceCurrency": "EUR",
                         "availability": "https://schema.org/InStock"
-                    }
+                    };
                 }
-            }))
+                return {
+                    "@type": "ListItem",
+                    "position": index + 1,
+                    "url": `https://capacero.vercel.app/producto/${p.id}`,
+                    "item": item
+                };
+            })
         };
 
         const jsonLdScript = `\n  <script type="application/ld+json" id="seo-jsonld">\n${JSON.stringify(jsonLd, null, 2)}\n  </script>\n`;
 
         // 2. Generate Fallback HTML (For crawlers that don't execute JS)
-        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/producto/${p.id}">${p.name}</a> - ${p.price}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
+        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/producto/${p.id}">${p.name}</a>${p.showPrice && p.price ? ` - ${p.price}` : ''}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
 
         // Remove old injections if they exist to prevent duplicates
         indexHtml = indexHtml.replace(/[\s]*<script type="application\/ld\+json" id="seo-jsonld">[\s\S]*?<\/script>[\s]*/, '');
