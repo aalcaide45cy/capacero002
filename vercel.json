@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/producto/:id",
+            "destination": "/api/render-product"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

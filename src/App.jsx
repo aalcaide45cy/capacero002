@@ -59,9 +59,18 @@ function App() {
             setFilteredProducts(products);
             setIsLoading(false);
 
-            // SEO Routing: Check if URL contains a product ID
-            const params = new URLSearchParams(window.location.search);
-            const productId = params.get('p');
+            // SEO Routing: Check if URL is /producto/id
+            const currentPath = window.location.pathname;
+            let productId = null;
+            
+            if (currentPath.startsWith('/producto/')) {
+                productId = currentPath.replace('/producto/', '');
+            } else {
+                // Retrocompatibilidad con enlaces antiguos ?p=
+                const params = new URLSearchParams(window.location.search);
+                productId = params.get('p');
+            }
+
             if (productId) {
                 const targetProduct = products.find(p => p.id === productId);
                 if (targetProduct) {
@@ -134,8 +143,8 @@ function App() {
 
     const handleProductClick = (product) => {
         setSelectedProduct(product);
-        // SEO: Update URL to allow easy sharing and indexing
-        window.history.replaceState({}, '', `/?p=${product.id}`);
+        // SEO: Update URL to allow easy sharing and indexing (Rutas limpias)
+        window.history.replaceState({}, '', `/producto/${product.id}`);
     };
 
     const handleCloseModal = () => {

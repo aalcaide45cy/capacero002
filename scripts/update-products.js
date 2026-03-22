@@ -148,7 +148,7 @@ async function main() {
             "itemListElement": allProducts.map((p, index) => ({
                 "@type": "ListItem",
                 "position": index + 1,
-                "url": `https://capacero.vercel.app/?p=${p.id}`,
+                "url": `https://capacero.vercel.app/producto/${p.id}`,
                 "item": {
                     "@type": "Product",
                     "name": p.name,
@@ -167,7 +167,7 @@ async function main() {
         const jsonLdScript = `\n  <script type="application/ld+json" id="seo-jsonld">\n${JSON.stringify(jsonLd, null, 2)}\n  </script>\n`;
 
         // 2. Generate Fallback HTML (For crawlers that don't execute JS)
-        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/?p=${p.id}">${p.name}</a> - ${p.price}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
+        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/producto/${p.id}">${p.name}</a> - ${p.price}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
 
         // Remove old injections if they exist to prevent duplicates
         indexHtml = indexHtml.replace(/[\s]*<script type="application\/ld\+json" id="seo-jsonld">[\s\S]*?<\/script>[\s]*/, '');
@@ -195,7 +195,7 @@ async function main() {
     <priority>1.0</priority>
   </url>${allProducts.map(p => `
   <url>
-    <loc>https://capacero.vercel.app/?p=${p.id}</loc>
+    <loc>https://capacero.vercel.app/producto/${p.id}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
