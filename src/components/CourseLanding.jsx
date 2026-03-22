@@ -211,7 +211,7 @@ export default function CourseLanding({ course }) {
             {/* ====== PREGUNTAS FRECUENTES ====== */}
             {faqs.length > 0 && (
                 <div className="py-10 md:py-16 bg-zinc-950 relative z-10 border-b border-zinc-900">
-                    <div className="max-w-3xl mx-auto px-6">
+                    <div className="max-w-5xl mx-auto px-6">
                         <div className="text-center mb-12">
                             <div className="inline-block bg-blue-600 text-white font-black px-6 py-2 rounded-full tracking-widest text-sm mb-6 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                                 {course.Tag_Preguntas || "PREGUNTAS"}
