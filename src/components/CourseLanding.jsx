@@ -162,10 +162,10 @@ export default function CourseLanding({ course }) {
                                         <h4 className="text-xl font-bold text-blue-400 leading-tight">{mod.subheader}</h4>
                                     </div>
                                     
-                                    <ul className="space-y-4 flex-1 relative z-10 flex flex-col items-center">
+                                    <ul className="space-y-4 flex-1 relative z-10 w-full">
                                         {mod.items.map((item, itemIdx) => (
-                                            <li key={itemIdx} className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 text-center w-full">
-                                                <div className="flex-shrink-0"><CheckCircle2 className="w-5 h-5 text-blue-500" strokeWidth={3} /></div>
+                                            <li key={itemIdx} className="flex items-start gap-4 text-left">
+                                                <div className="mt-0.5 flex-shrink-0"><CheckCircle2 className="w-5 h-5 text-blue-500" strokeWidth={3} /></div>
                                                 <span className="text-[17px] text-gray-300 font-medium leading-snug">{item}</span>
                                             </li>
                                         ))}
