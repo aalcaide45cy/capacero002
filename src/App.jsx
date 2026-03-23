@@ -166,25 +166,7 @@ function App() {
                 />
                 {isSticky && <div className="h-24" />}
 
-                {/* Hero Text */}
-                <div className="text-center mt-2 mb-6 relative z-10 px-4 max-w-5xl mx-auto">
-                    <motion.h1 
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                        className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white mb-1 tracking-tight leading-tight lg:leading-[1.1]"
-                    >
-                        Encuentra los mejores productos de Amazon
-                    </motion.h1>
-                    <motion.p
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="text-lg sm:text-xl text-zinc-400 max-w-3xl mx-auto"
-                    >
-                        Descubre ofertas, novedades y productos recomendados en tecnología, hogar, moda y mucho más.
-                    </motion.p>
-                </div>
+
 
                 <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                     <FilterButtons
