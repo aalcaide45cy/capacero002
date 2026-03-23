@@ -157,15 +157,15 @@ export default function CourseLanding({ course }) {
                                 <div key={idx} className="bg-zinc-900 border-2 border-zinc-800 px-8 py-10 rounded-[2rem] hover:border-blue-500/40 transition-all flex flex-col h-full shadow-2xl relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] group-hover:bg-blue-500/20 transition-colors pointer-events-none"></div>
                                     
-                                    <div className="text-center relative z-10 min-h-[130px]">
+                                    <div className="text-center relative z-10 mb-2">
                                         <h3 className="text-3xl font-black text-white mb-2 tracking-tight uppercase">{mod.header}</h3>
-                                        <h4 className="text-xl font-bold mb-8 text-blue-400 leading-tight">{mod.subheader}</h4>
+                                        <h4 className="text-xl font-bold text-blue-400 leading-tight">{mod.subheader}</h4>
                                     </div>
                                     
-                                    <ul className="space-y-4 flex-1 relative z-10">
+                                    <ul className="space-y-4 flex-1 relative z-10 flex flex-col items-center">
                                         {mod.items.map((item, itemIdx) => (
-                                            <li key={itemIdx} className="flex items-start gap-4">
-                                                <div className="mt-0.5 flex-shrink-0"><CheckCircle2 className="w-5 h-5 text-blue-500" strokeWidth={3} /></div>
+                                            <li key={itemIdx} className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 text-center w-full">
+                                                <div className="flex-shrink-0"><CheckCircle2 className="w-5 h-5 text-blue-500" strokeWidth={3} /></div>
                                                 <span className="text-[17px] text-gray-300 font-medium leading-snug">{item}</span>
                                             </li>
                                         ))}
