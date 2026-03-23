@@ -157,9 +157,10 @@ export default function CourseLanding({ course }) {
                                 <div key={idx} className="bg-zinc-900 border-2 border-zinc-800 px-8 py-10 rounded-[2rem] hover:border-blue-500/40 transition-all flex flex-col h-full shadow-2xl relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] group-hover:bg-blue-500/20 transition-colors pointer-events-none"></div>
                                     
-                                    <div className="text-center relative z-10 mb-2">
+                                    <div className="text-center relative z-10 mb-6">
                                         <h3 className="text-3xl font-black text-white mb-2 tracking-tight uppercase">{mod.header}</h3>
                                         <h4 className="text-xl font-bold text-blue-400 leading-tight">{mod.subheader}</h4>
+                                        <div className="w-12 h-1 bg-gradient-to-r from-blue-600 to-blue-400 mx-auto mt-5 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                                     </div>
                                     
                                     <ul className="space-y-4 flex-1 relative z-10 w-full">
