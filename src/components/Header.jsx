@@ -23,7 +23,7 @@ export default function Header({ isSticky, compactLogo = false }) {
                     <img
                         src="/logo-capa-cero.webp"
                         alt="CAPA CERO"
-                        className={`object-contain breathe-animation transition-all duration-300 ${compactLogo ? 'w-14 h-14 md:w-[75px] md:h-[75px] rounded-lg' : 'w-full max-w-sm h-auto rounded-2xl'}`}
+                        className={`object-contain breathe-animation transition-all duration-300 ${compactLogo ? 'w-14 h-14 md:w-[75px] md:h-[75px] rounded-lg' : 'w-[180px] md:w-full md:max-w-sm h-auto rounded-2xl mx-auto'}`}
                     />
                 </div>
 
