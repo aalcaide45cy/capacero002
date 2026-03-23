@@ -27,12 +27,13 @@ export default function Header({ isSticky, compactLogo = false }) {
                     />
                 </div>
 
-                {/* Social Buttons (Ocultados en Landing Pages) */}
+                {/* Social Buttons & CTA (Ocultados en Landing Pages) */}
                 {!compactLogo && (
-                    <div className={`flex items-center justify-center gap-4 mb-2 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-                        {/* TikTok - Left */}
-                        <a
-                            href="https://www.tiktok.com/@capacero"
+                    <div className={`flex flex-col items-center justify-center gap-4 mb-4 mt-2 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                        <div className="flex items-center justify-center gap-5">
+                            {/* TikTok - Left */}
+                            <a
+                                href="https://www.tiktok.com/@capacero"
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackSocialClick('TikTok')}
@@ -53,13 +54,14 @@ export default function Header({ isSticky, compactLogo = false }) {
                             className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group flex-shrink-0"
                             aria-label="YouTube"
                         >
-                            <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
-                        </a>
+                                <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
+                            </a>
+                        </div>
 
                         {/* CTA Cursos - Llamativo */}
                         <a
                             href="/cursos"
-                            className="relative flex items-center justify-center h-12 px-6 ml-2 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden"
+                            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden"
                             style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
                         >
                             <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
