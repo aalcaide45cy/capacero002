@@ -69,8 +69,8 @@ export default function CourseLanding({ course }) {
                 </div>
 
                 <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col items-center pt-2">
-                    <div className="text-center max-w-4xl mx-auto mb-12">
-                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
+                    <div className="text-center max-w-4xl mx-auto mb-4 mt-4">
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-2 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
                             {course.Titulo_Web || course.name}
                         </h1>
                     </div>
