@@ -50,23 +50,20 @@ export default function Header({ isSticky, compactLogo = false }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => trackSocialClick('YouTube')}
-                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group"
+                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group flex-shrink-0"
                             aria-label="YouTube"
                         >
                             <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
                         </a>
 
-                        {/* Botón Cursos (Deshabilitado Próximamente) */}
-                        {/* Cuando vayas a activarlo, cambia este <div...> por <a href="/cursos"> y borra el "opacity-60 cursor-not-allowed" */}
-                        <div
-                            className="flex items-center justify-center px-6 h-12 bg-black border-2 border-capaBlue/40 rounded-full transition-all duration-300 cursor-not-allowed opacity-60 shadow-[0_0_15px_rgba(59,130,246,0.2)] relative overflow-hidden select-none"
-                            title="Disponible Próximamente"
+                        {/* CTA Cursos - Llamativo */}
+                        <a
+                            href="/cursos"
+                            className="flex items-center justify-center h-12 px-6 ml-2 bg-capaBlue text-black font-extrabold rounded-full transition-all duration-300 hover:scale-110 hover:bg-white shadow-[0_0_15px_rgba(59,130,246,0.6)] hover:shadow-[0_0_25px_rgba(255,255,255,0.8)] uppercase tracking-widest whitespace-nowrap flex-shrink-0"
+                            style={{ animation: 'breathe 3s ease-in-out infinite' }}
                         >
-                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
-                            <span className="text-capaBlue/70 font-black tracking-widest text-[15px] relative z-10 flex items-center gap-2">
-                                🎓 CURSOS <span className="text-[10px] uppercase font-bold tracking-normal text-zinc-500 mt-0.5">Próximamente</span>
-                            </span>
-                        </div>
+                            🚀 Academia
+                        </a>
                     </div>
                 )}
             </div>
