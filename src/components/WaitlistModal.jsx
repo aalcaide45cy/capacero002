@@ -21,7 +21,7 @@ export default function WaitlistModal({ onClose }) {
     // Modelo de datos simulado para inyectar textos personalizados al componente CourseLeadForm
     const waitlistCourseData = {
         Titulo_Formulario: "Curso en Elaboración 🚧",
-        Subtitulo_Formulario: "¡BambuStudio Masterclass se está cocinando! Apúntate sin compromiso a la lista de espera para enterarte el primero, acceder antes que nadie y llevarte un descuento exclusivo el día del lanzamiento.",
+        Subtitulo_Formulario: "¡El Curso de Experto en Bambu Studio se está cocinando! Apúntate sin compromiso a la lista de espera para enterarte el primero y llévate un descuento exclusivo el día del lanzamiento.",
         Texto_Boton_Formulario: "Entrar a la Lista de Espera VIP"
     };
 
