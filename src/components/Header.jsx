@@ -14,7 +14,7 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function Header({ isSticky, compactLogo = false }) {
+export default function Header({ isSticky, compactLogo = false, onOpenWaitlist }) {
     return (
         <header className="w-full p-6 bg-gradient-to-b from-black to-transparent">
             <div className="max-w-7xl mx-auto">
@@ -58,16 +58,16 @@ export default function Header({ isSticky, compactLogo = false }) {
                             </a>
                         </div>
 
-                        {/* CTA Cursos - Llamativo (Deshabilitado temporalmente) */}
-                        <a
-                            href="#"
-                            className="relative flex items-center justify-center h-12 px-8 bg-zinc-800 text-zinc-500 font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 border border-zinc-700 cursor-not-allowed opacity-80 uppercase tracking-wide whitespace-nowrap overflow-hidden"
-                            title="Próximamente"
+                        {/* CTA Cursos - Llamativo (Waitlist Activada) */}
+                        <button
+                            onClick={(e) => { e.preventDefault(); onOpenWaitlist && onOpenWaitlist(); }}
+                            className="relative flex items-center justify-center h-12 px-8 bg-zinc-800 text-zinc-400 hover:text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 border border-zinc-700 hover:border-zinc-500 cursor-pointer shadow-lg active:scale-95 uppercase tracking-wide whitespace-nowrap overflow-hidden group"
+                            title="Apuntarse a la Lista de Espera"
                         >
-                            <span className="relative z-10 flex items-center gap-2">
-                                🎓 ACCESO CURSO BAMBUSTUDIO
+                            <span className="relative z-10 flex items-center gap-2 group-hover:scale-105 transition-transform">
+                                🚧 ACCESO CURSO BAMBUSTUDIO
                             </span>
-                        </a>
+                        </button>
                     </div>
                 )}
             </div>

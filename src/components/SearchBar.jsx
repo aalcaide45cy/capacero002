@@ -15,7 +15,7 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function SearchBar({ searchQuery, setSearchQuery, isSticky, placeholderTerms = [] }) {
+export default function SearchBar({ searchQuery, setSearchQuery, isSticky, placeholderTerms = [], onOpenWaitlist }) {
     const [allowOverflow, setAllowOverflow] = useState(false);
 
     // Default terms if no products are loaded yet
@@ -130,15 +130,15 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky, place
             
             {/* Fila inferior flotante para el botón de Cursos (Solo en modo Sticky) */}
             <div className={`transition-all duration-500 ease-in-out overflow-hidden flex justify-center w-full ${isSticky ? 'max-h-20 mt-3 pb-2 opacity-100' : 'max-h-0 mt-0 opacity-0'}`}>
-                <a
-                    href="#"
-                    className="relative flex items-center justify-center h-10 px-8 bg-zinc-800 text-zinc-500 font-black text-[13px] md:text-[15px] rounded-full transition-all duration-300 border border-zinc-700 cursor-not-allowed opacity-80 uppercase tracking-widest whitespace-nowrap overflow-hidden"
-                    title="Próximamente"
+                <button
+                    onClick={(e) => { e.preventDefault(); onOpenWaitlist && onOpenWaitlist(); }}
+                    className="relative flex items-center justify-center h-10 px-8 bg-zinc-800 text-zinc-400 hover:text-white font-black text-[13px] md:text-[15px] rounded-full transition-all duration-300 border border-zinc-700 hover:border-zinc-500 cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest whitespace-nowrap overflow-hidden group"
+                    title="Apuntarse a la Lista de Espera"
                 >
-                    <span className="relative z-10 flex items-center gap-2">
-                        🎓 ACCESO CURSO BAMBUSTUDIO
+                    <span className="relative z-10 flex items-center gap-2 group-hover:scale-105 transition-transform">
+                        🚧 ACCESO CURSO BAMBUSTUDIO
                     </span>
-                </a>
+                </button>
             </div>
 
         </div>

@@ -9,6 +9,7 @@ import { loadProducts, filterProducts } from './utils/loadProducts';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import CourseGrid from './components/CourseGrid';
 import PrivacyCookies from './components/PrivacyCookies';
+import WaitlistModal from './components/WaitlistModal';
 
 function App() {
     // Intercepción de ruta para el Panel Privado de Estadísticas
@@ -49,6 +50,7 @@ function App() {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSticky, setIsSticky] = useState(false);
+    const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
 
     // Load all products on mount
     useEffect(() => {
@@ -155,7 +157,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-black">
-            <Header isSticky={isSticky} />
+            <Header isSticky={isSticky} onOpenWaitlist={() => setIsWaitlistOpen(true)} />
 
             <div style={{ paddingTop: '5px' }}>
                 <SearchBar
@@ -163,6 +165,7 @@ function App() {
                     setSearchQuery={setSearchQuery}
                     isSticky={isSticky}
                     placeholderTerms={searchTerms}
+                    onOpenWaitlist={() => setIsWaitlistOpen(true)}
                 />
                 {isSticky && <div className="h-24" />}
 
@@ -209,12 +212,17 @@ function App() {
                 </div>
             </footer>
 
-            {/* Modal */}
+            {/* Modal de Productos */}
             {selectedProduct && (
                 <ProductModal
                     product={selectedProduct}
                     onClose={handleCloseModal}
                 />
+            )}
+
+            {/* Modal Global de Lista de Espera */}
+            {isWaitlistOpen && (
+                <WaitlistModal onClose={() => setIsWaitlistOpen(false)} />
             )}
         </div>
     );
