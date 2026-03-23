@@ -157,7 +157,7 @@ function App() {
         <div className="min-h-screen bg-black">
             <Header isSticky={isSticky} />
 
-            <div style={{ paddingTop: '15px' }}>
+            <div style={{ paddingTop: '5px' }}>
                 <SearchBar
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
@@ -167,12 +167,12 @@ function App() {
                 {isSticky && <div className="h-24" />}
 
                 {/* Hero Text */}
-                <div className="text-center mt-6 mb-10 relative z-10 px-4 max-w-5xl mx-auto">
+                <div className="text-center mt-2 mb-6 relative z-10 px-4 max-w-5xl mx-auto">
                     <motion.h1 
                         initial={{ y: 20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.5 }}
-                        className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white mb-3 tracking-tight leading-tight lg:leading-[1.1]"
+                        className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-white mb-1 tracking-tight leading-tight lg:leading-[1.1]"
                     >
                         Encuentra los mejores productos de Amazon
                     </motion.h1>

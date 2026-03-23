@@ -63,14 +63,14 @@ export default function CourseLanding({ course }) {
         <div className="w-full bg-black min-h-screen text-white font-sans mt-[-80px] selection:bg-blue-600/30">
             
             {/* ====== 1. HERO SECTION ====== */}
-            <div className="relative pt-2 pb-24 px-4 overflow-hidden border-b border-zinc-900">
+            <div className="relative pt-0 pb-16 px-4 overflow-hidden border-b border-zinc-900">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
                     <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-[100%] blur-[150px]"></div>
                 </div>
 
-                <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col items-center pt-2">
-                    <div className="text-center max-w-4xl mx-auto mb-4 mt-4">
-                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-2 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
+                <div className="max-w-5xl mx-auto px-6 relative z-10 flex flex-col items-center pt-0">
+                    <div className="text-center max-w-4xl mx-auto mb-2 mt-0">
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-0 leading-tight lg:leading-[1.1] bg-clip-text text-transparent bg-gradient-to-br from-white to-gray-400 drop-shadow-sm">
                             {course.Titulo_Web || course.name}
                         </h1>
                     </div>
