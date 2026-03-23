@@ -58,16 +58,15 @@ export default function Header({ isSticky, compactLogo = false }) {
                             </a>
                         </div>
 
-                        {/* CTA Cursos - Llamativo */}
+                        {/* CTA Cursos - Llamativo (Deshabilitado temporalmente) */}
                         <a
-                            href="/cursos"
-                            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden"
-                            style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
+                            href="#"
+                            className="relative flex items-center justify-center h-12 px-8 bg-zinc-800 text-zinc-500 font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 border border-zinc-700 cursor-not-allowed opacity-80 uppercase tracking-wide whitespace-nowrap overflow-hidden"
+                            title="Próximamente"
                         >
-                            <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                            <span className="relative z-10 flex items-center gap-2">
                                 🎓 ACCESO CURSO BAMBUSTUDIO
                             </span>
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%]"></div>
                         </a>
                     </div>
                 )}

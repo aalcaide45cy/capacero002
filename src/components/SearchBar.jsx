@@ -131,13 +131,13 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky, place
             {/* Fila inferior flotante para el botón de Cursos (Solo en modo Sticky) */}
             <div className={`transition-all duration-500 ease-in-out overflow-hidden flex justify-center w-full ${isSticky ? 'max-h-20 mt-3 pb-2 opacity-100' : 'max-h-0 mt-0 opacity-0'}`}>
                 <a
-                    href="/cursos"
-                    className="relative flex items-center justify-center h-10 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[13px] md:text-[15px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.5)] hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] uppercase tracking-widest whitespace-nowrap overflow-hidden group"
+                    href="#"
+                    className="relative flex items-center justify-center h-10 px-8 bg-zinc-800 text-zinc-500 font-black text-[13px] md:text-[15px] rounded-full transition-all duration-300 border border-zinc-700 cursor-not-allowed opacity-80 uppercase tracking-widest whitespace-nowrap overflow-hidden"
+                    title="Próximamente"
                 >
-                    <span className="relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] flex items-center gap-2">
+                    <span className="relative z-10 flex items-center gap-2">
                         🎓 ACCESO CURSO BAMBUSTUDIO
                     </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%]"></div>
                 </a>
             </div>
 
