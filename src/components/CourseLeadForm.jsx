@@ -16,6 +16,12 @@ export default function CourseLeadForm({ course }) {
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
+        // Convertir formato nativo de fecha YYYY-MM-DD a español DD/MM/YYYY
+        if (data.fecha_nacimiento && data.fecha_nacimiento.includes('-')) {
+            const [year, month, day] = data.fecha_nacimiento.split('-');
+            data.fecha_nacimiento = `${day}/${month}/${year}`;
+        }
+
         try {
             const response = await fetch('/api/subscribe', {
                 method: 'POST',
