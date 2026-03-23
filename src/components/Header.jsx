@@ -29,7 +29,7 @@ export default function Header({ isSticky, compactLogo = false }) {
 
                 {/* Social Buttons (Ocultados en Landing Pages) */}
                 {!compactLogo && (
-                    <div className={`flex items-center justify-center gap-4 -mb-6 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+                    <div className={`flex items-center justify-center gap-4 mb-2 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                         {/* TikTok - Left */}
                         <a
                             href="https://www.tiktok.com/@capacero"
@@ -59,10 +59,13 @@ export default function Header({ isSticky, compactLogo = false }) {
                         {/* CTA Cursos - Llamativo */}
                         <a
                             href="/cursos"
-                            className="flex items-center justify-center h-12 px-6 ml-2 bg-capaBlue text-black font-extrabold rounded-full transition-all duration-300 hover:scale-110 hover:bg-white shadow-[0_0_15px_rgba(59,130,246,0.6)] hover:shadow-[0_0_25px_rgba(255,255,255,0.8)] uppercase tracking-widest whitespace-nowrap flex-shrink-0"
-                            style={{ animation: 'breathe 3s ease-in-out infinite' }}
+                            className="relative flex items-center justify-center h-12 px-6 ml-2 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden"
+                            style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
                         >
-                            🚀 Academia
+                            <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                                🎓 ACCESO CURSO BAMBUSTUDIO
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%]"></div>
                         </a>
                     </div>
                 )}
