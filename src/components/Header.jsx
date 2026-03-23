@@ -55,6 +55,18 @@ export default function Header({ isSticky, compactLogo = false }) {
                         >
                             <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
                         </a>
+
+                        {/* Botón Cursos (Deshabilitado Próximamente) */}
+                        {/* Cuando vayas a activarlo, cambia este <div...> por <a href="/cursos"> y borra el "opacity-60 cursor-not-allowed" */}
+                        <div
+                            className="flex items-center justify-center px-6 h-12 bg-black border-2 border-capaBlue/40 rounded-full transition-all duration-300 cursor-not-allowed opacity-60 shadow-[0_0_15px_rgba(59,130,246,0.2)] relative overflow-hidden select-none"
+                            title="Disponible Próximamente"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-transparent"></div>
+                            <span className="text-capaBlue/70 font-black tracking-widest text-[15px] relative z-10 flex items-center gap-2">
+                                🎓 CURSOS <span className="text-[10px] uppercase font-bold tracking-normal text-zinc-500 mt-0.5">Próximamente</span>
+                            </span>
+                        </div>
                     </div>
                 )}
             </div>
