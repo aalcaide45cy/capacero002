@@ -150,7 +150,7 @@ async function main() {
                     "@type": "Product",
                     "name": p.name,
                     "description": p.description || p.name,
-                    "image": p.image && p.image.length > 0 ? `https://capacero3d.com${p.image[0]}` : "https://capacero3d.com/logo-capa-cero-small.png",
+                    "image": p.image && p.image.length > 0 ? `https://www.capacero3d.com${p.image[0]}` : "https://www.capacero3d.com/logo-capa-cero-small.png",
                     "review": {
                         "@type": "Review",
                         "reviewRating": {
@@ -181,7 +181,7 @@ async function main() {
                 return {
                     "@type": "ListItem",
                     "position": index + 1,
-                    "url": `https://capacero3d.com/producto/${p.id}`,
+                    "url": `https://www.capacero3d.com/producto/${p.id}`,
                     "item": item
                 };
             })
@@ -212,13 +212,13 @@ async function main() {
         const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://capacero3d.com/</loc>
+    <loc>https://www.capacero3d.com/</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>${allProducts.map(p => `
   <url>
-    <loc>https://capacero3d.com/producto/${p.id}</loc>
+    <loc>https://www.capacero3d.com/producto/${p.id}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
