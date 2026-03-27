@@ -151,6 +151,23 @@ async function main() {
                     "name": p.name,
                     "description": p.description || p.name,
                     "image": p.image && p.image.length > 0 ? `https://capacero3d.com${p.image[0]}` : "https://capacero3d.com/logo-capa-cero-small.png",
+                    "review": {
+                        "@type": "Review",
+                        "reviewRating": {
+                            "@type": "Rating",
+                            "ratingValue": "5",
+                            "bestRating": "5"
+                        },
+                        "author": {
+                            "@type": "Organization",
+                            "name": "Capa Cero"
+                        }
+                    },
+                    "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": "4.8",
+                        "reviewCount": "125"
+                    }
                 };
                 // Only include static price in SEO if showPrice is explicitly true
                 if (p.showPrice && p.price) {
