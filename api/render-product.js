@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         // 🎯 SEO INJECTION: Modify HTML String
         // ==========================================
         
-        const cleanUrl = `https://capacero.vercel.app/producto/${productId}`;
+        const cleanUrl = `https://capacero3d.com/producto/${productId}`;
 
         // 1. Matar la etiqueta canonical genérica suicida y poner la correcta
         html = html.replace(/<link rel="canonical" href="[^"]+"\s*\/>/gi, '');
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
         // 6. Cambiar la Imagen de Previsualización (Thumbnail)
         if (product.image && product.image.length > 0) {
-            const imgUrl = product.image[0].startsWith('http') ? product.image[0] : `https://capacero.vercel.app${product.image[0]}`;
+            const imgUrl = product.image[0].startsWith('http') ? product.image[0] : `https://capacero3d.com${product.image[0]}`;
             html = html.replace(/<meta property="og:image" content="[^"]*"\s*\/>/gi, `<meta property="og:image" content="${imgUrl}" />`);
             html = html.replace(/<meta property="twitter:image" content="[^"]*"\s*\/>/gi, `<meta property="twitter:image" content="${imgUrl}" />`);
         }

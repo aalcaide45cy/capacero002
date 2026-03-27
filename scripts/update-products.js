@@ -150,7 +150,7 @@ async function main() {
                     "@type": "Product",
                     "name": p.name,
                     "description": p.description || p.name,
-                    "image": p.image && p.image.length > 0 ? `https://capacero.vercel.app${p.image[0]}` : "https://capacero.vercel.app/logo-capa-cero-small.png",
+                    "image": p.image && p.image.length > 0 ? `https://capacero3d.com${p.image[0]}` : "https://capacero3d.com/logo-capa-cero-small.png",
                 };
                 // Only include static price in SEO if showPrice is explicitly true
                 if (p.showPrice && p.price) {
@@ -164,7 +164,7 @@ async function main() {
                 return {
                     "@type": "ListItem",
                     "position": index + 1,
-                    "url": `https://capacero.vercel.app/producto/${p.id}`,
+                    "url": `https://capacero3d.com/producto/${p.id}`,
                     "item": item
                 };
             })
@@ -195,13 +195,13 @@ async function main() {
         const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://capacero.vercel.app/</loc>
+    <loc>https://capacero3d.com/</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>${allProducts.map(p => `
   <url>
-    <loc>https://capacero.vercel.app/producto/${p.id}</loc>
+    <loc>https://capacero3d.com/producto/${p.id}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
