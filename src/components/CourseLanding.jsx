@@ -192,7 +192,7 @@ export default function CourseLanding({ course }) {
                                     
                                     <div className="text-center relative z-10 mb-5">
                                         <h3 className={`font-black text-white mb-2 tracking-tight uppercase ${titleClass}`}>{mod.header}</h3>
-                                        <h4 className={`font-bold text-blue-400 leading-tight ${subtitleClass}`}>{mod.subheader}</h4>
+                                        <h4 className={`font-bold text-blue-400 leading-tight flex items-center justify-center min-h-[3.5rem] ${subtitleClass}`}>{mod.subheader}</h4>
                                         <div className={`h-1 bg-gradient-to-r from-blue-600 to-blue-400 mx-auto mt-4 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] ${dividerClass}`}></div>
                                     </div>
                                     
