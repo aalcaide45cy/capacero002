@@ -59,6 +59,39 @@ export default function CourseLanding({ course }) {
         if (q && a) faqs.push({ q: q, a: a });
     }
 
+    // Layout dinámico de Módulos (6, 8 o 9+)
+    let gridContainerClass = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10";
+    let gridItemClass = "h-full px-8 py-10";
+    let titleClass = "text-3xl";
+    let subtitleClass = "text-xl";
+    let dividerClass = "w-12";
+    let listClass = "space-y-4";
+    let listItemGap = "gap-4";
+    let iconClass = "w-5 h-5";
+    let textClass = "text-[17px]";
+
+    if (modules.length === 8) {
+        gridContainerClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8";
+        gridItemClass = "h-full px-6 py-8 lg:px-6 lg:py-8";
+        titleClass = "text-2xl lg:text-xl xl:text-2xl";
+        subtitleClass = "text-lg";
+        dividerClass = "w-10";
+        listClass = "space-y-3";
+        listItemGap = "gap-3";
+        iconClass = "w-4 h-4";
+        textClass = "text-sm lg:text-[15px] xl:text-[15px]";
+    } else if (modules.length > 6) {
+        gridContainerClass = "flex flex-wrap justify-center gap-6 lg:gap-8";
+        gridItemClass = "w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(20%-1.6rem)] px-6 py-8 lg:px-5 lg:py-6";
+        titleClass = "text-2xl lg:text-xl xl:text-2xl";
+        subtitleClass = "text-lg";
+        dividerClass = "w-10";
+        listClass = "space-y-3";
+        listItemGap = "gap-3";
+        iconClass = "w-4 h-4";
+        textClass = "text-sm lg:text-[15px] xl:text-[15px]";
+    }
+
     return (
         <div className="w-full bg-black min-h-screen text-white font-sans mt-[-80px] selection:bg-blue-600/30">
             
@@ -152,22 +185,22 @@ export default function CourseLanding({ course }) {
                             </h2>
                         </div>
                         
-                        <div className={modules.length > 6 ? "flex flex-wrap justify-center gap-6 lg:gap-8" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10"}>
+                        <div className={gridContainerClass}>
                             {modules.map((mod, idx) => (
-                                <div key={idx} className={`bg-zinc-900 border-2 border-zinc-800 rounded-3xl hover:border-blue-500/40 transition-all flex flex-col shadow-2xl relative overflow-hidden group ${modules.length > 6 ? 'w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(20%-1.6rem)] px-6 py-8 lg:px-5 lg:py-6' : 'h-full px-8 py-10'}`}>
+                                <div key={idx} className={`bg-zinc-900 border-2 border-zinc-800 rounded-3xl hover:border-blue-500/40 transition-all flex flex-col shadow-2xl relative overflow-hidden group ${gridItemClass}`}>
                                     <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-[60px] group-hover:bg-blue-500/20 transition-colors pointer-events-none"></div>
                                     
                                     <div className="text-center relative z-10 mb-5">
-                                        <h3 className={`font-black text-white mb-2 tracking-tight uppercase ${modules.length > 6 ? 'text-2xl lg:text-xl xl:text-2xl' : 'text-3xl'}`}>{mod.header}</h3>
-                                        <h4 className={`font-bold text-blue-400 leading-tight ${modules.length > 6 ? 'text-lg' : 'text-xl'}`}>{mod.subheader}</h4>
-                                        <div className={`h-1 bg-gradient-to-r from-blue-600 to-blue-400 mx-auto mt-4 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] ${modules.length > 6 ? 'w-10' : 'w-12'}`}></div>
+                                        <h3 className={`font-black text-white mb-2 tracking-tight uppercase ${titleClass}`}>{mod.header}</h3>
+                                        <h4 className={`font-bold text-blue-400 leading-tight ${subtitleClass}`}>{mod.subheader}</h4>
+                                        <div className={`h-1 bg-gradient-to-r from-blue-600 to-blue-400 mx-auto mt-4 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)] ${dividerClass}`}></div>
                                     </div>
                                     
-                                    <ul className={`flex-1 relative z-10 w-full ${modules.length > 6 ? 'space-y-3' : 'space-y-4'}`}>
+                                    <ul className={`flex-1 relative z-10 w-full ${listClass}`}>
                                         {mod.items.map((item, itemIdx) => (
-                                            <li key={itemIdx} className={`flex items-start text-left ${modules.length > 6 ? 'gap-3' : 'gap-4'}`}>
-                                                <div className="mt-0.5 flex-shrink-0"><CheckCircle2 className={`text-blue-500 ${modules.length > 6 ? 'w-4 h-4' : 'w-5 h-5'}`} strokeWidth={3} /></div>
-                                                <span className={`text-gray-300 font-medium leading-snug ${modules.length > 6 ? 'text-sm lg:text-[15px] xl:text-[15px]' : 'text-[17px]'}`}>{item}</span>
+                                            <li key={itemIdx} className={`flex items-start text-left ${listItemGap}`}>
+                                                <div className="mt-0.5 flex-shrink-0"><CheckCircle2 className={`text-blue-500 ${iconClass}`} strokeWidth={3} /></div>
+                                                <span className={`text-gray-300 font-medium leading-snug ${textClass}`}>{item}</span>
                                             </li>
                                         ))}
                                     </ul>
