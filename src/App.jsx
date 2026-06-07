@@ -10,12 +10,39 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import CourseGrid from './components/CourseGrid';
 import PrivacyCookies from './components/PrivacyCookies';
 import WaitlistModal from './components/WaitlistModal';
+import Calculator from './components/Calculator';
 
 function App() {
     // Intercepción de ruta para el Panel Privado de Estadísticas
     const currentPath = window.location.pathname;
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return <AnalyticsDashboard />;
+    }
+
+    // Intercepción de ruta para la Calculadora 3D
+    if (currentPath === '/calculadora' || currentPath === '/calculadora/') {
+        return (
+            <div className="min-h-screen bg-black">
+                <Header isSticky={false} compactLogo={false} isCalculatorPage={true} />
+                <div style={{ paddingTop: '20px' }}>
+                    <Calculator />
+                </div>
+                {/* Global Amazon Associates Footer */}
+                <footer className="mt-20 border-t border-zinc-900 bg-black py-10 px-6 text-center">
+                    <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
+                        <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-12 h-12 opacity-50 grayscale hidden md:block" />
+                        <p className="text-xs text-zinc-600 leading-relaxed">
+                            Capa Cero participa en el Programa de Afiliados de Amazon EU, un programa de publicidad para afiliados diseñado para ofrecer a sitios web un modo de obtener comisiones por publicidad, publicitando e incluyendo enlaces a Amazon.es / Amazon.com.
+                            <br/>
+                            Amazon y el logotipo de Amazon son marcas comerciales de Amazon.com, Inc. o de sociedades de su grupo.
+                        </p>
+                        <p className="text-xs text-zinc-700 mt-2">
+                            © {new Date().getFullYear()} Capa Cero. Todos los derechos reservados.
+                        </p>
+                    </div>
+                </footer>
+            </div>
+        );
     }
 
     // Intercepción de ruta para la Academia de Cursos

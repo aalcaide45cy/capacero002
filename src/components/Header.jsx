@@ -14,7 +14,7 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function Header({ isSticky, compactLogo = false, onOpenWaitlist }) {
+export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, isCalculatorPage = false }) {
     return (
         <header className="w-full p-6 bg-gradient-to-b from-black to-transparent">
             <div className="max-w-7xl mx-auto">
@@ -73,12 +73,12 @@ export default function Header({ isSticky, compactLogo = false, onOpenWaitlist }
                             </button>
 
                             <a
-                                href="/calculadora"
+                                href={isCalculatorPage ? "/" : "/calculadora"}
                                 className="relative flex items-center justify-center h-12 px-8 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(37,117,196,0.3)] hover:shadow-[0_0_25px_rgba(37,117,196,0.6)] uppercase tracking-wide whitespace-nowrap group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
-                                title="Calculadora 3D"
+                                title={isCalculatorPage ? "Volver a Inicio" : "Calculadora 3D"}
                             >
                                 <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                                    🖩 CALCULADORA
+                                    {isCalculatorPage ? "🏠 INICIO" : "🖩 CALCULADORA"}
                                 </span>
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
                             </a>
