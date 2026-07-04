@@ -59,10 +59,10 @@ export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, 
                         </div>
 
                         {/* CTA Cursos - Llamativo (Waitlist Activada) */}
-                        <div className="flex flex-row items-center justify-center gap-4 w-full px-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4">
                             <button
                                 onClick={(e) => { e.preventDefault(); onOpenWaitlist && onOpenWaitlist(); }}
-                                className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
+                                className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 w-full sm:w-auto flex-shrink-0"
                                 style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
                                 title="Apuntarse a la Lista de Espera"
                             >
@@ -72,25 +72,27 @@ export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, 
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
                             </button>
 
-                            <a
-                                href={isCalculatorPage ? "/" : "/calculadora"}
-                                className="relative flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(37,117,196,0.3)] hover:shadow-[0_0_25px_rgba(37,117,196,0.6)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
-                                title={isCalculatorPage ? "Volver a Inicio" : "Calculadora 3D"}
-                            >
-                                <span className="relative z-10 flex items-center justify-center">
-                                    {isCalculatorPage ? <Home className="w-6 h-6" /> : <Calculator className="w-6 h-6" />}
-                                </span>
-                            </a>
+                            <div className="flex items-center gap-4 justify-center">
+                                <a
+                                    href={isCalculatorPage ? "/" : "/calculadora"}
+                                    className="relative flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(37,117,196,0.3)] hover:shadow-[0_0_25px_rgba(37,117,196,0.6)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
+                                    title={isCalculatorPage ? "Volver a Inicio" : "Calculadora 3D"}
+                                >
+                                    <span className="relative z-10 flex items-center justify-center">
+                                        {isCalculatorPage ? <Home className="w-6 h-6" /> : <Calculator className="w-6 h-6" />}
+                                    </span>
+                                </a>
 
-                            <a
-                                href="/editor"
-                                className="relative flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(37,117,196,0.3)] hover:shadow-[0_0_25px_rgba(37,117,196,0.6)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
-                                title="Editor Markdown"
-                            >
-                                <span className="relative z-10 flex items-center justify-center">
-                                    <FileText className="w-6 h-6" />
-                                </span>
-                            </a>
+                                <a
+                                    href="/editor"
+                                    className="relative flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_15px_rgba(37,117,196,0.3)] hover:shadow-[0_0_25px_rgba(37,117,196,0.6)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
+                                    title="Editor Markdown"
+                                >
+                                    <span className="relative z-10 flex items-center justify-center">
+                                        <FileText className="w-6 h-6" />
+                                    </span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 )}
