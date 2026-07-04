@@ -1,6 +1,5 @@
-'use client';
-
-import { AlertTriangle, Sun, Moon, ZoomIn, ZoomOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Sun, Moon, ZoomIn, ZoomOut, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
@@ -9,10 +8,26 @@ export function StatusBar() {
   const { activeFile, editedFilesCount } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const { scale, increaseScale, decreaseScale, resetScale, canIncrease, canDecrease } = useScale();
-  const hasFSA = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
+  const [showHint, setShowHint] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHint(false);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <footer className="statusbar" aria-label="Barra de estado">
+    <footer className="statusbar" aria-label="Barra de estado" style={{ position: 'relative' }}>
+      {showHint && (
+        <div className="scroll-hint-overlay">
+          <div className="scroll-hint-hand">
+            <ArrowLeft style={{ width: 12, height: 12, opacity: 0.4 }} />
+            <Hand style={{ width: 14, height: 14, color: 'var(--mauve)', fill: 'rgba(0, 0, 0, 0.2)' }} />
+            <ArrowRight style={{ width: 12, height: 12, opacity: 0.4 }} />
+          </div>
+        </div>
+      )}
       {activeFile ? (
         <>
           <span className="statusbar-item">

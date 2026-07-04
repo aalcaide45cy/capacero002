@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditor } from '@/context/EditorContext';
 import {
+  Hand,
+  ArrowLeft,
+  ArrowRight,
   Bold,
   Italic,
   Strikethrough,
@@ -163,8 +166,26 @@ export function EditorToolbar({ onInsert }: EditorToolbarProps) {
     closeDropdown();
   };
 
+  const [showHint, setShowHint] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHint(false);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="editor-toolbar" role="toolbar" aria-label="Herramientas de formato" style={{ position: 'relative' }}>
+      {showHint && (
+        <div className="scroll-hint-overlay">
+          <div className="scroll-hint-hand">
+            <ArrowLeft style={{ width: 12, height: 12, opacity: 0.4 }} />
+            <Hand style={{ width: 14, height: 14, color: 'var(--mauve)', fill: 'rgba(0, 0, 0, 0.2)' }} />
+            <ArrowRight style={{ width: 12, height: 12, opacity: 0.4 }} />
+          </div>
+        </div>
+      )}
       {TOOLBAR_ACTIONS.map((action, i) => {
         if (action === 'sep') {
           return <div key={`sep-${i}`} className="toolbar-separator" role="separator" />;

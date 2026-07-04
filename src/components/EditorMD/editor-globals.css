@@ -1625,12 +1625,26 @@ body.editormd-active {
 
 @media (max-width: 600px) {
   .statusbar {
-    gap: 8px !important;
-    padding: 0 6px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+    gap: 12px !important;
+    padding: 0 10px !important;
+  }
+
+  .statusbar::-webkit-scrollbar {
+    height: 0 !important;
+    width: 0 !important;
+    display: none !important;
   }
 
   .statusbar-item {
-    font-size: 0.7rem !important;
+    font-size: 0.75rem !important;
+    flex-shrink: 0 !important;
   }
 
   .ls-indicator,
@@ -1638,5 +1652,59 @@ body.editormd-active {
     display: none !important;
   }
 }
+
+/* Scroll Hint Overlay */
+.scroll-hint-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(0.5px);
+  animation: fadeOutHint 0.5s ease forwards;
+  animation-delay: 3.5s;
+}
+
+@media (max-width: 768px) {
+  .scroll-hint-overlay {
+    display: flex;
+  }
+}
+
+.scroll-hint-hand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: swipeMotion 2s ease-in-out infinite;
+}
+
+@keyframes swipeMotion {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  20% {
+    transform: translateX(30px) scale(0.9);
+  }
+  50% {
+    transform: translateX(-30px) scale(0.9);
+  }
+  80% {
+    transform: translateX(0) scale(0.9);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes fadeOutHint {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 
 
