@@ -1515,3 +1515,111 @@ body.editormd-active {
   transform: scale(1.15);
 }
 
+/* ============================================================
+   RESPONSIVE DESIGN (MOBILE & TABLET)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Sidebar overlay style */
+  .sidebar {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 500;
+    background: var(--sidebar-bg);
+    width: 240px;
+    height: 100%;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Make vertical split instead of horizontal split */
+  .editor-panels {
+    flex-direction: column !important;
+  }
+  
+  .editor-pane,
+  .preview-pane {
+    flex: 1 !important;
+    width: 100% !important;
+    height: 50% !important;
+  }
+
+  /* Topbar responsive adjustments */
+  .topbar-title {
+    display: none !important;
+  }
+  
+  .topbar-divider {
+    margin: 0 2px !important;
+  }
+
+  .topbar-btn {
+    padding: 6px 8px !important;
+  }
+
+  .topbar-btn span:not(.shortcut) {
+    display: none !important;
+  }
+
+  /* Keep save button text for visual priority */
+  .topbar-btn.primary span:not(.shortcut) {
+    display: inline !important;
+  }
+
+  .topbar-btn .shortcut {
+    display: none !important;
+  }
+
+  .topbar-file-name {
+    font-size: 0.8rem !important;
+    max-width: 80px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scale-controls {
+    display: none !important;
+  }
+
+  /* Welcome Screen responsive */
+  .editor-empty-shortcuts {
+    display: none !important;
+  }
+
+  .editor-empty-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .editor-empty-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Horizontal scroll for markdown tools toolbar on touch screens */
+.editor-toolbar {
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .statusbar {
+    gap: 8px !important;
+    padding: 0 6px !important;
+  }
+
+  .statusbar-item {
+    font-size: 0.7rem !important;
+  }
+
+  .ls-indicator,
+  .statusbar-warning {
+    display: none !important;
+  }
+}
+
+
