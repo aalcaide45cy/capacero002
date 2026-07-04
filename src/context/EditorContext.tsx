@@ -335,27 +335,6 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const saveFile = useCallback(async (fileId?: string) => {
-    const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
-    if (!file) return;
-
-    try {
-      if (file.handle) {
-        // Write directly back
-        const writable = await (file.handle as any).createWritable();
-        await writable.write(file.content);
-        await writable.close();
-        dispatch({ type: 'MARK_SAVED', payload: file.id });
-        incrementGlobalCounter();
-      } else {
-        // No handle → save as
-        await saveFileAs(file.id);
-      }
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('Error saving file:', err);
-    }
-  }, [state.files, state.activeFileId, saveFileAs, incrementGlobalCounter]);
-
   const saveFileAs = useCallback(async (fileId?: string) => {
     const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
     if (!file) return;
@@ -393,6 +372,27 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
       if (err?.name !== 'AbortError') console.error('Error saving file as:', err);
     }
   }, [state.files, state.activeFileId, incrementGlobalCounter]);
+
+  const saveFile = useCallback(async (fileId?: string) => {
+    const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
+    if (!file) return;
+
+    try {
+      if (file.handle) {
+        // Write directly back
+        const writable = await (file.handle as any).createWritable();
+        await writable.write(file.content);
+        await writable.close();
+        dispatch({ type: 'MARK_SAVED', payload: file.id });
+        incrementGlobalCounter();
+      } else {
+        // No handle → save as
+        await saveFileAs(file.id);
+      }
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') console.error('Error saving file:', err);
+    }
+  }, [state.files, state.activeFileId, saveFileAs, incrementGlobalCounter]);
 
   const newFile = useCallback(() => {
     const file = createNewFile(state.files);
