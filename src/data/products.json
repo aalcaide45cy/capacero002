@@ -1,10 +1,33 @@
 [
   {
-    "id": "Ude-001",
+    "id": "Pixi-001",
+    "name": "Grabador láser inteligente AlgoLaser Pixi",
+    "category": "🛠️ Herramientas",
+    "image": [
+      "/images/products/Pixi-001-1.webp",
+      "/images/products/Pixi-001-2.webp",
+      "/images/products/Pixi-001-3.webp",
+      "/images/products/Pixi-001-4.webp",
+      "/images/products/Pixi-001-5.webp"
+    ],
+    "price": "",
+    "showPrice": false,
+    "link": "https://algolaser.com/products/algolaser-pixi-smart-laser-engraver-with-enclosure?ref=CAPA",
+    "description": "PARA DESCUENTO, USAR ESTE CODIGO EN EL CARRITO: capa10",
+    "ventaja_1": "",
+    "ventaja_2": "",
+    "desventaja_1": "",
+    "tag": "✨NUEVO",
+    "buttonText": "IR A LA WEB",
+    "carouselInterval": 3000,
+    "order": 1
+  },
+  {
+    "id": "Ude-002",
     "name": "Blender - EXPERTO en Modelado Hard Surface",
     "category": "🎓Cursos",
     "image": [
-      "/images/products/Ude-001-1.webp"
+      "/images/products/Ude-002-1.webp"
     ],
     "price": "19,99€",
     "showPrice": false,
@@ -16,14 +39,14 @@
     "tag": "💶OFERTA",
     "buttonText": "IR AL CURSO",
     "carouselInterval": 3000,
-    "order": 1
+    "order": 2
   },
   {
-    "id": "Ude-002",
+    "id": "Ude-003",
     "name": "Blender - EXPERTO en Rig y Animación de Personajes 3D",
     "category": "🎓Cursos",
     "image": [
-      "/images/products/Ude-002-1.webp"
+      "/images/products/Ude-003-1.webp"
     ],
     "price": "19,99€",
     "showPrice": false,
@@ -35,14 +58,14 @@
     "tag": "💶OFERTA",
     "buttonText": "IR AL CURSO",
     "carouselInterval": 3000,
-    "order": 2
+    "order": 3
   },
   {
-    "id": "Ude-003",
+    "id": "Ude-004",
     "name": "Blender Curso Introduccion - Rig y Animacion",
     "category": "🎓Cursos",
     "image": [
-      "/images/products/Ude-003-1.webp"
+      "/images/products/Ude-004-1.webp"
     ],
     "price": "0,00€",
     "showPrice": false,
@@ -54,14 +77,14 @@
     "tag": "💶OFERTA",
     "buttonText": "GRATIS",
     "carouselInterval": 3000,
-    "order": 3
+    "order": 4
   },
   {
-    "id": "Ude-004",
+    "id": "Ude-005",
     "name": "Introduccion Hard Surface con Blender",
     "category": "🎓Cursos",
     "image": [
-      "/images/products/Ude-004-1.webp"
+      "/images/products/Ude-005-1.webp"
     ],
     "price": "0,00€",
     "showPrice": false,
@@ -73,7 +96,7 @@
     "tag": "💶OFERTA",
     "buttonText": "GRATIS",
     "carouselInterval": 3000,
-    "order": 4
+    "order": 5
   },
   {
     "id": "Mkw-001",
@@ -98,7 +121,7 @@
     "tag": "✨NUEVO",
     "buttonText": "IR A DISEÑO",
     "carouselInterval": 3000,
-    "order": 5
+    "order": 6
   },
   {
     "id": "Mkw-002",
@@ -126,7 +149,7 @@
     "tag": "✨NUEVO",
     "buttonText": "IR A DISEÑO",
     "carouselInterval": 3000,
-    "order": 6
+    "order": 7
   },
   {
     "id": "Mkw-003",
@@ -148,7 +171,7 @@
     "tag": "✨NUEVO",
     "buttonText": "IR A DISEÑO",
     "carouselInterval": 3000,
-    "order": 7
+    "order": 8
   },
   {
     "id": "Amz-001",

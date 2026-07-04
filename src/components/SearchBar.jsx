@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, Youtube } from 'lucide-react';
+import { Search, X, Youtube, Calculator, FileText } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
 import { trackSearch, trackSocialClick } from '../utils/analytics';
 
@@ -80,11 +80,11 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky, place
                         <div className="absolute inset-y-0 left-14 right-14 flex items-center pointer-events-none text-gray-500 text-lg overflow-hidden whitespace-nowrap">
                             <Typewriter
                                 options={{
-                                    strings: displayTerms,
-                                    autoStart: true,
-                                    loop: true,
-                                    delay: 80,
-                                    deleteSpeed: 50,
+                                     strings: displayTerms,
+                                     autoStart: true,
+                                     loop: true,
+                                     delay: 80,
+                                     deleteSpeed: 50,
                                 }}
                             />
                         </div>
@@ -144,13 +144,22 @@ export default function SearchBar({ searchQuery, setSearchQuery, isSticky, place
 
                     <a
                         href="/calculadora"
-                        className="relative flex items-center justify-center h-10 px-8 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white font-black text-[13px] md:text-[15px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_10px_rgba(37,117,196,0.3)] hover:shadow-[0_0_20px_rgba(37,117,196,0.5)] uppercase tracking-widest whitespace-nowrap overflow-hidden group cursor-pointer active:scale-95 flex-shrink-0"
+                        className="relative flex items-center justify-center w-10 h-10 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_10px_rgba(37,117,196,0.3)] hover:shadow-[0_0_20px_rgba(37,117,196,0.5)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
                         title="Calculadora 3D"
                     >
-                        <span className="relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] flex items-center gap-2">
-                            🖩 CALCULADORA
+                        <span className="relative z-10 flex items-center justify-center">
+                            <Calculator className="w-5 h-5" />
                         </span>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
+                    </a>
+
+                    <a
+                        href="/editor"
+                        className="relative flex items-center justify-center w-10 h-10 bg-black border-2 border-capaBlue text-capaBlue hover:text-white hover:border-white rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_10px_rgba(37,117,196,0.3)] hover:shadow-[0_0_20px_rgba(37,117,196,0.5)] group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
+                        title="Editor Markdown"
+                    >
+                        <span className="relative z-10 flex items-center justify-center">
+                            <FileText className="w-5 h-5" />
+                        </span>
                     </a>
                 </div>
             </div>

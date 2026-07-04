@@ -11,12 +11,29 @@ import CourseGrid from './components/CourseGrid';
 import PrivacyCookies from './components/PrivacyCookies';
 import WaitlistModal from './components/WaitlistModal';
 import Calculator from './components/Calculator';
+import { ThemeProvider } from './context/ThemeContext';
+import { ScaleProvider } from './context/ScaleContext';
+import { EditorProvider } from './context/EditorContext';
+import { AppShell } from './components/EditorMD/AppShell';
 
 function App() {
     // Intercepción de ruta para el Panel Privado de Estadísticas
     const currentPath = window.location.pathname;
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return <AnalyticsDashboard />;
+    }
+
+    // Intercepción de ruta para el Editor MD
+    if (currentPath === '/editor' || currentPath === '/editor/') {
+        return (
+            <ThemeProvider>
+                <ScaleProvider>
+                    <EditorProvider>
+                        <AppShell />
+                    </EditorProvider>
+                </ScaleProvider>
+            </ThemeProvider>
+        );
     }
 
     // Intercepción de ruta para la Calculadora 3D
