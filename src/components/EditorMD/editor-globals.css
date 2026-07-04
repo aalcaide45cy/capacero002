@@ -1545,6 +1545,22 @@ body.editormd-active {
   }
 
   /* Topbar responsive adjustments */
+  .topbar {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+
+  .topbar::-webkit-scrollbar {
+    height: 0 !important;
+    width: 0 !important;
+    display: none !important;
+  }
+
   .topbar-title {
     display: none !important;
   }
@@ -1576,6 +1592,7 @@ body.editormd-active {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex-shrink: 0 !important;
   }
 
   .scale-controls {
