@@ -122,7 +122,7 @@ export function StatusBar() {
       </button>
 
       {/* Global Edited Files Counter */}
-      {editedFilesCount > 0 && (
+      {editedFilesCount >= 0 && (
         <span className="statusbar-item" style={{ color: 'var(--green)', fontWeight: 600 }} title="Número total de archivos guardados/descargados por todos los usuarios en este editor">
           📁 {editedFilesCount.toLocaleString()} editados
         </span>
