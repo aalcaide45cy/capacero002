@@ -6,7 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
 
 export function StatusBar() {
-  const { activeFile } = useEditor();
+  const { activeFile, editedFilesCount } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const { scale, increaseScale, decreaseScale, resetScale, canIncrease, canDecrease } = useScale();
   const hasFSA = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
@@ -120,6 +120,13 @@ export function StatusBar() {
           : <Moon style={{ width: 12, height: 12 }} />
         }
       </button>
+
+      {/* Global Edited Files Counter */}
+      {editedFilesCount > 0 && (
+        <span className="statusbar-item" style={{ color: 'var(--green)', fontWeight: 600 }} title="Número total de archivos guardados/descargados por todos los usuarios en este editor">
+          📁 {editedFilesCount.toLocaleString()} editados
+        </span>
+      )}
 
       <span className="statusbar-item" style={{ color: 'var(--overlay0)' }}>
         EditorMD

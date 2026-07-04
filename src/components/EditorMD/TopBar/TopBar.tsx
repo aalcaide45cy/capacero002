@@ -1,6 +1,6 @@
 'use client';
 
-import { Sun, Moon, FileText, Save, FolderOpen, File, Plus, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Sun, Moon, FileText, Save, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
@@ -32,15 +32,25 @@ export function TopBar() {
   return (
     <header className="topbar">
       {/* Brand */}
-      <div className="topbar-brand" title="EditorMD — Capa Cero">
+      <a href="/" className="topbar-brand" title="Volver al Inicio de Capa Cero" style={{ textDecoration: 'none' }}>
         <div className="topbar-logo" aria-hidden="true" style={{ background: 'none', border: 'none', boxShadow: 'none', width: '32px', height: '32px' }}>
-          <img src="/logo.svg" alt="Logo Capa Cero" style={{ width: '100%', height: '100%' }} />
+          <img src="/logo-capa-cero-small.png" alt="Logo Capa Cero" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <span className="topbar-title" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
           <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text)' }}>Capa Cero</span>
           <span style={{ fontSize: '0.65rem', fontWeight: 500, color: 'var(--overlay1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Editor MD</span>
         </span>
-      </div>
+      </a>
+
+      <div className="topbar-divider" />
+
+      {/* Back to Home Button */}
+      <a href="/" className="topbar-btn" title="Volver al Inicio (Capa Cero)" id="btn-home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Home />
+        <span>Inicio</span>
+      </a>
+
+      <div className="topbar-divider" />
 
       {/* Sidebar toggle */}
       <button

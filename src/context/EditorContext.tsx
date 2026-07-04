@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useEffect,
   useRef,
+  useState,
 } from 'react';
 import { EditorState, EditorAction, EditorFile, ViewMode, FolderNode } from '@/lib/types';
 import { createFile, createNewFile, updateFileStats } from '@/lib/utils';
@@ -158,6 +159,7 @@ interface EditorContextValue {
   closeFile: (fileId: string) => void;
   setViewMode: (mode: ViewMode) => void;
   hasUnsavedChanges: boolean;
+  editedFilesCount: number;
 }
 
 const EditorContext = createContext<EditorContextValue | null>(null);
@@ -167,6 +169,31 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const activeFile = state.files.find(f => f.id === state.activeFileId) ?? null;
   const hasUnsavedChanges = state.files.some(f => f.isDirty);
+
+  const [editedFilesCount, setEditedFilesCount] = useState(0);
+
+  // Fetch initial global edited files count
+  useEffect(() => {
+    fetch('/api/counter')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.count === 'number') {
+          setEditedFilesCount(data.count);
+        }
+      })
+      .catch(err => console.error('Error fetching counter:', err));
+  }, []);
+
+  const incrementGlobalCounter = useCallback(() => {
+    fetch('/api/counter', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.count === 'number') {
+          setEditedFilesCount(data.count);
+        }
+      })
+      .catch(err => console.error('Error incrementing counter:', err));
+  }, []);
 
   // ── LocalStorage cache ──────────────────────────────────
   const isRestoring = useRef(false);
@@ -319,6 +346,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         await writable.write(file.content);
         await writable.close();
         dispatch({ type: 'MARK_SAVED', payload: file.id });
+        incrementGlobalCounter();
       } else {
         // No handle → save as
         await saveFileAs(file.id);
@@ -326,7 +354,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       if (err?.name !== 'AbortError') console.error('Error saving file:', err);
     }
-  }, [state.files, state.activeFileId]);
+  }, [state.files, state.activeFileId, saveFileAs, incrementGlobalCounter]);
 
   const saveFileAs = useCallback(async (fileId?: string) => {
     const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
@@ -348,6 +376,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         await writable.close();
         dispatch({ type: 'UPDATE_HANDLE', payload: { id: file.id, handle } });
         dispatch({ type: 'MARK_SAVED', payload: file.id });
+        incrementGlobalCounter();
       } else {
         // Fallback: download
         const blob = new Blob([file.content], { type: 'text/markdown' });
@@ -358,11 +387,12 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         a.click();
         URL.revokeObjectURL(url);
         dispatch({ type: 'MARK_SAVED', payload: file.id });
+        incrementGlobalCounter();
       }
     } catch (err: any) {
       if (err?.name !== 'AbortError') console.error('Error saving file as:', err);
     }
-  }, [state.files, state.activeFileId]);
+  }, [state.files, state.activeFileId, incrementGlobalCounter]);
 
   const newFile = useCallback(() => {
     const file = createNewFile(state.files);
@@ -391,6 +421,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         closeFile,
         setViewMode,
         hasUnsavedChanges,
+        editedFilesCount,
       }}
     >
       {children}
