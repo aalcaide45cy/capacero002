@@ -27,6 +27,7 @@ export function TopBar() {
   const { scale, increaseScale, decreaseScale, resetScale, canIncrease, canDecrease } = useScale();
 
   const [showHint, setShowHint] = useState(true);
+  const hasFSA = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
 
   useEffect(() => {
     const timer = setTimeout(() => {
