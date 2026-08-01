@@ -1,5 +1,5 @@
 import React from 'react';
-import { Youtube, Calculator, FileText, Home } from 'lucide-react';
+import { Youtube, Instagram, Calculator, FileText, Home } from 'lucide-react';
 import { trackSocialClick } from '../utils/analytics';
 
 // TikTok icon SVG component (Lucide doesn't have TikTok)
@@ -31,30 +31,42 @@ export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, 
                 {!compactLogo && (
                     <div className={`flex flex-col items-center justify-center gap-4 mb-4 mt-2 transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                         <div className="flex items-center justify-center gap-5">
-                            {/* TikTok - Left */}
+                            {/* YouTube - Far Left */}
+                            <a
+                                href="https://www.youtube.com/@CapaCero0"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => trackSocialClick('YouTube')}
+                                className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group flex-shrink-0"
+                                aria-label="YouTube"
+                            >
+                                <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
+                            </a>
+
+                            {/* TikTok - Middle */}
                             <a
                                 href="https://www.tiktok.com/@capacero"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => trackSocialClick('TikTok')}
-                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group"
-                            aria-label="TikTok"
-                        >
-                            <span className="text-capaBlue group-hover:text-white transition-colors">
-                                <TikTokIcon color="currentColor" />
-                            </span>
-                        </a>
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => trackSocialClick('TikTok')}
+                                className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group flex-shrink-0"
+                                aria-label="TikTok"
+                            >
+                                <span className="text-capaBlue group-hover:text-white transition-colors">
+                                    <TikTokIcon color="currentColor" />
+                                </span>
+                            </a>
 
-                        {/* YouTube - Right */}
-                        <a
-                            href="https://www.youtube.com/@CapaCero0"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => trackSocialClick('YouTube')}
-                            className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation-delayed group flex-shrink-0"
-                            aria-label="YouTube"
-                        >
-                                <Youtube className="w-6 h-6 text-capaBlue group-hover:text-red-500 transition-colors" />
+                            {/* Instagram - Far Right */}
+                            <a
+                                href="https://www.instagram.com/capa.cero_3d/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => trackSocialClick('Instagram')}
+                                className="flex items-center justify-center w-12 h-12 bg-black border-2 border-capaBlue rounded-full transition-all duration-300 hover:scale-110 breathe-animation group flex-shrink-0"
+                                aria-label="Instagram"
+                            >
+                                <Instagram className="w-6 h-6 text-capaBlue group-hover:text-pink-500 transition-colors" />
                             </a>
                         </div>
 
