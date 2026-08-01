@@ -156,7 +156,7 @@ export default function CollaborationModal({ onClose }) {
                                 value={nombre}
                                 onChange={(e) => setNombre(e.target.value)}
                                 placeholder="Ej. Bambu Lab / Pedro García"
-                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-xs sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
+                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-[16px] sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
                             />
                         </div>
 
@@ -170,7 +170,7 @@ export default function CollaborationModal({ onClose }) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="tuemail@ejemplo.com"
-                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-xs sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
+                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-[16px] sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
                             />
                         </div>
 
@@ -181,7 +181,7 @@ export default function CollaborationModal({ onClose }) {
                             <select
                                 value={tipo}
                                 onChange={(e) => setTipo(e.target.value)}
-                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-xs sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
+                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-[16px] sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
                             >
                                 <option value="Review de producto">Review / Análisis de producto</option>
                                 <option value="Patrocinio">Patrocinio o Sponsor</option>
@@ -201,7 +201,7 @@ export default function CollaborationModal({ onClose }) {
                                 value={mensaje}
                                 onChange={(e) => setMensaje(e.target.value)}
                                 placeholder="Cuéntanos brevemente de qué trata tu propuesta..."
-                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-xs sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors resize-none"
+                                className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-[16px] sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors resize-none"
                             ></textarea>
                         </div>
 
@@ -224,7 +224,7 @@ export default function CollaborationModal({ onClose }) {
                                     if (captchaError) setCaptchaError(false);
                                 }}
                                 placeholder="?"
-                                className="w-16 sm:w-20 bg-zinc-900 border border-zinc-700 text-white text-center text-xs sm:text-sm font-bold rounded-lg px-2 py-1 focus:border-cyan-400 focus:outline-none transition-colors flex-shrink-0"
+                                className="w-16 sm:w-20 bg-zinc-900 border border-zinc-700 text-white text-center text-[16px] sm:text-sm font-bold rounded-lg px-2 py-1 focus:border-cyan-400 focus:outline-none transition-colors flex-shrink-0"
                             />
                         </div>
 
