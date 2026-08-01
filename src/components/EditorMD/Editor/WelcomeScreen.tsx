@@ -54,6 +54,9 @@ export function WelcomeScreen() {
         <span className="shortcut-hint">
           <kbd>Ctrl</kbd>+<kbd>S</kbd> Guardar
         </span>
+        <span className="shortcut-hint">
+          <kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>S</kbd> Guardar como
+        </span>
       </div>
 
       <div style={{

@@ -340,12 +340,13 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     if (!file) return;
 
     try {
+      const fileName = file.name.endsWith('.md') ? file.name : `${file.name}.md`;
       if ('showSaveFilePicker' in window) {
         const handle = await (window as any).showSaveFilePicker({
-          suggestedName: file.name,
+          suggestedName: fileName,
           types: [
             {
-              description: 'Markdown file',
+              description: 'Archivo Markdown (*.md)',
               accept: { 'text/markdown': ['.md'] },
             },
           ],
@@ -358,11 +359,11 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         incrementGlobalCounter();
       } else {
         // Fallback: download
-        const blob = new Blob([file.content], { type: 'text/markdown' });
+        const blob = new Blob([file.content], { type: 'text/markdown;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = file.name;
+        a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
         dispatch({ type: 'MARK_SAVED', payload: file.id });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, FileText, Save, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Sun, Moon, FileText, Save, Download, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
@@ -146,6 +146,16 @@ export function TopBar() {
               <Save />
               <span>Guardar</span>
               <span className="shortcut">Ctrl+S</span>
+            </button>
+            <button
+              className="topbar-btn"
+              onClick={() => saveFileAs()}
+              title="Guardar como... (Abrir explorador de archivos para elegir carpeta/nombre) (Ctrl+Shift+S)"
+              id="btn-save-as"
+            >
+              <Download />
+              <span>Guardar como</span>
+              <span className="shortcut">Ctrl+⇧+S</span>
             </button>
           </>
         )}
