@@ -207,11 +207,15 @@ export default function CollaborationModal({ onClose }) {
                                 <span>Seguridad: ¿Cuánto es <strong>{captchaChallenge.n1} + {captchaChallenge.n2}</strong>?</span>
                             </div>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="off"
                                 required
                                 value={captchaInput}
                                 onChange={(e) => {
-                                    setCaptchaInput(e.target.value);
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setCaptchaInput(val);
                                     if (captchaError) setCaptchaError(false);
                                 }}
                                 placeholder="?"
