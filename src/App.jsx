@@ -10,6 +10,7 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import CourseGrid from './components/CourseGrid';
 import PrivacyCookies from './components/PrivacyCookies';
 import WaitlistModal from './components/WaitlistModal';
+import CollaborationModal from './components/CollaborationModal';
 import Calculator from './components/Calculator';
 import { ThemeProvider } from './context/ThemeContext';
 import { ScaleProvider } from './context/ScaleContext';
@@ -95,6 +96,7 @@ function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSticky, setIsSticky] = useState(false);
     const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+    const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
 
     // Load all products on mount
     useEffect(() => {
@@ -201,7 +203,10 @@ function App() {
 
     return (
         <div className="min-h-screen bg-black">
-            <Header isSticky={isSticky} onOpenWaitlist={() => setIsWaitlistOpen(true)} />
+            <Header
+                isSticky={isSticky}
+                onOpenCollaboration={() => setIsCollaborationOpen(true)}
+            />
 
             <div style={{ paddingTop: '5px' }}>
                 <SearchBar
@@ -209,11 +214,9 @@ function App() {
                     setSearchQuery={setSearchQuery}
                     isSticky={isSticky}
                     placeholderTerms={searchTerms}
-                    onOpenWaitlist={() => setIsWaitlistOpen(true)}
+                    onOpenCollaboration={() => setIsCollaborationOpen(true)}
                 />
                 {isSticky && <div className="h-24" />}
-
-
 
                 <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
                     <FilterButtons
@@ -267,6 +270,11 @@ function App() {
             {/* Modal Global de Lista de Espera */}
             {isWaitlistOpen && (
                 <WaitlistModal onClose={() => setIsWaitlistOpen(false)} />
+            )}
+
+            {/* Modal Global de Colaboraciones */}
+            {isCollaborationOpen && (
+                <CollaborationModal onClose={() => setIsCollaborationOpen(false)} />
             )}
         </div>
     );

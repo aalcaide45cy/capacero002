@@ -1,5 +1,5 @@
 import React from 'react';
-import { Youtube, Instagram, Calculator, FileText, Home } from 'lucide-react';
+import { Youtube, Instagram, Calculator, FileText, Home, Mail } from 'lucide-react';
 import { trackSocialClick } from '../utils/analytics';
 
 // TikTok icon SVG component (Lucide doesn't have TikTok)
@@ -14,7 +14,7 @@ const TikTokIcon = ({ color = "currentColor" }) => (
     </svg>
 );
 
-export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, isCalculatorPage = false }) {
+export default function Header({ isSticky, compactLogo = false, onOpenCollaboration, isCalculatorPage = false }) {
     return (
         <header className="w-full p-6 bg-gradient-to-b from-black to-transparent">
             <div className="max-w-7xl mx-auto">
@@ -70,16 +70,17 @@ export default function Header({ isSticky, compactLogo = false, onOpenWaitlist, 
                             </a>
                         </div>
 
-                        {/* CTA Cursos - Llamativo (Waitlist Activada) */}
+                        {/* CTA Colaboraciones - Llamativo */}
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-4">
                             <button
-                                onClick={(e) => { e.preventDefault(); onOpenWaitlist && onOpenWaitlist(); }}
+                                onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
                                 className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 w-full sm:w-auto flex-shrink-0"
                                 style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
-                                title="Apuntarse a la Lista de Espera"
+                                title="Contactar para Colaboraciones"
                             >
                                 <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                                    🚧 ACCESO CURSO BAMBUSTUDIO
+                                    <Mail className="w-5 h-5 text-cyan-200" />
+                                    COLABORACIONES
                                 </span>
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
                             </button>
