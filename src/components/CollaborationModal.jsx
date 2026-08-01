@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Mail, Send, CheckCircle2, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 
-const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
+const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbxMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
 
 export default function CollaborationModal({ onClose }) {
     const [nombre, setNombre] = useState('');
