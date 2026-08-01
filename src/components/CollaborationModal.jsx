@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Mail, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Mail, Send, CheckCircle2, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 
-const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbxMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
+const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
 
 export default function CollaborationModal({ onClose }) {
     const [nombre, setNombre] = useState('');
@@ -9,6 +9,16 @@ export default function CollaborationModal({ onClose }) {
     const [tipo, setTipo] = useState('Review de producto');
     const [mensaje, setMensaje] = useState('');
     const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'success' | 'error'
+    const [captchaInput, setCaptchaInput] = useState('');
+    const [captchaError, setCaptchaError] = useState(false);
+    const [honeypot, setHoneypot] = useState(''); // Campo tramposo para spambots
+
+    // Generar números aleatorios para la pregunta matemática anti-spam
+    const captchaChallenge = useMemo(() => {
+        const n1 = Math.floor(Math.random() * 8) + 2; // entre 2 y 9
+        const n2 = Math.floor(Math.random() * 8) + 1; // entre 1 y 9
+        return { n1, n2, answer: n1 + n2 };
+    }, []);
 
     // Cerrar al pulsar Escape y bloquear scroll del body
     useEffect(() => {
@@ -26,6 +36,20 @@ export default function CollaborationModal({ onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setCaptchaError(false);
+
+        // 1. Detección Honeypot: Si un bot ha rellenado el campo oculto, simulamos éxito y abortamos
+        if (honeypot.trim() !== '') {
+            setStatus('success');
+            return;
+        }
+
+        // 2. Validación de respuesta al Captcha matemático
+        if (parseInt(captchaInput.trim(), 10) !== captchaChallenge.answer) {
+            setCaptchaError(true);
+            return;
+        }
+
         if (!nombre.trim() || !email.trim() || !mensaje.trim()) return;
 
         setStatus('submitting');
@@ -100,6 +124,18 @@ export default function CollaborationModal({ onClose }) {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                        {/* Campo Honeypot Oculto para Spambots (Incisible para usuarios reales) */}
+                        <div className="hidden opacity-0 absolute -left-[9999px]" aria-hidden="true">
+                            <input
+                                type="text"
+                                tabIndex={-1}
+                                autoComplete="off"
+                                value={honeypot}
+                                onChange={(e) => setHoneypot(e.target.value)}
+                                placeholder="Do not fill this"
+                            />
+                        </div>
+
                         <div>
                             <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                                 Nombre o Empresa <span className="text-red-400">*</span>
@@ -151,13 +187,39 @@ export default function CollaborationModal({ onClose }) {
                             </label>
                             <textarea
                                 required
-                                rows={4}
+                                rows={3}
                                 value={mensaje}
                                 onChange={(e) => setMensaje(e.target.value)}
                                 placeholder="Cuéntanos brevemente de qué trata tu propuesta..."
                                 className="w-full bg-zinc-950 border border-zinc-800 text-white text-sm rounded-xl px-4 py-3 focus:border-capaBlue focus:outline-none transition-colors resize-none"
                             ></textarea>
                         </div>
+
+                        {/* Desafío Captcha Anti-Spam Humano */}
+                        <div className="bg-zinc-950/80 border border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs font-medium text-zinc-300">
+                                <ShieldCheck className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                                <span>Verificación anti-spam: ¿Cuánto es <strong>{captchaChallenge.n1} + {captchaChallenge.n2}</strong>?</span>
+                            </div>
+                            <input
+                                type="number"
+                                required
+                                value={captchaInput}
+                                onChange={(e) => {
+                                    setCaptchaInput(e.target.value);
+                                    if (captchaError) setCaptchaError(false);
+                                }}
+                                placeholder="Resultado"
+                                className="w-24 bg-zinc-900 border border-zinc-700 text-white text-center text-sm font-bold rounded-lg px-3 py-1.5 focus:border-cyan-400 focus:outline-none transition-colors"
+                            />
+                        </div>
+
+                        {captchaError && (
+                            <div className="flex items-center gap-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-2.5 rounded-lg animate-shake">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <span>La respuesta de verificación anti-spam no es correcta. Inténtalo de nuevo.</span>
+                            </div>
+                        )}
 
                         <button
                             type="submit"
@@ -167,7 +229,7 @@ export default function CollaborationModal({ onClose }) {
                             {status === 'submitting' ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Enviando propuesta...</span>
+                                    <span>Verificando y enviando...</span>
                                 </>
                             ) : (
                                 <>
