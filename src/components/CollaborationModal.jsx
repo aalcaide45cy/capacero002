@@ -118,9 +118,14 @@ export default function CollaborationModal({ onClose }) {
                     <div className="my-4 sm:my-6 text-center py-6 px-3 sm:py-8 sm:px-4 bg-zinc-950/60 border border-emerald-500/30 rounded-2xl animate-in fade-in duration-300">
                         <CheckCircle2 className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-400 mx-auto mb-3 sm:mb-4 animate-bounce" />
                         <h3 className="text-lg sm:text-xl font-bold text-white mb-2">¡Mensaje Enviado!</h3>
-                        <p className="text-xs sm:text-sm text-zinc-300 max-w-sm mx-auto mb-5 leading-relaxed">
-                            Muchas gracias por tu interés. Hemos recibido tu propuesta y te responderemos lo antes posible a <strong className="text-capaBlue break-all">{email}</strong>.
-                        </p>
+                        <div className="text-xs sm:text-sm text-zinc-300 max-w-sm mx-auto mb-6 leading-relaxed">
+                            <p className="mb-3">
+                                Muchas gracias por tu interés. Hemos recibido tu propuesta y te responderemos lo antes posible a:
+                            </p>
+                            <span className="inline-block px-3.5 py-1.5 bg-zinc-900 border border-capaBlue/40 rounded-xl text-capaBlue font-bold text-sm sm:text-base break-all select-all">
+                                {email}
+                            </span>
+                        </div>
                         <button
                             onClick={onClose}
                             className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-full transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95"
