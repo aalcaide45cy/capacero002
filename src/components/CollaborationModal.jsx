@@ -1,7 +1,41 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Mail, Send, CheckCircle2, Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { X, Mail, Send, CheckCircle2, Loader2, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
 
 const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbxMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
+const PENDING_STORAGE_KEY = "capacero_pending_collabs";
+
+// Función utilitaria para enviar mensaje a Google Apps Script con reintentos y timeout
+async function sendToGoogleSheets(payload, maxRetries = 3) {
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout por intento
+
+            await fetch(SHEETS_COLLAB_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+            return true; // Envío exitoso
+        } catch (err) {
+            console.warn(`Intento ${attempt}/${maxRetries} fallido enviando colaboración:`, err);
+            lastError = err;
+            if (attempt < maxRetries) {
+                // Esperar 1.5 segundos antes del siguiente reintento para dar tiempo a Apps Script
+                await new Promise((res) => setTimeout(res, 1500));
+            }
+        }
+    }
+    throw lastError || new Error("No se pudo conectar tras varios intentos");
+}
 
 export default function CollaborationModal({ onClose }) {
     const [nombre, setNombre] = useState('');
@@ -9,18 +43,56 @@ export default function CollaborationModal({ onClose }) {
     const [tipo, setTipo] = useState('Review de producto');
     const [mensaje, setMensaje] = useState('');
     const [status, setStatus] = useState('idle'); // 'idle' | 'submitting' | 'success' | 'error'
+    const [errorMessage, setErrorMessage] = useState('');
     const [captchaInput, setCaptchaInput] = useState('');
     const [captchaError, setCaptchaError] = useState(false);
-    const [honeypot, setHoneypot] = useState(''); // Campo tramposo para spambots
+    const [honeypot, setHoneypot] = useState('');
 
-    // Generar números aleatorios para la pregunta matemática anti-spam
+    // Generar números aleatorios para el reto anti-spam
     const captchaChallenge = useMemo(() => {
-        const n1 = Math.floor(Math.random() * 8) + 2; // entre 2 y 9
-        const n2 = Math.floor(Math.random() * 8) + 1; // entre 1 y 9
+        const n1 = Math.floor(Math.random() * 8) + 2;
+        const n2 = Math.floor(Math.random() * 8) + 1;
         return { n1, n2, answer: n1 + n2 };
     }, []);
 
-    // Cerrar al pulsar Escape y bloquear scroll del body sin provocar desajustes de pantalla
+    // 1. DESPERTADOR (Pre-Warming): Enviar ping en segundo plano para despertar Apps Script nada más abrir el modal
+    useEffect(() => {
+        try {
+            fetch(SHEETS_COLLAB_URL, { method: 'GET', mode: 'no-cors' }).catch(() => {});
+        } catch (_) {}
+    }, []);
+
+    // 2. RECUPERADOR DE COLA: Intentar enviar automáticamente mensajes que se hubieran quedado pendientes previamente
+    const flushPendingMessages = useCallback(async () => {
+        try {
+            const raw = localStorage.getItem(PENDING_STORAGE_KEY);
+            if (!raw) return;
+            const pendingList = JSON.parse(raw);
+            if (Array.isArray(pendingList) && pendingList.length > 0) {
+                const remaining = [];
+                for (const item of pendingList) {
+                    try {
+                        await sendToGoogleSheets(item, 2);
+                    } catch (_) {
+                        remaining.push(item);
+                    }
+                }
+                if (remaining.length > 0) {
+                    localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(remaining));
+                } else {
+                    localStorage.removeItem(PENDING_STORAGE_KEY);
+                }
+            }
+        } catch (e) {
+            console.error("Error al procesar pendientes de localStorage:", e);
+        }
+    }, []);
+
+    useEffect(() => {
+        flushPendingMessages();
+    }, [flushPendingMessages]);
+
+    // Cerrar al pulsar Escape y bloquear scroll del body
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') onClose();
@@ -43,14 +115,15 @@ export default function CollaborationModal({ onClose }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setCaptchaError(false);
+        setErrorMessage('');
 
-        // 1. Detección Honeypot: Si un bot ha rellenado el campo oculto, simulamos éxito y abortamos
+        // Detección Honeypot (Spambots)
         if (honeypot.trim() !== '') {
             setStatus('success');
             return;
         }
 
-        // 2. Validación de respuesta al Captcha matemático
+        // Validación Captcha
         if (parseInt(captchaInput.trim(), 10) !== captchaChallenge.answer) {
             setCaptchaError(true);
             return;
@@ -58,28 +131,47 @@ export default function CollaborationModal({ onClose }) {
 
         if (!nombre.trim() || !email.trim() || !mensaje.trim()) return;
 
-        setStatus('submitting');
-        try {
-            const payload = {
-                nombre: nombre.trim(),
-                email: email.trim(),
-                tipo: tipo,
-                mensaje: mensaje.trim()
-            };
+        const payload = {
+            nombre: nombre.trim(),
+            email: email.trim(),
+            tipo: tipo,
+            mensaje: mensaje.trim(),
+            timestamp: new Date().toISOString()
+        };
 
-            await fetch(SHEETS_COLLAB_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
-                body: JSON.stringify(payload)
-            });
+        // Guardar respaldo de emergencia en localStorage antes de intentar enviar
+        try {
+            const raw = localStorage.getItem(PENDING_STORAGE_KEY);
+            const pendingList = raw ? JSON.parse(raw) : [];
+            pendingList.push(payload);
+            localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(pendingList));
+        } catch (_) {}
+
+        setStatus('submitting');
+
+        try {
+            // Intentar envío con 3 reintentos automáticos
+            await sendToGoogleSheets(payload, 3);
+
+            // Si tuvo éxito, eliminar de la cola de respaldo
+            try {
+                const raw = localStorage.getItem(PENDING_STORAGE_KEY);
+                if (raw) {
+                    let pendingList = JSON.parse(raw);
+                    pendingList = pendingList.filter(item => item.timestamp !== payload.timestamp);
+                    if (pendingList.length > 0) {
+                        localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(pendingList));
+                    } else {
+                        localStorage.removeItem(PENDING_STORAGE_KEY);
+                    }
+                }
+            } catch (_) {}
 
             setStatus('success');
         } catch (err) {
-            console.error('Error al enviar mensaje de colaboración:', err);
-            setStatus('success');
+            console.error('Fallaron los 3 reintentos de envío:', err);
+            setStatus('error');
+            setErrorMessage('Hubo un problema de conexión temporal. Tu mensaje ha quedado guardado de forma segura en tu dispositivo. Haz clic en reintentar para volver a enviarlo.');
         }
     };
 
@@ -117,7 +209,7 @@ export default function CollaborationModal({ onClose }) {
                 {status === 'success' ? (
                     <div className="my-4 sm:my-6 text-center py-6 px-3 sm:py-8 sm:px-4 bg-zinc-950/60 border border-emerald-500/30 rounded-2xl animate-in fade-in duration-300">
                         <CheckCircle2 className="w-12 h-12 sm:w-16 sm:h-16 text-emerald-400 mx-auto mb-3 sm:mb-4 animate-bounce" />
-                        <h3 className="text-lg sm:text-xl font-bold text-white mb-2">¡Mensaje Enviado!</h3>
+                        <h3 className="text-lg sm:text-xl font-bold text-white mb-2">¡Mensaje Enviado con Éxito!</h3>
                         <div className="text-xs sm:text-sm text-zinc-300 max-w-sm mx-auto mb-6 leading-relaxed">
                             <p className="mb-3">
                                 Muchas gracias por tu interés. Hemos recibido tu propuesta y te responderemos lo antes posible a:
@@ -128,14 +220,14 @@ export default function CollaborationModal({ onClose }) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-full transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95"
+                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm rounded-full transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95 cursor-pointer"
                         >
                             Entendido
                         </button>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="mt-4 sm:mt-6 space-y-3.5 sm:space-y-4 max-w-full">
-                        {/* Campo Honeypot totalmente oculto para Spambots (Sin posicionamiento negativo que expanda viewport) */}
+                        {/* Campo Honeypot Oculto */}
                         <div className="hidden" aria-hidden="true">
                             <input
                                 type="text"
@@ -235,6 +327,15 @@ export default function CollaborationModal({ onClose }) {
                             </div>
                         )}
 
+                        {status === 'error' && (
+                            <div className="flex flex-col gap-2 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl animate-in fade-in">
+                                <div className="flex items-center gap-2 font-semibold">
+                                    <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                                    <span>{errorMessage}</span>
+                                </div>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
                             disabled={status === 'submitting'}
@@ -243,7 +344,12 @@ export default function CollaborationModal({ onClose }) {
                             {status === 'submitting' ? (
                                 <>
                                     <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
-                                    <span>Verificando y enviando...</span>
+                                    <span>Conectando y enviando...</span>
+                                </>
+                            ) : status === 'error' ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4" />
+                                    <span>Reintentar envío</span>
                                 </>
                             ) : (
                                 <>
