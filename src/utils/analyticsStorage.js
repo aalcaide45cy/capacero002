@@ -285,6 +285,8 @@ export const generateSeedData = () => {
             scrollDepth: [25, 50, 75, 100][Math.floor(Math.random() * 4)],
             hasSubscribed,
             subscribedFrom,
+            isDemo: true,
+            isReal: false,
             dwellTimes
         };
         sessions.push(session);
@@ -294,6 +296,7 @@ export const generateSeedData = () => {
             id: eventIdCounter++,
             sessionId,
             type: 'session_start',
+            isDemo: true,
             timestamp: sessionTime.toISOString(),
             details: { origin: session.origin, country: session.country, city: session.city }
         });
@@ -303,6 +306,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'card_click',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 5000).toISOString(),
                 details: { title: pickedVideo.title, category: pickedVideo.cat }
             });
@@ -313,6 +317,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'video_open',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 10000).toISOString(),
                 details: { title: pickedVideo.title, category: pickedVideo.cat }
             });
@@ -323,6 +328,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'download_click',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 25000).toISOString(),
                 details: {
                     label: `Perfil Optimizado .3MF - ${pickedVideo.title.substring(0, 30)}...`,
@@ -337,6 +343,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'doctor3d_select',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 15000).toISOString(),
                 details: { symptom: sym }
             });
@@ -348,6 +355,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'search_query',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 8000).toISOString(),
                 details: { term: s.term, resultsCount: s.results }
             });
@@ -358,6 +366,7 @@ export const generateSeedData = () => {
                 id: eventIdCounter++,
                 sessionId,
                 type: 'subscribe_click',
+                isDemo: true,
                 timestamp: new Date(sessionTime.getTime() + 35000).toISOString(),
                 details: {
                     source: subscribedFrom,
@@ -372,6 +381,7 @@ export const generateSeedData = () => {
 
 // Cargar datos según el modo seleccionado: 'live' (datos reales) o 'demo' (simulación)
 export const loadAnalyticsData = async (mode = 'live') => {
+    // Si se activa modo demo, devolvemos la simulación generada exclusivamente en memoria
     if (mode === 'demo') {
         const demoSeed = generateSeedData();
         return {
@@ -381,14 +391,22 @@ export const loadAnalyticsData = async (mode = 'live') => {
         };
     }
 
-    // Modo en vivo: solo datos reales registrados en el navegador o traídos de Google Sheets
+    // Purgado de datos de prueba antiguos que pudieran haber quedado guardados en IndexedDB
+    const isPurged = localStorage.getItem('capa_cero_demo_purged_v5');
+    if (!isPurged) {
+        await clearAnalyticsDB();
+        localStorage.setItem('capa_cero_demo_purged_v5', 'true');
+        localStorage.removeItem('capa_cero_analytics_demo');
+    }
+
+    // Modo en vivo: cargar únicamente sesiones reales
     let allSessions = await getAllSessions();
     let allEvents = await getAllEvents();
 
-    // Filtrar para excluir cualquier sesión marcada como demo si existiera
-    const liveSessions = allSessions.filter(s => !s.isDemo);
+    // Filtrar estrictamente solo sesiones reales
+    const liveSessions = allSessions.filter(s => s.isReal === true || (!s.isDemo && s.fromSheets === true) || (!s.isDemo && typeof s.isReal === 'undefined' && s.sessionId && !s.sessionId.includes('demo')));
     const sessionIdsSet = new Set(liveSessions.map(s => s.sessionId));
-    const liveEvents = allEvents.filter(e => sessionIdsSet.has(e.sessionId) || !e.isDemo);
+    const liveEvents = allEvents.filter(e => !e.isDemo && (sessionIdsSet.has(e.sessionId) || e.isReal === true));
 
     return {
         sessions: liveSessions,

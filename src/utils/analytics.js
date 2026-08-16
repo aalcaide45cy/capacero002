@@ -245,6 +245,8 @@ export const initAnalyticsSession = async () => {
         scrollDepth: 0,
         hasSubscribed: false,
         subscribedFrom: null,
+        isReal: true,
+        isDemo: false,
         dwellTimes: { ...sectionTimes }
     };
 
