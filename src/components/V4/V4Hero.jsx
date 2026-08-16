@@ -113,17 +113,17 @@ export default function V4Hero({
             {/* Pill */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-950/40 border border-cyan-500/30 text-cyan-300 text-xs font-semibold mb-4 shadow-[0_0_12px_rgba(37,117,196,0.2)]">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>Videoteca & Recursos Oficiales</span>
+              <span>Aprende Impresión 3D y Bambu Studio</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15] mb-4">
-              Domina <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300">Bambu Studio</span> y la Impresión 3D
+              Imprime Mejor, Más Rápido y Sin Fallos en <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300">Bambu Studio</span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-zinc-300 font-normal leading-relaxed mb-6 max-w-2xl">
-              Tutoriales paso a paso, perfiles de laminado optimizados y soluciones a problemas reales. Todo directo al grano para makers.
+              Descubre los trucos, ajustes secretos y soluciones a problemas reales para exprimir tu impresora al máximo y conseguir acabados profesionales. Directo al grano y paso a paso.
             </p>
 
             {/* CTA Group */}
@@ -145,7 +145,7 @@ export default function V4Hero({
                 onClick={() => onOpenTab('videos')}
                 className="flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white font-semibold text-sm px-5 py-3.5 rounded-xl border border-zinc-800 hover:border-cyan-500/40 transition-all active:scale-[0.98]"
               >
-                <span>Explorar Videoteca</span>
+                <span>Explorar Tutoriales</span>
                 <ArrowRight className="w-4 h-4 text-cyan-400" />
               </button>
             </div>
@@ -154,15 +154,15 @@ export default function V4Hero({
             <div className="grid grid-cols-3 gap-3 w-full border-t border-zinc-800/80 pt-6">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
                 <Zap className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Ahorro de Tiempo</span>
+                <span>Ahorra Tiempo y Filamento</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Solución de Errores</span>
+                <span>Solución a Fallos Reales</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
                 <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>Perfiles .3MF Listos</span>
+                <span>Ajustes Paso a Paso</span>
               </div>
             </div>
           </div>

@@ -34,7 +34,7 @@ export default function V4StickySubscribe() {
               Capa Cero 3D en YouTube
             </h4>
             <p className="text-[11px] text-zinc-400">
-              Tutoriales de Bambu Studio y perfiles listos para usar.
+              Tutoriales y trucos de Bambu Studio directo al grano.
             </p>
           </div>
         </div>

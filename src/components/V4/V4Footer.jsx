@@ -17,7 +17,7 @@ export default function V4Footer({ onOpenCollaboration }) {
           />
           <div className="text-left">
             <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
-            <p className="text-xs text-zinc-400">Tutoriales, herramientas y perfiles para makers.</p>
+            <p className="text-xs text-zinc-400">Tutoriales, guías y trucos reales de impresión 3D para makers.</p>
           </div>
         </div>
 
