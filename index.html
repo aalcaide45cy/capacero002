@@ -32,12 +32,14 @@
       ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
         window.addEventListener(type, preventGesture, { passive: false, capture: true });
         document.addEventListener(type, preventGesture, { passive: false, capture: true });
+        if (document.documentElement) document.documentElement.addEventListener(type, preventGesture, { passive: false, capture: true });
       });
 
       // 2. Bloquear cualquier contacto multitáctil (2+ dedos) en reposo o durante scroll
       ['touchstart', 'touchmove', 'touchcancel'].forEach(function(type) {
         window.addEventListener(type, preventPinch, { passive: false, capture: true });
         document.addEventListener(type, preventPinch, { passive: false, capture: true });
+        if (document.documentElement) document.documentElement.addEventListener(type, preventPinch, { passive: false, capture: true });
       });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)

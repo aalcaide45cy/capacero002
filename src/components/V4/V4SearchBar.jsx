@@ -172,18 +172,18 @@ export default function V4SearchBar({
             )}
           </div>
 
-          {/* Redes Sociales y Colaboraciones en Sticky */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Redes Sociales y Botón COLABORACIONES en Sticky (Escritorio / Tablets: fila única) */}
+          <div className="hidden md:flex items-center gap-2.5 sm:gap-3 shrink-0">
             <a
               href="https://www.youtube.com/@CapaCero0"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackSocialClick && trackSocialClick('YouTube')}
-              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110"
+              className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
               title="YouTube"
               aria-label="YouTube"
             >
-              <Youtube className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#2575c4] group-hover:text-red-500 transition-colors" />
+              <Youtube className="w-4 h-4 text-[#2575c4] group-hover:text-red-500 transition-colors" />
             </a>
             
             <a
@@ -191,7 +191,7 @@ export default function V4SearchBar({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackSocialClick && trackSocialClick('TikTok')}
-              className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110"
+              className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
               title="TikTok"
               aria-label="TikTok"
             >
@@ -200,19 +200,89 @@ export default function V4SearchBar({
               </span>
             </a>
 
+            <a
+              href="https://www.instagram.com/capa.cero_3d/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackSocialClick && trackSocialClick('Instagram')}
+              className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
+              title="Instagram"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-4 h-4 text-[#2575c4] group-hover:text-pink-500 transition-colors" />
+            </a>
+
             <button
               onClick={(e) => {
                 e.preventDefault();
                 onOpenCollaboration && onOpenCollaboration();
               }}
-              className="relative hidden sm:flex items-center justify-center h-8 px-3.5 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-bold text-[11px] rounded-full transition-all hover:scale-105 shadow-[0_0_12px_rgba(59,130,246,0.5)] border border-cyan-300/40 uppercase tracking-wider"
+              className="relative flex items-center justify-center h-8 px-4 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[11px] sm:text-[12px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_12px_rgba(59,130,246,0.5)] hover:shadow-[0_0_20px_rgba(34,211,238,0.7)] uppercase tracking-wider whitespace-nowrap overflow-hidden group cursor-pointer active:scale-95 flex-shrink-0 border border-cyan-300/40"
               title="Contactar para Colaboraciones"
             >
-              <Mail className="w-3 h-3 text-cyan-200 mr-1.5" />
-              COLABORAR
+              <span className="relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)] flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-cyan-200" />
+                COLABORACIONES
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
             </button>
           </div>
 
+        </div>
+
+        {/* Fila inferior para Móviles en modo Sticky: YouTube, TikTok, Instagram + COLABORACIONES */}
+        <div className="flex md:hidden items-center justify-center gap-2.5 mt-2 pt-1.5 border-t border-zinc-800/80 px-4">
+          <a
+            href="https://www.youtube.com/@CapaCero0"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackSocialClick && trackSocialClick('YouTube')}
+            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            title="YouTube"
+            aria-label="YouTube"
+          >
+            <Youtube className="w-3.5 h-3.5 text-[#2575c4] group-hover:text-red-500 transition-colors" />
+          </a>
+          
+          <a
+            href="https://www.tiktok.com/@capacero"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackSocialClick && trackSocialClick('TikTok')}
+            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            title="TikTok"
+            aria-label="TikTok"
+          >
+            <span className="text-[#2575c4] group-hover:text-white transition-colors">
+              <TikTokIcon />
+            </span>
+          </a>
+
+          <a
+            href="https://www.instagram.com/capa.cero_3d/"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackSocialClick && trackSocialClick('Instagram')}
+            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            title="Instagram"
+            aria-label="Instagram"
+          >
+            <Instagram className="w-3.5 h-3.5 text-[#2575c4] group-hover:text-pink-500 transition-colors" />
+          </a>
+
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onOpenCollaboration && onOpenCollaboration();
+            }}
+            className="relative flex items-center justify-center h-7 px-3 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[10px] rounded-full transition-all hover:scale-105 shadow-[0_0_10px_rgba(59,130,246,0.4)] uppercase tracking-wider whitespace-nowrap overflow-hidden border border-cyan-300/40"
+            title="Contactar para Colaboraciones"
+          >
+            <span className="relative z-10 flex items-center gap-1">
+              <Mail className="w-3 h-3 text-cyan-200" />
+              COLABORACIONES
+            </span>
+          </button>
         </div>
       </header>
     </>
