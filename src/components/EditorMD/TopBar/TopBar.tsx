@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Sun, Moon, FileText, Save, Download, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sun, Moon, FileText, Save, Download, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight, Pencil, Check } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
@@ -20,6 +20,7 @@ export function TopBar() {
     saveFile,
     saveFileAs,
     newFile,
+    renameFile,
     setViewMode,
   } = useEditor();
 
@@ -27,6 +28,9 @@ export function TopBar() {
   const { scale, increaseScale, decreaseScale, resetScale, canIncrease, canDecrease } = useScale();
 
   const [showHint, setShowHint] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const hasFSA = typeof window !== 'undefined' && 'showOpenFilePicker' in window;
 
   useEffect(() => {
@@ -35,6 +39,56 @@ export function TopBar() {
     }, 4500);
     return () => clearTimeout(timer);
   }, []);
+
+  // Listen for global rename shortcut (F2)
+  useEffect(() => {
+    const handleTriggerRename = () => {
+      if (activeFile) {
+        setNameInput(activeFile.name);
+        setIsEditingName(true);
+      }
+    };
+    window.addEventListener('editormd-rename-active', handleTriggerRename);
+    return () => window.removeEventListener('editormd-rename-active', handleTriggerRename);
+  }, [activeFile]);
+
+  // Focus and select input when entering edit mode
+  useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus();
+      const dotIndex = nameInput.lastIndexOf('.');
+      if (dotIndex > 0) {
+        inputRef.current.setSelectionRange(0, dotIndex);
+      } else {
+        inputRef.current.select();
+      }
+    }
+  }, [isEditingName]);
+
+  const handleStartEditing = () => {
+    if (!activeFile) return;
+    setNameInput(activeFile.name);
+    setIsEditingName(true);
+  };
+
+  const handleFinishEditing = () => {
+    if (!isEditingName || !activeFile) return;
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed !== activeFile.name) {
+      renameFile(activeFile.id, trimmed);
+    }
+    setIsEditingName(false);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleFinishEditing();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsEditingName(false);
+    }
+  };
 
   return (
     <header className="topbar" style={{ position: 'relative' }}>
@@ -84,14 +138,62 @@ export function TopBar() {
 
       {/* Active file name */}
       {activeFile ? (
-        <span className={`topbar-file-name${activeFile.isDirty ? ' unsaved' : ''}`} title={activeFile.path}>
-          {activeFile.name}
-          {!hasFSA && activeFile.isDirty && (
-            <span style={{ fontSize: 10, color: 'var(--overlay0)', marginLeft: 4 }}>
-              (sin acceso directo)
+        isEditingName ? (
+          <div className="topbar-file-name-edit">
+            <input
+              ref={inputRef}
+              type="text"
+              className="topbar-file-name-input"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={handleNameKeyDown}
+              onBlur={handleFinishEditing}
+              placeholder="Nombre del archivo..."
+              aria-label="Renombrar archivo"
+            />
+            <button
+              className="topbar-file-name-save-btn"
+              onMouseDown={e => {
+                // Prevent onBlur from triggering before onClick
+                e.preventDefault();
+                handleFinishEditing();
+              }}
+              title="Guardar nombre (Enter)"
+              aria-label="Confirmar nombre"
+            >
+              <Check style={{ width: 13, height: 13 }} />
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`topbar-file-name-wrapper${activeFile.isDirty ? ' unsaved' : ''}`}
+            onClick={handleStartEditing}
+            title="Haz clic o pulsa F2 para renombrar el archivo"
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => e.key === 'Enter' && handleStartEditing()}
+          >
+            <span className={`topbar-file-name${activeFile.isDirty ? ' unsaved' : ''}`}>
+              {activeFile.name}
             </span>
-          )}
-        </span>
+            <button
+              className="topbar-file-name-edit-btn"
+              onClick={e => {
+                e.stopPropagation();
+                handleStartEditing();
+              }}
+              title="Cambiar nombre (F2)"
+              aria-label="Cambiar nombre del archivo"
+            >
+              <Pencil style={{ width: 12, height: 12 }} />
+            </button>
+            {!hasFSA && activeFile.isDirty && (
+              <span style={{ fontSize: 10, color: 'var(--overlay0)', marginLeft: 4, whiteSpace: 'nowrap' }}>
+                (sin acceso directo)
+              </span>
+            )}
+          </div>
+        )
       ) : (
         <span className="topbar-file-name" style={{ color: 'var(--overlay0)' }}>
           Sin archivo abierto

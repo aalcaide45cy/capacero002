@@ -8,6 +8,12 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('editormd-rename-active'));
+        return;
+      }
+
       const isCtrl = e.ctrlKey || e.metaKey;
       if (!isCtrl) return;
 

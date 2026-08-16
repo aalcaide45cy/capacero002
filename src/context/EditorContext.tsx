@@ -10,7 +10,7 @@ import React, {
   useState,
 } from 'react';
 import { EditorState, EditorAction, EditorFile, ViewMode, FolderNode } from '@/lib/types';
-import { createFile, createNewFile, updateFileStats } from '@/lib/utils';
+import { createFile, createNewFile, updateFileStats, getLanguageFromName } from '@/lib/utils';
 
 // ──────────────────────────────────────────────────────────
 // State & Reducer
@@ -24,6 +24,24 @@ const initialState: EditorState = {
   folders: [],
   searchQuery: '',
 };
+
+function updateNodeFiles(nodes: FolderNode[], fileId: string, finalName: string): FolderNode[] {
+  return nodes.map(folder => ({
+    ...folder,
+    files: folder.files.map(f => {
+      if (f.id !== fileId) return f;
+      const pathParts = f.path.split('/');
+      pathParts[pathParts.length - 1] = finalName;
+      return {
+        ...f,
+        name: finalName,
+        path: pathParts.join('/'),
+        language: getLanguageFromName(finalName),
+      };
+    }),
+    children: updateNodeFiles(folder.children, fileId, finalName),
+  }));
+}
 
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -70,6 +88,28 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             ...stats,
           };
         }),
+      };
+    }
+
+    case 'RENAME_FILE': {
+      const { id, name } = action.payload;
+      const trimmed = name.trim();
+      if (!trimmed) return state;
+      const finalName = trimmed.includes('.') ? trimmed : `${trimmed}.md`;
+      return {
+        ...state,
+        files: state.files.map(f => {
+          if (f.id !== id) return f;
+          const pathParts = f.path.split('/');
+          pathParts[pathParts.length - 1] = finalName;
+          return {
+            ...f,
+            name: finalName,
+            path: pathParts.join('/'),
+            language: getLanguageFromName(finalName),
+          };
+        }),
+        folders: updateNodeFiles(state.folders, id, finalName),
       };
     }
 
@@ -156,6 +196,7 @@ interface EditorContextValue {
   saveFile: (fileId?: string) => Promise<void>;
   saveFileAs: (fileId?: string) => Promise<void>;
   newFile: () => void;
+  renameFile: (fileId: string, newName: string) => void;
   closeFile: (fileId: string) => void;
   setViewMode: (mode: ViewMode) => void;
   hasUnsavedChanges: boolean;
@@ -400,6 +441,10 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'ADD_FILE', payload: file });
   }, [state.files]);
 
+  const renameFile = useCallback((fileId: string, newName: string) => {
+    dispatch({ type: 'RENAME_FILE', payload: { id: fileId, name: newName } });
+  }, []);
+
   const closeFile = useCallback((fileId: string) => {
     dispatch({ type: 'REMOVE_FILE', payload: fileId });
   }, []);
@@ -419,6 +464,7 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         saveFile,
         saveFileAs,
         newFile,
+        renameFile,
         closeFile,
         setViewMode,
         hasUnsavedChanges,

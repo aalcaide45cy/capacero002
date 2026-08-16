@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FilePlus,
   FolderOpen,
@@ -12,12 +12,13 @@ import {
   Search,
   X,
   FileText,
+  Pencil,
 } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { EditorFile, FolderNode } from '@/lib/types';
 
 export function Sidebar() {
-  const { state, dispatch, activeFile, openFile, openFolder, newFile, closeFile } = useEditor();
+  const { state, dispatch, activeFile, openFile, openFolder, newFile, closeFile, renameFile } = useEditor();
   const { sidebarOpen, files, folders, searchQuery } = state;
 
   const filteredFiles = searchQuery
@@ -106,6 +107,7 @@ export function Sidebar() {
                 searchQuery={searchQuery}
                 onSelect={id => dispatch({ type: 'SET_ACTIVE', payload: id })}
                 onClose={closeFile}
+                onRename={renameFile}
                 onToggle={path => dispatch({ type: 'TOGGLE_FOLDER', payload: path })}
               />
             ))}
@@ -123,6 +125,7 @@ export function Sidebar() {
                     isActive={activeFile?.id === file.id}
                     onSelect={() => dispatch({ type: 'SET_ACTIVE', payload: file.id })}
                     onClose={() => closeFile(file.id)}
+                    onRename={renameFile}
                   />
                 ))}
               </>
@@ -144,6 +147,7 @@ function FolderTree({
   searchQuery,
   onSelect,
   onClose,
+  onRename,
   onToggle,
   depth = 0,
 }: {
@@ -152,6 +156,7 @@ function FolderTree({
   searchQuery: string;
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
+  onRename: (id: string, newName: string) => void;
   onToggle: (path: string) => void;
   depth?: number;
 }) {
@@ -195,6 +200,7 @@ function FolderTree({
               isActive={activeFile?.id === file.id}
               onSelect={() => onSelect(file.id)}
               onClose={() => onClose(file.id)}
+              onRename={onRename}
             />
           ))}
           {folder.children.map(child => (
@@ -205,6 +211,7 @@ function FolderTree({
               searchQuery={searchQuery}
               onSelect={onSelect}
               onClose={onClose}
+              onRename={onRename}
               onToggle={onToggle}
               depth={depth + 1}
             />
@@ -229,37 +236,116 @@ function FileItem({
   isActive,
   onSelect,
   onClose,
+  onRename,
 }: {
   file: EditorFile;
   isActive: boolean;
   onSelect: () => void;
   onClose: () => void;
+  onRename: (id: string, newName: string) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [nameInput, setNameInput] = useState(file.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setNameInput(file.name);
+  }, [file.name]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      const dotIndex = nameInput.lastIndexOf('.');
+      if (dotIndex > 0) {
+        inputRef.current.setSelectionRange(0, dotIndex);
+      } else {
+        inputRef.current.select();
+      }
+    }
+  }, [isEditing]);
+
+  const handleStartRename = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setNameInput(file.name);
+    setIsEditing(true);
+  };
+
+  const handleFinishRename = () => {
+    if (!isEditing) return;
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed !== file.name) {
+      onRename(file.id, trimmed);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      handleFinishRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      setNameInput(file.name);
+      setIsEditing(false);
+    }
+  };
 
   return (
     <div
       className={`file-item${isActive ? ' active' : ''}`}
-      onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={() => {
+        if (!isEditing) onSelect();
+      }}
+      onDoubleClick={handleStartRename}
       role="button"
       tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onSelect()}
+      onKeyDown={e => {
+        if (!isEditing && e.key === 'Enter') onSelect();
+      }}
       id={`file-item-${file.id}`}
       aria-selected={isActive}
       aria-label={`${file.name}${file.isDirty ? ' (modificado)' : ''}`}
     >
       <FileText className="file-item-icon" />
       <div className="file-item-info">
-        <div className="file-item-name">{file.name}</div>
-        {file.path !== file.name && (
-          <div className="file-item-path">{file.path}</div>
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            className="file-item-rename-input"
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleFinishRename}
+            onClick={e => e.stopPropagation()}
+            aria-label="Renombrar archivo"
+          />
+        ) : (
+          <>
+            <div className="file-item-name" title={file.name}>{file.name}</div>
+            {file.path !== file.name && (
+              <div className="file-item-path" title={file.path}>{file.path}</div>
+            )}
+          </>
         )}
       </div>
-      {file.isDirty && <div className="file-item-badge" title="Modificado sin guardar" />}
+      {file.isDirty && !isEditing && <div className="file-item-badge" title="Modificado sin guardar" />}
+      
+      {!isEditing && (
+        <button
+          className="file-item-action-btn file-item-rename"
+          onClick={handleStartRename}
+          title="Renombrar"
+          aria-label={`Renombrar ${file.name}`}
+        >
+          <Pencil />
+        </button>
+      )}
+
       <button
-        className="file-item-close"
+        className="file-item-action-btn file-item-close"
         onClick={e => {
           e.stopPropagation();
           onClose();

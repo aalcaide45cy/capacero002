@@ -40,6 +40,7 @@ export type EditorAction =
   | { type: 'REMOVE_FILE'; payload: string }
   | { type: 'SET_ACTIVE'; payload: string }
   | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
+  | { type: 'RENAME_FILE'; payload: { id: string; name: string } }
   | { type: 'MARK_SAVED'; payload: string }
   | { type: 'SET_VIEW_MODE'; payload: ViewMode }
   | { type: 'TOGGLE_SIDEBAR' }

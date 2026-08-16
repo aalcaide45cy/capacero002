@@ -274,14 +274,37 @@ body.editormd-active {
   flex-shrink: 0;
 }
 
+.topbar-file-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 320px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all var(--transition);
+  background: transparent;
+}
+
+.topbar-file-name-wrapper:hover {
+  background: var(--surface0);
+  border-color: var(--surface1);
+}
+
+.topbar-file-name-wrapper:hover .topbar-file-name-edit-btn {
+  opacity: 1;
+  color: var(--mauve);
+}
+
 .topbar-file-name {
   font-size: 0.93rem;
   color: var(--subtext0);
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  font-weight: 500;
 }
 
 .topbar-file-name.unsaved {
@@ -293,6 +316,65 @@ body.editormd-active {
   color: var(--peach);
   font-size: 0.7em;
   vertical-align: middle;
+}
+
+.topbar-file-name-edit-btn {
+  background: transparent;
+  border: none;
+  color: var(--overlay0);
+  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+
+.topbar-file-name-edit-btn:hover {
+  color: var(--text);
+  background: var(--surface1);
+  opacity: 1;
+}
+
+.topbar-file-name-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.topbar-file-name-input {
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface0);
+  border: 1px solid var(--mauve);
+  border-radius: 6px;
+  padding: 3px 8px;
+  outline: none;
+  min-width: 140px;
+  max-width: 280px;
+  box-shadow: 0 0 0 2px rgba(202, 158, 230, 0.15);
+}
+
+.topbar-file-name-save-btn {
+  background: var(--surface1);
+  border: 1px solid var(--surface2);
+  color: var(--green);
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.topbar-file-name-save-btn:hover {
+  background: var(--green);
+  color: var(--base);
 }
 
 .topbar-actions {
@@ -604,9 +686,9 @@ body.editormd-active {
   box-shadow: 0 0 6px rgba(250, 179, 135, 0.5);
 }
 
-.file-item-close {
-  width: 18px;
-  height: 18px;
+.file-item-action-btn {
+  width: 20px;
+  height: 20px;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -616,10 +698,18 @@ body.editormd-active {
   transition: all var(--transition);
   flex-shrink: 0;
   background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
-.file-item:hover .file-item-close {
+.file-item:hover .file-item-action-btn {
   opacity: 1;
+}
+
+.file-item-rename:hover {
+  background: var(--surface1);
+  color: var(--mauve);
 }
 
 .file-item-close:hover {
@@ -627,9 +717,22 @@ body.editormd-active {
   color: var(--red);
 }
 
-.file-item-close svg {
-  width: 11px;
-  height: 11px;
+.file-item-action-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.file-item-rename-input {
+  width: 100%;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface0);
+  border: 1px solid var(--mauve);
+  border-radius: 4px;
+  padding: 1px 5px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(202, 158, 230, 0.15);
 }
 
 /* Folder tree */
