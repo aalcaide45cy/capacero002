@@ -1545,19 +1545,58 @@ export default function AnalyticsDashboard() {
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-sm font-bold text-white">
-                                        2. Código de Google Apps Script (Extensiones > Apps Script):
+                                        2. Código Apps Script Unificado (Vídeos + Estadísticas + Webhook):
                                     </h4>
                                     <button
                                         onClick={handleCopyScript}
                                         className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
                                     >
                                         {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                        <span>{copiedScript ? '¡Copiado!' : 'Copiar Código'}</span>
+                                        <span>{copiedScript ? '¡Copiado!' : 'Copiar Código Completo'}</span>
                                     </button>
                                 </div>
-                                <pre className="bg-black text-zinc-300 text-xs p-4 rounded-2xl border border-zinc-800 overflow-x-auto max-h-48 font-mono leading-relaxed">
+                                <div className="p-3 bg-blue-950/30 border border-cyan-500/20 rounded-xl text-xs text-cyan-200 mb-2">
+                                    💡 <strong>Paso 1:</strong> Pega este código en <em>Extensiones &gt; Apps Script</em> y guarda.<br />
+                                    💡 <strong>Paso 2:</strong> Recarga tu Google Sheet y en el menú superior <strong>"🎥 Capa Cero"</strong> haz clic en <strong>"📊 Crear y Formatear Pestaña Estadísticas"</strong> para crear automáticamente las 19 columnas con sus anchos y formatos.<br />
+                                    💡 <strong>Paso 3:</strong> Pulsa <em>Implementar &gt; Nueva Implementación &gt; Aplicación Web</em> (Acceso: Cualquier persona / Anyone) y copia la URL resultante abajo si deseas guardar en vivo.
+                                </div>
+                                <pre className="bg-black text-zinc-300 text-xs p-4 rounded-2xl border border-zinc-800 overflow-x-auto max-h-44 font-mono leading-relaxed">
                                     {GOOGLE_APPS_SCRIPT_CODE}
                                 </pre>
+                            </div>
+
+                            {/* Campo de URL de Webhook para conexión en vivo */}
+                            <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 space-y-3">
+                                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                    <Database className="w-4 h-4 text-cyan-400" />
+                                    3. URL del Webhook de tu Aplicación Web (Opcional para guardado en vivo):
+                                </h4>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <input
+                                        type="url"
+                                        placeholder="https://script.google.com/macros/s/.../exec"
+                                        defaultValue={localStorage.getItem('capa_cero_sheets_webhook') || ''}
+                                        id="sheets-webhook-input"
+                                        className="flex-1 bg-black border border-zinc-800 text-xs text-white rounded-xl px-3 py-2.5 focus:outline-none focus:border-cyan-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const input = document.getElementById('sheets-webhook-input');
+                                            const val = input ? input.value.trim() : '';
+                                            if (val) {
+                                                localStorage.setItem('capa_cero_sheets_webhook', val);
+                                                showToast('URL de Google Sheets Webhook guardada');
+                                            } else {
+                                                localStorage.removeItem('capa_cero_sheets_webhook');
+                                                showToast('Webhook desactivado');
+                                            }
+                                        }}
+                                        className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap"
+                                    >
+                                        Guardar URL
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex justify-end pt-2">

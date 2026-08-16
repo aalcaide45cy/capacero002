@@ -173,11 +173,33 @@ let currentActiveSection = 'Hero Principal';
 let lastTickTime = Date.now();
 let isWindowFocused = true;
 
-// Envío a Google Sheets (Modular y desconectable)
-const sendToSheetsIfEnabled = (payload) => {
-    if (!GOOGLE_SHEETS_ENABLED) return;
+// Envío a Google Sheets (Modular, admite webhook guardado en localStorage)
+export const sendToSheetsIfEnabled = (extraData = {}) => {
     try {
-        fetch(SHEETS_DB_URL, {
+        const customWebhook = localStorage.getItem('capa_cero_sheets_webhook');
+        const targetUrl = customWebhook || (GOOGLE_SHEETS_ENABLED ? SHEETS_DB_URL : null);
+        if (!targetUrl) return;
+
+        const payload = {
+            timestamp: currentSession?.timestamp || new Date().toISOString(),
+            sessionId: currentSession?.sessionId || getSessionId(),
+            country: currentSession?.country || '',
+            countryCode: currentSession?.countryCode || '',
+            flag: currentSession?.flag || '',
+            region: currentSession?.region || '',
+            city: currentSession?.city || '',
+            device: currentSession?.device || '',
+            os: currentSession?.os || '',
+            browser: currentSession?.browser || '',
+            origin: currentSession?.origin || getOrigin(),
+            totalActiveSeconds: currentSession?.totalActiveSeconds || 0,
+            hasSubscribed: currentSession?.hasSubscribed || false,
+            subscribedFrom: currentSession?.subscribedFrom || '',
+            dwellTimes: currentSession?.dwellTimes || { ...sectionTimes },
+            ...extraData
+        };
+
+        fetch(targetUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain' },
