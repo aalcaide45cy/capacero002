@@ -2,11 +2,11 @@
   {
     "id": "v1",
     "Titulo": "Cómo Ahorrar Horas de Impresión en Bambu Studio",
-    "URL_Youtube": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "URL_Youtube": "https://www.youtube.com/@CapaCero0",
     "Categoria": "Bambu Studio",
     "Descripcion": "Descubre los ajustes clave de velocidad, aceleraciones y grosor de capas para reducir hasta un 35% el tiempo de tus piezas sin perder calidad superficial.",
     "Consejo_Clave": "Aumenta la velocidad de los perímetros internos y el relleno manteniendo las paredes exteriores a velocidad media para un acabado perfecto.",
-    "Enlace_Descarga": "https://makerworld.com",
+    "Enlace_Descarga": "https://makerworld.com/en/@capa_cero",
     "Enlace_Descarga2": "",
     "Enlace_Descarga3": "",
     "Destacado": "SI"
@@ -14,11 +14,11 @@
   {
     "id": "v2",
     "Titulo": "Elimina el Stringing e Hilos en PETG Definitivamente",
-    "URL_Youtube": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "URL_Youtube": "https://www.youtube.com/@CapaCero0",
     "Categoria": "Solución de Errores",
     "Descripcion": "Guía paso a paso para calibrar la retracción, temperatura y velocidad de desplazamiento para evitar pelos y rebabas en piezas de PETG.",
     "Consejo_Clave": "Reduce la temperatura de boquilla en 5°C y activa el salto en Z (Z-Hop) en espiral para evitar que la boquilla arrastre material fundido.",
-    "Enlace_Descarga": "https://makerworld.com",
+    "Enlace_Descarga": "https://makerworld.com/en/@capa_cero",
     "Enlace_Descarga2": "",
     "Enlace_Descarga3": "",
     "Destacado": "NO"
@@ -26,19 +26,19 @@
   {
     "id": "v3",
     "Titulo": "Soportes de Árbol Perfectos: Fáciles de Retirar y sin Marcas",
-    "URL_Youtube": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "URL_Youtube": "https://www.youtube.com/@CapaCero0",
     "Categoria": "Bambu Studio",
     "Descripcion": "Configuración secreta de la distancia de interfaz superior y ángulo de soporte para que se desprendan con la mano sin romper la pieza.",
     "Consejo_Clave": "Establece la distancia Z superior en 0.2mm (la misma altura de tu capa) y utiliza 3 capas de interfaz densas.",
-    "Enlace_Descarga": "https://makerworld.com",
-    "Enlace_Descarga2": "https://makerworld.com",
+    "Enlace_Descarga": "https://makerworld.com/en/@capa_cero",
+    "Enlace_Descarga2": "",
     "Enlace_Descarga3": "",
     "Destacado": "NO"
   },
   {
     "id": "v4",
     "Titulo": "Primera Capa Perfecta: La Calibración que Nadie te Cuenta",
-    "URL_Youtube": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "URL_Youtube": "https://www.youtube.com/@CapaCero0",
     "Categoria": "Perfiles y Calibración",
     "Descripcion": "Cómo nivelar, ajustar el Z-Offset y evitar la pata de elefante en tus impresiones para que todas las bases queden como un espejo.",
     "Consejo_Clave": "Limpia la placa PEI con agua tibia y jabón neutro, y sube la temperatura de la cama 5°C en la primera capa para máxima adherencia.",
@@ -50,7 +50,7 @@
   {
     "id": "v5",
     "Titulo": "Organiza Jerarquías y Objetos Múltiples en Bambu Studio",
-    "URL_Youtube": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "URL_Youtube": "https://www.youtube.com/@CapaCero0",
     "Categoria": "Trucos Rápidos",
     "Descripcion": "Aprende a imprimir por objeto, cambiar ajustes individuales por pieza y ahorrar cambios de color innecesarios.",
     "Consejo_Clave": "Agrupa piezas que usen los mismos colores o activa 'Imprimir por objeto' si las piezas son bajas para evitar desplazamientos largos.",

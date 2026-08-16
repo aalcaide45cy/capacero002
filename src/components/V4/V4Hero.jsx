@@ -1,5 +1,6 @@
 import React from 'react';
-import { Youtube, Play, Download, Sparkles, Zap, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Play, Download, Sparkles, Zap, ShieldCheck, ArrowRight } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
@@ -40,7 +41,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-xl shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-200 active:scale-[0.98]"
               >
-                <Youtube className="w-5 h-5 fill-white" />
+                <YouTubeIcon className="w-5 h-5 text-white" />
                 <span>Suscribirme a Capa Cero</span>
                 <span className="text-xs bg-red-800/80 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-red-100">
                   Gratis
@@ -147,10 +148,12 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                 </div>
               </div>
             ) : (
-              <div className="aspect-video w-full bg-zinc-900 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center p-6 text-center">
-                <Youtube className="w-12 h-12 text-red-500 mb-3" />
-                <p className="text-sm font-semibold text-white">Canal de YouTube Capa Cero</p>
-                <p className="text-xs text-zinc-400 mt-1">Conecta tu Google Sheet para mostrar tu vídeo destacado</p>
+              <div className="aspect-video w-full bg-zinc-900/90 rounded-2xl border border-dashed border-zinc-700 flex flex-col items-center justify-center p-6 text-center">
+                <YouTubeIcon className="w-12 h-12 text-red-500 mb-3" />
+                <p className="text-sm font-bold text-white">Google Sheet Conectado</p>
+                <p className="text-xs text-zinc-400 mt-1 max-w-xs">
+                  Tu hoja <strong>Capacero3d V4</strong> está vinculada. Añade tus vídeos para que aparezcan aquí automáticamente.
+                </p>
               </div>
             )}
           </div>

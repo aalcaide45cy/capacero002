@@ -1,5 +1,6 @@
 import React from 'react';
-import { Youtube, ExternalLink, Calculator, FileText } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4Footer() {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
@@ -25,9 +26,9 @@ export default function V4Footer() {
             href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-red-400 transition-colors flex items-center gap-1"
+            className="hover:text-red-400 transition-colors flex items-center gap-1.5"
           >
-            <Youtube className="w-4 h-4 text-red-500" />
+            <YouTubeIcon className="w-4 h-4 text-red-500" />
             <span>Canal de YouTube</span>
           </a>
           <a href="/calculadora" className="hover:text-zinc-200 transition-colors flex items-center gap-1">

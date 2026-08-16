@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Stethoscope, CheckCircle, Play, ArrowRight, ShieldAlert, Sparkles, Youtube } from 'lucide-react';
+import { Stethoscope, CheckCircle, Play, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 const COMMON_PROBLEMS = [
   {
@@ -184,7 +185,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                 onClick={() => onSearchWithQuery(selectedProblem.keywordSearch)}
                 className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all"
               >
-                <Youtube className="w-4 h-4 text-red-500" />
+                <YouTubeIcon className="w-4 h-4 text-red-500" />
                 <span>Buscar vídeos sobre "{selectedProblem.keywordSearch}"</span>
               </button>
             )}

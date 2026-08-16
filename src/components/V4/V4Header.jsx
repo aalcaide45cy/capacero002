@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Youtube, Bell, Settings, ArrowUpRight, Calculator, FileText, CheckCircle2 } from 'lucide-react';
+import React from 'react';
+import { Settings } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
@@ -28,11 +29,11 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
           </a>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs (Only V4 Sections) */}
         <nav className="hidden md:flex items-center gap-1 bg-zinc-900/70 p-1 rounded-xl border border-zinc-800/60">
           <button
             onClick={() => onOpenTab('videos')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'videos'
                 ? 'bg-zinc-800 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -42,7 +43,7 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
           </button>
           <button
             onClick={() => onOpenTab('doctor')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'doctor'
                 ? 'bg-zinc-800 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -52,7 +53,7 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
           </button>
           <button
             onClick={() => onOpenTab('downloads')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'downloads'
                 ? 'bg-zinc-800 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
@@ -60,20 +61,6 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
           >
             📥 Perfiles & 3MF
           </button>
-          <a
-            href="/calculadora"
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 transition-all flex items-center gap-1"
-          >
-            <Calculator className="w-3.5 h-3.5" />
-            Calculadora
-          </a>
-          <a
-            href="/editor"
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 transition-all flex items-center gap-1"
-          >
-            <FileText className="w-3.5 h-3.5" />
-            Editor MD
-          </a>
         </nav>
 
         {/* Actions */}
@@ -94,7 +81,7 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
             rel="noopener noreferrer"
             className="relative group overflow-hidden flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-lg shadow-red-600/20 transition-all duration-200 active:scale-95"
           >
-            <Youtube className="w-4 h-4 text-white fill-white" />
+            <YouTubeIcon className="w-4 h-4 text-white" />
             <span>Suscribirme</span>
             <span className="hidden sm:inline-block text-[11px] bg-red-800/80 px-1.5 py-0.5 rounded font-normal text-red-100">
               1 Clic

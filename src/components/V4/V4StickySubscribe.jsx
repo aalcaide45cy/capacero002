@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Youtube, X, Bell } from 'lucide-react';
+import { X, Bell } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4StickySubscribe() {
   const [isVisible, setIsVisible] = useState(false);
@@ -27,7 +28,7 @@ export default function V4StickySubscribe() {
         
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-red-600/30">
-            <Youtube className="w-5 h-5 fill-white" />
+            <YouTubeIcon className="w-5 h-5 text-white" />
           </div>
           <div>
             <h4 className="text-xs sm:text-sm font-black text-white leading-tight">

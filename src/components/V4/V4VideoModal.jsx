@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { X, Youtube, Download, Lightbulb, ExternalLink, Check, Heart } from 'lucide-react';
+import { X, Download, Lightbulb, ExternalLink, Check, Heart } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4VideoModal({ video, onClose }) {
   const [downloadedCount, setDownloadedCount] = useState(0);
@@ -75,7 +76,7 @@ export default function V4VideoModal({ video, onClose }) {
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-              <Youtube className="w-16 h-16 text-red-600 mb-3" />
+              <YouTubeIcon className="w-16 h-16 text-red-600 mb-3" />
               <h3 className="text-base font-bold text-white mb-2">{video.title}</h3>
               <a
                 href={video.youtubeUrl}
@@ -174,7 +175,7 @@ export default function V4VideoModal({ video, onClose }) {
               rel="noopener noreferrer"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-95 shrink-0"
             >
-              <Youtube className="w-4 h-4 fill-white" />
+              <YouTubeIcon className="w-4 h-4 text-white" />
               <span>Suscribirme al Canal (+1 Clic)</span>
             </a>
           </div>
