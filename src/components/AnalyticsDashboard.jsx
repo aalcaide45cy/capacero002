@@ -10,6 +10,7 @@ import {
 import {
     loadAnalyticsData,
     computeAnalyticsMetrics,
+    isSessionSubscribed,
     exportAnalyticsToCSV,
     exportAnalyticsToJSON,
     clearAnalyticsDB,
@@ -257,8 +258,8 @@ export default function AnalyticsDashboard() {
                 valA = a.totalActiveSeconds || 0;
                 valB = b.totalActiveSeconds || 0;
             } else if (tableSortField === 'subscribed') {
-                valA = a.hasSubscribed ? 1 : 0;
-                valB = b.hasSubscribed ? 1 : 0;
+                valA = isSessionSubscribed(a) ? 1 : 0;
+                valB = isSessionSubscribed(b) ? 1 : 0;
             } else if (tableSortField === 'timestamp') {
                 valA = new Date(a.timestamp || 0).getTime();
                 valB = new Date(b.timestamp || 0).getTime();
@@ -920,10 +921,22 @@ export default function AnalyticsDashboard() {
                                     )}
                                 </div>
 
-                                <div className="space-y-3.5 mt-5">
+                                <div className="p-3 bg-zinc-900/80 border border-zinc-800 rounded-2xl flex items-center justify-between text-xs mt-3 mb-2">
+                                    <span className="text-zinc-400 font-semibold">
+                                        📊 Total Países: <strong className="text-white">{geoMetrics.countriesRank.length}</strong>
+                                    </span>
+                                    <div className="flex items-center gap-3 font-mono">
+                                        <span className="text-cyan-400 font-bold">{geoMetrics.totalVisits} visitas</span>
+                                        <span className="text-zinc-600">•</span>
+                                        <span className="text-emerald-400 font-bold">{geoMetrics.totalSubscribers} subs totales</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3.5 mt-3">
                                     {geoMetrics.countriesRank.map((c) => {
                                         const isSelected = countryFilter === c.name;
                                         const pct = geoMetrics.totalVisits > 0 ? Math.round((c.count / geoMetrics.totalVisits) * 100) : 0;
+                                        const convRate = c.count > 0 ? ((c.subs / c.count) * 100).toFixed(1) : '0.0';
                                         return (
                                             <div
                                                 key={c.name}
@@ -936,18 +949,23 @@ export default function AnalyticsDashboard() {
                                                 title={isSelected ? `Haz clic para quitar el filtro de ${c.name}` : `Haz clic para filtrar todo el panel por ${c.name}`}
                                             >
                                                 <div className="flex items-center gap-3 flex-1">
-                                                    <span className="text-2xl">{c.flag}</span>
-                                                    <div className="flex-1">
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <span className="text-2xl leading-none">{c.flag}</span>
+                                                        <span className="text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded border border-zinc-700">
+                                                            {c.code || c.name.substring(0, 2).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between items-center text-xs font-bold text-white mb-1">
-                                                            <span className="flex items-center gap-2">
-                                                                <span>{c.name}</span>
+                                                            <span className="flex items-center gap-2 truncate">
+                                                                <span className="truncate">{c.name}</span>
                                                                 {isSelected && (
-                                                                    <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-1.5 py-0.2 rounded font-bold">
+                                                                    <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-1.5 py-0.2 rounded font-bold shrink-0">
                                                                         Activo
                                                                     </span>
                                                                 )}
                                                             </span>
-                                                            <span className="text-cyan-400 font-mono">{c.count} visitas ({pct}%)</span>
+                                                            <span className="text-cyan-400 font-mono shrink-0 ml-2">{c.count} visitas ({pct}%)</span>
                                                         </div>
                                                         <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
                                                             <div style={{ width: `${pct}%` }} className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full" />
@@ -955,8 +973,12 @@ export default function AnalyticsDashboard() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-xl">
-                                                        {c.subs} subs
+                                                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border ${
+                                                        c.subs > 0
+                                                            ? 'text-emerald-400 bg-emerald-950/60 border-emerald-500/30'
+                                                            : 'text-zinc-500 bg-zinc-950/60 border-zinc-800'
+                                                    }`}>
+                                                        {c.subs} subs ({convRate}%)
                                                     </span>
                                                 </div>
                                             </div>

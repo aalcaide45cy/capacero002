@@ -397,6 +397,18 @@ export const loadAnalyticsData = async (mode = 'live') => {
     };
 };
 
+// Verificación estricta y segura de suscripción (admite boolean, string 'SI', 'true', etc.)
+export const isSessionSubscribed = (s) => {
+    if (!s) return false;
+    if (typeof s.hasSubscribed === 'boolean') return s.hasSubscribed;
+    if (typeof s.hasSubscribed === 'string') {
+        const val = s.hasSubscribed.trim().toUpperCase();
+        return val === 'SI' || val === 'TRUE' || val === '1' || val === 'YES';
+    }
+    if (typeof s.hasSubscribed === 'number') return s.hasSubscribed === 1;
+    return false;
+};
+
 // Procesar métricas globales con soporte para filtros combinados (fecha, país, dispositivo, origen, suscripción, búsqueda)
 export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
     const {
@@ -437,8 +449,9 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         if (originFilter !== 'all' && (!s.origin || !s.origin.toLowerCase().includes(originFilter.toLowerCase()))) return false;
 
         // 5. Filtro de Suscripción
-        if (subscribedFilter === 'subscribed' && !s.hasSubscribed) return false;
-        if (subscribedFilter === 'not_subscribed' && s.hasSubscribed) return false;
+        const sub = isSessionSubscribed(s);
+        if (subscribedFilter === 'subscribed' && !sub) return false;
+        if (subscribedFilter === 'not_subscribed' && sub) return false;
 
         // 6. Filtro de Búsqueda de Texto
         if (q) {
@@ -461,7 +474,7 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
     // 1. KPIs Maestros
     const totalVisits = filteredSessions.length;
     const uniqueUsers = new Set(filteredSessions.map(s => s.userId || s.ip)).size;
-    const totalSubscribers = filteredSessions.filter(s => s.hasSubscribed).length;
+    const totalSubscribers = filteredSessions.filter(isSessionSubscribed).length;
     const subscriptionRate = totalVisits > 0 ? ((totalSubscribers / totalVisits) * 100).toFixed(1) : 0;
 
     const totalSeconds = filteredSessions.reduce((acc, s) => acc + (s.totalActiveSeconds || 0), 0);
@@ -482,7 +495,9 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         const code = s.countryCode || '';
         if (!countryMap[country]) countryMap[country] = { name: country, flag, code, count: 0, subs: 0 };
         countryMap[country].count++;
-        if (s.hasSubscribed) countryMap[country].subs++;
+        if (isSessionSubscribed(s)) {
+            countryMap[country].subs++;
+        }
 
         const cityKey = `${s.city || 'Desconocida'}, ${country}`;
         if (!cityMap[cityKey]) cityMap[cityKey] = { city: s.city || 'Desconocida', country, flag, count: 0 };
@@ -495,7 +510,7 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
 
     // 3. Suscripciones y Atribución de Vídeo
     const subsOriginMap = {};
-    filteredSessions.filter(s => s.hasSubscribed).forEach(s => {
+    filteredSessions.filter(isSessionSubscribed).forEach(s => {
         const from = s.subscribedFrom || 'Origen General';
         subsOriginMap[from] = (subsOriginMap[from] || 0) + 1;
     });
@@ -601,7 +616,7 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         const day = s.timestamp.substring(0, 10);
         if (!timelineMap[day]) timelineMap[day] = { date: day, visits: 0, subs: 0, clicks: 0 };
         timelineMap[day].visits++;
-        if (s.hasSubscribed) timelineMap[day].subs++;
+        if (isSessionSubscribed(s)) timelineMap[day].subs++;
     });
     const dailyTimeline = Object.values(timelineMap).sort((a, b) => a.date.localeCompare(b.date));
 
