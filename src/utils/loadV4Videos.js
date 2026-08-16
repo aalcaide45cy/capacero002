@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import fallbackVideos from '../data/videos_v4.json';
 
-export const DEFAULT_SHEET_CSV_URL = "";
+export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
 /**
  * Convierte cualquier URL de Google Sheets a su enlace directo CSV público
