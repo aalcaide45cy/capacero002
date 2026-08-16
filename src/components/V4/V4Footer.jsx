@@ -13,7 +13,7 @@ export default function V4Footer({ onOpenCollaboration }) {
           <img
             src="/logo-capa-cero.webp"
             alt="Capa Cero Logo"
-            className="h-11 sm:h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
+            className="h-11 sm:h-12 w-auto rounded-xl object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
           />
           <div className="text-left">
             <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
