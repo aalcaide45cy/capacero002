@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Stethoscope, CheckCircle, Play, ArrowRight, Youtube } from 'lucide-react';
+import { trackDoctorSelect } from '../../utils/analytics';
 
 const COMMON_PROBLEMS = [
   {
@@ -104,7 +105,10 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
             return (
               <button
                 key={prob.id}
-                onClick={() => setSelectedProblem(prob)}
+                onClick={() => {
+                  setSelectedProblem(prob);
+                  trackDoctorSelect(prob, false);
+                }}
                 className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex items-center justify-between gap-3 border ${
                   isSelected
                     ? 'bg-zinc-900 border-cyan-500/50 shadow-lg shadow-blue-500/10 ring-1 ring-cyan-500/40'
@@ -172,7 +176,10 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                   <strong className="text-white line-clamp-1">{matchingVideo.title}</strong>
                 </div>
                 <button
-                  onClick={() => onSelectVideo(matchingVideo)}
+                  onClick={() => {
+                    trackDoctorSelect(selectedProblem, true);
+                    onSelectVideo(matchingVideo);
+                  }}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all shrink-0 border border-cyan-300/40"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />

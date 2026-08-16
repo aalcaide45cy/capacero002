@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, ExternalLink, Play, Sparkles, FileText, CheckCircle } from 'lucide-react';
+import { trackDownload } from '../../utils/analytics';
 
 export default function V4Downloads({ videos, onSelectVideo }) {
   const downloadVideos = videos.filter((v) => v.hasDownloads);
@@ -40,7 +41,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
 
                 <h3
                   onClick={() => onSelectVideo(video)}
-                  className="text-base font-bold text-white hover:text-red-400 cursor-pointer transition-colors line-clamp-2 mb-2"
+                  className="text-base font-bold text-white hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 mb-2"
                 >
                   {video.title}
                 </h3>
@@ -60,6 +61,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
                     href={dl.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackDownload(dl, video)}
                     className="flex items-center justify-between gap-2 bg-zinc-950 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/60 text-xs font-semibold px-3.5 py-2.5 rounded-xl transition-all"
                   >
                     <div className="flex items-center gap-2">

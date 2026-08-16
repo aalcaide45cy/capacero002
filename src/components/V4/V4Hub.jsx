@@ -9,6 +9,7 @@ import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos } from '../../utils/loadV4Videos';
+import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 
 export default function V4Hub() {
   const [videos, setVideos] = useState([]);
@@ -20,6 +21,18 @@ export default function V4Hub() {
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
 
+  // Iniciar sesión de analítica completa en el montaje
+  useEffect(() => {
+    initAnalyticsSession();
+  }, []);
+
+  // Actualizar la sección activa según la pestaña actual
+  useEffect(() => {
+    if (activeTab === 'videos') setActiveSection('Videoteca Grid');
+    else if (activeTab === 'doctor') setActiveSection('Doctor 3D');
+    else if (activeTab === 'downloads') setActiveSection('Descargas');
+  }, [activeTab]);
+
   // Scroll listener for sticky searchbar & compact header
   useEffect(() => {
     const handleScroll = () => {
@@ -27,6 +40,7 @@ export default function V4Hub() {
         setIsSticky(true);
       } else {
         setIsSticky(false);
+        setActiveSection('Hero Principal');
       }
     };
     window.addEventListener('scroll', handleScroll);

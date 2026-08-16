@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube } from 'lucide-react';
+import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 
 export default function V4VideoModal({ video, onClose }) {
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [showSubReminder, setShowSubReminder] = useState(false);
+
+  useEffect(() => {
+    if (video) {
+      trackVideoOpen(video);
+    }
+  }, [video]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -24,10 +31,11 @@ export default function V4VideoModal({ video, onClose }) {
     ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
     : null;
 
-  const handleDownloadClick = (url) => {
+  const handleDownloadClick = (dl) => {
     setDownloadedCount((prev) => prev + 1);
     setShowSubReminder(true);
-    window.open(url, '_blank');
+    trackDownload(dl, video);
+    window.open(dl.url, '_blank');
   };
 
   return (
@@ -137,7 +145,7 @@ export default function V4VideoModal({ video, onClose }) {
                 {video.downloads.map((dl, idx) => (
                   <button
                     key={dl.id || idx}
-                    onClick={() => handleDownloadClick(dl.url)}
+                    onClick={() => handleDownloadClick(dl)}
                     className="flex items-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-200 hover:text-white border border-cyan-500/40 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95"
                   >
                     <Download className="w-4 h-4 text-cyan-400" />
@@ -172,6 +180,7 @@ export default function V4VideoModal({ video, onClose }) {
               href={subscribeUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackSubscribe(`Modal Vídeo: ${video.title}`, video)}
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 shrink-0 border border-cyan-400/30"
             >
               <Youtube className="w-4 h-4 text-white" />

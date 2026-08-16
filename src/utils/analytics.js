@@ -1,164 +1,495 @@
 /**
- * Utility for Google Analytics (GA4) and Custom Google Sheets Analytics
+ * Capa Cero Analytics Engine v4
+ * Sistema integral de telemetría, geolocalización, atribución de suscriptores,
+ * dwell time por secciones, interacciones y persistencia local de alto rendimiento.
  */
 
-// --- GOOGLE SHEETS ANALYTICS CONFIG ---
+import { saveSession, saveEvent } from './analyticsStorage';
+
+// --- CONFIGURACIÓN DE GOOGLE SHEETS (Desconectado temporalmente según petición) ---
+const GOOGLE_SHEETS_ENABLED = false;
 const SHEETS_DB_URL = "https://script.google.com/macros/s/AKfycbx4_oOWg3bri93p57u2q__jeo33S0ZHT2VSMSHQEGBL_LMTD-g6H5KTw-fyP76h5AI/exec";
 
-// Get or generate an anonymous user ID for the session
-const getUserId = () => {
+// Identificadores únicos y persistentes
+export const getUserId = () => {
     let uid = localStorage.getItem('capa_cero_uid');
     if (!uid) {
-        uid = 'User-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        uid = 'usr_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4);
         localStorage.setItem('capa_cero_uid', uid);
     }
     return uid;
 };
 
-// Detect where the user came from
-const getOrigin = () => {
-    // 1. Check if there is an explicit UTM or origin parameter (e.g. ?origen=tiktok)
-    const params = new URLSearchParams(window.location.search);
-    const paramOrigin = params.get('origen') || params.get('utm_source');
-    if (paramOrigin) return paramOrigin;
-
-    // 2. Check the browser's implicit referrer
-    const referrer = document.referrer;
-    if (referrer) {
-        const refLower = referrer.toLowerCase();
-        if (refLower.includes('tiktok.com') || refLower.includes('vm.tiktok.com')) return 'TikTok';
-        if (refLower.includes('youtube.com')) return 'YouTube';
-        if (refLower.includes('instagram.com')) return 'Instagram';
-        if (refLower.includes('facebook.com')) return 'Facebook';
-        if (refLower.includes('t.co') || refLower.includes('twitter.com')) return 'X / Twitter';
-        if (refLower.includes('google.')) return 'Google Search';
-        try {
-            return new URL(referrer).hostname;
-        } catch (e) {
-            return referrer;
-        }
+export const getSessionId = () => {
+    let sid = sessionStorage.getItem('capa_cero_sid');
+    if (!sid) {
+        sid = 'ses_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+        sessionStorage.setItem('capa_cero_sid', sid);
     }
+    return sid;
+};
 
-    // 3. (Fallback) Check User Agent for embedded social media browsers
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    if (ua) {
+// Detección del canal de origen / referrer / UTM
+export const getOrigin = () => {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const paramOrigin = params.get('origen') || params.get('utm_source') || params.get('source');
+        if (paramOrigin) {
+            const med = params.get('utm_medium') ? ` (${params.get('utm_medium')})` : '';
+            return `${paramOrigin}${med}`;
+        }
+
+        const referrer = document.referrer;
+        if (referrer) {
+            const refLower = referrer.toLowerCase();
+            if (refLower.includes('youtube.com') || refLower.includes('youtu.be')) return 'YouTube (Canal/Vídeo)';
+            if (refLower.includes('tiktok.com') || refLower.includes('vm.tiktok.com')) return 'TikTok (@capacero)';
+            if (refLower.includes('instagram.com')) return 'Instagram (@capa.cero_3d)';
+            if (refLower.includes('facebook.com') || refLower.includes('fb.me')) return 'Facebook';
+            if (refLower.includes('t.co') || refLower.includes('twitter.com') || refLower.includes('x.com')) return 'X / Twitter';
+            if (refLower.includes('google.')) return 'Google Search (Orgánico)';
+            if (refLower.includes('bing.') || refLower.includes('duckduckgo.')) return 'Buscador Externo';
+            try {
+                return new URL(referrer).hostname;
+            } catch (e) {
+                return referrer;
+            }
+        }
+
+        const ua = navigator.userAgent || '';
         const uaLower = ua.toLowerCase();
-        if (uaLower.includes('tiktok') || uaLower.includes('bytedance') || uaLower.includes('musical_ly') || uaLower.includes('trill')) return 'TikTok (App)';
+        if (uaLower.includes('tiktok') || uaLower.includes('bytedance') || uaLower.includes('musical_ly')) return 'TikTok (App)';
         if (uaLower.includes('instagram')) return 'Instagram (App)';
         if (uaLower.includes('fban') || uaLower.includes('fbav')) return 'Facebook (App)';
-    }
 
-    return 'Directo / Desconocido';
+        return 'Directo / Favoritos';
+    } catch (e) {
+        return 'Directo';
+    }
 };
 
-// Internal function to send data to the Google Sheets backend quietly
-const sendToSheets = (payload) => {
-    try {
-        const fullPayload = {
-            ...payload,
-            userId: getUserId(),
-            origin: getOrigin()
-        };
+// Detección técnica de dispositivo, SO y Navegador
+export const getDeviceDetails = () => {
+    const ua = navigator.userAgent || '';
+    let device = 'Desktop';
+    let os = 'Desconocido';
+    let browser = 'Desconocido';
 
+    // Device
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        device = 'Tablet';
+    } else if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated/i.test(ua)) {
+        device = 'Móvil';
+    }
+
+    // OS
+    if (/Windows NT 10.0/i.test(ua)) os = 'Windows 10/11';
+    else if (/Windows/i.test(ua)) os = 'Windows';
+    else if (/Macintosh|Mac OS X/i.test(ua)) os = 'macOS';
+    else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS / iPadOS';
+    else if (/Android/i.test(ua)) os = 'Android';
+    else if (/Linux/i.test(ua)) os = 'Linux';
+
+    // Browser
+    if (/TikTok/i.test(ua)) browser = 'TikTok In-App';
+    else if (/Instagram/i.test(ua)) browser = 'Instagram In-App';
+    else if (/Edg/i.test(ua)) browser = 'Microsoft Edge';
+    else if (/Chrome/i.test(ua) && !/Chromium|Edg/i.test(ua)) browser = 'Chrome';
+    else if (/Safari/i.test(ua) && !/Chrome|Edg/i.test(ua)) browser = 'Safari';
+    else if (/Firefox/i.test(ua)) browser = 'Firefox';
+    else if (/Opera|OPR/i.test(ua)) browser = 'Opera';
+
+    return {
+        device,
+        os,
+        browser,
+        screen: `${window.screen.width}x${window.screen.height}`,
+        language: navigator.language || 'es-ES'
+    };
+};
+
+// Bandera Emoji según código ISO (ej: 'ES' -> 🇪🇸)
+const getFlagEmoji = (countryCode) => {
+    if (!countryCode || countryCode.length !== 2) return '🌐';
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+};
+
+// Detección de GeoLocalización (con caché de sesión para máxima velocidad)
+export const getGeoLocation = async () => {
+    const cached = sessionStorage.getItem('capa_cero_geo');
+    if (cached) {
+        try {
+            return JSON.parse(cached);
+        } catch (e) {}
+    }
+
+    const defaultGeo = {
+        country: 'España',
+        countryCode: 'ES',
+        flag: '🇪🇸',
+        region: 'Madrid',
+        city: 'Madrid',
+        ip: '127.0.0.1'
+    };
+
+    try {
+        // Proveedor GeoIP gratuito y sin API key (ipwho.is)
+        const res = await fetch('https://ipwho.is/', { cache: 'force-cache' });
+        const data = await res.json();
+        if (data && data.success !== false) {
+            const geo = {
+                country: data.country || 'España',
+                countryCode: data.country_code || 'ES',
+                flag: data.flag?.emoji || getFlagEmoji(data.country_code || 'ES'),
+                region: data.region || data.city || 'Madrid',
+                city: data.city || 'Madrid',
+                ip: data.ip ? data.ip.replace(/\.\d+$/, '.xxx') : 'Anon'
+            };
+            sessionStorage.setItem('capa_cero_geo', JSON.stringify(geo));
+            return geo;
+        }
+    } catch (err) {
+        // Fallback rápido
+    }
+
+    return defaultGeo;
+};
+
+// --- ESTADO DE SESIÓN GLOBAL EN MEMORIA ---
+let currentSession = null;
+let activeDwellInterval = null;
+let sectionTimes = {
+    'Hero Principal': 0,
+    'Videoteca Grid': 0,
+    'Doctor 3D': 0,
+    'Descargas': 0,
+    'Modal de Vídeo': 0
+};
+let currentActiveSection = 'Hero Principal';
+let lastTickTime = Date.now();
+let isWindowFocused = true;
+
+// Envío a Google Sheets (Modular y desconectable)
+const sendToSheetsIfEnabled = (payload) => {
+    if (!GOOGLE_SHEETS_ENABLED) return;
+    try {
         fetch(SHEETS_DB_URL, {
             method: 'POST',
-            mode: 'no-cors', // Para evitar bloqueos del navegador en peticiones cruzadas simples
-            headers: {
-                'Content-Type': 'text/plain', // Usamos text/plain para saltar el preflight CORS
-            },
-            body: JSON.stringify(fullPayload)
-        }).catch(() => {
-            // Silently fail if adblocker blocks it
-        });
-    } catch (e) {
-        // Silently fail to never break the UI
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    } catch (e) {}
+};
+
+// Sincronizar sesión activa a IndexedDB
+const persistCurrentSession = () => {
+    if (!currentSession) return;
+    currentSession.dwellTimes = { ...sectionTimes };
+    saveSession(currentSession);
+};
+
+// Inicializar la sesión del visitante
+export const initAnalyticsSession = async () => {
+    if (currentSession) return currentSession;
+
+    const sessionId = getSessionId();
+    const userId = getUserId();
+    const origin = getOrigin();
+    const deviceDetails = getDeviceDetails();
+    const geo = await getGeoLocation();
+
+    currentSession = {
+        sessionId,
+        userId,
+        timestamp: new Date().toISOString(),
+        ip: geo.ip,
+        country: geo.country,
+        countryCode: geo.countryCode,
+        flag: geo.flag,
+        region: geo.region,
+        city: geo.city,
+        device: deviceDetails.device,
+        os: deviceDetails.os,
+        browser: deviceDetails.browser,
+        screen: deviceDetails.screen,
+        language: deviceDetails.language,
+        origin,
+        totalActiveSeconds: 0,
+        scrollDepth: 0,
+        hasSubscribed: false,
+        subscribedFrom: null,
+        dwellTimes: { ...sectionTimes }
+    };
+
+    await saveSession(currentSession);
+    await saveEvent({
+        sessionId,
+        type: 'session_start',
+        details: {
+            origin,
+            country: geo.country,
+            city: geo.city,
+            device: deviceDetails.device,
+            browser: deviceDetails.browser
+        }
+    });
+
+    // Iniciar temporizador de tiempo activo (con detección de visibilidad)
+    setupActiveTimeTracker();
+
+    // Iniciar observador de scroll depth
+    setupScrollTracker();
+
+    return currentSession;
+};
+
+// Temporizador de permanencia activa (se pausa si la pestaña está en segundo plano)
+const setupActiveTimeTracker = () => {
+    if (activeDwellInterval) clearInterval(activeDwellInterval);
+
+    window.addEventListener('focus', () => { isWindowFocused = true; lastTickTime = Date.now(); });
+    window.addEventListener('blur', () => { isWindowFocused = false; });
+    document.addEventListener('visibilitychange', () => {
+        isWindowFocused = !document.hidden;
+        lastTickTime = Date.now();
+    });
+
+    activeDwellInterval = setInterval(() => {
+        if (!isWindowFocused || !currentSession) return;
+
+        const now = Date.now();
+        const deltaSec = Math.round((now - lastTickTime) / 1000);
+        lastTickTime = now;
+
+        if (deltaSec > 0 && deltaSec < 5) {
+            currentSession.totalActiveSeconds = (currentSession.totalActiveSeconds || 0) + deltaSec;
+            if (currentActiveSection && sectionTimes[currentActiveSection] !== undefined) {
+                sectionTimes[currentActiveSection] += deltaSec;
+            } else if (currentActiveSection) {
+                sectionTimes[currentActiveSection] = (sectionTimes[currentActiveSection] || 0) + deltaSec;
+            }
+
+            // Persistir periódicamente cada 5 segundos
+            persistCurrentSession();
+        }
+    }, 2000);
+};
+
+// Cambiar la sección activa actual para medir tiempo de permanencia (Dwell Time)
+export const setActiveSection = (sectionName) => {
+    currentActiveSection = sectionName;
+    if (sectionTimes[sectionName] === undefined) {
+        sectionTimes[sectionName] = 0;
     }
 };
 
-// --- GA4 TRACKING ---
+// Rastreador de Scroll Depth (25%, 50%, 75%, 100%)
+let reachedMilestones = new Set();
+const setupScrollTracker = () => {
+    const handleScroll = () => {
+        const h = document.documentElement;
+        const b = document.body;
+        const st = 'scrollTop';
+        const sh = 'scrollHeight';
+        const percent = Math.min(100, Math.round(((h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight)) * 100));
 
-// Track a custom event
-export const trackEvent = (eventName, params = {}) => {
+        [25, 50, 75, 100].forEach(milestone => {
+            if (percent >= milestone && !reachedMilestones.has(milestone)) {
+                reachedMilestones.add(milestone);
+                if (currentSession) {
+                    currentSession.scrollDepth = milestone;
+                    persistCurrentSession();
+                }
+                saveEvent({
+                    sessionId: getSessionId(),
+                    type: 'scroll_depth',
+                    details: { depth: milestone }
+                });
+            }
+        });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+};
+
+// --- EVENTOS PÚBLICOS DE TELEMETRÍA ---
+
+// 1. Clic en Tarjeta de Vídeo / Producto
+export const trackCardClick = (cardData) => {
+    const payload = {
+        title: cardData.title || cardData.name || 'Tutorial',
+        id: cardData.id || '',
+        category: cardData.category || 'General',
+        sourceSection: currentActiveSection
+    };
+
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'card_click',
+        details: payload
+    });
+
     if (window.gtag) {
-        window.gtag('event', eventName, params);
+        window.gtag('event', 'select_content', {
+            content_type: 'video_card',
+            item_id: cardData.id,
+            item_name: cardData.title || cardData.name
+        });
     }
 };
 
-// Track search queries
-let searchTimeout = null;
-export const trackSearch = (searchTerm) => {
-    if (!searchTerm || searchTerm.length < 2) return;
+// 2. Apertura de Modal de Vídeo / Reproducción
+export const trackVideoOpen = (video) => {
+    const payload = {
+        title: video.title || 'Tutorial',
+        id: video.id || '',
+        category: video.category || 'General',
+        youtubeId: video.youtubeId || ''
+    };
 
-    trackEvent('search', {
-        search_term: searchTerm
+    setActiveSection('Modal de Vídeo');
+
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_open',
+        details: payload
     });
 
-    // Envío a Google Sheets (con pequeño retraso para no enviar cada letra si teclea rápido)
-    if (searchTimeout) clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        sendToSheets({
-            action: 'log_search',
-            searchTerm: searchTerm
+    if (window.gtag) {
+        window.gtag('event', 'video_start', {
+            video_title: video.title,
+            video_id: video.youtubeId
         });
-    }, 1500); // Esperar 1.5s desde la última pulsación para registrar la palabra final
+    }
 };
 
-// Track product clicks (Vista de la Tarjeta al Modal)
-export const trackProductClick = (product) => {
-    trackEvent('select_content', {
-        content_type: 'product',
-        item_id: product.id,
-        item_name: product.name,
-        item_category: product.category,
-        price: product.price
+// 3. Suscripción al Canal (¡CON ATRIBUCIÓN EXACTA!)
+export const trackSubscribe = (sourceContext = 'Hero CTA', videoDetails = null) => {
+    const videoTitle = videoDetails?.title || (sourceContext.includes('Vídeo:') ? sourceContext.replace('Vídeo: ', '') : null);
+    const attribution = videoTitle ? `Vídeo: ${videoTitle}` : sourceContext;
+
+    if (currentSession) {
+        currentSession.hasSubscribed = true;
+        currentSession.subscribedFrom = attribution;
+        persistCurrentSession();
+    }
+
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'subscribe_click',
+        details: {
+            source: attribution,
+            videoTitle: videoTitle || null,
+            section: currentActiveSection
+        }
     });
 
-    // Envío a Google Sheets (Vista)
-    sendToSheets({
-        action: 'log_product',
-        type: 'view',
-        productId: product.id,
-        productName: product.name
+    sendToSheetsIfEnabled({
+        action: 'log_subscribe',
+        source: attribution,
+        videoTitle: videoTitle || 'Canal General'
+    });
+
+    if (window.gtag) {
+        window.gtag('event', 'conversion', {
+            send_to: 'subscribe',
+            event_category: 'Channel Subscription',
+            event_label: attribution
+        });
+    }
+};
+
+// 4. Descarga de Perfil / Archivo .3MF
+export const trackDownload = (downloadItem, video = null) => {
+    const payload = {
+        label: downloadItem.label || downloadItem.name || 'Descarga',
+        url: downloadItem.url || '',
+        videoTitle: video?.title || 'Descarga Directa',
+        category: video?.category || 'Recursos'
+    };
+
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'download_click',
+        details: payload
+    });
+
+    if (window.gtag) {
+        window.gtag('event', 'file_download', {
+            file_name: payload.label,
+            video_origin: payload.videoTitle
+        });
+    }
+};
+
+// 5. Diagnóstico de Doctor 3D
+export const trackDoctorSelect = (problem, clickedVideo = false) => {
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'doctor3d_select',
+        details: {
+            symptom: problem.title,
+            keyword: problem.keywordSearch,
+            clickedVideoSolution: clickedVideo
+        }
     });
 };
 
-// Track category filter clicks
-export const trackCategorySelect = (category) => {
-    trackEvent('select_category', {
-        category_name: category
-    });
+// 6. Búsqueda en el buscador
+let searchDebounce = null;
+export const trackSearch = (searchTerm, resultsCount = 0) => {
+    if (!searchTerm || searchTerm.trim().length < 2) return;
+
+    if (searchDebounce) clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(() => {
+        saveEvent({
+            sessionId: getSessionId(),
+            type: 'search_query',
+            details: {
+                term: searchTerm.trim(),
+                resultsCount
+            }
+        });
+
+        if (window.gtag) {
+            window.gtag('event', 'search', { search_term: searchTerm });
+        }
+    }, 1200);
 };
 
-// Track social media clicks
+// 7. Clic en Redes Sociales
 export const trackSocialClick = (platform) => {
-    trackEvent('click_social', {
-        platform: platform
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'social_click',
+        details: { platform }
     });
+
+    if (window.gtag) {
+        window.gtag('event', 'social_interaction', { platform });
+    }
 };
 
-// Track badge/filter clicks (Top, Oferta, Nuevo)
-export const trackFilterSelect = (filterType) => {
-    trackEvent('select_filter', {
-        filter_type: filterType
-    });
-};
-
-// Track affiliate link clicks (Final conversion click, ¡EL QUE IMPORTA!)
+// 8. Clics de compatibilidad con V2 / Afiliados
+export const trackProductClick = (product) => trackCardClick(product);
 export const trackAffiliateClick = (product) => {
-    trackEvent('click_offer', {
-        item_id: product.id,
-        item_name: product.name,
-        item_category: product.category,
-        destination: product.link,
-        price: product.price
-    });
-
-    // Envío a Google Sheets (Clic final)
-    sendToSheets({
-        action: 'log_product',
-        type: 'click',
-        productId: product.id,
-        productName: product.name
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'affiliate_click',
+        details: { name: product.name, id: product.id, price: product.price }
     });
 };
-
+export const trackFilterSelect = (filter) => {
+    saveEvent({ sessionId: getSessionId(), type: 'filter_select', details: { filter } });
+};
+export const trackCategorySelect = (category) => {
+    saveEvent({ sessionId: getSessionId(), type: 'category_select', details: { category } });
+};
+export const trackEvent = (eventName, params = {}) => {
+    if (window.gtag) window.gtag('event', eventName, params);
+};

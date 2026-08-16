@@ -1,13 +1,19 @@
 import React from 'react';
 import { Play, Download, Lightbulb, ExternalLink, Youtube } from 'lucide-react';
+import { trackCardClick } from '../../utils/analytics';
 
 export default function V4VideoCard({ video, onSelect }) {
+  const handleSelect = () => {
+    trackCardClick(video);
+    if (onSelect) onSelect(video);
+  };
+
   return (
     <div className="group bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left">
       
       {/* Thumbnail Area */}
       <div
-        onClick={() => onSelect(video)}
+        onClick={handleSelect}
         className="relative aspect-video w-full bg-zinc-950 cursor-pointer overflow-hidden"
       >
         <img
@@ -45,7 +51,7 @@ export default function V4VideoCard({ video, onSelect }) {
         
         {/* Title */}
         <h3
-          onClick={() => onSelect(video)}
+          onClick={handleSelect}
           className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2"
         >
           {video.title}
@@ -72,7 +78,7 @@ export default function V4VideoCard({ video, onSelect }) {
         {/* Footer Actions */}
         <div className="mt-auto pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
           <button
-            onClick={() => onSelect(video)}
+            onClick={handleSelect}
             className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors py-1"
           >
             <Play className="w-3.5 h-3.5 fill-cyan-400" />
@@ -82,7 +88,7 @@ export default function V4VideoCard({ video, onSelect }) {
           {/* If there are downloads, show a direct shortcut */}
           {video.hasDownloads ? (
             <button
-              onClick={() => onSelect(video)}
+              onClick={handleSelect}
               className="text-[11px] font-semibold text-zinc-300 hover:text-cyan-300 flex items-center gap-1 bg-zinc-800/60 hover:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 transition-colors"
             >
               <Download className="w-3 h-3 text-cyan-400" />

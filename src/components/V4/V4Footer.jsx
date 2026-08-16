@@ -1,5 +1,6 @@
 import React from 'react';
 import { Youtube, Mail } from 'lucide-react';
+import { trackSubscribe, trackSocialClick } from '../../utils/analytics';
 
 export default function V4Footer({ onOpenCollaboration }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
@@ -27,6 +28,10 @@ export default function V4Footer({ onOpenCollaboration }) {
             href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              trackSocialClick('YouTube (Footer)');
+              trackSubscribe('Footer');
+            }}
             className="hover:text-cyan-400 transition-colors flex items-center gap-1.5"
           >
             <Youtube className="w-4 h-4 text-[#2575c4]" />

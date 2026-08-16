@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
-import { trackSocialClick } from '../../utils/analytics';
+import { trackSocialClick, trackSubscribe, trackVideoOpen } from '../../utils/analytics';
 
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -132,6 +132,7 @@ export default function V4Hero({
                 href={subscribeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackSubscribe('Hero Principal (Cabecera)')}
                 className="flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-200 active:scale-[0.98] border border-cyan-400/30"
               >
                 <Youtube className="w-5 h-5 text-white" />

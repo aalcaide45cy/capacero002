@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, X, Youtube, Instagram, Mail } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
-import { trackSocialClick } from '../../utils/analytics';
+import { trackSocialClick, trackSearch } from '../../utils/analytics';
 
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -71,7 +71,11 @@ export default function V4SearchBar({
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                trackSearch(val);
+              }}
               className={`w-full bg-zinc-900 text-white text-sm sm:text-base px-11 sm:px-14 rounded-full border-2 border-zinc-800 focus:border-[#2575c4] focus:outline-none transition-all duration-300 search-focus glow-blue-static ${
                 isSticky ? 'py-1.5 sm:py-2' : 'py-2.5 sm:py-3'
               }`}

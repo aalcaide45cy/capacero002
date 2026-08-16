@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Youtube } from 'lucide-react';
+import { trackSubscribe } from '../../utils/analytics';
 
 export default function V4StickySubscribe() {
   const [isVisible, setIsVisible] = useState(false);
@@ -44,6 +45,7 @@ export default function V4StickySubscribe() {
             href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackSubscribe('Barra Flotante (Sticky)')}
             className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-cyan-300/40"
           >
             Suscribirme
