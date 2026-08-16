@@ -83,18 +83,6 @@ export default function V4Hub() {
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-red-600 selection:text-white">
       
-      {/* Top Banner indicating private preview */}
-      <div className="bg-zinc-900 border-b border-zinc-800 text-[11px] text-zinc-400 py-1.5 px-4 text-center flex items-center justify-center gap-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-        <span>Versión V4 Privada (Oculta a Google / noindex).</span>
-        <button
-          onClick={() => setIsConfigModalOpen(true)}
-          className="text-amber-300 hover:text-amber-200 underline font-semibold ml-1"
-        >
-          {sheetUrl ? 'Google Sheet conectado' : 'Conectar Google Sheet'}
-        </button>
-      </div>
-
       {/* Header */}
       <V4Header
         onOpenSheetConfig={() => setIsConfigModalOpen(true)}

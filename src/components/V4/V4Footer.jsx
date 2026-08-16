@@ -1,5 +1,4 @@
 import React from 'react';
-import { ExternalLink, Calculator, FileText } from 'lucide-react';
 import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4Footer() {
@@ -10,18 +9,18 @@ export default function V4Footer() {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
         
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-2">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-2 shadow-lg">
             <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-full h-full object-contain" />
           </div>
           <div className="text-left">
-            <h4 className="text-sm font-bold text-white">Capa Cero 3D</h4>
+            <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
             <p className="text-xs text-zinc-500">Tutoriales, herramientas y perfiles para makers.</p>
           </div>
         </div>
 
         {/* Links */}
-        <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-zinc-400">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-zinc-400">
           <a
             href={subscribeUrl}
             target="_blank"
@@ -30,14 +29,6 @@ export default function V4Footer() {
           >
             <YouTubeIcon className="w-4 h-4 text-red-500" />
             <span>Canal de YouTube</span>
-          </a>
-          <a href="/calculadora" className="hover:text-zinc-200 transition-colors flex items-center gap-1">
-            <Calculator className="w-3.5 h-3.5" />
-            <span>Calculadora 3D</span>
-          </a>
-          <a href="/editor" className="hover:text-zinc-200 transition-colors flex items-center gap-1">
-            <FileText className="w-3.5 h-3.5" />
-            <span>Editor MD</span>
           </a>
           <a href="/politica-privacidad" className="hover:text-zinc-200 transition-colors">
             Privacidad y Cookies

@@ -11,13 +11,13 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
         
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <a href="/v4" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center p-1.5 group-hover:border-red-500/50 transition-colors">
+          <a href="/v4" className="flex items-center gap-3 group">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-1.5 group-hover:border-red-500/50 shadow-md group-hover:shadow-red-500/10 transition-all">
               <img src="/logo-capa-cero-small.png" alt="Capa Cero" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-white text-base tracking-tight group-hover:text-red-400 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-white text-base sm:text-lg tracking-tight group-hover:text-red-400 transition-colors">
                   Capa Cero
                 </span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/30 uppercase tracking-wider">
