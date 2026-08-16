@@ -723,20 +723,16 @@ export const RECOMMENDED_SHEET_COLUMNS = [
     { col: 'S', name: 'Doctor3D_Consultas', desc: 'Síntomas mecánicos consultados' }
 ];
 
-// Código Apps Script completo y unificado listo para copiar y pegar
+// Código Apps Script completo, ultra compatible y limpio
 export const GOOGLE_APPS_SCRIPT_CODE = `/**
  * ==============================================================================
  * SISTEMA INTEGRAL CAPA CERO 3D - VÍDEOS HORIZONTALES Y ANALÍTICA V4
  * ==============================================================================
- * Pega este código completo en: Extensiones > Apps Script en tu Google Sheet.
- * Incluye:
- * 1. Menú "🎥 Capa Cero" con sincronizador de 27 vídeos y creador de pestaña Estadísticas.
- * 2. Formateo automático de tipos de datos, colores y anchos para analítica.
- * 3. Webhook doPost/doGet para recibir visitas y suscripciones en tiempo real desde la web.
+ * Compatible al 100% con Google Apps Script (V8 y Clásico).
  */
 
-// Lista negra de Shorts y vídeos privados
-const VIDEOS_IGNORADOS = new Set([
+// Lista de Shorts y vídeos privados que no deben sincronizarse
+var VIDEOS_IGNORADOS = [
   "C4tnZhcznnM",
   "cPEr2vj8OD8",
   "XIWrao4uNtU",
@@ -747,10 +743,10 @@ const VIDEOS_IGNORADOS = new Set([
   "gRmLRA6tpZw",
   "-Ed4ICmVaZ8",
   "z905Akv3KHQ"
-]);
+];
 
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
+  var ui = SpreadsheetApp.getUi();
   ui.createMenu('🎥 Capa Cero')
     .addItem('🔄 Sincronizar Vídeos (Solo Horizontales)', 'sincronizarVideosCapaCero')
     .addItem('🗑️ Limpiar y Re-sincronizar Todo (27 Vídeos)', 'limpiarYResincronizar')
@@ -760,17 +756,17 @@ function onOpen() {
 }
 
 /**
- * CREA Y FORMATEA AUTOMÁTICAMENTE LA PESTAÑA "Estadisticas" CON SUS 19 COLUMNAS Y TIPOS DE DATOS
+ * CREA Y FORMATEA AUTOMÁTICAMENTE LA PESTAÑA "Estadisticas"
  */
 function crearYFormatearPestanaEstadisticas() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Estadisticas");
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Estadisticas");
   
   if (!sheet) {
     sheet = ss.insertSheet("Estadisticas");
   }
   
-  const headers = [
+  var headers = [
     "Timestamp",
     "ID_Sesion",
     "Pais",
@@ -796,9 +792,9 @@ function crearYFormatearPestanaEstadisticas() {
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   
   // Estilo visual de la cabecera (Fila 1)
-  const headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setBackground("#0f172a"); // Fondo azul oscuro premium
-  headerRange.setFontColor("#38bdf8"); // Texto Cyan
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground("#0f172a");
+  headerRange.setFontColor("#38bdf8");
   headerRange.setFontWeight("bold");
   headerRange.setFontSize(10);
   headerRange.setHorizontalAlignment("center");
@@ -807,55 +803,55 @@ function crearYFormatearPestanaEstadisticas() {
   sheet.setFrozenRows(1);
   
   // Asignar formatos y tipos de datos por columna
-  sheet.getRange("A2:A").setNumberFormat("yyyy-mm-dd hh:mm:ss"); // Timestamp (Fecha y Hora)
-  sheet.getRange("B2:B").setNumberFormat("@"); // ID_Sesion (Texto)
-  sheet.getRange("C2:C").setNumberFormat("@"); // Pais (Texto)
-  sheet.getRange("D2:D").setNumberFormat("@"); // Codigo_Pais (Texto)
-  sheet.getRange("E2:E").setNumberFormat("@"); // Bandera (Emoji/Texto)
-  sheet.getRange("F2:F").setNumberFormat("@"); // Region_Provincia (Texto)
-  sheet.getRange("G2:G").setNumberFormat("@"); // Ciudad (Texto)
-  sheet.getRange("H2:H").setNumberFormat("@"); // Dispositivo (Texto)
-  sheet.getRange("I2:I").setNumberFormat("@"); // Sistema_Operativo (Texto)
-  sheet.getRange("J2:J").setNumberFormat("@"); // Navegador (Texto)
-  sheet.getRange("K2:K").setNumberFormat("@"); // Canal_Origen (Texto)
-  sheet.getRange("L2:L").setNumberFormat("#,##0"); // Tiempo_Activo_Segundos (Entero)
-  sheet.getRange("M2:M").setNumberFormat("@"); // Suscrito (SI / NO)
-  sheet.getRange("N2:N").setNumberFormat("@"); // Suscrito_Desde (Texto)
-  sheet.getRange("O2:S").setNumberFormat("@"); // Secciones, Tarjetas, Descargas, Búsquedas, Doctor 3D (Texto)
+  sheet.getRange("A2:A").setNumberFormat("yyyy-mm-dd hh:mm:ss");
+  sheet.getRange("B2:B").setNumberFormat("@");
+  sheet.getRange("C2:C").setNumberFormat("@");
+  sheet.getRange("D2:D").setNumberFormat("@");
+  sheet.getRange("E2:E").setNumberFormat("@");
+  sheet.getRange("F2:F").setNumberFormat("@");
+  sheet.getRange("G2:G").setNumberFormat("@");
+  sheet.getRange("H2:H").setNumberFormat("@");
+  sheet.getRange("I2:I").setNumberFormat("@");
+  sheet.getRange("J2:J").setNumberFormat("@");
+  sheet.getRange("K2:K").setNumberFormat("@");
+  sheet.getRange("L2:L").setNumberFormat("#,##0");
+  sheet.getRange("M2:M").setNumberFormat("@");
+  sheet.getRange("N2:N").setNumberFormat("@");
+  sheet.getRange("O2:S").setNumberFormat("@");
   
   // Ajustar anchos de columnas
-  sheet.setColumnWidth(1, 160); // Timestamp
-  sheet.setColumnWidth(2, 140); // ID_Sesion
-  sheet.setColumnWidth(3, 110); // Pais
-  sheet.setColumnWidth(4, 90);  // Codigo_Pais
-  sheet.setColumnWidth(5, 70);  // Bandera
-  sheet.setColumnWidth(6, 130); // Region_Provincia
-  sheet.setColumnWidth(7, 130); // Ciudad
-  sheet.setColumnWidth(8, 100); // Dispositivo
-  sheet.setColumnWidth(9, 130); // Sistema_Operativo
-  sheet.setColumnWidth(10, 130);// Navegador
-  sheet.setColumnWidth(11, 140);// Canal_Origen
-  sheet.setColumnWidth(12, 150);// Tiempo_Activo_Segundos
-  sheet.setColumnWidth(13, 90); // Suscrito
-  sheet.setColumnWidth(14, 220);// Suscrito_Desde
-  sheet.setColumnWidth(15, 200);// Secciones_Vistas
-  sheet.setColumnWidth(16, 200);// Tarjetas_Clicadas
-  sheet.setColumnWidth(17, 200);// Descargas_Realizadas
-  sheet.setColumnWidth(18, 180);// Busquedas_Tecleadas
-  sheet.setColumnWidth(19, 200);// Doctor3D_Consultas
+  sheet.setColumnWidth(1, 160);
+  sheet.setColumnWidth(2, 140);
+  sheet.setColumnWidth(3, 110);
+  sheet.setColumnWidth(4, 90);
+  sheet.setColumnWidth(5, 70);
+  sheet.setColumnWidth(6, 130);
+  sheet.setColumnWidth(7, 130);
+  sheet.setColumnWidth(8, 100);
+  sheet.setColumnWidth(9, 130);
+  sheet.setColumnWidth(10, 130);
+  sheet.setColumnWidth(11, 140);
+  sheet.setColumnWidth(12, 150);
+  sheet.setColumnWidth(13, 90);
+  sheet.setColumnWidth(14, 220);
+  sheet.setColumnWidth(15, 200);
+  sheet.setColumnWidth(16, 200);
+  sheet.setColumnWidth(17, 200);
+  sheet.setColumnWidth(18, 180);
+  sheet.setColumnWidth(19, 200);
   
   SpreadsheetApp.getUi().alert(
-    "✅ ¡Pestaña 'Estadisticas' creada y formateada con éxito!\\n\\nTiene configuradas las 19 columnas con sus tipos de datos, anchos y colores."
+    "✅ ¡Pestaña 'Estadisticas' creada y formateada con éxito!"
   );
 }
 
 /**
- * RECEPTOR WEBHOOK POST: Recibe datos de visitas, dwell time y suscripciones desde la web
+ * RECEPTOR WEBHOOK POST
  */
 function doPost(e) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName("Estadisticas");
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Estadisticas");
     if (!sheet) {
       sheet = ss.insertSheet("Estadisticas");
     }
@@ -864,9 +860,9 @@ function doPost(e) {
       crearYFormatearPestanaEstadisticas();
     }
     
-    const data = JSON.parse(e.postData.contents);
+    var data = JSON.parse(e.postData.contents);
     
-    const row = [
+    var row = [
       data.timestamp || new Date().toISOString(),
       data.sessionId || "",
       data.country || "",
@@ -904,22 +900,21 @@ function doGet(e) {
 }
 
 /**
- * AUTO-COMPLETAR AL PEGAR:
- * Solo añade la fila si es un vídeo horizontal válido. Si es un Short, lo rechaza.
+ * AUTO-COMPLETAR AL PEGAR
  */
 function alPegarEnlace(e) {
   try {
     if (!e || !e.range) return;
-    const sheet = e.range.getSheet();
-    const row = e.range.getRow();
+    var sheet = e.range.getSheet();
+    var row = e.range.getRow();
     
     if (row <= 1) return;
     
-    const valorPegado = String(e.value || e.range.getValue()).trim();
-    if (!valorPegado || (!valorPegado.includes("youtu.be") && !valorPegado.includes("youtube.com"))) return;
+    var valorPegado = String(e.value || e.range.getValue()).trim();
+    if (!valorPegado || (valorPegado.indexOf("youtu.be") === -1 && valorPegado.indexOf("youtube.com") === -1)) return;
     
-    const videoId = extraerYouTubeId(valorPegado);
-    if (!videoId || VIDEOS_IGNORADOS.has(videoId)) {
+    var videoId = extraerYouTubeId(valorPegado);
+    if (!videoId || VIDEOS_IGNORADOS.indexOf(videoId) !== -1) {
       sheet.getRange(row, 1, 1, 9).clearContent();
       return;
     }
@@ -929,24 +924,24 @@ function alPegarEnlace(e) {
       return;
     }
     
-    const cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
-    const info = obtenerInfoRealYouTube(videoId);
+    var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
+    var info = obtenerInfoRealYouTube(videoId);
     
     if (esShort(videoId, cleanUrl, info.title)) {
       sheet.getRange(row, 1, 1, 9).clearContent();
       return;
     }
     
-    const filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
+    var filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
     
-    const titulo = filaActual[0] && !filaActual[0].includes("http") ? filaActual[0] : info.title;
-    const categoria = filaActual[2] ? filaActual[2] : info.category;
-    const descripcion = filaActual[3] ? filaActual[3] : "Tutorial oficial de Capa Cero: " + info.title + ". Explicación paso a paso para dominar tu impresora y el laminador.";
-    const consejo = filaActual[4] ? filaActual[4] : "Aplica este ajuste en Bambu Studio para optimizar el acabado y adherencia.";
-    const descarga1 = filaActual[5] ? filaActual[5] : "https://makerworld.com/en/@capa_cero";
-    const descarga2 = filaActual[6] ? filaActual[6] : "";
-    const descarga3 = filaActual[7] ? filaActual[7] : "";
-    const destacado = filaActual[8] ? filaActual[8] : "NO";
+    var titulo = filaActual[0] && filaActual[0].indexOf("http") === -1 ? filaActual[0] : info.title;
+    var categoria = filaActual[2] ? filaActual[2] : info.category;
+    var descripcion = filaActual[3] ? filaActual[3] : "Tutorial oficial de Capa Cero: " + info.title + ". Explicación paso a paso para dominar tu impresora y el laminador.";
+    var consejo = filaActual[4] ? filaActual[4] : "Aplica este ajuste en Bambu Studio para optimizar el acabado y adherencia.";
+    var descarga1 = filaActual[5] ? filaActual[5] : "https://makerworld.com/en/@capa_cero";
+    var descarga2 = filaActual[6] ? filaActual[6] : "";
+    var descarga3 = filaActual[7] ? filaActual[7] : "";
+    var destacado = filaActual[8] ? filaActual[8] : "NO";
     
     sheet.getRange(row, 1, 1, 9).setValues([[
       titulo,
@@ -966,24 +961,24 @@ function alPegarEnlace(e) {
  * DETECTOR ESTRICTO ANTI-SHORTS
  */
 function esShort(videoId, url, title) {
-  const urlLower = (url || "").toLowerCase();
-  const titleLower = (title || "").toLowerCase();
+  var urlLower = (url || "").toLowerCase();
+  var titleLower = (title || "").toLowerCase();
   
-  if (VIDEOS_IGNORADOS.has(videoId)) return true;
-  if (urlLower.includes("/shorts/")) return true;
-  if (titleLower.includes("#shorts") || titleLower.includes("#short")) return true;
+  if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) return true;
+  if (urlLower.indexOf("/shorts/") !== -1) return true;
+  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1) return true;
   
   try {
-    const ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-    const html = UrlFetchApp.fetch(ytUrl, { muteHttpExceptions: true }).getContentText();
+    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
+    var html = UrlFetchApp.fetch(ytUrl, { muteHttpExceptions: true }).getContentText();
     
-    if (html.includes('<link rel="canonical" href="https://www.youtube.com/shorts/')) {
+    if (html.indexOf('<link rel="canonical" href="https://www.youtube.com/shorts/') !== -1) {
       return true;
     }
     
-    const matchDur = html.match(/"approxDurationMs":"(\d+)"/);
+    var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
     if (matchDur && matchDur[1]) {
-      const durSec = Math.round(parseInt(matchDur[1], 10) / 1000);
+      var durSec = Math.round(parseInt(matchDur[1], 10) / 1000);
       if (durSec > 0 && durSec <= 60) {
         return true;
       }
@@ -994,20 +989,20 @@ function esShort(videoId, url, title) {
 }
 
 function extraerYouTubeId(url) {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
+  var regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  var match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
 function obtenerInfoRealYouTube(videoId) {
-  let title = "";
-  let category = "Bambu Studio";
+  var title = "";
+  var category = "Bambu Studio";
   
   try {
-    const apiUrl = "https://noembed.com/embed?url=https://www.youtube.com/watch?v=" + videoId;
-    const res = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
+    var apiUrl = "https://noembed.com/embed?url=https://www.youtube.com/watch?v=" + videoId;
+    var res = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
     if (res.getResponseCode() === 200) {
-      const data = JSON.parse(res.getContentText());
+      var data = JSON.parse(res.getContentText());
       if (data.title) title = data.title;
     }
   } catch (e) {}
@@ -1016,28 +1011,28 @@ function obtenerInfoRealYouTube(videoId) {
     title = "Tutorial #" + videoId;
   }
   
-  const t = title.toLowerCase();
-  if (t.includes("fusion") || t.includes("360") || t.includes("modelad")) {
+  var t = title.toLowerCase();
+  if (t.indexOf("fusion") !== -1 || t.indexOf("360") !== -1 || t.indexOf("modelad") !== -1) {
     category = "Modelado 3D";
-  } else if (t.includes("filamento") || t.includes("perfil") || t.includes("costura") || t.includes("calibrac")) {
+  } else if (t.indexOf("filamento") !== -1 || t.indexOf("perfil") !== -1 || t.indexOf("costura") !== -1 || t.indexOf("calibrac") !== -1) {
     category = "Perfiles y Calibración";
-  } else if (t.includes("multicolor") || t.includes("ams") || t.includes("pintar")) {
+  } else if (t.indexOf("multicolor") !== -1 || t.indexOf("ams") !== -1 || t.indexOf("pintar") !== -1) {
     category = "Multicolor y AMS";
-  } else if (t.includes("boquilla") || t.includes("hardware") || t.includes("laser") || t.includes("grabador")) {
-    category = t.includes("laser") ? "Grabado Láser" : "Hardware y Boquillas";
-  } else if (t.includes("ahorra") || t.includes("tiempo") || t.includes("truco") || t.includes("chatgpt") || t.includes("dinero")) {
+  } else if (t.indexOf("boquilla") !== -1 || t.indexOf("hardware") !== -1 || t.indexOf("laser") !== -1 || t.indexOf("grabador") !== -1) {
+    category = t.indexOf("laser") !== -1 ? "Grabado Láser" : "Hardware y Boquillas";
+  } else if (t.indexOf("ahorra") !== -1 || t.indexOf("tiempo") !== -1 || t.indexOf("truco") !== -1 || t.indexOf("chatgpt") !== -1 || t.indexOf("dinero") !== -1) {
     category = "Trucos Rápidos";
   } else {
     category = "Bambu Studio";
   }
   
-  return { title, category };
+  return { title: title, category: category };
 }
 
 function sincronizarVideosCapaCero() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   
-  const catalogoCanal = [
+  var catalogoCanal = [
     ["¡Adiós a las costuras! El truco definitivo en Bambu Studio", "https://www.youtube.com/watch?v=PCbMinEbUd4", "Perfiles y Calibración", "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.", "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
     ["Movimiento por el Viewport y Ajustes de Placas #8", "https://www.youtube.com/watch?v=hZvIHMnxb3w", "Bambu Studio", "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.", "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
     ["Fusion 360 para Principiantes: Modela tu Primera Mesa", "https://www.youtube.com/watch?v=9otbdJPW1WA", "Modelado 3D", "Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.", "Trabaja siempre con restricciones y cotas paramétricas para poder editar el diseño fácilmente.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
@@ -1067,23 +1062,26 @@ function sincronizarVideosCapaCero() {
     ["Adiós a las Limitaciones del AMS: Imprime Multicolor de Esta Forma", "https://www.youtube.com/watch?v=nPaTKz9Zqcs", "Multicolor y AMS", "Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.", "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"]
   ];
 
-  const data = sheet.getDataRange().getValues();
-  const existingUrls = new Set();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][1]) {
-      existingUrls.add(data[i][1].toString().trim());
+  var existingUrls = {};
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+    for (var i = 0; i < data.length; i++) {
+      if (data[i][0]) {
+        existingUrls[String(data[i][0]).trim()] = true;
+      }
     }
   }
 
-  let totalNuevos = 0;
-  catalogoCanal.forEach((fila) => {
-    const videoUrl = fila[1];
-    if (!existingUrls.has(videoUrl)) {
-      sheet.appendRow(fila);
-      existingUrls.add(videoUrl);
+  var totalNuevos = 0;
+  for (var k = 0; k < catalogoCanal.length; k++) {
+    var videoUrl = catalogoCanal[k][1];
+    if (!existingUrls[videoUrl]) {
+      sheet.appendRow(catalogoCanal[k]);
+      existingUrls[videoUrl] = true;
       totalNuevos++;
     }
-  });
+  }
 
   SpreadsheetApp.getUi().alert(
     totalNuevos > 0 
@@ -1093,8 +1091,8 @@ function sincronizarVideosCapaCero() {
 }
 
 function limpiarYResincronizar() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const lastRow = sheet.getLastRow();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     sheet.getRange(2, 1, lastRow - 1, 9).clearContent();
   }
