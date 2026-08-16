@@ -103,6 +103,12 @@ export function normalizeVideoRow(raw, index = 0) {
   const rawDestacado = String(raw.Destacado || raw.destacado || '').trim().toUpperCase();
   const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES';
 
+  // Filtrar shorts verticales de YouTube
+  const isShort = rawUrl.toLowerCase().includes('/shorts/') || 
+                  title.toLowerCase().includes('#shorts') || 
+                  title.toLowerCase().includes('#short');
+  if (isShort) return null;
+
   return {
     id: raw.id || `video-${index + 1}`,
     title: title || `Tutorial #${index + 1}`,
