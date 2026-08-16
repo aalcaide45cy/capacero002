@@ -1,37 +1,30 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
+import V4Hub from './components/V4/V4Hub';
+import V2BackCatalog from './components/V2BackCatalog';
 import Header from './components/Header';
-import SearchBar from './components/SearchBar';
-import FilterButtons from './components/FilterButtons';
-import CategoryFilters from './components/CategoryFilters';
-import ProductGrid from './components/ProductGrid';
-import ProductModal from './components/ProductModal';
-import { loadProducts, filterProducts } from './utils/loadProducts';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
 import CourseGrid from './components/CourseGrid';
 import PrivacyCookies from './components/PrivacyCookies';
-import WaitlistModal from './components/WaitlistModal';
-import CollaborationModal from './components/CollaborationModal';
 import Calculator from './components/Calculator';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { ThemeProvider } from './context/ThemeContext';
 import { ScaleProvider } from './context/ScaleContext';
 import { EditorProvider } from './context/EditorContext';
 import { AppShell } from './components/EditorMD/AppShell';
-import V4Hub from './components/V4/V4Hub';
 
 function App() {
     const currentPath = window.location.pathname;
 
-    // Intercepción de ruta para la nueva versión V4 (YouTube Hub)
-    if (currentPath === '/v4' || currentPath === '/v4/' || currentPath.startsWith('/v4/')) {
-        return <V4Hub />;
+    // 1. Ruta Privada para la versión anterior (Catálogo de productos)
+    if (currentPath === '/v2-back' || currentPath === '/v2-back/' || currentPath.startsWith('/v2-back/') || currentPath.startsWith('/producto/')) {
+        return <V2BackCatalog />;
     }
 
-    // Intercepción de ruta para el Panel Privado de Estadísticas
+    // 2. Intercepción de ruta para el Panel Privado de Estadísticas
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return <AnalyticsDashboard />;
     }
 
-    // Intercepción de ruta para el Editor MD
+    // 3. Intercepción de ruta para el Editor MD
     if (currentPath === '/editor' || currentPath === '/editor/') {
         return (
             <ThemeProvider>
@@ -44,7 +37,7 @@ function App() {
         );
     }
 
-    // Intercepción de ruta para la Calculadora 3D
+    // 4. Intercepción de ruta para la Calculadora 3D
     if (currentPath === '/calculadora' || currentPath === '/calculadora/') {
         return (
             <div className="min-h-screen bg-black">
@@ -52,7 +45,6 @@ function App() {
                 <div style={{ paddingTop: '20px' }}>
                     <Calculator />
                 </div>
-                {/* Global Amazon Associates Footer */}
                 <footer className="mt-20 border-t border-zinc-900 bg-black py-10 px-6 text-center">
                     <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
                         <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-12 h-12 opacity-50 grayscale hidden md:block" />
@@ -70,7 +62,7 @@ function App() {
         );
     }
 
-    // Intercepción de ruta para la Academia de Cursos
+    // 5. Intercepción de ruta para la Academia de Cursos
     if (currentPath === '/cursos' || currentPath === '/cursos/') {
         return (
             <div className="min-h-screen bg-black">
@@ -82,7 +74,7 @@ function App() {
         );
     }
     
-    // Intercepción de ruta para Privacidad y Legal
+    // 6. Intercepción de ruta para Privacidad y Legal
     if (currentPath === '/politica-privacidad' || currentPath === '/politica-privacidad/') {
         return (
             <div className="min-h-screen bg-black">
@@ -94,197 +86,8 @@ function App() {
         );
     }
 
-    const [allProducts, setAllProducts] = useState([]);
-    const [filteredProducts, setFilteredProducts] = useState([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeFilter, setActiveFilter] = useState(null);
-    const [activeCategory, setActiveCategory] = useState(null);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSticky, setIsSticky] = useState(false);
-    const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
-    const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-
-    // Load all products on mount
-    useEffect(() => {
-        async function fetchProducts() {
-            setIsLoading(true);
-            const products = await loadProducts();
-            setAllProducts(products);
-            setFilteredProducts(products);
-            setIsLoading(false);
-
-            // SEO Routing: Check if URL is /producto/id
-            const currentPath = window.location.pathname;
-            let productId = null;
-            
-            if (currentPath.startsWith('/producto/')) {
-                productId = currentPath.replace('/producto/', '');
-            } else {
-                // Retrocompatibilidad con enlaces antiguos ?p=
-                const params = new URLSearchParams(window.location.search);
-                productId = params.get('p');
-            }
-
-            if (productId) {
-                const targetProduct = products.find(p => p.id === productId);
-                if (targetProduct) {
-                    setSelectedProduct(targetProduct);
-                }
-            }
-        }
-
-        fetchProducts();
-    }, []);
-
-    // Scroll listener for sticky header
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsSticky(window.scrollY > 300);
-        };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    // Derive unique tags from products
-    const tags = useMemo(() => {
-        const uniqueTags = [...new Set(allProducts.map(p => p.tag).filter(Boolean))];
-        return uniqueTags.sort((a, b) => {
-            const cleanA = a.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
-            const cleanB = b.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
-            return cleanA.localeCompare(cleanB);
-        });
-    }, [allProducts]);
-
-    // Derive unique categories from products
-    const categories = useMemo(() => {
-        const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
-        return uniqueCategories.sort((a, b) => {
-            // Remove emojis and leading whitespace for sorting
-            const cleanA = a.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
-            const cleanB = b.replace(/^[\p{Emoji}\u200d\ufe0f\s]+/u, '');
-            return cleanA.localeCompare(cleanB);
-        });
-    }, [allProducts]);
-
-    // Generate dynamic search terms from product names
-    const searchTerms = useMemo(() => {
-        if (allProducts.length === 0) return [];
-        // Get 6 random product names
-        const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 6).map(p => `${p.name}...`);
-    }, [allProducts]);
-
-    // Filter products when search query, active filter, or active category changes
-    useEffect(() => {
-        let filtered = filterProducts(allProducts, searchQuery);
-
-        // Filter by Tag (Top, Oferta, Nuevo)
-        if (activeFilter) {
-            filtered = filtered.filter(product =>
-                product.tag && product.tag.toLowerCase() === activeFilter.toLowerCase()
-            );
-        }
-
-        // Filter by Category
-        if (activeCategory) {
-            filtered = filtered.filter(product =>
-                product.category === activeCategory
-            );
-        }
-
-        setFilteredProducts(filtered);
-    }, [searchQuery, activeFilter, activeCategory, allProducts]);
-
-    const handleProductClick = (product) => {
-        setSelectedProduct(product);
-        // SEO: Update URL to allow easy sharing and indexing (Rutas limpias)
-        window.history.replaceState({}, '', `/producto/${product.id}`);
-    };
-
-    const handleCloseModal = () => {
-        setSelectedProduct(null);
-        // SEO: Revert URL when closing modal
-        window.history.replaceState({}, '', '/');
-    };
-
-    return (
-        <div className="min-h-screen bg-black">
-            <Header
-                isSticky={isSticky}
-                onOpenCollaboration={() => setIsCollaborationOpen(true)}
-            />
-
-            <div style={{ paddingTop: '5px' }}>
-                <SearchBar
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    isSticky={isSticky}
-                    placeholderTerms={searchTerms}
-                    onOpenCollaboration={() => setIsCollaborationOpen(true)}
-                />
-                {isSticky && <div className="h-24" />}
-
-                <div className={`transition-all duration-300 ${isSticky ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-                    <FilterButtons
-                        tags={tags}
-                        activeFilter={activeFilter}
-                        onFilterChange={setActiveFilter}
-                    />
-
-                    <CategoryFilters
-                        categories={categories}
-                        activeCategory={activeCategory}
-                        onCategoryChange={setActiveCategory}
-                    />
-                </div>
-
-                {isLoading ? (
-                    <div className="text-center py-20">
-                        <div className="text-capaBlue text-2xl">Cargando productos...</div>
-                    </div>
-                ) : (
-                    <ProductGrid
-                        products={filteredProducts}
-                        onProductClick={handleProductClick}
-                    />
-                )}
-            </div>
-
-            {/* Global Amazon Associates Footer */}
-            <footer className="mt-20 border-t border-zinc-900 bg-black py-10 px-6 text-center">
-                <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
-                    <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-12 h-12 opacity-50 grayscale hidden md:block" />
-                    <p className="text-xs text-zinc-600 leading-relaxed">
-                        Capa Cero participa en el Programa de Afiliados de Amazon EU, un programa de publicidad para afiliados diseñado para ofrecer a sitios web un modo de obtener comisiones por publicidad, publicitando e incluyendo enlaces a Amazon.es / Amazon.com.
-                        <br/>
-                        Amazon y el logotipo de Amazon son marcas comerciales de Amazon.com, Inc. o de sociedades de su grupo.
-                    </p>
-                    <p className="text-xs text-zinc-700 mt-2">
-                        © {new Date().getFullYear()} Capa Cero. Todos los derechos reservados.
-                    </p>
-                </div>
-            </footer>
-
-            {/* Modal de Productos */}
-            {selectedProduct && (
-                <ProductModal
-                    product={selectedProduct}
-                    onClose={handleCloseModal}
-                />
-            )}
-
-            {/* Modal Global de Lista de Espera */}
-            {isWaitlistOpen && (
-                <WaitlistModal onClose={() => setIsWaitlistOpen(false)} />
-            )}
-
-            {/* Modal Global de Colaboraciones */}
-            {isCollaborationOpen && (
-                <CollaborationModal onClose={() => setIsCollaborationOpen(false)} />
-            )}
-        </div>
-    );
+    // 7. RUTA PRINCIPAL POR DEFECTO (/) Y (/v4): Nueva Videoteca y Hub Oficial Capa Cero
+    return <V4Hub />;
 }
 
 export default App;

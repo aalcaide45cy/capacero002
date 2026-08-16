@@ -1,3 +1,8 @@
 User-agent: *
+Disallow: /v2-back
+Disallow: /v2-back/
+Disallow: /estadisticas
+Disallow: /editor
 Allow: /
+
 Sitemap: https://www.capacero3d.com/sitemap.xml
