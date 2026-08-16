@@ -24,17 +24,20 @@
       ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
         window.addEventListener(type, blockGesture, { passive: false, capture: true });
         document.addEventListener(type, blockGesture, { passive: false, capture: true });
+        if (document.documentElement) document.documentElement.addEventListener(type, blockGesture, { passive: false, capture: true });
       });
 
       // 2. Bloquear cualquier interacción multitáctil (2 o más dedos)
       function blockMulti(e) {
         if (e.touches && e.touches.length > 1) {
           e.preventDefault();
+          e.stopPropagation();
         }
       }
       ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function(type) {
         window.addEventListener(type, blockMulti, { passive: false, capture: true });
         document.addEventListener(type, blockMulti, { passive: false, capture: true });
+        if (document.documentElement) document.documentElement.addEventListener(type, blockMulti, { passive: false, capture: true });
       });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)
@@ -53,6 +56,18 @@
         }
         lastTouchEnd = now;
       }, { passive: false, capture: true });
+
+      // 5. Restablecer escala automáticamente si Safari intenta aplicar zoom
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+          if (window.visualViewport.scale > 1.02) {
+            var meta = document.querySelector('meta[name="viewport"]');
+            if (meta) {
+              meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
+            }
+          }
+        });
+      }
     })();
   </script>
 
