@@ -33,30 +33,12 @@ export default function V4Hub() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // SEO: Ensure /v4 is completely hidden from search engines (Noindex, Nofollow)
+  // SEO: Ensure proper title and indexation
   useEffect(() => {
     let metaRobots = document.querySelector('meta[name="robots"]');
-    let created = false;
-    if (!metaRobots) {
-      metaRobots = document.createElement('meta');
-      metaRobots.setAttribute('name', 'robots');
-      document.head.appendChild(metaRobots);
-      created = true;
+    if (metaRobots) {
+      metaRobots.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
     }
-    const previousContent = metaRobots.getAttribute('content');
-    metaRobots.setAttribute('content', 'noindex, nofollow');
-
-    const previousTitle = document.title;
-    document.title = 'Capa Cero 3D - Videoteca & Recursos';
-
-    return () => {
-      if (created && metaRobots.parentNode) {
-        metaRobots.parentNode.removeChild(metaRobots);
-      } else if (previousContent) {
-        metaRobots.setAttribute('content', previousContent);
-      }
-      document.title = previousTitle;
-    };
   }, []);
 
   // Load videos directly from the secure official Google Sheet source
