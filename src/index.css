@@ -66,10 +66,31 @@ body {
   animation: breathe 3s ease-in-out infinite;
 }
 
-/* Prevención estricta de zoom en móviles y doble toque */
-html, body {
-  touch-action: pan-y;
-  -webkit-text-size-adjust: 100%;
+/* Prevención estricta de zoom en móviles, doble toque y gestos de escalado */
+html, body, #root {
+  touch-action: pan-y !important;
+  -webkit-touch-callout: none !important;
+  -webkit-text-size-adjust: 100% !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Deshabilitar arrastre, selección y marco azul/gris al pulsar cualquier imagen o logotipo en móviles */
+img {
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  pointer-events: none;
+}
+
+/* Enlaces y botones con imagen no muestran marco de toque */
+a, button {
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 /* Evitar que Safari iOS haga auto-zoom al enfocar cualquier input */
