@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Download, Lightbulb, ExternalLink, Check, Heart } from 'lucide-react';
-import { YouTubeIcon } from './YouTubeIcon';
+import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube } from 'lucide-react';
 
 export default function V4VideoModal({ video, onClose }) {
   const [downloadedCount, setDownloadedCount] = useState(0);
