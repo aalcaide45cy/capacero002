@@ -17,20 +17,24 @@
   <script>
     (function() {
       // 1. Bloquear eventos nativos de gestos de WebKit (Pinch Zoom)
+      function blockGesture(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
-        window.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false, capture: true });
-        document.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false, capture: true });
+        window.addEventListener(type, blockGesture, { passive: false, capture: true });
+        document.addEventListener(type, blockGesture, { passive: false, capture: true });
       });
 
       // 2. Bloquear cualquier interacción multitáctil (2 o más dedos)
-      function blockMultiTouch(e) {
+      function blockMulti(e) {
         if (e.touches && e.touches.length > 1) {
-          if (e.cancelable) e.preventDefault();
+          e.preventDefault();
         }
       }
       ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function(type) {
-        window.addEventListener(type, blockMultiTouch, { passive: false, capture: true });
-        document.addEventListener(type, blockMultiTouch, { passive: false, capture: true });
+        window.addEventListener(type, blockMulti, { passive: false, capture: true });
+        document.addEventListener(type, blockMulti, { passive: false, capture: true });
       });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)
@@ -40,11 +44,11 @@
 
       // 4. Bloquear zoom por doble toque rápido
       var lastTouchEnd = 0;
-      window.addEventListener('touchend', function(e) {
+      document.addEventListener('touchend', function(e) {
         var now = Date.now();
         if (now - lastTouchEnd <= 300) {
           if (!['INPUT', 'TEXTAREA', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) {
-            if (e.cancelable) e.preventDefault();
+            e.preventDefault();
           }
         }
         lastTouchEnd = now;

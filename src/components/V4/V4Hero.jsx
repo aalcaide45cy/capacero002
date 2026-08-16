@@ -209,13 +209,6 @@ export default function V4Hero({
                     {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
 
-                    {/* Play button */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 border border-cyan-300/40">
-                        <Play className="w-6 h-6 fill-white translate-x-0.5" />
-                      </div>
-                    </div>
-
                     {/* Top Badge */}
                     <div className="absolute top-3 left-3 flex items-center gap-2">
                       <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow">
