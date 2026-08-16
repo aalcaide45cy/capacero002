@@ -228,12 +228,6 @@ export default function V4Hero({
                       <Play className="w-3.5 h-3.5 fill-cyan-400" />
                       <span>Ver tutorial completo</span>
                     </button>
-
-                    {featuredVideo.hasDownloads && (
-                      <span className="text-[11px] font-semibold text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-2 py-0.5 rounded">
-                        📥 {featuredVideo.downloads.length} {featuredVideo.downloads.length === 1 ? 'Recurso' : 'Recursos'}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

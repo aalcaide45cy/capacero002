@@ -32,16 +32,6 @@ export default function V4VideoCard({ video, onSelect }) {
           </div>
         )}
 
-        {/* Downloads Counter Badge (Only if downloads exist) */}
-        {video.hasDownloads && (
-          <div className="absolute top-3 right-3">
-            <span className="bg-cyan-950/90 backdrop-blur-md text-cyan-300 text-[10px] font-bold px-2 py-0.5 rounded-md border border-cyan-500/40 shadow flex items-center gap-1">
-              <Download className="w-3 h-3" />
-              <span>{video.downloads.length} {video.downloads.length === 1 ? 'Recurso' : 'Recursos'}</span>
-            </span>
-          </div>
-        )}
-
         {/* Play Icon on Hover */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 opacity-90 group-hover:opacity-100 border border-cyan-300/40">
