@@ -67,8 +67,12 @@ body {
 }
 
 /* Bloqueo de gestos de zoom y habilitación de scroll natural y recarga (Pull-to-Refresh) */
+*, *::before, *::after {
+  touch-action: pan-y;
+}
+
 html, body, #root {
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
   -webkit-touch-callout: none !important;
   -webkit-text-size-adjust: 100% !important;
   -webkit-tap-highlight-color: transparent !important;

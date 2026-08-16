@@ -13,42 +13,42 @@
     gtag('config', 'G-Y8RT9QWCD9');
   </script>
 
-  <!-- Bloqueo estricto de pinch-to-zoom y gestos multitáctiles en iOS Safari -->
+  <!-- Bloqueo estricto e infranqueable de pinch-to-zoom y gestos multitáctiles en iOS Safari -->
   <script>
     (function() {
-      // 1. Bloquear gestos multitáctiles nativos de iOS WebKit
+      // 1. Bloquear eventos nativos de gestos de WebKit (Pinch Zoom)
       ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
-        window.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false });
-        document.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false });
+        window.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false, capture: true });
+        document.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false, capture: true });
       });
 
-      // 2. Bloquear cualquier toque o movimiento multitáctil (2 o más dedos)
+      // 2. Bloquear cualquier interacción multitáctil (2 o más dedos)
       function blockMultiTouch(e) {
         if (e.touches && e.touches.length > 1) {
-          e.preventDefault();
+          if (e.cancelable) e.preventDefault();
         }
       }
-      window.addEventListener('touchstart', blockMultiTouch, { passive: false });
-      window.addEventListener('touchmove', blockMultiTouch, { passive: false });
-      document.addEventListener('touchstart', blockMultiTouch, { passive: false });
-      document.addEventListener('touchmove', blockMultiTouch, { passive: false });
+      ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach(function(type) {
+        window.addEventListener(type, blockMultiTouch, { passive: false, capture: true });
+        document.addEventListener(type, blockMultiTouch, { passive: false, capture: true });
+      });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)
       window.addEventListener('wheel', function(e) {
         if (e.ctrlKey) e.preventDefault();
-      }, { passive: false });
+      }, { passive: false, capture: true });
 
       // 4. Bloquear zoom por doble toque rápido
       var lastTouchEnd = 0;
-      document.addEventListener('touchend', function(e) {
+      window.addEventListener('touchend', function(e) {
         var now = Date.now();
         if (now - lastTouchEnd <= 300) {
           if (!['INPUT', 'TEXTAREA', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
           }
         }
         lastTouchEnd = now;
-      }, { passive: false });
+      }, { passive: false, capture: true });
     })();
   </script>
 

@@ -55,10 +55,9 @@ export default function CourseCard({ course, layout = "grid" }) {
                         {hasVideo && (
                             <button 
                                 onClick={() => setShowVideo(true)}
-                                className="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/30 transition-all group-hover:scale-105 backdrop-blur-[2px]"
-                            >
-                                <PlayCircle className={`${isHero ? 'w-20 h-20' : 'w-16 h-16'} text-white opacity-90 drop-shadow-[0_0_15px_rgba(59,130,246,0.6)]`} />
-                            </button>
+                                className="absolute inset-0 bg-transparent hover:bg-black/20 transition-all cursor-pointer"
+                                aria-label="Reproducir vídeo"
+                            />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-transparent to-transparent pointer-events-none" />
                     </>

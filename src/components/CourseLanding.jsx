@@ -149,12 +149,9 @@ export default function CourseLanding({ course }) {
                                 {hasVideo && (
                                     <button 
                                         onClick={() => setShowVideo(true)}
-                                        className="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/30 transition-all pointer-events-auto"
-                                    >
-                                        <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center pl-2 shadow-[0_0_40px_rgba(59,130,246,0.6)] group-hover:scale-110 transition-transform">
-                                            <PlayCircle className="w-12 h-12 text-white" />
-                                        </div>
-                                    </button>
+                                        className="absolute inset-0 bg-transparent hover:bg-black/20 transition-all pointer-events-auto cursor-pointer"
+                                        aria-label="Reproducir vídeo"
+                                    />
                                 )}
                             </>
                         )}

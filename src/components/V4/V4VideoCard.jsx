@@ -38,9 +38,9 @@ export default function V4VideoCard({ video, onSelect }) {
           </div>
         )}
 
-        {/* Play Icon on Hover */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 opacity-90 group-hover:opacity-100 border border-cyan-300/40">
+        {/* Play Icon (Solo en hover en PC, nunca en móvil para no tapar caras) */}
+        <div className="absolute inset-0 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 border border-cyan-300/40">
             <Play className="w-5 h-5 fill-white translate-x-0.5" />
           </div>
         </div>
