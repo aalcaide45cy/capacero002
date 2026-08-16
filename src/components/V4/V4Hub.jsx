@@ -153,7 +153,10 @@ export default function V4Hub() {
       </main>
 
       {/* Sticky Subscribe Bar on scroll */}
-      <V4StickySubscribe onOpenCollaboration={() => setIsCollaborationOpen(true)} />
+      <V4StickySubscribe
+        isSticky={isSticky}
+        onOpenCollaboration={() => setIsCollaborationOpen(true)}
+      />
 
       {/* Footer */}
       <V4Footer onOpenCollaboration={() => setIsCollaborationOpen(true)} />

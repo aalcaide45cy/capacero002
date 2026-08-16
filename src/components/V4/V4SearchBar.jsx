@@ -130,7 +130,7 @@ export default function V4SearchBar({
                 src="/logo-capa-cero.webp"
                 alt="Capa Cero"
                 draggable="false"
-                className="w-auto h-8 sm:h-10 object-contain rounded-lg drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] pointer-events-none select-none"
+                className="w-auto h-12 sm:h-10 object-contain rounded-lg drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] pointer-events-none select-none"
                 style={{
                   WebkitTouchCallout: 'none',
                   WebkitUserDrag: 'none',
@@ -140,7 +140,7 @@ export default function V4SearchBar({
             </a>
           </div>
 
-          {/* Buscador Compacto en Sticky */}
+          {/* Buscador Compacto en Sticky con efecto Máquina de Escribir */}
           <div className="relative flex-1 max-w-xl">
             <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none z-10">
               <Search className="w-4 h-4 text-[#2575c4]" />
@@ -154,9 +154,24 @@ export default function V4SearchBar({
                 setSearchQuery(val);
                 trackSearch(val);
               }}
-              placeholder="Buscar en Capa Cero..."
-              className="w-full bg-zinc-900 text-white text-xs sm:text-sm pl-9 pr-9 py-1.5 sm:py-2 rounded-full border border-zinc-800 focus:border-[#2575c4] focus:outline-none transition-all"
+              className="w-full bg-zinc-900 text-white text-xs sm:text-sm pl-9 pr-9 py-1.5 sm:py-2 rounded-full border border-zinc-800 focus:border-[#2575c4] focus:outline-none transition-all search-focus"
+              placeholder=""
             />
+
+            {/* Typewriter en buscador Sticky */}
+            {!searchQuery && (
+              <div className="absolute inset-y-0 left-9 right-8 flex items-center pointer-events-none text-zinc-400 text-xs sm:text-sm overflow-hidden whitespace-nowrap">
+                <Typewriter
+                  options={{
+                    strings: tutorialPlaceholderTerms,
+                    autoStart: true,
+                    loop: true,
+                    delay: 50,
+                    deleteSpeed: 30,
+                  }}
+                />
+              </div>
+            )}
 
             {searchQuery && (
               <button
@@ -230,18 +245,18 @@ export default function V4SearchBar({
 
         </div>
 
-        {/* Fila inferior para Móviles en modo Sticky: YouTube, TikTok, Instagram + COLABORACIONES */}
-        <div className="flex md:hidden items-center justify-center gap-2.5 mt-2 pt-1.5 border-t border-zinc-800/80 px-4">
+        {/* Fila inferior para Móviles en modo Sticky: Redes Sociales un 50% más grandes (YouTube, TikTok, Instagram) */}
+        <div className="flex md:hidden items-center justify-center gap-5 mt-2.5 pt-2 border-t border-zinc-800/80 px-4">
           <a
             href="https://www.youtube.com/@CapaCero0"
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackSocialClick && trackSocialClick('YouTube')}
-            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="YouTube"
             aria-label="YouTube"
           >
-            <Youtube className="w-3.5 h-3.5 text-[#2575c4] group-hover:text-red-500 transition-colors" />
+            <Youtube className="w-5 h-5 text-[#2575c4] group-hover:text-red-500 transition-colors" />
           </a>
           
           <a
@@ -249,12 +264,12 @@ export default function V4SearchBar({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackSocialClick && trackSocialClick('TikTok')}
-            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="TikTok"
             aria-label="TikTok"
           >
             <span className="text-[#2575c4] group-hover:text-white transition-colors">
-              <TikTokIcon />
+              <TikTokIcon color="currentColor" />
             </span>
           </a>
 
@@ -263,26 +278,12 @@ export default function V4SearchBar({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackSocialClick && trackSocialClick('Instagram')}
-            className="flex items-center justify-center w-7 h-7 bg-black border border-[#2575c4] rounded-full group transition-all hover:scale-110 flex-shrink-0"
+            className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="Instagram"
             aria-label="Instagram"
           >
-            <Instagram className="w-3.5 h-3.5 text-[#2575c4] group-hover:text-pink-500 transition-colors" />
+            <Instagram className="w-5 h-5 text-[#2575c4] group-hover:text-pink-500 transition-colors" />
           </a>
-
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              onOpenCollaboration && onOpenCollaboration();
-            }}
-            className="relative flex items-center justify-center h-7 px-3 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[10px] rounded-full transition-all hover:scale-105 shadow-[0_0_10px_rgba(59,130,246,0.4)] uppercase tracking-wider whitespace-nowrap overflow-hidden border border-cyan-300/40"
-            title="Contactar para Colaboraciones"
-          >
-            <span className="relative z-10 flex items-center gap-1">
-              <Mail className="w-3 h-3 text-cyan-200" />
-              COLABORACIONES
-            </span>
-          </button>
         </div>
       </header>
     </>
