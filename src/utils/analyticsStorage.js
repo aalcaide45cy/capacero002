@@ -391,8 +391,17 @@ export const loadAnalyticsData = async () => {
     return { sessions, events };
 };
 
-// Procesar métricas globales (KPIs, Gráficas, Rankings)
-export const computeAnalyticsMetrics = (sessions, events, dateFilter = 'all') => {
+// Procesar métricas globales con soporte para filtros combinados (fecha, país, dispositivo, origen, suscripción, búsqueda)
+export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
+    const {
+        dateFilter = 'all',
+        countryFilter = 'all',
+        deviceFilter = 'all',
+        originFilter = 'all',
+        subscribedFilter = 'all',
+        searchQuery = ''
+    } = typeof filters === 'string' ? { dateFilter: filters } : filters;
+
     const now = new Date();
     let startDate = new Date(0);
 
@@ -406,9 +415,42 @@ export const computeAnalyticsMetrics = (sessions, events, dateFilter = 'all') =>
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    const filteredSessions = sessions.filter(s => new Date(s.timestamp) >= startDate);
+    const q = searchQuery ? searchQuery.toLowerCase().trim() : '';
+
+    const filteredSessions = sessions.filter(s => {
+        // 1. Filtro de Fecha
+        if (new Date(s.timestamp) < startDate) return false;
+
+        // 2. Filtro de País
+        if (countryFilter !== 'all' && s.country !== countryFilter) return false;
+
+        // 3. Filtro de Dispositivo
+        if (deviceFilter !== 'all' && s.device !== deviceFilter) return false;
+
+        // 4. Filtro de Canal de Origen
+        if (originFilter !== 'all' && (!s.origin || !s.origin.toLowerCase().includes(originFilter.toLowerCase()))) return false;
+
+        // 5. Filtro de Suscripción
+        if (subscribedFilter === 'subscribed' && !s.hasSubscribed) return false;
+        if (subscribedFilter === 'not_subscribed' && s.hasSubscribed) return false;
+
+        // 6. Filtro de Búsqueda de Texto
+        if (q) {
+            const matches =
+                (s.country && s.country.toLowerCase().includes(q)) ||
+                (s.city && s.city.toLowerCase().includes(q)) ||
+                (s.origin && s.origin.toLowerCase().includes(q)) ||
+                (s.ip && s.ip.toLowerCase().includes(q)) ||
+                (s.device && s.device.toLowerCase().includes(q)) ||
+                (s.subscribedFrom && s.subscribedFrom.toLowerCase().includes(q));
+            if (!matches) return false;
+        }
+
+        return true;
+    });
+
     const sessionIdsSet = new Set(filteredSessions.map(s => s.sessionId));
-    const filteredEvents = events.filter(e => sessionIdsSet.has(e.sessionId) || new Date(e.timestamp) >= startDate);
+    const filteredEvents = events.filter(e => sessionIdsSet.has(e.sessionId));
 
     // 1. KPIs Maestros
     const totalVisits = filteredSessions.length;
@@ -635,3 +677,115 @@ export const exportAnalyticsToJSON = (sessions, events) => {
     link.click();
     document.body.removeChild(link);
 };
+
+// URL de la pestaña de estadísticas publicada en Google Sheets
+export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1728927826";
+
+// Sincronizar con Google Sheets (leer filas remotas si existen)
+export const syncWithGoogleSheet = async () => {
+    try {
+        const response = await fetch(GOOGLE_SHEETS_STATS_URL);
+        if (!response.ok) return { success: false, message: `Error HTTP ${response.status}` };
+
+        const csvText = await response.text();
+        if (!csvText || csvText.trim().length < 15) {
+            return { success: true, count: 0, message: 'La hoja de Google Sheets está conectada pero aún no contiene registros.' };
+        }
+
+        // Si hay filas en la hoja, procesarlas e integrarlas
+        const rows = csvText.split('\n').filter(r => r.trim().length > 0);
+        return { success: true, count: Math.max(0, rows.length - 1), message: `Conexión correcta con Google Sheets (${rows.length - 1} filas encontradas).` };
+    } catch (e) {
+        return { success: false, message: 'No se pudo leer la hoja publicada de Google Sheets (comprueba la conexión).' };
+    }
+};
+
+// Plantilla de Columnas recomendadas para la pestaña "Estadisticas"
+export const RECOMMENDED_SHEET_COLUMNS = [
+    { col: 'A', name: 'Timestamp', desc: 'Fecha y hora ISO (ej: 2026-08-16 19:45:00)' },
+    { col: 'B', name: 'ID_Sesion', desc: 'Identificador único de sesión (ej: ses_a9b8c7)' },
+    { col: 'C', name: 'Pais', desc: 'Nombre del país (ej: España, México)' },
+    { col: 'D', name: 'Codigo_Pais', desc: 'Código ISO 2 letras (ej: ES, MX, AR)' },
+    { col: 'E', name: 'Bandera', desc: 'Emoji bandera (ej: 🇪🇸, 🇲🇽)' },
+    { col: 'F', name: 'Region_Provincia', desc: 'Provincia o comunidad autónoma (ej: Madrid, Valencia)' },
+    { col: 'G', name: 'Ciudad', desc: 'Ciudad detectada (ej: Madrid, Barcelona)' },
+    { col: 'H', name: 'Dispositivo', desc: 'Tipo: Móvil, Desktop o Tablet' },
+    { col: 'I', name: 'Sistema_Operativo', desc: 'SO: Windows, Android, iOS, macOS' },
+    { col: 'J', name: 'Navegador', desc: 'Navegador: Chrome, Safari, TikTok In-App' },
+    { col: 'K', name: 'Canal_Origen', desc: 'Origen: YouTube, TikTok, Instagram, Directo, Google' },
+    { col: 'L', name: 'Tiempo_Activo_Segundos', desc: 'Segundos reales de permanencia activa' },
+    { col: 'M', name: 'Suscrito', desc: 'SI o NO' },
+    { col: 'N', name: 'Suscrito_Desde', desc: 'Vídeo exacto o sección donde hizo clic en suscribirse' },
+    { col: 'O', name: 'Secciones_Vistas', desc: 'Detalle de secciones exploradas y segundos' },
+    { col: 'P', name: 'Tarjetas_Clicadas', desc: 'Títulos de tutoriales clicados' },
+    { col: 'Q', name: 'Descargas_Realizadas', desc: 'Archivos .3MF o perfiles descargados' },
+    { col: 'R', name: 'Busquedas_Tecleadas', desc: 'Palabras buscadas en el buscador' },
+    { col: 'S', name: 'Doctor3D_Consultas', desc: 'Síntomas mecánicos consultados' }
+];
+
+// Código Apps Script listo para copiar y pegar
+export const GOOGLE_APPS_SCRIPT_CODE = `/**
+ * Código de Google Apps Script para Capa Cero Analytics v4
+ * Pega este código en: Extensiones > Apps Script en tu Google Sheet
+ * Luego pulsa: Implementar > Nueva Implementación > Aplicación Web
+ * (Acceso: Cualquier persona / Anyone)
+ */
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Estadisticas");
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet("Estadisticas");
+    }
+    
+    // Crear encabezados si la hoja está vacía
+    if (sheet.getLastRow() === 0) {
+      var headers = [
+        "Timestamp", "ID_Sesion", "Pais", "Codigo_Pais", "Bandera",
+        "Region_Provincia", "Ciudad", "Dispositivo", "Sistema_Operativo",
+        "Navegador", "Canal_Origen", "Tiempo_Activo_Segundos", "Suscrito",
+        "Suscrito_Desde", "Secciones_Vistas", "Tarjetas_Clicadas",
+        "Descargas_Realizadas", "Busquedas_Tecleadas", "Doctor3D_Consultas"
+      ];
+      sheet.appendRow(headers);
+    }
+    
+    var data = JSON.parse(e.postData.contents);
+    
+    var row = [
+      data.timestamp || new Date().toISOString(),
+      data.sessionId || "",
+      data.country || "",
+      data.countryCode || "",
+      data.flag || "",
+      data.region || "",
+      data.city || "",
+      data.device || "",
+      data.os || "",
+      data.browser || "",
+      data.origin || "",
+      data.totalActiveSeconds || 0,
+      data.hasSubscribed ? "SI" : "NO",
+      data.subscribedFrom || "",
+      JSON.stringify(data.dwellTimes || {}),
+      (data.clickedCards || []).join(" | "),
+      (data.downloads || []).join(" | "),
+      (data.searches || []).join(" | "),
+      (data.doctorConsults || []).join(" | ")
+    ];
+    
+    sheet.appendRow(row);
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput("Capa Cero Analytics Webhook Activo.")
+    .setMimeType(ContentService.MimeType.TEXT);
+}`;
+
