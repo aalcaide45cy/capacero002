@@ -44,7 +44,7 @@ export default function V4VideoCard({ video, onSelect }) {
 
         {/* Play Icon on Hover */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-red-600/90 group-hover:bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-600/40 transition-all duration-300 group-hover:scale-110 opacity-90 group-hover:opacity-100">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 opacity-90 group-hover:opacity-100 border border-cyan-300/40">
             <Play className="w-5 h-5 fill-white translate-x-0.5" />
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function V4VideoCard({ video, onSelect }) {
         {/* Title */}
         <h3
           onClick={() => onSelect(video)}
-          className="text-sm sm:text-base font-bold text-white group-hover:text-red-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2"
+          className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2"
         >
           {video.title}
         </h3>
@@ -70,10 +70,10 @@ export default function V4VideoCard({ video, onSelect }) {
 
         {/* Consejo Clave (ONLY if it exists and is not empty) */}
         {video.hasTip && (
-          <div className="mt-auto mb-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-start gap-2">
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-200/90 leading-tight line-clamp-2">
-              <strong className="text-amber-300 font-semibold">Tip: </strong>
+          <div className="mt-auto mb-3.5 bg-blue-950/40 border border-cyan-500/20 rounded-xl p-2.5 flex items-start gap-2">
+            <Lightbulb className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-cyan-200/90 leading-tight line-clamp-2">
+              <strong className="text-cyan-300 font-semibold">Tip: </strong>
               {video.consejoClave}
             </p>
           </div>
@@ -83,9 +83,9 @@ export default function V4VideoCard({ video, onSelect }) {
         <div className="mt-auto pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
           <button
             onClick={() => onSelect(video)}
-            className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1.5 transition-colors py-1"
+            className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors py-1"
           >
-            <Play className="w-3.5 h-3.5 fill-red-400" />
+            <Play className="w-3.5 h-3.5 fill-cyan-400" />
             <span>Ver Vídeo</span>
           </button>
 
@@ -93,7 +93,7 @@ export default function V4VideoCard({ video, onSelect }) {
           {video.hasDownloads ? (
             <button
               onClick={() => onSelect(video)}
-              className="text-[11px] font-semibold text-zinc-400 hover:text-cyan-300 flex items-center gap-1 bg-zinc-800/60 hover:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 transition-colors"
+              className="text-[11px] font-semibold text-zinc-300 hover:text-cyan-300 flex items-center gap-1 bg-zinc-800/60 hover:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-700/50 transition-colors"
             >
               <Download className="w-3 h-3 text-cyan-400" />
               <span>Descargas</span>

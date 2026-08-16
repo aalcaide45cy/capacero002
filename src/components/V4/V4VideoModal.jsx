@@ -76,13 +76,13 @@ export default function V4VideoModal({ video, onClose }) {
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-              <YouTubeIcon className="w-16 h-16 text-red-600 mb-3" />
+              <Youtube className="w-16 h-16 text-[#2575c4] mb-3" />
               <h3 className="text-base font-bold text-white mb-2">{video.title}</h3>
               <a
                 href={video.youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-500/30"
               >
                 <span>Ver directamente en YouTube</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -110,10 +110,10 @@ export default function V4VideoModal({ video, onClose }) {
 
           {/* Consejo Clave Box (ONLY if present) */}
           {video.hasTip && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-start gap-3">
-              <Lightbulb className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm text-amber-100/90 leading-relaxed">
-                <strong className="text-amber-300 font-bold block mb-0.5">
+            <div className="bg-blue-950/40 border border-cyan-500/30 rounded-xl p-4 flex items-start gap-3">
+              <Lightbulb className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm text-cyan-100/90 leading-relaxed">
+                <strong className="text-cyan-300 font-bold block mb-0.5">
                   Consejo Clave de Capa Cero:
                 </strong>
                 {video.consejoClave}
@@ -158,10 +158,10 @@ export default function V4VideoModal({ video, onClose }) {
           )}
 
           {/* Conversion Subscribe Banner */}
-          <div className="bg-gradient-to-r from-red-950/50 via-zinc-900 to-red-950/50 border border-red-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
+          <div className="bg-gradient-to-r from-blue-950/50 via-zinc-900 to-cyan-950/50 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-600/20 border border-red-500/40 flex items-center justify-center shrink-0">
-                <Heart className="w-5 h-5 text-red-400 fill-red-400/30" />
+              <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-cyan-500/40 flex items-center justify-center shrink-0">
+                <Heart className="w-5 h-5 text-cyan-400 fill-cyan-400/30" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">¿Te ha ayudado este vídeo?</h4>
@@ -173,10 +173,10 @@ export default function V4VideoModal({ video, onClose }) {
               href={subscribeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-95 shrink-0"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 shrink-0 border border-cyan-400/30"
             >
-              <YouTubeIcon className="w-4 h-4 text-white" />
-              <span>Suscribirme al Canal (+1 Clic)</span>
+              <Youtube className="w-4 h-4 text-white" />
+              <span>Suscribirme al Canal</span>
             </a>
           </div>
 

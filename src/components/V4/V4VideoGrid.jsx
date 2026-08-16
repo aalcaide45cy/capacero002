@@ -63,7 +63,7 @@ export default function V4VideoGrid({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar por truco, fallo o filamento..."
-            className="w-full bg-zinc-900/90 text-sm text-white placeholder-zinc-500 rounded-xl pl-10 pr-9 py-2.5 border border-zinc-800 focus:outline-none focus:border-red-500 transition-colors"
+            className="w-full bg-zinc-900/90 text-sm text-white placeholder-zinc-500 rounded-xl pl-10 pr-9 py-2.5 border border-zinc-800 focus:outline-none focus:border-cyan-500 transition-colors"
           />
           {searchQuery && (
             <button
@@ -86,8 +86,8 @@ export default function V4VideoGrid({
               onClick={() => onSelectCategory(cat)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
                 isActive
-                  ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800/80'
+                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25 border border-cyan-300/40'
+                  : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-zinc-800/80 hover:border-cyan-500/30'
               }`}
             >
               {cat}
@@ -119,7 +119,7 @@ export default function V4VideoGrid({
               onSelectCategory('Todos');
               onSearchChange('');
             }}
-            className="text-xs font-semibold text-red-400 hover:text-red-300 bg-red-950/40 border border-red-500/30 px-4 py-2 rounded-xl transition-colors"
+            className="text-xs font-semibold text-cyan-300 hover:text-cyan-100 bg-blue-950/40 border border-cyan-500/30 px-4 py-2 rounded-xl transition-colors"
           >
             Restablecer Filtros
           </button>

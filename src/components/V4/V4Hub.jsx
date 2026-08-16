@@ -7,6 +7,7 @@ import V4Doctor3D from './V4Doctor3D';
 import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
+import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos } from '../../utils/loadV4Videos';
 
 export default function V4Hub() {
@@ -16,6 +17,7 @@ export default function V4Hub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
+  const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
 
   // SEO: Ensure /v4 is completely hidden from search engines (Noindex, Nofollow)
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function V4Hub() {
     metaRobots.setAttribute('content', 'noindex, nofollow');
 
     const previousTitle = document.title;
-    document.title = 'Capa Cero V4 - Hub de YouTube';
+    document.title = 'Capa Cero 3D - Videoteca & Recursos';
 
     return () => {
       if (created && metaRobots.parentNode) {
@@ -65,7 +67,7 @@ export default function V4Hub() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-red-600 selection:text-white">
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
       {/* Header */}
       <V4Header
@@ -74,6 +76,7 @@ export default function V4Hub() {
           window.scrollTo({ top: 400, behavior: 'smooth' });
         }}
         activeTab={activeTab}
+        onOpenCollaboration={() => setIsCollaborationOpen(true)}
       />
 
       {/* Hero */}
@@ -84,13 +87,14 @@ export default function V4Hub() {
           setActiveTab(tab);
           window.scrollTo({ top: 450, behavior: 'smooth' });
         }}
+        onOpenCollaboration={() => setIsCollaborationOpen(true)}
       />
 
       {/* Main Content Area based on Tab */}
       <main className="flex-1">
         {isLoading ? (
           <div className="text-center py-24">
-            <div className="inline-block w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mb-3" />
+            <div className="inline-block w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-sm font-semibold text-zinc-400">Cargando videoteca de Capa Cero...</p>
           </div>
         ) : (
@@ -132,10 +136,10 @@ export default function V4Hub() {
       </main>
 
       {/* Sticky Subscribe Bar on scroll */}
-      <V4StickySubscribe />
+      <V4StickySubscribe onOpenCollaboration={() => setIsCollaborationOpen(true)} />
 
       {/* Footer */}
-      <V4Footer />
+      <V4Footer onOpenCollaboration={() => setIsCollaborationOpen(true)} />
 
       {/* Video Modal */}
       {selectedVideoModal && (
@@ -143,6 +147,11 @@ export default function V4Hub() {
           video={selectedVideoModal}
           onClose={() => setSelectedVideoModal(null)}
         />
+      )}
+
+      {/* Collaboration Modal from Main Site */}
+      {isCollaborationOpen && (
+        <CollaborationModal onClose={() => setIsCollaborationOpen(false)} />
       )}
 
     </div>

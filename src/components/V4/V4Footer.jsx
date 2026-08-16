@@ -1,7 +1,7 @@
 import React from 'react';
-import { YouTubeIcon } from './YouTubeIcon';
+import { Youtube, Mail } from 'lucide-react';
 
-export default function V4Footer() {
+export default function V4Footer({ onOpenCollaboration }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
@@ -13,7 +13,7 @@ export default function V4Footer() {
           <img
             src="/logo-capa-cero.webp"
             alt="Capa Cero Logo"
-            className="h-11 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(37,117,196,0.35)]"
+            className="h-11 sm:h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
           />
           <div className="text-left">
             <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
@@ -27,11 +27,20 @@ export default function V4Footer() {
             href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-red-400 transition-colors flex items-center gap-1.5"
+            className="hover:text-cyan-400 transition-colors flex items-center gap-1.5"
           >
-            <YouTubeIcon className="w-4 h-4 text-red-500" />
+            <Youtube className="w-4 h-4 text-[#2575c4]" />
             <span>Canal de YouTube</span>
           </a>
+          {onOpenCollaboration && (
+            <button
+              onClick={onOpenCollaboration}
+              className="hover:text-cyan-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Colaboraciones</span>
+            </button>
+          )}
           <a href="/politica-privacidad" className="hover:text-zinc-200 transition-colors">
             Privacidad y Cookies
           </a>

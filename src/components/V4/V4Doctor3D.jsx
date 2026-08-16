@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Stethoscope, CheckCircle, Play, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
-import { YouTubeIcon } from './YouTubeIcon';
+import { Stethoscope, CheckCircle, Play, ArrowRight, Youtube } from 'lucide-react';
 
 const COMMON_PROBLEMS = [
   {
@@ -84,8 +83,8 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
       
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
-          <Stethoscope className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/40 border border-cyan-500/30 text-cyan-300 text-xs font-semibold mb-3 shadow-[0_0_12px_rgba(37,117,196,0.25)]">
+          <Stethoscope className="w-3.5 h-3.5 text-cyan-400" />
           <span>Diagnóstico Express de Impresión</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -108,7 +107,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                 onClick={() => setSelectedProblem(prob)}
                 className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex items-center justify-between gap-3 border ${
                   isSelected
-                    ? 'bg-zinc-900 border-red-500/50 shadow-lg shadow-red-500/10 ring-1 ring-red-500/30'
+                    ? 'bg-zinc-900 border-cyan-500/50 shadow-lg shadow-blue-500/10 ring-1 ring-cyan-500/40'
                     : 'bg-zinc-950/80 hover:bg-zinc-900/60 border-zinc-800/80 text-zinc-400'
                 }`}
               >
@@ -123,7 +122,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                     </p>
                   </div>
                 </div>
-                <ArrowRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? 'text-red-400 translate-x-1' : 'text-zinc-600'}`} />
+                <ArrowRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? 'text-cyan-400 translate-x-1' : 'text-zinc-600'}`} />
               </button>
             );
           })}
@@ -146,14 +145,14 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
 
           {/* 3 Step Quick Prescription */}
           <div className="mb-6">
-            <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" />
+            <h4 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5 text-cyan-400" />
               <span>3 Pasos Clave para Solucionarlo</span>
             </h4>
             <div className="space-y-2.5">
               {selectedProblem.diagnosis.map((step, idx) => (
                 <div key={idx} className="flex items-start gap-2.5 bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/60">
-                  <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
@@ -174,7 +173,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                 </div>
                 <button
                   onClick={() => onSelectVideo(matchingVideo)}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition-all shrink-0"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all shrink-0 border border-cyan-300/40"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
                   <span>Ver Solución en Vídeo</span>
@@ -185,7 +184,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                 onClick={() => onSearchWithQuery(selectedProblem.keywordSearch)}
                 className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all"
               >
-                <YouTubeIcon className="w-4 h-4 text-red-500" />
+                <Youtube className="w-4 h-4 text-cyan-400" />
                 <span>Buscar vídeos sobre "{selectedProblem.keywordSearch}"</span>
               </button>
             )}

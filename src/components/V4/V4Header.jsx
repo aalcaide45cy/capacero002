@@ -1,7 +1,7 @@
 import React from 'react';
-import { YouTubeIcon } from './YouTubeIcon';
+import { Mail, Youtube } from 'lucide-react';
 
-export default function V4Header({ onOpenTab, activeTab }) {
+export default function V4Header({ onOpenTab, activeTab, onOpenCollaboration }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
@@ -14,17 +14,12 @@ export default function V4Header({ onOpenTab, activeTab }) {
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero"
-              className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_0_12px_rgba(37,117,196,0.35)] group-hover:scale-105 transition-transform"
+              className="h-10 sm:h-11 w-auto object-contain drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] group-hover:scale-105 transition-transform"
             />
             <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-black text-white text-base sm:text-lg tracking-tight group-hover:text-red-400 transition-colors">
-                  Capa Cero
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/30 uppercase tracking-wider">
-                  YouTube Hub
-                </span>
-              </div>
+              <span className="font-black text-white text-base sm:text-lg tracking-tight group-hover:text-cyan-400 transition-colors">
+                Capa Cero 3D
+              </span>
               <span className="text-[11px] text-zinc-400 font-medium">Bambu Studio & Impresión 3D</span>
             </div>
           </a>
@@ -36,7 +31,7 @@ export default function V4Header({ onOpenTab, activeTab }) {
             onClick={() => onOpenTab('videos')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'videos'
-                ? 'bg-zinc-800 text-white shadow-sm'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/20'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
@@ -46,7 +41,7 @@ export default function V4Header({ onOpenTab, activeTab }) {
             onClick={() => onOpenTab('doctor')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'doctor'
-                ? 'bg-zinc-800 text-white shadow-sm'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/20'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
@@ -56,7 +51,7 @@ export default function V4Header({ onOpenTab, activeTab }) {
             onClick={() => onOpenTab('downloads')}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeTab === 'downloads'
-                ? 'bg-zinc-800 text-white shadow-sm'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md shadow-blue-500/20'
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
             }`}
           >
@@ -65,19 +60,25 @@ export default function V4Header({ onOpenTab, activeTab }) {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
+          {/* Botón Colaboraciones Header */}
+          <button
+            onClick={onOpenCollaboration}
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-cyan-500/40 bg-blue-950/40 hover:bg-blue-900/50 text-cyan-300 hover:text-cyan-100 text-xs font-bold transition-all shadow-[0_0_15px_rgba(37,117,196,0.25)] hover:shadow-[0_0_20px_rgba(34,211,238,0.4)]"
+          >
+            <Mail className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Colaboraciones</span>
+          </button>
+
           {/* Primary YouTube Subscribe Button */}
           <a
             href={subscribeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative group overflow-hidden flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-lg shadow-red-600/20 transition-all duration-200 active:scale-95"
+            className="relative group overflow-hidden flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-bold px-3.5 sm:px-4 py-2 rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 active:scale-95 border border-cyan-400/30"
           >
-            <YouTubeIcon className="w-4 h-4 text-white" />
+            <Youtube className="w-4 h-4 text-white" />
             <span>Suscribirme</span>
-            <span className="hidden sm:inline-block text-[11px] bg-red-800/80 px-1.5 py-0.5 rounded font-normal text-red-100">
-              1 Clic
-            </span>
           </a>
         </div>
       </div>

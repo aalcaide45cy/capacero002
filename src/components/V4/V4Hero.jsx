@@ -1,66 +1,148 @@
 import React from 'react';
-import { Play, Download, Sparkles, Zap, ShieldCheck, ArrowRight } from 'lucide-react';
-import { YouTubeIcon } from './YouTubeIcon';
+import { Play, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
+import { trackSocialClick } from '../../utils/analytics';
 
-export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
+// TikTok icon SVG component
+const TikTokIcon = ({ color = "currentColor" }) => (
+  <svg
+    className="w-5 h-5 sm:w-6 sm:h-6"
+    viewBox="0 0 24 24"
+    fill={color}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+  </svg>
+);
+
+export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab, onOpenCollaboration }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
-    <section className="relative overflow-hidden pt-8 pb-12 md:py-16 border-b border-zinc-900 bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
-      {/* Glow Effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-10 right-10 w-64 h-64 bg-cyan-600/5 rounded-full blur-3xl pointer-events-none" />
+    <section className="relative overflow-hidden pt-6 pb-12 md:py-16 border-b border-zinc-900 bg-gradient-to-b from-black via-zinc-950 to-black">
+      {/* Subtle Electric Blue Ambient Glows */}
+      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[550px] h-[350px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-40 right-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        {/* ================= TOP BRAND SHOWCASE (PROMINENT LOGO & CTA) ================= */}
+        <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-16">
+          {/* Logo Principal con Máximo Protagonismo */}
+          <div className="relative group mb-6">
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-75 group-hover:opacity-100 transition-opacity" />
+            <img
+              src="/logo-capa-cero.webp"
+              alt="Capa Cero 3D"
+              className="relative w-40 sm:w-52 md:w-64 h-auto object-contain drop-shadow-[0_0_25px_rgba(37,117,196,0.65)] breathe-animation transition-transform duration-300 hover:scale-105"
+            />
+          </div>
+
+          {/* Redes Sociales Circulares (Azul Eléctrico) */}
+          <div className="flex items-center justify-center gap-4 sm:gap-5 mb-5">
+            {/* YouTube */}
+            <a
+              href="https://www.youtube.com/@CapaCero0"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackSocialClick && trackSocialClick('YouTube')}
+              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 bg-black border-2 border-[#2575c4] rounded-full transition-all duration-300 hover:scale-110 shadow-[0_0_15px_rgba(37,117,196,0.4)] hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] group flex-shrink-0"
+              aria-label="YouTube"
+            >
+              <Youtube className="w-5 h-5 sm:w-6 sm:h-6 text-[#2575c4] group-hover:text-red-500 transition-colors" />
+            </a>
+
+            {/* TikTok */}
+            <a
+              href="https://www.tiktok.com/@capacero"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackSocialClick && trackSocialClick('TikTok')}
+              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 bg-black border-2 border-[#2575c4] rounded-full transition-all duration-300 hover:scale-110 shadow-[0_0_15px_rgba(37,117,196,0.4)] hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] group flex-shrink-0"
+              aria-label="TikTok"
+            >
+              <span className="text-[#2575c4] group-hover:text-white transition-colors">
+                <TikTokIcon color="currentColor" />
+              </span>
+            </a>
+
+            {/* Instagram */}
+            <a
+              href="https://www.instagram.com/capa.cero_3d/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackSocialClick && trackSocialClick('Instagram')}
+              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 bg-black border-2 border-[#2575c4] rounded-full transition-all duration-300 hover:scale-110 shadow-[0_0_15px_rgba(37,117,196,0.4)] hover:shadow-[0_0_25px_rgba(34,211,238,0.7)] group flex-shrink-0"
+              aria-label="Instagram"
+            >
+              <Instagram className="w-5 h-5 sm:w-6 sm:h-6 text-[#2575c4] group-hover:text-pink-500 transition-colors" />
+            </a>
+          </div>
+
+          {/* Botón Destacado: COLABORACIONES */}
+          <button
+            onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
+            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
+            style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
+            title="Contactar para Colaboraciones"
+          >
+            <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+              <Mail className="w-5 h-5 text-cyan-200" />
+              COLABORACIONES
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
+          </button>
+        </div>
+
+        {/* ================= VALUE PROP & FEATURED VIDEO ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column: Value Proposition & Subscribe Engine */}
+          {/* Left Column: Value Proposition */}
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             
             {/* Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/40 border border-red-500/30 text-red-400 text-xs font-semibold mb-5">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span>Canal Oficial de Capa Cero 3D</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-950/40 border border-cyan-500/30 text-cyan-300 text-xs font-semibold mb-4 shadow-[0_0_12px_rgba(37,117,196,0.2)]">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>Videoteca & Recursos Oficiales</span>
             </div>
 
             {/* Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.15] mb-4">
-              Domina <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-amber-400">Bambu Studio</span> y la Impresión 3D sin perder tiempo
+              Domina <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-300">Bambu Studio</span> y la Impresión 3D
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg text-zinc-300 font-normal leading-relaxed mb-6 max-w-2xl">
-              Tutoriales paso a paso, perfiles de laminado optimizados y solución de errores en tu máquina. Todo directo al grano, sin rodeos ni relleno.
+              Tutoriales paso a paso, perfiles de laminado optimizados y soluciones a problemas reales. Todo directo al grano para makers.
             </p>
 
-            {/* Conversion CTA Group */}
+            {/* CTA Group */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto mb-8">
               <a
                 href={subscribeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-xl shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-200 active:scale-[0.98]"
+                className="flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-200 active:scale-[0.98] border border-cyan-400/30"
               >
-                <YouTubeIcon className="w-5 h-5 text-white" />
-                <span>Suscribirme a Capa Cero</span>
-                <span className="text-xs bg-red-800/80 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-red-100">
+                <Youtube className="w-5 h-5 text-white" />
+                <span>Suscribirme al Canal</span>
+                <span className="text-xs bg-blue-950/80 border border-cyan-400/30 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-cyan-200">
                   Gratis
                 </span>
               </a>
 
               <button
                 onClick={() => onOpenTab('videos')}
-                className="flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 font-semibold text-sm px-5 py-3.5 rounded-xl border border-zinc-800 transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white font-semibold text-sm px-5 py-3.5 rounded-xl border border-zinc-800 hover:border-cyan-500/40 transition-all active:scale-[0.98]"
               >
                 <span>Explorar Videoteca</span>
-                <ArrowRight className="w-4 h-4 text-zinc-400" />
+                <ArrowRight className="w-4 h-4 text-cyan-400" />
               </button>
             </div>
 
             {/* Highlights Pillars */}
             <div className="grid grid-cols-3 gap-3 w-full border-t border-zinc-800/80 pt-6">
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                <Zap className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>Ahorro de Tiempo</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
@@ -68,7 +150,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                 <span>Solución de Errores</span>
               </div>
               <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-                <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
                 <span>Perfiles .3MF Listos</span>
               </div>
             </div>
@@ -77,7 +159,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
           {/* Right Column: Featured Video Showcase */}
           <div className="lg:col-span-5 w-full">
             {featuredVideo ? (
-              <div className="relative group bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-zinc-700">
+              <div className="relative group bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-cyan-500/50 shadow-blue-950/40 hover:shadow-cyan-500/10">
                 
                 {/* Thumbnail Container */}
                 <div
@@ -89,7 +171,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                     alt={featuredVideo.title}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
-                      e.target.src = '/logo-capa-cero-small.png';
+                      e.target.src = '/logo-capa-cero.webp';
                       e.target.className = 'w-full h-full object-contain p-8 bg-zinc-950 opacity-40';
                     }}
                   />
@@ -99,15 +181,15 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
 
                   {/* Play button */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-14 h-14 rounded-full bg-red-600/90 group-hover:bg-red-500 text-white flex items-center justify-center shadow-lg shadow-red-600/40 transition-all duration-300 group-hover:scale-110">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-cyan-500/40 transition-all duration-300 group-hover:scale-110 border border-cyan-300/40">
                       <Play className="w-6 h-6 fill-white translate-x-0.5" />
                     </div>
                   </div>
 
                   {/* Top Badge */}
                   <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="bg-red-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow">
-                      ⭐ Destacado
+                    <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow">
+                      ⭐ Último Vídeo
                     </span>
                     <span className="bg-zinc-950/80 backdrop-blur-md text-zinc-300 text-[11px] font-medium px-2 py-0.5 rounded-md border border-zinc-800">
                       {featuredVideo.category}
@@ -119,7 +201,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                 <div className="p-4 sm:p-5 text-left">
                   <h3
                     onClick={() => onSelectVideo(featuredVideo)}
-                    className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-red-400 cursor-pointer transition-colors mb-2"
+                    className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 cursor-pointer transition-colors mb-2"
                   >
                     {featuredVideo.title}
                   </h3>
@@ -133,9 +215,9 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                   <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-800/80">
                     <button
                       onClick={() => onSelectVideo(featuredVideo)}
-                      className="text-xs font-bold text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+                      className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
                     >
-                      <Play className="w-3.5 h-3.5 fill-red-400" />
+                      <Play className="w-3.5 h-3.5 fill-cyan-400" />
                       <span>Ver tutorial completo</span>
                     </button>
 
@@ -149,7 +231,7 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
               </div>
             ) : (
               <div className="aspect-video w-full bg-zinc-900/90 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center p-6 text-center">
-                <YouTubeIcon className="w-12 h-12 text-red-500 mb-3" />
+                <Youtube className="w-12 h-12 text-[#2575c4] mb-3" />
                 <p className="text-sm font-bold text-white">Canal Oficial Capa Cero 3D</p>
                 <p className="text-xs text-zinc-400 mt-1 max-w-xs">
                   Tutoriales de Bambu Studio y trucos de impresión 3D sin complicaciones.
