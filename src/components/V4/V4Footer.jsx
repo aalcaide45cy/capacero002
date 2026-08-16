@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Calculator, FileText } from 'lucide-react';
 import { YouTubeIcon } from './YouTubeIcon';
 
 export default function V4Footer() {
