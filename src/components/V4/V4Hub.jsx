@@ -76,12 +76,22 @@ export default function V4Hub() {
     window.scrollTo({ top: 500, behavior: 'smooth' });
   };
 
+  const isSearching = Boolean(searchQuery && searchQuery.trim().length > 0);
+
+  const handleSearchChange = (val) => {
+    setSearchQuery(val);
+    if (val && val.trim().length > 0 && activeTab !== 'videos') {
+      setActiveTab('videos');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
       {/* Hero with Centered Logo, Socials, Colaboraciones, and Integrated SearchBar */}
       <V4Hero
         featuredVideo={featuredVideo}
+        isSearching={isSearching}
         onSelectVideo={(v) => setSelectedVideoModal(v)}
         onOpenTab={(tab) => {
           setActiveTab(tab);
@@ -91,7 +101,7 @@ export default function V4Hub() {
       >
         <V4SearchBar
           searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
+          setSearchQuery={handleSearchChange}
           isSticky={isSticky}
           onOpenCollaboration={() => setIsCollaborationOpen(true)}
         />
@@ -113,7 +123,7 @@ export default function V4Hub() {
                   activeCategory={activeCategory}
                   onSelectCategory={setActiveCategory}
                   searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  onSearchChange={handleSearchChange}
                   onSelectVideo={(v) => setSelectedVideoModal(v)}
                 />
                 <V4Doctor3D
