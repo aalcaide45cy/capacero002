@@ -21,23 +21,104 @@
 
   <!-- Social Media & SEO -->
   <meta name="description"
-    content="Aprende Bambu Studio e impresión 3D paso a paso. Tutoriales, trucos de calibración, solución de errores y optimización de filamento directo al grano." />
+    content="Aprende Bambu Studio e impresión 3D paso a paso. Videoteca oficial de Capa Cero con tutoriales, trucos de calibración, solución de errores y optimización de filamento directo al grano." />
+  <meta name="keywords"
+    content="tutoriales bambu studio, bambu lab espanol, trucos bambu studio, fusion 360 impresion 3d, costuras scarf bambu studio, multicolor sin ams, solucionar warping, doctor 3d, capa cero 3d" />
+  
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Capa Cero 3D | Tutoriales de Bambu Studio e Impresión 3D" />
+  <meta property="og:title" content="Capa Cero 3D | Videoteca Oficial de Tutoriales Bambu Studio e Impresión 3D" />
   <meta property="og:description"
-    content="Aprende Bambu Studio e impresión 3D paso a paso. Tutoriales, trucos de calibración, solución de errores y optimización de filamento directo al grano." />
+    content="Domina Bambu Studio, ahorra horas de impresión y elimina fallos. Videoteca con tutoriales paso a paso, diagnósticos en Doctor 3D y recursos para makers." />
   <meta property="og:image" content="https://www.capacero3d.com/logo-capa-cero-small.png" />
   <meta property="og:url" content="https://www.capacero3d.com" />
 
   <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:title" content="Capa Cero 3D | Tutoriales de Bambu Studio e Impresión 3D" />
+  <meta property="twitter:title" content="Capa Cero 3D | Videoteca Oficial de Tutoriales Bambu Studio" />
   <meta property="twitter:description"
-    content="Aprende Bambu Studio e impresión 3D paso a paso. Tutoriales, trucos de calibración, solución de errores y optimización de filamento directo al grano." />
+    content="Domina Bambu Studio, ahorra horas de impresión y elimina fallos. Videoteca oficial de Capa Cero 3D." />
   <meta property="twitter:image" content="https://www.capacero3d.com/logo-capa-cero-small.png" />
 
   <meta name="theme-color" content="#2575c4" />
 
   <title>Capa Cero 3D | Tutoriales de Bambu Studio e Impresión 3D</title>
+
+  <!-- Schema.org JSON-LD for Google Rich Snippets & Video Objects -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://www.capacero3d.com/#website",
+        "url": "https://www.capacero3d.com/",
+        "name": "Capa Cero 3D",
+        "description": "Videoteca oficial de tutoriales de Bambu Studio, modelado en Fusion 360 y trucos de impresión 3D.",
+        "publisher": {
+          "@id": "https://www.capacero3d.com/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.capacero3d.com/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://www.capacero3d.com/#organization",
+        "name": "Capa Cero 3D",
+        "url": "https://www.capacero3d.com/",
+        "logo": "https://www.capacero3d.com/logo-capa-cero.webp",
+        "sameAs": [
+          "https://www.youtube.com/@CapaCero0",
+          "https://makerworld.com/en/@capa_cero"
+        ]
+      },
+      {
+        "@type": "ItemList",
+        "name": "Tutoriales Destacados de Bambu Studio",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "item": {
+              "@type": "VideoObject",
+              "name": "¡Adiós a las costuras! El truco definitivo en Bambu Studio",
+              "description": "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio.",
+              "thumbnailUrl": "https://img.youtube.com/vi/PCbMinEbUd4/hqdefault.jpg",
+              "embedUrl": "https://www.youtube-nocookie.com/embed/PCbMinEbUd4",
+              "uploadDate": "2024-01-01"
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "item": {
+              "@type": "VideoObject",
+              "name": "Fusion 360 para Principiantes: Modela tu Primera Mesa",
+              "description": "Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.",
+              "thumbnailUrl": "https://img.youtube.com/vi/9otbdJPW1WA/hqdefault.jpg",
+              "embedUrl": "https://www.youtube-nocookie.com/embed/9otbdJPW1WA",
+              "uploadDate": "2024-01-01"
+            }
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "item": {
+              "@type": "VideoObject",
+              "name": "Ahorra la Mitad del Tiempo en Bambu Studio: 3 Ejemplos Reales",
+              "description": "Reduce horas de impresión sin perder resistencia ni acabado visual optimizando rellenos y perímetros.",
+              "thumbnailUrl": "https://img.youtube.com/vi/oDGtU6Z2VYM/hqdefault.jpg",
+              "embedUrl": "https://www.youtube-nocookie.com/embed/oDGtU6Z2VYM",
+              "uploadDate": "2024-01-01"
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
   <script type="application/ld+json" id="seo-jsonld">
 {
   "@context": "https://schema.org",
@@ -1280,9 +1361,49 @@
   </script>
 </head>
 
-<body>
+<body class="bg-black text-white antialiased selection:bg-cyan-500 selection:text-black">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
+
+  <!-- Fallback semántico para rastreadores y accesibilidad -->
+  <noscript>
+    <main style="padding: 2rem; font-family: sans-serif; background-color: #09090b; color: #fff;">
+      <h1>Capa Cero 3D — Videoteca Oficial de Bambu Studio e Impresión 3D</h1>
+      <p>Aprende a dominar tu impresora 3D, configurar perfiles en Bambu Studio y diseñar en Fusion 360.</p>
+      <h2>Tutoriales Oficiales en YouTube:</h2>
+      <ul>
+        <li><a href="https://www.youtube.com/watch?v=PCbMinEbUd4">¡Adiós a las costuras! El truco definitivo en Bambu Studio</a></li>
+        <li><a href="https://www.youtube.com/watch?v=9otbdJPW1WA">Fusion 360 para Principiantes: Modela tu Primera Mesa</a></li>
+        <li><a href="https://www.youtube.com/watch?v=hZvIHMnxb3w">Movimiento por el Viewport y Ajustes de Placas #8</a></li>
+        <li><a href="https://www.youtube.com/watch?v=-uD_McDZ3Qk">Perfiles de Impresión: Los Ajustes Clave que Olvidas #7</a></li>
+        <li><a href="https://www.youtube.com/watch?v=oDGtU6Z2VYM">Ahorra la Mitad del Tiempo en Bambu Studio: 3 Ejemplos Reales</a></li>
+        <li><a href="https://www.youtube.com/watch?v=-ZIU1pywxiQ">Perfiles vs Filamentos en Bambu Studio: Diferencias Clave #6</a></li>
+        <li><a href="https://www.youtube.com/watch?v=OHLka3HAwn0">Deja de Tirar Dinero: La Técnica Pro para Impresiones Gigantes</a></li>
+        <li><a href="https://www.youtube.com/watch?v=fpvQEW7-9vo">AlgoLaser Pixi 10W: ¿El Mejor Grabador Láser por Menos de 300€?</a></li>
+        <li><a href="https://www.youtube.com/watch?v=DNouZLKOnpk">Boquillas Estándar vs High-Flow: ¿Cuál Elegir? #5</a></li>
+        <li><a href="https://www.youtube.com/watch?v=w-DRE8UtD9s">¡Deja de Imprimir Textos Feos! El Truco de Alta Resolución</a></li>
+        <li><a href="https://www.youtube.com/watch?v=zXLmMLsKLe4">Cómo Elegir la Placa de Impresión en Bambu Studio #4</a></li>
+        <li><a href="https://www.youtube.com/watch?v=kYbpS-vwqJM">¡Deja de Imprimir Basura! Cómo Arreglar Modelos de IA</a></li>
+        <li><a href="https://www.youtube.com/watch?v=v3SFbjI8BEE">Lo que Hace ChatGPT con Bambu Studio te Sorprenderá</a></li>
+        <li><a href="https://www.youtube.com/watch?v=cfs1ctvUC-8">Configura tu Primer Entorno en Bambu Studio Correctamente #3</a></li>
+        <li><a href="https://www.youtube.com/watch?v=lP0FvQZ6uwk">¿Lo Sabías? Los Ajustes SECRETOS de Bambu Studio Explicados</a></li>
+        <li><a href="https://www.youtube.com/watch?v=YUMNakCgUJs">Ecosistema Bambu Lab: Guía Completa para Principiantes #2</a></li>
+        <li><a href="https://www.youtube.com/watch?v=hVCS-uyGflk">Instalación de Bambu Studio: Guía Paso a Paso #1</a></li>
+        <li><a href="https://www.youtube.com/watch?v=IFTgPS3a6v8">Textos y Modificadores en Bambustudio #15</a></li>
+        <li><a href="https://www.youtube.com/watch?v=3BtSMuvl8BQ">Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14</a></li>
+        <li><a href="https://www.youtube.com/watch?v=mzItWgN4a5c">Montaje de Objetos 3D en BambuStudio #13</a></li>
+        <li><a href="https://www.youtube.com/watch?v=ozlbqVkcinE">Grupos y Jerarquías en Bambu Studio #12</a></li>
+        <li><a href="https://www.youtube.com/watch?v=STc2U-cqecQ">No Hagas Esto al Cortar en Bambustudio #11</a></li>
+        <li><a href="https://www.youtube.com/watch?v=RNWxu9tsB-k">Escala, rota y posiciona: controles esenciales #10</a></li>
+        <li><a href="https://www.youtube.com/watch?v=sIzQPJSVdvo">¿Perdido en la interfaz? Todo lo que necesitas saber #9</a></li>
+        <li><a href="https://www.youtube.com/watch?v=D6zKWJAS6G0">Laminado en Bambu Studio #8.1</a></li>
+        <li><a href="https://www.youtube.com/watch?v=1ol3BaUnJ8Y">Probando Madimaker: Modelos 3D</a></li>
+        <li><a href="https://www.youtube.com/watch?v=nPaTKz9Zqcs">Multicolor sin AMS en Bambu Studio</a></li>
+      </ul>
+      <p>Canal Oficial de YouTube: <a href="https://www.youtube.com/@CapaCero0?sub_confirmation=1">Suscríbete a Capa Cero 3D</a></p>
+    </main>
+  </noscript>
+
   <noscript id="seo-fallback" style="display:none;">
     <h1>Catálogo de Productos - Capa Cero</h1>
     <ul>
