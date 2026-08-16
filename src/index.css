@@ -68,7 +68,7 @@ body {
 
 /* Prevención estricta de zoom en móviles y doble toque */
 html, body {
-  touch-action: manipulation;
+  touch-action: pan-y;
   -webkit-text-size-adjust: 100%;
 }
 
