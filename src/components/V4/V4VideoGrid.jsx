@@ -41,39 +41,37 @@ export default function V4VideoGrid({
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       
-      {/* Header Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      {/* Header Controls (Limpio, sin buscador redundante) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <span>Videoteca de Tutoriales y Trucos</span>
-            <span className="text-xs font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full">
               {filteredVideos.length} {filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}
             </span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Filtra por categoría o busca cualquier ajuste de Bambu Studio o problema de impresión.
+            Explora por categoría o utiliza el buscador superior para encontrar soluciones exactas.
           </p>
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por truco, fallo o filamento..."
-            className="w-full bg-zinc-900/90 text-sm text-white placeholder-zinc-500 rounded-xl pl-10 pr-9 py-2.5 border border-zinc-800 focus:outline-none focus:border-cyan-500 transition-colors"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        {/* Indicador de filtro de búsqueda activo (si se ha buscado algo) */}
+        {searchQuery && (
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-xs text-zinc-400 font-medium">Buscando:</span>
+            <span className="inline-flex items-center gap-1.5 bg-blue-950/60 border border-cyan-500/40 text-cyan-200 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+              <Search className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="truncate max-w-[160px]">"{searchQuery}"</span>
+              <button
+                onClick={() => onSearchChange('')}
+                className="hover:text-white text-cyan-400 ml-0.5"
+                title="Limpiar búsqueda"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Category Pills */}

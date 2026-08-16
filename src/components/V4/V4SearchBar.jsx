@@ -100,7 +100,10 @@ export default function V4SearchBar({
             {/* Clear Button */}
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => {
+                  setSearchQuery('');
+                  trackSearch('');
+                }}
                 className="absolute inset-y-0 right-3.5 sm:right-4 flex items-center text-zinc-400 hover:text-white transition-colors"
                 aria-label="Limpiar búsqueda"
               >
@@ -109,6 +112,35 @@ export default function V4SearchBar({
             )}
           </div>
         </div>
+
+        {/* Sugerencias Rápidas de Búsqueda (Solo visibles en modo Hero / No Sticky) */}
+        {!isSticky && (
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2 text-xs">
+            <span className="text-zinc-500 font-semibold text-[11px] mr-1 hidden sm:inline">
+              🔥 Sugerencias:
+            </span>
+            {[
+              'Costura Scarf',
+              'Warping PEI',
+              'Fusion 360',
+              'Multicolor',
+              'Boquillas High-Flow',
+              'ChatGPT'
+            ].map((term) => (
+              <button
+                key={term}
+                onClick={() => {
+                  setSearchQuery(term);
+                  trackSearch(term);
+                  window.scrollTo({ top: 460, behavior: 'smooth' });
+                }}
+                className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-cyan-300 border border-zinc-800 hover:border-cyan-500/40 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 shadow-sm"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Fila inferior flotante (Solo en modo Sticky) */}
         <div
