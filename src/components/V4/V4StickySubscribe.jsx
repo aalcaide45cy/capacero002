@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Youtube, Mail } from 'lucide-react';
+import { YouTubeIcon } from './YouTubeIcon';
 import { trackSubscribe } from '../../utils/analytics';
 
 export default function V4StickySubscribe({ isSticky = false, onOpenCollaboration }) {
@@ -44,7 +45,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center justify-center shadow-[0_0_20px_rgba(37,117,196,0.7)] border-2 border-cyan-300/60 active:scale-90 transition-transform duration-200"
           title="Suscribirme al Canal"
         >
-          <Youtube className="w-6 h-6 text-white fill-white drop-shadow" />
+          <YouTubeIcon className="w-6 h-6 text-white drop-shadow" />
         </a>
       </div>
 
