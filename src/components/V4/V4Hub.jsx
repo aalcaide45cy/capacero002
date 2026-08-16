@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import V4Header from './V4Header';
 import V4Hero from './V4Hero';
+import V4SearchBar from './V4SearchBar';
 import V4VideoGrid from './V4VideoGrid';
 import V4VideoModal from './V4VideoModal';
 import V4Doctor3D from './V4Doctor3D';
@@ -18,6 +18,20 @@ export default function V4Hub() {
   const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+
+  // Scroll listener for sticky searchbar & compact header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 220) {
+        setIsSticky(true);
+      } else {
+        setIsSticky(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // SEO: Ensure /v4 is completely hidden from search engines (Noindex, Nofollow)
   useEffect(() => {
@@ -69,17 +83,15 @@ export default function V4Hub() {
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
-      {/* Header */}
-      <V4Header
-        onOpenTab={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 400, behavior: 'smooth' });
-        }}
-        activeTab={activeTab}
+      {/* Sticky Search Bar (Docks to top on scroll) */}
+      <V4SearchBar
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSticky={isSticky}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
       />
 
-      {/* Hero */}
+      {/* Hero with Centered Logo, Socials, Colaboraciones, and Non-sticky Search */}
       <V4Hero
         featuredVideo={featuredVideo}
         onSelectVideo={(v) => setSelectedVideoModal(v)}
@@ -88,6 +100,9 @@ export default function V4Hub() {
           window.scrollTo({ top: 450, behavior: 'smooth' });
         }}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isSticky={isSticky}
       />
 
       {/* Main Content Area based on Tab */}

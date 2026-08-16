@@ -14,11 +14,19 @@ const TikTokIcon = ({ color = "currentColor" }) => (
   </svg>
 );
 
-export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab, onOpenCollaboration }) {
+export default function V4Hero({
+  featuredVideo,
+  onSelectVideo,
+  onOpenTab,
+  onOpenCollaboration,
+  searchQuery,
+  setSearchQuery,
+  isSticky
+}) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
-    <section className="relative overflow-hidden pt-6 pb-12 md:py-16 border-b border-zinc-900 bg-gradient-to-b from-black via-zinc-950 to-black">
+    <section className="relative overflow-hidden pt-8 pb-12 md:py-16 border-b border-zinc-900 bg-gradient-to-b from-black via-zinc-950 to-black">
       {/* Subtle Electric Blue Ambient Glows */}
       <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[550px] h-[350px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-40 right-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -26,14 +34,14 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab, onOpen
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* ================= TOP BRAND SHOWCASE (PROMINENT LOGO & CTA) ================= */}
-        <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-16">
-          {/* Logo Principal con Máximo Protagonismo */}
+        <div className="flex flex-col items-center justify-center text-center mb-8 md:mb-12">
+          {/* Logo Principal con Esquinas Redondeadas (rounded-2xl) e Iluminación */}
           <div className="relative group mb-6">
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-75 group-hover:opacity-100 transition-opacity" />
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              className="relative w-40 sm:w-52 md:w-64 h-auto object-contain drop-shadow-[0_0_25px_rgba(37,117,196,0.65)] breathe-animation transition-transform duration-300 hover:scale-105"
+              className="relative w-40 sm:w-52 md:w-64 h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_25px_rgba(37,117,196,0.65)] breathe-animation transition-transform duration-300 hover:scale-105"
             />
           </div>
 
