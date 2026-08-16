@@ -16,10 +16,17 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ScaleProvider } from './context/ScaleContext';
 import { EditorProvider } from './context/EditorContext';
 import { AppShell } from './components/EditorMD/AppShell';
+import V4Hub from './components/V4/V4Hub';
 
 function App() {
-    // Intercepción de ruta para el Panel Privado de Estadísticas
     const currentPath = window.location.pathname;
+
+    // Intercepción de ruta para la nueva versión V4 (YouTube Hub)
+    if (currentPath === '/v4' || currentPath === '/v4/' || currentPath.startsWith('/v4/')) {
+        return <V4Hub />;
+    }
+
+    // Intercepción de ruta para el Panel Privado de Estadísticas
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return <AnalyticsDashboard />;
     }
