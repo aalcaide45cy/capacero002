@@ -11,9 +11,10 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
     <>
       {/* ================= 1. BOTONES FLOTANTES EN MÓVIL (Solo en móviles, aparecen sincronizados con la barra sticky) ================= */}
       <div
-        className={`fixed bottom-5 right-4 z-40 flex flex-col items-end gap-3 md:hidden transition-all duration-300 ease-out ${
-          isSticky ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-24 opacity-0 pointer-events-none'
+        className={`fixed bottom-5 right-4 z-40 flex flex-col items-end gap-3 md:hidden transition-all duration-500 cubic-bezier(0.16,1,0.3,1) ${
+          isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-16 opacity-0 scale-75 pointer-events-none'
         }`}
+        style={{ willChange: 'transform, opacity' }}
       >
         {/* Botón Flotante 1: Sobre (Colaboraciones) */}
         <button
@@ -28,14 +29,14 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           <Mail className="w-5 h-5 text-white drop-shadow" />
         </button>
 
-        {/* Botón Flotante 2: Icono de YouTube (Suscribirse) */}
+        {/* Botón Flotante 2: Icono de YouTube (Suscribirse) con color Azul Eléctrico oficial */}
         <a
           href={subscribeUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackSubscribe && trackSubscribe('Botón Flotante YouTube (Mobile)')}
           aria-label="Suscribirme a Capa Cero en YouTube"
-          className="w-12 h-12 rounded-full bg-gradient-to-tr from-red-700 via-red-600 to-red-500 text-white flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.7)] border-2 border-red-300/60 active:scale-90 transition-transform duration-200"
+          className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center justify-center shadow-[0_0_20px_rgba(37,117,196,0.7)] border-2 border-cyan-300/60 active:scale-90 transition-transform duration-200"
           title="Suscribirme al Canal"
         >
           <Youtube className="w-6 h-6 text-white fill-white drop-shadow" />

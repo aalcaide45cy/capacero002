@@ -13,53 +13,43 @@
     gtag('config', 'G-Y8RT9QWCD9');
   </script>
 
-  <!-- Bloqueo estricto e infranqueable de pinch-to-zoom y gestos en iOS Safari (incluyendo scroll inercial) -->
+  <!-- Bloqueo estricto de pinch-to-zoom y gestos multitáctiles en iOS Safari -->
   <script>
     (function() {
-      function preventPinch(e) {
+      // 1. Bloquear gestos multitáctiles nativos de iOS WebKit
+      document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
+      document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+      document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+
+      // 2. Bloquear cualquier toque o movimiento multitáctil (2 o más dedos)
+      document.addEventListener('touchstart', function(e) {
         if (e.touches && e.touches.length > 1) {
-          if (e.cancelable) e.preventDefault();
-          e.stopPropagation();
+          e.preventDefault();
         }
-      }
+      }, { passive: false });
 
-      function preventGesture(e) {
-        if (e.cancelable) e.preventDefault();
-        e.stopPropagation();
-      }
-
-      // 1. Bloquear eventos WebKit de gestos en fase de captura (máxima prioridad)
-      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
-        window.addEventListener(type, preventGesture, { passive: false, capture: true });
-        document.addEventListener(type, preventGesture, { passive: false, capture: true });
-        if (document.documentElement) document.documentElement.addEventListener(type, preventGesture, { passive: false, capture: true });
-      });
-
-      // 2. Bloquear cualquier contacto multitáctil (2+ dedos) en reposo o durante scroll
-      ['touchstart', 'touchmove', 'touchcancel'].forEach(function(type) {
-        window.addEventListener(type, preventPinch, { passive: false, capture: true });
-        document.addEventListener(type, preventPinch, { passive: false, capture: true });
-        if (document.documentElement) document.documentElement.addEventListener(type, preventPinch, { passive: false, capture: true });
-      });
+      document.addEventListener('touchmove', function(e) {
+        if (e.touches && e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)
       window.addEventListener('wheel', function(e) {
-        if (e.ctrlKey && e.cancelable) {
-          e.preventDefault();
-        }
-      }, { passive: false, capture: true });
+        if (e.ctrlKey) e.preventDefault();
+      }, { passive: false });
 
       // 4. Bloquear zoom por doble toque rápido
       var lastTouchEnd = 0;
-      window.addEventListener('touchend', function(e) {
+      document.addEventListener('touchend', function(e) {
         var now = Date.now();
         if (now - lastTouchEnd <= 300) {
           if (!['INPUT', 'TEXTAREA', 'SELECT', 'A', 'BUTTON'].includes(e.target.tagName)) {
-            if (e.cancelable) e.preventDefault();
+            e.preventDefault();
           }
         }
         lastTouchEnd = now;
-      }, { passive: false, capture: true });
+      }, { passive: false });
     })();
   </script>
 
