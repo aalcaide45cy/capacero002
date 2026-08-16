@@ -1,9 +1,33 @@
 import Papa from 'papaparse';
 import fallbackVideos from '../data/videos_v4.json';
 
-// URL de tu Google Sheet publicado como CSV.
-// Puedes cambiarla aquí o pasarla dinámicamente.
-export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR_EXAMPLE_REPLACE_ME/pub?output=csv";
+export const DEFAULT_SHEET_CSV_URL = "";
+
+/**
+ * Convierte cualquier URL de Google Sheets a su enlace directo CSV público
+ */
+export function formatGoogleSheetUrl(rawUrl) {
+  if (!rawUrl) return '';
+  const clean = String(rawUrl).trim();
+  if (!clean) return '';
+
+  // Si ya es un enlace pub?output=csv o export?format=csv
+  if (clean.includes('output=csv') || clean.includes('format=csv')) {
+    return clean;
+  }
+
+  // Si es un enlace normal de Google Sheets (ej: https://docs.google.com/spreadsheets/d/1abc.../edit#gid=0)
+  const sheetIdMatch = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/i);
+  if (sheetIdMatch && sheetIdMatch[1]) {
+    const sheetId = sheetIdMatch[1];
+    // Extraer gid si existe
+    const gidMatch = clean.match(/[#&?]gid=([0-9]+)/i);
+    const gidParam = gidMatch ? `&gid=${gidMatch[1]}` : '';
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gidParam}`;
+  }
+
+  return clean;
+}
 
 /**
  * Extrae el ID del vídeo de YouTube desde cualquier formato de URL o texto.
@@ -27,17 +51,19 @@ export function extractYouTubeId(url) {
  */
 export function getYouTubeThumbnail(videoId) {
   if (!videoId) return '/logo-capa-cero-small.png';
-  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 }
 
 /**
  * Limpia y normaliza los enlaces de descarga, descartando valores vacíos o nulos
  */
 export function extractValidDownloads(row) {
+  if (!row || typeof row !== 'object') return [];
+
   const candidates = [
-    row.Enlace_Descarga || row.enlace_descarga || row['Enlace de Descarga'],
-    row.Enlace_Descarga2 || row.enlace_descarga2 || row['Enlace de Descarga 2'],
-    row.Enlace_Descarga3 || row.enlace_descarga3 || row['Enlace de Descarga 3']
+    row.Enlace_Descarga || row.enlace_descarga || row['Enlace de Descarga'] || row['Enlace_descarga'],
+    row.Enlace_Descarga2 || row.enlace_descarga2 || row['Enlace de Descarga 2'] || row['Enlace_descarga2'],
+    row.Enlace_Descarga3 || row.enlace_descarga3 || row['Enlace de Descarga 3'] || row['Enlace_descarga3']
   ];
 
   return candidates
@@ -58,12 +84,14 @@ export function extractValidDownloads(row) {
 /**
  * Normaliza un registro para asegurar que los campos vacíos no generen etiquetas vacías
  */
-function normalizeVideoRow(raw, index) {
+export function normalizeVideoRow(raw, index = 0) {
+  if (!raw || typeof raw !== 'object') return null;
+
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
-  const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || '').trim();
+  const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
   const videoId = extractYouTubeId(rawUrl);
   
-  const category = String(raw.Categoria || raw.categoria || raw.Category || 'General').trim();
+  const category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
   const rawDesc = String(raw.Descripcion || raw.descripcion || raw.Description || '').trim();
   const description = (rawDesc && !rawDesc.toLowerCase().includes('vacio') && !rawDesc.toLowerCase().includes('vacío')) ? rawDesc : '';
 
@@ -96,39 +124,65 @@ function normalizeVideoRow(raw, index) {
  * Carga vídeos desde la URL de Google Sheets en CSV con fallback al archivo local
  */
 export async function loadV4Videos(customCsvUrl = null) {
-  const targetUrl = customCsvUrl || localStorage.getItem('capacero_v4_sheet_url') || DEFAULT_SHEET_CSV_URL;
-
-  // Si la URL es la de ejemplo o no es válida, devolvemos el fallback directamente
-  if (!targetUrl || targetUrl.includes('EXAMPLE_REPLACE_ME')) {
-    return fallbackVideos.map(normalizeVideoRow);
-  }
-
   try {
+    const rawTarget = customCsvUrl || localStorage.getItem('capacero_v4_sheet_url') || '';
+    const targetUrl = formatGoogleSheetUrl(rawTarget);
+
+    // Si no hay URL configurada, usar directamente los datos de respaldo locales
+    if (!targetUrl || targetUrl.includes('EXAMPLE_REPLACE_ME')) {
+      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+    }
+
     const response = await fetch(targetUrl);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      console.warn(`Error al conectar con Google Sheets (${response.status}), usando datos locales.`);
+      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+    }
+
     const csvText = await response.text();
+    if (!csvText || !csvText.trim()) {
+      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+    }
 
     return new Promise((resolve) => {
       Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          if (results.data && results.data.length > 0) {
-            const formatted = results.data
-              .filter(row => row.Titulo || row.titulo || row.URL_Youtube || row.url_youtube)
-              .map(normalizeVideoRow);
-            resolve(formatted);
-          } else {
-            resolve(fallbackVideos.map(normalizeVideoRow));
+          try {
+            if (results.data && Array.isArray(results.data) && results.data.length > 0) {
+              const formatted = results.data
+                .filter(row => row && typeof row === 'object')
+                .filter(row => {
+                  const t = (row.Titulo || row.titulo || '').trim();
+                  const u = (row.URL_Youtube || row.url_youtube || '').trim();
+                  return t.length > 0 || u.length > 0;
+                })
+                .map(normalizeVideoRow)
+                .filter(Boolean);
+
+              // Si la hoja tiene filas válidas, usarlas. Si estaba vacía, usar datos de respaldo.
+              if (formatted.length > 0) {
+                resolve(formatted);
+              } else {
+                resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+              }
+            } else {
+              resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+            }
+          } catch (err) {
+            console.error('Error parseando filas de Google Sheet:', err);
+            resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
           }
         },
-        error: () => {
-          resolve(fallbackVideos.map(normalizeVideoRow));
+        error: (err) => {
+          console.warn('Error en PapaParse:', err);
+          resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
         }
       });
     });
   } catch (err) {
-    console.warn('No se pudo cargar el Google Sheet en vivo, usando datos de respaldo:', err);
-    return fallbackVideos.map(normalizeVideoRow);
+    console.warn('Fallo cargando vídeos V4:', err);
+    return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
   }
 }

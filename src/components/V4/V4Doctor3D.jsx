@@ -69,13 +69,13 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
   const [selectedProblem, setSelectedProblem] = useState(COMMON_PROBLEMS[0]);
 
   // Find matching video in loaded videos
-  const matchingVideo = videos.find((v) => {
+  const matchingVideo = (videos || []).find((v) => {
     const q = selectedProblem.keywordSearch.toLowerCase();
     return (
-      v.title?.toLowerCase().includes(q) ||
-      v.description?.toLowerCase().includes(q) ||
-      v.category?.toLowerCase().includes(q) ||
-      v.consejoClave?.toLowerCase().includes(q)
+      v?.title?.toLowerCase().includes(q) ||
+      v?.description?.toLowerCase().includes(q) ||
+      v?.category?.toLowerCase().includes(q) ||
+      v?.consejoClave?.toLowerCase().includes(q)
     );
   });
 

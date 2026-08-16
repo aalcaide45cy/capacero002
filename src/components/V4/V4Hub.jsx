@@ -71,7 +71,7 @@ export default function V4Hub() {
   };
 
   // Find featured video (or first video)
-  const featuredVideo = videos.find((v) => v.isFeatured) || videos[0] || null;
+  const featuredVideo = (videos || []).find((v) => v?.isFeatured) || (videos || [])[0] || null;
 
   const handleSearchWithQuery = (query) => {
     setActiveTab('videos');
