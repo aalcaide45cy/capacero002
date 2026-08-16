@@ -4,7 +4,8 @@ import {
     Stethoscope, Search, Download, ArrowLeft, Users, Smartphone,
     Monitor, Tablet, ArrowUpRight, TrendingUp, ShieldCheck, CheckCircle2,
     Calendar, Sparkles, Filter, Trash2, Database, ExternalLink, HelpCircle,
-    Play, X, Info, ChevronRight, Copy, Check, SlidersHorizontal, Eye
+    Play, X, Info, ChevronRight, Copy, Check, SlidersHorizontal, Eye,
+    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown
 } from 'lucide-react';
 import {
     loadAnalyticsData,
@@ -25,6 +26,11 @@ export default function AnalyticsDashboard() {
     const [passwordInput, setPasswordInput] = useState('');
     const [error, setError] = useState(false);
 
+    // Data Mode: 'live' (Datos Reales de la Web) vs 'demo' (Simulación)
+    const [dataMode, setDataMode] = useState(() => {
+        return localStorage.getItem('capa_cero_analytics_mode') || 'live';
+    });
+
     // Data States
     const [isLoading, setIsLoading] = useState(false);
     const [sessions, setSessions] = useState([]);
@@ -39,6 +45,11 @@ export default function AnalyticsDashboard() {
     const [originFilter, setOriginFilter] = useState('all');
     const [subscribedFilter, setSubscribedFilter] = useState('all'); // 'all' | 'subscribed' | 'not_subscribed'
     const [tableSearchQuery, setTableSearchQuery] = useState('');
+
+    // Table Sorting & Filter State in Timeline
+    const [tableSortField, setTableSortField] = useState('timestamp'); // 'timestamp' | 'country' | 'device' | 'origin' | 'duration' | 'subscribed'
+    const [tableSortOrder, setTableSortOrder] = useState('desc'); // 'asc' | 'desc'
+    const [tablePageSize, setTablePageSize] = useState(50); // 25, 50, 100, 500
 
     // Modal States
     const [selectedKpiModal, setSelectedKpiModal] = useState(null); // 'visits' | 'subs' | 'dwell' | 'cards' | 'downloads' | 'countries' | null
@@ -63,7 +74,7 @@ export default function AnalyticsDashboard() {
         const savedAuth = localStorage.getItem('capa_cero_admin_auth');
         if (savedAuth === 'true') {
             setIsAuthenticated(true);
-            fetchData();
+            fetchData(dataMode);
         }
 
         // Cargar metadatos de vídeos para vistas previas con miniaturas reales
@@ -76,7 +87,7 @@ export default function AnalyticsDashboard() {
             setIsAuthenticated(true);
             setError(false);
             localStorage.setItem('capa_cero_admin_auth', 'true');
-            fetchData();
+            fetchData(dataMode);
         } else {
             setError(true);
             setPasswordInput('');
@@ -88,15 +99,35 @@ export default function AnalyticsDashboard() {
         localStorage.removeItem('capa_cero_admin_auth');
     };
 
-    const fetchData = async () => {
+    const handleSwitchMode = (newMode) => {
+        setDataMode(newMode);
+        localStorage.setItem('capa_cero_analytics_mode', newMode);
+        fetchData(newMode);
+        showToast(newMode === 'live' ? '⚡ Modo En Vivo activado (Datos reales)' : '🎭 Modo Demo activado (Simulación)');
+    };
+
+    const fetchData = async (mode = dataMode) => {
         setIsLoading(true);
         try {
-            const data = await loadAnalyticsData();
+            const data = await loadAnalyticsData(mode);
             setSessions(data.sessions || []);
             setEvents(data.events || []);
-            showToast('Datos analíticos actualizados');
         } catch (err) {
             console.error("Error cargando estadísticas:", err);
+        }
+        setIsLoading(false);
+    };
+
+    const handleSyncSheets = async () => {
+        setIsLoading(true);
+        try {
+            const res = await syncWithGoogleSheet();
+            await fetchData('live');
+            setDataMode('live');
+            localStorage.setItem('capa_cero_analytics_mode', 'live');
+            showToast(res.message || 'Sincronización completada');
+        } catch (e) {
+            showToast('Error sincronizando con Google Sheets');
         }
         setIsLoading(false);
     };
@@ -104,21 +135,9 @@ export default function AnalyticsDashboard() {
     const handleClearData = async () => {
         if (window.confirm("¿Seguro que deseas reiniciar y borrar el historial de analíticas?")) {
             await clearAnalyticsDB();
-            await fetchData();
+            await fetchData(dataMode);
             showToast('Base de datos reiniciada');
         }
-    };
-
-    const handleSyncSheets = async () => {
-        setIsLoading(true);
-        try {
-            const res = await syncWithGoogleSheet();
-            await fetchData();
-            showToast(res.message || 'Sincronización completada');
-        } catch (e) {
-            showToast('Error sincronizando con Google Sheets');
-        }
-        setIsLoading(false);
     };
 
     const showToast = (msg) => {
@@ -133,7 +152,7 @@ export default function AnalyticsDashboard() {
         setTimeout(() => setCopiedScript(false), 3000);
     };
 
-    // Extraer lista de países únicos disponibles para el filtro
+    // Extraer lista de países únicos disponibles para el filtro (a partir de todas las sesiones cargadas)
     const availableCountries = useMemo(() => {
         const set = new Set();
         sessions.forEach(s => {
@@ -153,6 +172,18 @@ export default function AnalyticsDashboard() {
             searchQuery: tableSearchQuery
         });
     }, [sessions, events, dateFilter, countryFilter, deviceFilter, originFilter, subscribedFilter, tableSearchQuery]);
+
+    // Métricas sin filtrar por país para mantener siempre la lista completa de países visible en el tab Geo
+    const geoMetrics = useMemo(() => {
+        return computeAnalyticsMetrics(sessions, events, {
+            dateFilter,
+            countryFilter: 'all',
+            deviceFilter,
+            originFilter,
+            subscribedFilter,
+            searchQuery: tableSearchQuery
+        });
+    }, [sessions, events, dateFilter, deviceFilter, originFilter, subscribedFilter, tableSearchQuery]);
 
     // Buscar metadatos de un vídeo a partir de su título o texto de atribución
     const findVideoByTitle = (titleOrContext) => {
@@ -203,6 +234,43 @@ export default function AnalyticsDashboard() {
     };
 
     const hasActiveFilters = dateFilter !== 'all' || countryFilter !== 'all' || deviceFilter !== 'all' || originFilter !== 'all' || subscribedFilter !== 'all' || tableSearchQuery !== '';
+
+    // Manejar ordenación de columnas en tabla de sesiones
+    const handleSortColumn = (field) => {
+        if (tableSortField === field) {
+            setTableSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setTableSortField(field);
+            setTableSortOrder('desc');
+        }
+    };
+
+    // Sesiones ordenadas y paginadas para el timeline
+    const sortedTimelineSessions = useMemo(() => {
+        let list = [...metrics.rawSessions];
+
+        list.sort((a, b) => {
+            let valA = a[tableSortField];
+            let valB = b[tableSortField];
+
+            if (tableSortField === 'duration') {
+                valA = a.totalActiveSeconds || 0;
+                valB = b.totalActiveSeconds || 0;
+            } else if (tableSortField === 'subscribed') {
+                valA = a.hasSubscribed ? 1 : 0;
+                valB = b.hasSubscribed ? 1 : 0;
+            } else if (tableSortField === 'timestamp') {
+                valA = new Date(a.timestamp || 0).getTime();
+                valB = new Date(b.timestamp || 0).getTime();
+            }
+
+            if (valA < valB) return tableSortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return tableSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        return list;
+    }, [metrics.rawSessions, tableSortField, tableSortOrder]);
 
     // --- RENDER LOGIN ---
     if (!isAuthenticated) {
@@ -277,16 +345,20 @@ export default function AnalyticsDashboard() {
                                     <BarChart2 className="w-6 h-6 text-cyan-400" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
-                                        <span>Capa Cero Analytics</span>
+                                    <div className="flex items-center gap-2.5">
+                                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                                            Capa Cero Analytics
+                                        </h1>
                                         <span className="text-xs bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                                             v4 Full
                                         </span>
-                                    </h1>
+                                    </div>
                                     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400 mt-1">
-                                        <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                            Base de Datos Local Activa (IndexedDB)
+                                        <span className={`flex items-center gap-1.5 font-bold ${dataMode === 'live' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                            <span className={`w-2 h-2 rounded-full ${dataMode === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                                            {dataMode === 'live'
+                                                ? `🟢 Modo En Vivo: ${sessions.length} visitas reales registradas`
+                                                : '🎭 Modo Demo: Mostrando simulación de ejemplo'}
                                         </span>
                                         <span className="text-zinc-600">•</span>
                                         <button
@@ -302,8 +374,37 @@ export default function AnalyticsDashboard() {
                             </div>
                         </div>
 
-                        {/* Top Action Buttons */}
+                        {/* Top Action Controls: Mode Switcher & Tools */}
                         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                            
+                            {/* MODE SELECTOR (EN VIVO vs DEMO) */}
+                            <div className="bg-zinc-900/90 border border-zinc-800 p-1 rounded-2xl flex items-center gap-1 shadow-inner mr-2">
+                                <button
+                                    onClick={() => handleSwitchMode('live')}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                        dataMode === 'live'
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                                            : 'text-zinc-400 hover:text-white'
+                                    }`}
+                                    title="Ver únicamente datos reales registrados de los visitantes"
+                                >
+                                    <Activity className="w-3.5 h-3.5" />
+                                    <span>En Vivo</span>
+                                </button>
+                                <button
+                                    onClick={() => handleSwitchMode('demo')}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                        dataMode === 'demo'
+                                            ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/30'
+                                            : 'text-zinc-400 hover:text-white'
+                                    }`}
+                                    title="Ver datos simulados para explorar todas las gráficas"
+                                >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    <span>Demo</span>
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => setIsHelpModalOpen(true)}
                                 className="bg-blue-950/40 hover:bg-blue-900/60 text-cyan-300 border border-cyan-500/30 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
@@ -324,13 +425,12 @@ export default function AnalyticsDashboard() {
                             </button>
 
                             <button
-                                onClick={fetchData}
+                                onClick={() => fetchData(dataMode)}
                                 disabled={isLoading}
-                                className="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
+                                className="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
                                 title="Refrescar métricas locales"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-400' : 'text-zinc-400'}`} />
-                                <span>Refrescar</span>
                             </button>
 
                             <button
@@ -799,27 +899,54 @@ export default function AnalyticsDashboard() {
                             
                             {/* Ranking de Países */}
                             <div className="lg:col-span-7 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
-                                <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
-                                    <Globe className="w-5 h-5 text-cyan-400" />
-                                    Visitas por Países
-                                </h3>
-                                <p className="text-xs text-zinc-400 mb-6">De qué países provienen tus espectadores y quiénes se suscriben más</p>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                            <Globe className="w-5 h-5 text-cyan-400" />
+                                            Visitas por Países
+                                        </h3>
+                                        <p className="text-xs text-zinc-400 mt-0.5">
+                                            Haz clic en un país para filtrar o vuelve a hacer clic para deseleccionarlo
+                                        </p>
+                                    </div>
+                                    {countryFilter !== 'all' && (
+                                        <button
+                                            onClick={() => setCountryFilter('all')}
+                                            className="bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-cyan-900 transition-all flex items-center gap-1"
+                                        >
+                                            <span>Quitar filtro ({countryFilter})</span>
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
 
-                                <div className="space-y-3.5">
-                                    {metrics.countriesRank.map((c) => {
-                                        const pct = metrics.totalVisits > 0 ? Math.round((c.count / metrics.totalVisits) * 100) : 0;
+                                <div className="space-y-3.5 mt-5">
+                                    {geoMetrics.countriesRank.map((c) => {
+                                        const isSelected = countryFilter === c.name;
+                                        const pct = geoMetrics.totalVisits > 0 ? Math.round((c.count / geoMetrics.totalVisits) * 100) : 0;
                                         return (
                                             <div
                                                 key={c.name}
-                                                onClick={() => setCountryFilter(c.name)}
-                                                className="p-3.5 bg-zinc-900/60 hover:bg-zinc-900 rounded-2xl border border-zinc-800/60 hover:border-cyan-500/40 flex items-center justify-between gap-4 cursor-pointer transition-all"
-                                                title={`Haz clic para filtrar todo el panel por ${c.name}`}
+                                                onClick={() => setCountryFilter(isSelected ? 'all' : c.name)}
+                                                className={`p-3.5 rounded-2xl border flex items-center justify-between gap-4 cursor-pointer transition-all ${
+                                                    isSelected
+                                                        ? 'bg-cyan-950/60 border-cyan-400 shadow-lg shadow-cyan-950/50 scale-[1.01]'
+                                                        : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/60 hover:border-zinc-700'
+                                                }`}
+                                                title={isSelected ? `Haz clic para quitar el filtro de ${c.name}` : `Haz clic para filtrar todo el panel por ${c.name}`}
                                             >
                                                 <div className="flex items-center gap-3 flex-1">
                                                     <span className="text-2xl">{c.flag}</span>
                                                     <div className="flex-1">
                                                         <div className="flex justify-between items-center text-xs font-bold text-white mb-1">
-                                                            <span>{c.name}</span>
+                                                            <span className="flex items-center gap-2">
+                                                                <span>{c.name}</span>
+                                                                {isSelected && (
+                                                                    <span className="text-[10px] text-cyan-400 bg-cyan-950 border border-cyan-500/40 px-1.5 py-0.2 rounded font-bold">
+                                                                        Activo
+                                                                    </span>
+                                                                )}
+                                                            </span>
                                                             <span className="text-cyan-400 font-mono">{c.count} visitas ({pct}%)</span>
                                                         </div>
                                                         <div className="w-full h-2 bg-zinc-950 rounded-full overflow-hidden">
@@ -1181,35 +1308,136 @@ export default function AnalyticsDashboard() {
                 {activeTab === 'timeline' && (
                     <div className="space-y-6 text-left">
                         <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            
+                            {/* Header y Filtros directos de tabla */}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                                 <div>
                                     <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                                         <Sparkles className="w-5 h-5 text-cyan-400" />
                                         Registro de Sesiones de Visitantes
                                     </h3>
                                     <p className="text-xs text-zinc-400 mt-0.5">
-                                        Pasa el ratón por la columna de suscrito para ver el modal flotante con la vista previa del vídeo
+                                        Haz clic en las cabeceras para ordenar o pasa el ratón por la columna de suscrito para ver la miniatura del vídeo
                                     </p>
                                 </div>
-                                <div className="text-xs text-zinc-400">
-                                    Filtrado activo: <strong className="text-white">{metrics.rawSessions.length}</strong> sesiones
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-zinc-400">Mostrar:</span>
+                                    {[25, 50, 100, 500].map(sz => (
+                                        <button
+                                            key={sz}
+                                            onClick={() => setTablePageSize(sz)}
+                                            className={`text-xs px-2.5 py-1 rounded-lg border font-mono font-bold transition-all ${
+                                                tablePageSize === sz
+                                                    ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300'
+                                                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                                            }`}
+                                        >
+                                            {sz}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
+                            {/* Tabla con cabeceras interactivas de ordenación */}
                             <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden overflow-x-auto">
-                                <table className="w-full text-left border-collapse min-w-[850px] text-xs">
+                                <table className="w-full text-left border-collapse min-w-[900px] text-xs">
                                     <thead>
-                                        <tr className="bg-black/50 border-b border-zinc-800 text-zinc-400 font-mono uppercase">
-                                            <th className="p-3.5">Fecha</th>
-                                            <th className="p-3.5">Ubicación</th>
-                                            <th className="p-3.5">Dispositivo</th>
-                                            <th className="p-3.5">Origen</th>
-                                            <th className="p-3.5">Permanencia</th>
-                                            <th className="p-3.5">¿Suscrito? (Pasa ratón para Frame)</th>
+                                        <tr className="bg-black/60 border-b border-zinc-800 text-zinc-400 font-mono uppercase">
+                                            
+                                            {/* Fecha/Hora */}
+                                            <th
+                                                onClick={() => handleSortColumn('timestamp')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>Fecha</span>
+                                                    {tableSortField === 'timestamp' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
+
+                                            {/* Ubicación */}
+                                            <th
+                                                onClick={() => handleSortColumn('country')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>Ubicación</span>
+                                                    {tableSortField === 'country' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
+
+                                            {/* Dispositivo */}
+                                            <th
+                                                onClick={() => handleSortColumn('device')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>Dispositivo</span>
+                                                    {tableSortField === 'device' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
+
+                                            {/* Origen */}
+                                            <th
+                                                onClick={() => handleSortColumn('origin')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>Canal Origen</span>
+                                                    {tableSortField === 'origin' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
+
+                                            {/* Permanencia */}
+                                            <th
+                                                onClick={() => handleSortColumn('duration')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>Permanencia</span>
+                                                    {tableSortField === 'duration' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
+
+                                            {/* Suscrito */}
+                                            <th
+                                                onClick={() => handleSortColumn('subscribed')}
+                                                className="p-3.5 cursor-pointer hover:text-white transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <span>¿Suscrito? (Pasa ratón)</span>
+                                                    {tableSortField === 'subscribed' ? (
+                                                        tableSortOrder === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3 h-3 text-zinc-600" />
+                                                    )}
+                                                </div>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-800/60">
-                                        {metrics.rawSessions.slice(0, 40).map((s, i) => {
+                                        {sortedTimelineSessions.slice(0, tablePageSize).map((s, i) => {
                                             const videoObj = findVideoByTitle(s.subscribedFrom);
                                             return (
                                                 <tr
@@ -1218,7 +1446,7 @@ export default function AnalyticsDashboard() {
                                                 >
                                                     <td className="p-3.5 text-zinc-300 whitespace-nowrap">{formatDate(s.timestamp)}</td>
                                                     <td className="p-3.5 font-semibold text-white whitespace-nowrap">
-                                                        <span className="mr-1.5">{s.flag}</span> {s.city}, {s.country}
+                                                        <span className="mr-1.5">{s.flag}</span> {s.city || 'Desconocida'}, {s.country}
                                                     </td>
                                                     <td className="p-3.5 text-zinc-400">{s.device} ({s.browser})</td>
                                                     <td className="p-3.5 text-zinc-400">{s.origin}</td>
@@ -1241,7 +1469,7 @@ export default function AnalyticsDashboard() {
                                                                 className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-950/60 border border-red-500/40 px-2.5 py-1 rounded-xl cursor-pointer hover:scale-105 transition-all shadow-sm"
                                                             >
                                                                 <Heart className="w-3.5 h-3.5 fill-red-400 shrink-0" />
-                                                                <span className="truncate max-w-[200px]">{s.subscribedFrom}</span>
+                                                                <span className="truncate max-w-[220px]">{s.subscribedFrom}</span>
                                                                 <Eye className="w-3 h-3 text-cyan-400 ml-1" />
                                                             </div>
                                                         ) : (
@@ -1253,6 +1481,13 @@ export default function AnalyticsDashboard() {
                                         })}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs text-zinc-500 mt-3 px-1">
+                                <span>Mostrando {Math.min(tablePageSize, sortedTimelineSessions.length)} de {sortedTimelineSessions.length} sesiones filtradas</span>
+                                {dataMode === 'live' && sortedTimelineSessions.length === 0 && (
+                                    <span className="text-cyan-400">💡 No hay sesiones reales registradas aún para este filtro. Cada visita a capacero3d.com aparecerá aquí.</span>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1325,7 +1560,7 @@ export default function AnalyticsDashboard() {
                                             {selectedKpiModal === 'downloads' && 'Desglose Detallado: Descargas .3MF'}
                                             {selectedKpiModal === 'countries' && 'Desglose Detallado: Países y Ciudades'}
                                         </h3>
-                                        <p className="text-xs text-zinc-400">Información profunda con filtros aplicados</p>
+                                        <p className="text-xs text-zinc-400">Información profunda con filtros aplicados ({dataMode === 'live' ? 'En Vivo' : 'Demo'})</p>
                                     </div>
                                 </div>
                                 <button

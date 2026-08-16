@@ -370,27 +370,31 @@ export const generateSeedData = () => {
     return { sessions, events };
 };
 
-// Cargar o inicializar datos completos para el panel
-export const loadAnalyticsData = async () => {
-    let sessions = await getAllSessions();
-    let events = await getAllEvents();
-
-    // Si aún no hay suficientes datos registrados en vivo, mezclar o sembrar datos demo
-    const demoGenerated = localStorage.getItem('capa_cero_analytics_demo');
-    if (sessions.length < 5 && !demoGenerated) {
-        const seed = generateSeedData();
-        for (const s of seed.sessions) {
-            await saveSession(s);
-        }
-        for (const e of seed.events) {
-            await saveEvent(e);
-        }
-        localStorage.setItem('capa_cero_analytics_demo', 'true');
-        sessions = seed.sessions;
-        events = seed.events;
+// Cargar datos según el modo seleccionado: 'live' (datos reales) o 'demo' (simulación)
+export const loadAnalyticsData = async (mode = 'live') => {
+    if (mode === 'demo') {
+        const demoSeed = generateSeedData();
+        return {
+            sessions: demoSeed.sessions,
+            events: demoSeed.events,
+            isDemoMode: true
+        };
     }
 
-    return { sessions, events };
+    // Modo en vivo: solo datos reales registrados en el navegador o traídos de Google Sheets
+    let allSessions = await getAllSessions();
+    let allEvents = await getAllEvents();
+
+    // Filtrar para excluir cualquier sesión marcada como demo si existiera
+    const liveSessions = allSessions.filter(s => !s.isDemo);
+    const sessionIdsSet = new Set(liveSessions.map(s => s.sessionId));
+    const liveEvents = allEvents.filter(e => sessionIdsSet.has(e.sessionId) || !e.isDemo);
+
+    return {
+        sessions: liveSessions,
+        events: liveEvents,
+        isDemoMode: false
+    };
 };
 
 // Procesar métricas globales con soporte para filtros combinados (fecha, país, dispositivo, origen, suscripción, búsqueda)
