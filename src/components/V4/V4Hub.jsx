@@ -7,7 +7,6 @@ import V4Doctor3D from './V4Doctor3D';
 import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
-import V4SheetConfigModal from './V4SheetConfigModal';
 import { loadV4Videos } from '../../utils/loadV4Videos';
 
 export default function V4Hub() {
@@ -17,8 +16,6 @@ export default function V4Hub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
-  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const [sheetUrl, setSheetUrl] = useState(() => localStorage.getItem('capacero_v4_sheet_url') || '');
 
   // SEO: Ensure /v4 is completely hidden from search engines (Noindex, Nofollow)
   useEffect(() => {
@@ -33,7 +30,6 @@ export default function V4Hub() {
     const previousContent = metaRobots.getAttribute('content');
     metaRobots.setAttribute('content', 'noindex, nofollow');
 
-    // Update document title for private testing
     const previousTitle = document.title;
     document.title = 'Capa Cero V4 - Hub de YouTube';
 
@@ -47,28 +43,16 @@ export default function V4Hub() {
     };
   }, []);
 
-  // Load videos
-  const fetchVideos = async (customUrl) => {
-    setIsLoading(true);
-    const data = await loadV4Videos(customUrl);
-    setVideos(data);
-    setIsLoading(false);
-  };
-
+  // Load videos directly from the secure official Google Sheet source
   useEffect(() => {
-    fetchVideos(sheetUrl);
-  }, [sheetUrl]);
-
-  const handleSaveSheetUrl = (newUrl) => {
-    if (newUrl) {
-      localStorage.setItem('capacero_v4_sheet_url', newUrl);
-      setSheetUrl(newUrl);
-    } else {
-      localStorage.removeItem('capacero_v4_sheet_url');
-      setSheetUrl('');
-    }
-    fetchVideos(newUrl);
-  };
+    const fetchVideos = async () => {
+      setIsLoading(true);
+      const data = await loadV4Videos();
+      setVideos(data || []);
+      setIsLoading(false);
+    };
+    fetchVideos();
+  }, []);
 
   // Find featured video (or first video)
   const featuredVideo = (videos || []).find((v) => v?.isFeatured) || (videos || [])[0] || null;
@@ -85,7 +69,6 @@ export default function V4Hub() {
       
       {/* Header */}
       <V4Header
-        onOpenSheetConfig={() => setIsConfigModalOpen(true)}
         onOpenTab={(tab) => {
           setActiveTab(tab);
           window.scrollTo({ top: 400, behavior: 'smooth' });
@@ -161,14 +144,6 @@ export default function V4Hub() {
           onClose={() => setSelectedVideoModal(null)}
         />
       )}
-
-      {/* Sheet Configuration Modal */}
-      <V4SheetConfigModal
-        isOpen={isConfigModalOpen}
-        onClose={() => setIsConfigModalOpen(false)}
-        onSaveUrl={handleSaveSheetUrl}
-        currentUrl={sheetUrl}
-      />
 
     </div>
   );

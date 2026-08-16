@@ -121,15 +121,14 @@ export function normalizeVideoRow(raw, index = 0) {
 }
 
 /**
- * Carga vídeos desde la URL de Google Sheets en CSV con fallback al archivo local
+ * Carga vídeos desde la URL oficial de Google Sheets en CSV con fallback seguro
  */
-export async function loadV4Videos(customCsvUrl = null) {
+export async function loadV4Videos() {
   try {
-    const rawTarget = customCsvUrl || localStorage.getItem('capacero_v4_sheet_url') || '';
-    const targetUrl = formatGoogleSheetUrl(rawTarget);
+    const targetUrl = DEFAULT_SHEET_CSV_URL;
 
     // Si no hay URL configurada, usar directamente los datos de respaldo locales
-    if (!targetUrl || targetUrl.includes('EXAMPLE_REPLACE_ME')) {
+    if (!targetUrl) {
       return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
     }
 

@@ -85,9 +85,9 @@ export default function V4Downloads({ videos, onSelectVideo }) {
       ) : (
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-12 text-center max-w-md mx-auto">
           <Download className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white mb-1">Aún no hay descargas vinculadas</h3>
+          <h3 className="text-base font-bold text-white mb-1">Próximas descargas disponibles</h3>
           <p className="text-xs text-zinc-400">
-            Añade enlaces en las columnas <code>Enlace_Descarga</code> de tu Google Sheet y aparecerán aquí automáticamente.
+            Los perfiles y archivos .3MF de los tutoriales estarán disponibles muy pronto en esta sección.
           </p>
         </div>
       )}

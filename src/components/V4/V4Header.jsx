@@ -1,8 +1,7 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
 import { YouTubeIcon } from './YouTubeIcon';
 
-export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
+export default function V4Header({ onOpenTab, activeTab }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
@@ -67,15 +66,6 @@ export default function V4Header({ onOpenSheetConfig, onOpenTab, activeTab }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2.5">
-          {/* Config Sheet Button */}
-          <button
-            onClick={onOpenSheetConfig}
-            title="Configurar enlace de Google Sheets"
-            className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-
           {/* Primary YouTube Subscribe Button */}
           <a
             href={subscribeUrl}

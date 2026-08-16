@@ -148,11 +148,11 @@ export default function V4Hero({ featuredVideo, onSelectVideo, onOpenTab }) {
                 </div>
               </div>
             ) : (
-              <div className="aspect-video w-full bg-zinc-900/90 rounded-2xl border border-dashed border-zinc-700 flex flex-col items-center justify-center p-6 text-center">
+              <div className="aspect-video w-full bg-zinc-900/90 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center p-6 text-center">
                 <YouTubeIcon className="w-12 h-12 text-red-500 mb-3" />
-                <p className="text-sm font-bold text-white">Google Sheet Conectado</p>
+                <p className="text-sm font-bold text-white">Canal Oficial Capa Cero 3D</p>
                 <p className="text-xs text-zinc-400 mt-1 max-w-xs">
-                  Tu hoja <strong>Capacero3d V4</strong> está vinculada. Añade tus vídeos para que aparezcan aquí automáticamente.
+                  Tutoriales de Bambu Studio y trucos de impresión 3D sin complicaciones.
                 </p>
               </div>
             )}
