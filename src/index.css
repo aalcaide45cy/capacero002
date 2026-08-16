@@ -66,16 +66,10 @@ body {
   animation: breathe 3s ease-in-out infinite;
 }
 
-/* Bloqueo de gestos de zoom y habilitación de scroll natural y recarga (Pull-to-Refresh) */
-*, *::before, *::after {
-  touch-action: pan-y;
-}
-
+/* Configuración estándar para móviles (Zoom, desplazamiento y toques nativos) */
 html, body, #root {
-  touch-action: pan-y;
-  -webkit-touch-callout: none !important;
-  -webkit-text-size-adjust: 100% !important;
-  -webkit-tap-highlight-color: transparent !important;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Deshabilitar arrastre, selección y marco azul/gris al pulsar cualquier imagen o logotipo en móviles */
