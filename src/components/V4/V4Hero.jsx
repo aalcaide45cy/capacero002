@@ -19,9 +19,7 @@ export default function V4Hero({
   onSelectVideo,
   onOpenTab,
   onOpenCollaboration,
-  searchQuery,
-  setSearchQuery,
-  isSticky
+  children
 }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
@@ -99,6 +97,11 @@ export default function V4Hero({
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
           </button>
+
+          {/* Buscador animado (Justo debajo de Colaboraciones) */}
+          <div className="w-full mt-2">
+            {children}
+          </div>
         </div>
 
         {/* ================= VALUE PROP & FEATURED VIDEO ================= */}

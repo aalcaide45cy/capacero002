@@ -83,15 +83,7 @@ export default function V4Hub() {
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
-      {/* Sticky Search Bar (Docks to top on scroll) */}
-      <V4SearchBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSticky={isSticky}
-        onOpenCollaboration={() => setIsCollaborationOpen(true)}
-      />
-
-      {/* Hero with Centered Logo, Socials, Colaboraciones, and Non-sticky Search */}
+      {/* Hero with Centered Logo, Socials, Colaboraciones, and Integrated SearchBar */}
       <V4Hero
         featuredVideo={featuredVideo}
         onSelectVideo={(v) => setSelectedVideoModal(v)}
@@ -100,10 +92,14 @@ export default function V4Hub() {
           window.scrollTo({ top: 450, behavior: 'smooth' });
         }}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        isSticky={isSticky}
-      />
+      >
+        <V4SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSticky={isSticky}
+          onOpenCollaboration={() => setIsCollaborationOpen(true)}
+        />
+      </V4Hero>
 
       {/* Main Content Area based on Tab */}
       <main className="flex-1">
