@@ -11,10 +11,15 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
     <>
       {/* ================= 1. BOTONES FLOTANTES EN MÓVIL (Solo en móviles, aparecen sincronizados con la barra sticky) ================= */}
       <div
-        className={`fixed bottom-5 right-4 z-40 flex flex-col items-end gap-3 md:hidden transition-all duration-500 cubic-bezier(0.16,1,0.3,1) ${
-          isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-16 opacity-0 scale-75 pointer-events-none'
+        className={`fixed bottom-5 right-4 z-40 flex flex-col items-end gap-3 md:hidden transform transition-all ${
+          isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
         }`}
-        style={{ willChange: 'transform, opacity' }}
+        style={{
+          transitionProperty: 'transform, opacity, scale',
+          transitionDuration: '450ms',
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform, opacity'
+        }}
       >
         {/* Botón Flotante 1: Sobre (Colaboraciones) */}
         <button

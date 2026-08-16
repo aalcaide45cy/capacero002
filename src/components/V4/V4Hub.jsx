@@ -33,17 +33,25 @@ export default function V4Hub() {
     else if (activeTab === 'downloads') setActiveSection('Descargas');
   }, [activeTab]);
 
-  // Scroll listener for sticky searchbar & compact header
+  // Scroll listener for sticky searchbar & compact header with smooth rAF & hysteresis
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      if (window.scrollY > 220) {
-        setIsSticky(true);
-      } else {
-        setIsSticky(false);
-        setActiveSection('Hero Principal');
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          if (scrollY > 240) {
+            setIsSticky(true);
+          } else if (scrollY < 180) {
+            setIsSticky(false);
+            setActiveSection('Hero Principal');
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

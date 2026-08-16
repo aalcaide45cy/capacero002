@@ -17,22 +17,21 @@
   <script>
     (function() {
       // 1. Bloquear gestos multitáctiles nativos de iOS WebKit
-      document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gestureend', function(e) { e.preventDefault(); }, { passive: false });
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(type) {
+        window.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false });
+        document.addEventListener(type, function(e) { e.preventDefault(); }, { passive: false });
+      });
 
       // 2. Bloquear cualquier toque o movimiento multitáctil (2 o más dedos)
-      document.addEventListener('touchstart', function(e) {
+      function blockMultiTouch(e) {
         if (e.touches && e.touches.length > 1) {
           e.preventDefault();
         }
-      }, { passive: false });
-
-      document.addEventListener('touchmove', function(e) {
-        if (e.touches && e.touches.length > 1) {
-          e.preventDefault();
-        }
-      }, { passive: false });
+      }
+      window.addEventListener('touchstart', blockMultiTouch, { passive: false });
+      window.addEventListener('touchmove', blockMultiTouch, { passive: false });
+      document.addEventListener('touchstart', blockMultiTouch, { passive: false });
+      document.addEventListener('touchmove', blockMultiTouch, { passive: false });
 
       // 3. Bloquear zoom de rueda / trackpad (Ctrl + Wheel)
       window.addEventListener('wheel', function(e) {

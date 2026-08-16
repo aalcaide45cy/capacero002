@@ -114,12 +114,17 @@ export default function V4SearchBar({
 
       {/* ================= 2. NAVBAR STICKY FLOTANTE (Desliza suavemente desde arriba sin mover el contenido) ================= */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-zinc-800 shadow-2xl py-2.5 transition-all duration-500 cubic-bezier(0.16,1,0.3,1) ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-zinc-800 shadow-2xl py-2.5 transition-all duration-500 ease-out transform ${
           isSticky
             ? 'translate-y-0 opacity-100 pointer-events-auto'
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
-        style={{ willChange: 'transform, opacity' }}
+        style={{
+          transitionProperty: 'transform, opacity',
+          transitionDuration: '450ms',
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform, opacity'
+        }}
         aria-hidden={!isSticky}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
