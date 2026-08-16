@@ -10,12 +10,14 @@ export default function V4Footer() {
         
         {/* Brand */}
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-2 shadow-lg">
-            <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-full h-full object-contain" />
-          </div>
+          <img
+            src="/logo-capa-cero.webp"
+            alt="Capa Cero Logo"
+            className="h-11 sm:h-12 w-auto object-contain drop-shadow-[0_0_12px_rgba(37,117,196,0.35)]"
+          />
           <div className="text-left">
             <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
-            <p className="text-xs text-zinc-500">Tutoriales, herramientas y perfiles para makers.</p>
+            <p className="text-xs text-zinc-400">Tutoriales, herramientas y perfiles para makers.</p>
           </div>
         </div>
 
