@@ -1,3 +1,5 @@
+import Papa from 'papaparse';
+
 /**
  * Capa Cero Analytics - Local Data Engine (IndexedDB + LocalStorage Fallback)
  * Proporciona almacenamiento de alta capacidad y cálculos agregados en tiempo real.
@@ -681,22 +683,72 @@ export const exportAnalyticsToJSON = (sessions, events) => {
 // URL de la pestaña de estadísticas publicada en Google Sheets
 export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1728927826";
 
-// Sincronizar con Google Sheets (leer filas remotas si existen)
+// Sincronizar con Google Sheets (leer e importar filas remotas si existen)
 export const syncWithGoogleSheet = async () => {
     try {
         const response = await fetch(GOOGLE_SHEETS_STATS_URL);
         if (!response.ok) return { success: false, message: `Error HTTP ${response.status}` };
 
         const csvText = await response.text();
-        if (!csvText || csvText.trim().length < 15) {
-            return { success: true, count: 0, message: 'La hoja de Google Sheets está conectada pero aún no contiene registros.' };
+        if (!csvText || csvText.trim().length < 25) {
+            return { success: true, count: 0, message: 'La pestaña de Google Sheets está conectada (cabeceras listas).' };
         }
 
-        // Si hay filas en la hoja, procesarlas e integrarlas
-        const rows = csvText.split('\n').filter(r => r.trim().length > 0);
-        return { success: true, count: Math.max(0, rows.length - 1), message: `Conexión correcta con Google Sheets (${rows.length - 1} filas encontradas).` };
+        return new Promise((resolve) => {
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    if (!results.data || !Array.isArray(results.data)) {
+                        resolve({ success: true, count: 0, message: 'Hoja de cálculo vacía.' });
+                        return;
+                    }
+
+                    let imported = 0;
+                    for (const row of results.data) {
+                        const sid = row.ID_Sesion || row.id_sesion || row.SessionId;
+                        if (!sid) continue;
+
+                        let parsedDwell = {};
+                        try {
+                            parsedDwell = row.Secciones_Vistas ? JSON.parse(row.Secciones_Vistas) : {};
+                        } catch (e) {}
+
+                        const sessionObj = {
+                            sessionId: sid,
+                            timestamp: row.Timestamp || new Date().toISOString(),
+                            country: row.Pais || 'España',
+                            countryCode: row.Codigo_Pais || 'ES',
+                            flag: row.Bandera || '🇪🇸',
+                            region: row.Region_Provincia || '',
+                            city: row.Ciudad || '',
+                            device: row.Dispositivo || 'Desktop',
+                            os: row.Sistema_Operativo || 'Windows',
+                            browser: row.Navegador || 'Chrome',
+                            origin: row.Canal_Origen || 'Directo',
+                            totalActiveSeconds: parseInt(row.Tiempo_Activo_Segundos, 10) || 0,
+                            hasSubscribed: String(row.Suscrito || '').toUpperCase() === 'SI',
+                            subscribedFrom: row.Suscrito_Desde || null,
+                            dwellTimes: parsedDwell
+                        };
+
+                        await saveSession(sessionObj);
+                        imported++;
+                    }
+
+                    resolve({
+                        success: true,
+                        count: imported,
+                        message: `¡Sincronizadas ${imported} sesiones desde Google Sheets!`
+                    });
+                },
+                error: (err) => {
+                    resolve({ success: false, message: `Error al parsear CSV: ${err.message}` });
+                }
+            });
+        });
     } catch (e) {
-        return { success: false, message: 'No se pudo leer la hoja publicada de Google Sheets (comprueba la conexión).' };
+        return { success: false, message: 'No se pudo conectar con Google Sheets (comprueba la conexión).' };
     }
 };
 

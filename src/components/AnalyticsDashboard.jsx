@@ -109,6 +109,18 @@ export default function AnalyticsDashboard() {
         }
     };
 
+    const handleSyncSheets = async () => {
+        setIsLoading(true);
+        try {
+            const res = await syncWithGoogleSheet();
+            await fetchData();
+            showToast(res.message || 'Sincronización completada');
+        } catch (e) {
+            showToast('Error sincronizando con Google Sheets');
+        }
+        setIsLoading(false);
+    };
+
     const showToast = (msg) => {
         setStatusToast(msg);
         setTimeout(() => setStatusToast(null), 3000);
@@ -302,10 +314,20 @@ export default function AnalyticsDashboard() {
                             </button>
 
                             <button
+                                onClick={handleSyncSheets}
+                                disabled={isLoading}
+                                className="bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
+                                title="Importar datos nuevos desde Google Sheets"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-400' : 'text-emerald-400'}`} />
+                                <span>Sincronizar Sheets</span>
+                            </button>
+
+                            <button
                                 onClick={fetchData}
                                 disabled={isLoading}
                                 className="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50"
-                                title="Refrescar métricas"
+                                title="Refrescar métricas locales"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-400' : 'text-zinc-400'}`} />
                                 <span>Refrescar</span>
