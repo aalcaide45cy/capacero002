@@ -65,3 +65,16 @@ body {
 .search-focus:focus {
   animation: breathe 3s ease-in-out infinite;
 }
+
+/* Prevención estricta de zoom en móviles y doble toque */
+html, body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Evitar que Safari iOS haga auto-zoom al enfocar cualquier input */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
