@@ -14,7 +14,13 @@ import { AppShell } from './components/EditorMD/AppShell';
 function App() {
     const currentPath = window.location.pathname;
 
-    // 1. Ruta Privada para la versión anterior (Catálogo de productos)
+    // 1. Redirección limpia de /v4 a la raíz / para evitar contenido duplicado en SEO
+    if (currentPath === '/v4' || currentPath === '/v4/' || currentPath.startsWith('/v4/')) {
+        window.history.replaceState({}, '', '/');
+        return <V4Hub />;
+    }
+
+    // 2. Ruta Privada para la versión anterior (Catálogo de productos)
     if (currentPath === '/v2-back' || currentPath === '/v2-back/' || currentPath.startsWith('/v2-back/') || currentPath.startsWith('/producto/')) {
         return <V2BackCatalog />;
     }

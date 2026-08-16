@@ -10,7 +10,7 @@ export default function V4Header({ onOpenTab, activeTab, onOpenCollaboration }) 
         
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <a href="/v4" className="flex items-center gap-3 group">
+          <a href="/" className="flex items-center gap-3 group">
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero"

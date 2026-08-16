@@ -53,7 +53,7 @@ export default function V4SearchBar({
               isSticky ? 'duration-500 max-w-[150px] opacity-100 mr-3 sm:mr-4' : 'duration-0 max-w-0 opacity-0'
             }`}
           >
-            <a href="/v4" className="block shrink-0">
+            <a href="/" className="block shrink-0">
               <img
                 src="/logo-capa-cero.webp"
                 alt="Capa Cero"
