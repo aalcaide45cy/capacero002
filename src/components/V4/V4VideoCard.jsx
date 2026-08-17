@@ -65,15 +65,6 @@ export default function V4VideoCard({ video, onSelect }) {
       {/* Content Area */}
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         
-        {/* Category Pill (No tapa la miniatura) */}
-        {video.category && (
-          <div className="mb-2">
-            <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/50 border border-cyan-800/40 px-2 py-0.5 rounded-md">
-              {video.category}
-            </span>
-          </div>
-        )}
-
         {/* Title */}
         <h3
           onClick={handleSelect}
@@ -103,14 +94,14 @@ export default function V4VideoCard({ video, onSelect }) {
         {/* Footer Actions */}
         <div className="mt-auto pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
           
-          {/* Botón Ver Vídeo */}
-          <button
-            onClick={handleSelect}
-            className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors py-1 shrink-0"
-          >
-            <Play className="w-3.5 h-3.5 fill-cyan-400" />
-            <span>Ver Vídeo</span>
-          </button>
+          {/* Etiqueta de Categoría (Ubicada abajo a la izquierda en lugar de Ver Vídeo) */}
+          {video.category ? (
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-1 rounded-md shrink-0 truncate max-w-[130px] sm:max-w-[150px]">
+              {video.category}
+            </span>
+          ) : (
+            <span />
+          )}
 
           {/* Estadísticas de YouTube + Botón Descargas */}
           <div className="flex items-center gap-2">

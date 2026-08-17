@@ -225,18 +225,6 @@ export default function V4Hero({
 
                   {/* Info Block */}
                   <div className="p-4 sm:p-5 text-left">
-                    {/* Category & Featured Badge above Title (No tapa la miniatura) */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-                      <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
-                        ⭐ Último Vídeo
-                      </span>
-                      {featuredVideo.category && (
-                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/50 border border-cyan-800/40 px-2 py-0.5 rounded-md">
-                          {featuredVideo.category}
-                        </span>
-                      )}
-                    </div>
-
                     <h2
                       onClick={() => onSelectVideo(featuredVideo)}
                       className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 cursor-pointer transition-colors mb-2"
@@ -251,13 +239,17 @@ export default function V4Hero({
                     )}
 
                     <div className="flex items-center justify-between gap-2 pt-3 border-t border-zinc-800/80">
-                      <button
-                        onClick={() => onSelectVideo(featuredVideo)}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors py-1 shrink-0"
-                      >
-                        <Play className="w-3.5 h-3.5 fill-cyan-400" />
-                        <span>Ver Vídeo</span>
-                      </button>
+                      {/* Etiquetas de categoría y último vídeo abajo a la izquierda */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                          ⭐ Último Vídeo
+                        </span>
+                        {featuredVideo.category && (
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded-md">
+                            {featuredVideo.category}
+                          </span>
+                        )}
+                      </div>
 
                       {/* YouTube Stats + Descargas in Hero */}
                       <div className="flex items-center gap-2">
