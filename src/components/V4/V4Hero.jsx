@@ -244,10 +244,10 @@ export default function V4Hero({
                     <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-800/80">
                       <button
                         onClick={() => onSelectVideo(featuredVideo)}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors"
                       >
                         <Play className="w-3.5 h-3.5 fill-cyan-400" />
-                        <span>Ver tutorial completo</span>
+                        <span>Ver Vídeo</span>
                       </button>
                     </div>
                   </div>

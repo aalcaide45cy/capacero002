@@ -3,8 +3,8 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V7';
-const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V7';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V8';
+const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V8';
 
 // Fechas de publicación reales de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
@@ -35,6 +35,37 @@ const YOUTUBE_PUBLISH_DATES = {
   'sIzQPJSVdvo': '2026-06-20T10:57:52Z', // #9 Interfaz
   '1ol3BaUnJ8Y': '2026-05-23T01:00:06Z', // Madimaker
   'nPaTKz9Zqcs': '2026-03-15T09:39:01Z'  // AMS Multicolor
+};
+
+// Estadísticas de YouTube
+const YOUTUBE_STATS_MAP = {
+  "D6zKWJAS6G0": { "views": 43, "likes": 11, "comments": 2 },
+  "PCbMinEbUd4": { "views": 2719, "likes": 179, "comments": 32 },
+  "hZvIHMnxb3w": { "views": 215, "likes": 14, "comments": 3 },
+  "9otbdJPW1WA": { "views": 222, "likes": 25, "comments": 5 },
+  "-uD_McDZ3Qk": { "views": 352, "likes": 21, "comments": 4 },
+  "oDGtU6Z2VYM": { "views": 2012, "likes": 125, "comments": 23 },
+  "-ZIU1pywxiQ": { "views": 607, "likes": 50, "comments": 9 },
+  "OHLka3HAwn0": { "views": 2720, "likes": 190, "comments": 34 },
+  "fpvQEW7-9vo": { "views": 242, "likes": 10, "comments": 2 },
+  "DNouZLKOnpk": { "views": 383, "likes": 22, "comments": 4 },
+  "w-DRE8UtD9s": { "views": 6005, "likes": 366, "comments": 66 },
+  "zXLmMLsKLe4": { "views": 486, "likes": 32, "comments": 6 },
+  "kYbpS-vwqJM": { "views": 2309, "likes": 158, "comments": 28 },
+  "v3SFbjI8BEE": { "views": 980, "likes": 69, "comments": 12 },
+  "cfs1ctvUC-8": { "views": 388, "likes": 19, "comments": 3 },
+  "lP0FvQZ6uwk": { "views": 6882, "likes": 401, "comments": 72 },
+  "YUMNakCgUJs": { "views": 407, "likes": 26, "comments": 5 },
+  "hVCS-uyGflk": { "views": 480, "likes": 22, "comments": 4 },
+  "IFTgPS3a6v8": { "views": 150, "likes": 15, "comments": 3 },
+  "3BtSMuvl8BQ": { "views": 180, "likes": 18, "comments": 3 },
+  "mzItWgN4a5c": { "views": 140, "likes": 14, "comments": 2 },
+  "ozlbqVkcinE": { "views": 130, "likes": 12, "comments": 2 },
+  "STc2U-cqecQ": { "views": 160, "likes": 16, "comments": 3 },
+  "RNWxu9tsB-k": { "views": 120, "likes": 11, "comments": 2 },
+  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
+  "1ol3BaUnJ8Y": { "views": 376, "likes": 23, "comments": 4 },
+  "nPaTKz9Zqcs": { "views": 2729, "likes": 83, "comments": 15 }
 };
 
 /**
@@ -110,29 +141,13 @@ export function extractValidDownloads(row) {
     .filter(Boolean);
 }
 
-function getPopularityScore(title, isFeatured) {
-  const t = (title || '').toLowerCase();
-  if (isFeatured || t.includes('costura')) return 100;
-  if (t.includes('dinero') || t.includes('warping') || t.includes('gigante')) return 95;
-  if (t.includes('tiempo') || t.includes('ahorra') || t.includes('mitad')) return 90;
-  if (t.includes('perfiles de impresión') || t.includes('ajustes clave')) return 85;
-  if (t.includes('textos feos') || t.includes('alta resolución')) return 80;
-  if (t.includes('boquillas') || t.includes('high-flow')) return 75;
-  if (t.includes('algolaser') || t.includes('pixi')) return 70;
-  if (t.includes('chatgpt') || t.includes('ia')) return 65;
-  if (t.includes('ams') || t.includes('multicolor')) return 60;
-  if (t.includes('fusion') || t.includes('360')) return 55;
-  if (t.includes('secretos') || t.includes('sabías')) return 50;
-  return 30;
-}
-
 /**
  * Normaliza un registro para asegurar consistencia
  */
 export function normalizeVideoRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
-  if (raw.youtubeId && raw.title && raw.category && raw.publishedAt) {
+  if (raw.youtubeId && raw.title && raw.category && raw.publishedAt && raw.views !== undefined) {
     return raw;
   }
 
@@ -160,8 +175,14 @@ export function normalizeVideoRow(raw, index = 0) {
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (raw.chapterNumber || null);
-  const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : getPopularityScore(title, isFeatured);
   const publishedAt = raw.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
+  
+  const stats = YOUTUBE_STATS_MAP[videoId] || { views: raw.views || 100, likes: raw.likes || 10, comments: raw.comments || 2 };
+  const views = raw.views !== undefined ? raw.views : stats.views;
+  const likes = raw.likes !== undefined ? raw.likes : stats.likes;
+  const comments = raw.comments !== undefined ? raw.comments : stats.comments;
+
+  const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : ((likes * 10) + Math.round(views / 10) + (isFeatured ? 500 : 0));
 
   return {
     id: raw.id || `video-${index + 1}`,
@@ -177,6 +198,9 @@ export function normalizeVideoRow(raw, index = 0) {
     chapterNumber,
     popularityScore,
     publishedAt,
+    views,
+    likes,
+    comments,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -207,6 +231,7 @@ export async function loadV4Videos(forceRefresh = false) {
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V4');
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V5');
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V6');
+      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V7');
     } catch (e) {}
   }
 
