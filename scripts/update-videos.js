@@ -11,6 +11,37 @@ const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
 
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
+// Fechas reales de publicación extraídas de YouTube para ordenación cronológica exacta
+const YOUTUBE_PUBLISH_DATES = {
+  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado (¡ÚLTIMO!)
+  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras! (¡PENÚLTIMO!)
+  'hZvIHMnxb3w': '2026-08-10T11:00:06Z', // #8 Movimiento Viewport
+  '9otbdJPW1WA': '2026-08-06T10:30:25Z', // Fusion 360 Mesa
+  '-uD_McDZ3Qk': '2026-08-03T11:00:06Z', // #7 Perfiles de Impresión
+  'oDGtU6Z2VYM': '2026-07-31T10:30:33Z', // Ahorra la Mitad del Tiempo
+  '-ZIU1pywxiQ': '2026-07-27T11:00:06Z', // #6 Perfiles vs Filamentos
+  'OHLka3HAwn0': '2026-07-24T11:30:24Z', // Deja de Tirar Dinero (Gigantes/Warping)
+  'fpvQEW7-9vo': '2026-07-22T11:00:16Z', // AlgoLaser Pixi 10W
+  'DNouZLKOnpk': '2026-07-19T15:00:06Z', // #5 Boquillas High-Flow
+  'w-DRE8UtD9s': '2026-07-15T09:05:11Z', // Textos Feos / Alta Resolución
+  'zXLmMLsKLe4': '2026-07-13T11:00:06Z', // #4 Placa de Impresión
+  'kYbpS-vwqJM': '2026-07-10T09:00:06Z', // Arreglar Modelos de IA
+  'v3SFbjI8BEE': '2026-07-09T07:00:06Z', // ChatGPT con Bambu Studio
+  'cfs1ctvUC-8': '2026-07-06T11:00:06Z', // #3 Primer Entorno
+  'lP0FvQZ6uwk': '2026-07-05T04:30:06Z', // Ajustes SECRETOS
+  'YUMNakCgUJs': '2026-06-29T11:00:06Z', // #2 Ecosistema Bambu Lab
+  'hVCS-uyGflk': '2026-06-22T11:00:06Z', // #1 Instalación Bambu Studio
+  'IFTgPS3a6v8': '2026-06-21T04:12:21Z', // #15 Textos y Modificadores
+  '3BtSMuvl8BQ': '2026-06-20T10:58:48Z', // #14 Pintar Objetos
+  'mzItWgN4a5c': '2026-06-20T10:58:42Z', // #13 Montaje de Objetos
+  'ozlbqVkcinE': '2026-06-20T10:58:10Z', // #12 Grupos y Jerarquías
+  'STc2U-cqecQ': '2026-06-20T10:58:04Z', // #11 No Hagas Esto al Cortar
+  'RNWxu9tsB-k': '2026-06-20T10:58:01Z', // #10 Escala, rota y posiciona
+  'sIzQPJSVdvo': '2026-06-20T10:57:52Z', // #9 Interfaz
+  '1ol3BaUnJ8Y': '2026-05-23T01:00:06Z', // Madimaker
+  'nPaTKz9Zqcs': '2026-03-15T09:39:01Z'  // AMS Multicolor
+};
+
 function extractYouTubeId(url) {
   if (!url) return '';
   const clean = String(url).trim();
@@ -85,6 +116,7 @@ function normalizeVideoRow(raw, index = 0) {
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
   const popularityScore = getPopularityScore(title, isFeatured);
+  const publishedAt = YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
 
   return {
     id: raw.id || `video-${index + 1}`,
@@ -99,6 +131,7 @@ function normalizeVideoRow(raw, index = 0) {
     isFeatured,
     chapterNumber,
     popularityScore,
+    publishedAt,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -131,13 +164,17 @@ async function main() {
             return t.length > 0 || u.length > 0;
           })
           .map((row, idx) => normalizeVideoRow(row, idx))
-          .filter(Boolean)
-          .reverse(); // Último añadido en Google Sheets -> Primero en la web
+          .filter(Boolean);
+
+        // Orden cronológico estricto (más nuevo publicado primero)
+        validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(validVideos, null, 2));
-        console.log(`✨ Generados ${validVideos.length} vídeos estáticos en src/data/videos_v4.json\n`);
+        console.log(`✨ Generados ${validVideos.length} vídeos estáticos en src/data/videos_v4.json`);
+        console.log(`🎬 Vídeo #1 (Hero y primero de lista): ${validVideos[0]?.title}`);
+        console.log(`🎬 Vídeo #2 (Penúltimo publicado): ${validVideos[1]?.title}\n`);
       },
       error: (err) => {
         console.error('🔥 Error parseando CSV de vídeos:', err);
