@@ -10,25 +10,7 @@ const PrivacyCookies = lazy(() => import('./components/PrivacyCookies'));
 const Calculator = lazy(() => import('./components/Calculator'));
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 
-const LazyEditor = lazy(async () => {
-    const [theme, scale, editor, shell] = await Promise.all([
-        import('./context/ThemeContext'),
-        import('./context/ScaleContext'),
-        import('./context/EditorContext'),
-        import('./components/EditorMD/AppShell')
-    ]);
-    return {
-        default: () => (
-            <theme.ThemeProvider>
-                <scale.ScaleProvider>
-                    <editor.EditorProvider>
-                        <shell.AppShell />
-                    </editor.EditorProvider>
-                </scale.ScaleProvider>
-            </theme.ThemeProvider>
-        )
-    };
-});
+const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
 
 function RouteLoadingFallback() {
     return (
