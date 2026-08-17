@@ -41,6 +41,22 @@ function extractValidDownloads(row) {
     .filter(Boolean);
 }
 
+function getPopularityScore(title, isFeatured) {
+  const t = (title || '').toLowerCase();
+  if (isFeatured || t.includes('costura')) return 100;
+  if (t.includes('dinero') || t.includes('warping') || t.includes('gigante')) return 95;
+  if (t.includes('tiempo') || t.includes('ahorra') || t.includes('mitad')) return 90;
+  if (t.includes('perfiles de impresión') || t.includes('ajustes clave')) return 85;
+  if (t.includes('textos feos') || t.includes('alta resolución')) return 80;
+  if (t.includes('boquillas') || t.includes('high-flow')) return 75;
+  if (t.includes('algolaser') || t.includes('pixi')) return 70;
+  if (t.includes('chatgpt') || t.includes('ia')) return 65;
+  if (t.includes('ams') || t.includes('multicolor')) return 60;
+  if (t.includes('fusion') || t.includes('360')) return 55;
+  if (t.includes('secretos') || t.includes('sabías')) return 50;
+  return 30;
+}
+
 function normalizeVideoRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
@@ -68,10 +84,7 @@ function normalizeVideoRow(raw, index = 0) {
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
-
-  const popularKeywords = ['costura', 'tiempo', 'dinero', 'warping', 'calibrac', 'perfil', 'boquilla', 'algolaser', 'secretos', 'ams', 'resistencia', 'calidad', 'truco'];
-  const tLower = title.toLowerCase();
-  const isPopular = isFeatured || popularKeywords.some(kw => tLower.includes(kw));
+  const popularityScore = getPopularityScore(title, isFeatured);
 
   return {
     id: raw.id || `video-${index + 1}`,
@@ -85,7 +98,7 @@ function normalizeVideoRow(raw, index = 0) {
     downloads,
     isFeatured,
     chapterNumber,
-    isPopular,
+    popularityScore,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -119,7 +132,7 @@ async function main() {
           })
           .map((row, idx) => normalizeVideoRow(row, idx))
           .filter(Boolean)
-          .reverse(); // Los nuevos añadidos al final de la hoja van primero en la web
+          .reverse(); // Último añadido en Google Sheets -> Primero en la web
 
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 

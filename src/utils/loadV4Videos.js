@@ -3,8 +3,8 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V4';
-const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V4';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V6';
+const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V6';
 
 /**
  * Convierte cualquier URL de Google Sheets a su enlace directo CSV público
@@ -14,16 +14,13 @@ export function formatGoogleSheetUrl(rawUrl) {
   const clean = String(rawUrl).trim();
   if (!clean) return '';
 
-  // Si ya es un enlace pub?output=csv o export?format=csv
   if (clean.includes('output=csv') || clean.includes('format=csv')) {
     return clean;
   }
 
-  // Si es un enlace normal de Google Sheets (ej: https://docs.google.com/spreadsheets/d/1abc.../edit#gid=0)
   const sheetIdMatch = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/i);
   if (sheetIdMatch && sheetIdMatch[1]) {
     const sheetId = sheetIdMatch[1];
-    // Extraer gid si existe
     const gidMatch = clean.match(/[#&?]gid=([0-9]+)/i);
     const gidParam = gidMatch ? `&gid=${gidMatch[1]}` : '';
     return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gidParam}`;
@@ -39,12 +36,10 @@ export function extractYouTubeId(url) {
   if (!url) return '';
   const clean = String(url).trim();
   
-  // Si ya es un ID de 11 caracteres alfanuméricos
   if (/^[a-zA-Z0-9_-]{11}$/.test(clean)) {
     return clean;
   }
 
-  // Regex para capturar ID en youtube.com/watch?v=, youtu.be/, shorts/, embed/
   const match = clean.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/i);
   return match ? match[1] : '';
 }
@@ -58,7 +53,7 @@ export function getYouTubeThumbnail(videoId) {
 }
 
 /**
- * Limpia y normaliza los enlaces de descarga, descartando valores vacíos o nulos
+ * Limpia y normaliza los enlaces de descarga
  */
 export function extractValidDownloads(row) {
   if (!row || typeof row !== 'object') return [];
@@ -84,32 +79,47 @@ export function extractValidDownloads(row) {
     .filter(Boolean);
 }
 
+function getPopularityScore(title, isFeatured) {
+  const t = (title || '').toLowerCase();
+  if (isFeatured || t.includes('costura')) return 100;
+  if (t.includes('dinero') || t.includes('warping') || t.includes('gigante')) return 95;
+  if (t.includes('tiempo') || t.includes('ahorra') || t.includes('mitad')) return 90;
+  if (t.includes('perfiles de impresión') || t.includes('ajustes clave')) return 85;
+  if (t.includes('textos feos') || t.includes('alta resolución')) return 80;
+  if (t.includes('boquillas') || t.includes('high-flow')) return 75;
+  if (t.includes('algolaser') || t.includes('pixi')) return 70;
+  if (t.includes('chatgpt') || t.includes('ia')) return 65;
+  if (t.includes('ams') || t.includes('multicolor')) return 60;
+  if (t.includes('fusion') || t.includes('360')) return 55;
+  if (t.includes('secretos') || t.includes('sabías')) return 50;
+  return 30;
+}
+
 /**
- * Normaliza un registro para asegurar que los campos vacíos no generen etiquetas vacías
+ * Normaliza un registro para asegurar consistencia
  */
 export function normalizeVideoRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
-  // Si ya viene normalizado desde el build estático o caché
-  if (raw.youtubeId && raw.title && raw.category) {
+  if (raw.youtubeId && raw.title && raw.category && raw.popularityScore !== undefined) {
     return raw;
   }
 
-  const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
-  const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
-  const videoId = extractYouTubeId(rawUrl);
+  const title = String(raw.Titulo || raw.titulo || raw.Title || raw.title || '').trim();
+  const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.youtubeUrl || raw.URL || '').trim();
+  const videoId = raw.youtubeId || extractYouTubeId(rawUrl);
   
-  const category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
-  const rawDesc = String(raw.Descripcion || raw.descripcion || raw.Description || '').trim();
+  const category = String(raw.Categoria || raw.categoria || raw.Category || raw.category || 'Bambu Studio').trim();
+  const rawDesc = String(raw.Descripcion || raw.descripcion || raw.Description || raw.description || '').trim();
   const description = (rawDesc && !rawDesc.toLowerCase().includes('vacio') && !rawDesc.toLowerCase().includes('vacío')) ? rawDesc : '';
 
-  const rawTip = String(raw.Consejo_Clave || raw.consejo_clave || raw.Tip || '').trim();
+  const rawTip = String(raw.Consejo_Clave || raw.consejo_clave || raw.Tip || raw.consejoClave || '').trim();
   const consejoClave = (rawTip && !rawTip.toLowerCase().includes('vacio') && !rawTip.toLowerCase().includes('vacío')) ? rawTip : '';
 
-  const downloads = extractValidDownloads(raw);
+  const downloads = Array.isArray(raw.downloads) ? raw.downloads : extractValidDownloads(raw);
 
-  const rawDestacado = String(raw.Destacado || raw.destacado || '').trim().toUpperCase();
-  const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES';
+  const rawDestacado = String(raw.Destacado || raw.destacado || raw.isFeatured || '').trim().toUpperCase();
+  const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES' || raw.isFeatured === true;
 
   // Filtrar shorts verticales de YouTube
   const isShort = rawUrl.toLowerCase().includes('/shorts/') || 
@@ -117,14 +127,9 @@ export function normalizeVideoRow(raw, index = 0) {
                   title.toLowerCase().includes('#short');
   if (isShort) return null;
 
-  // Extraer número de capítulo si tiene formato #1, #2, #8.1, #15
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
-  const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
-
-  // Detección de vídeos populares / esenciales
-  const popularKeywords = ['costura', 'tiempo', 'dinero', 'warping', 'calibrac', 'perfil', 'boquilla', 'algolaser', 'secretos', 'ams', 'resistencia', 'calidad', 'truco'];
-  const tLower = title.toLowerCase();
-  const isPopular = isFeatured || popularKeywords.some(kw => tLower.includes(kw));
+  const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (raw.chapterNumber || null);
+  const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : getPopularityScore(title, isFeatured);
 
   return {
     id: raw.id || `video-${index + 1}`,
@@ -138,7 +143,7 @@ export function normalizeVideoRow(raw, index = 0) {
     downloads,
     isFeatured,
     chapterNumber,
-    isPopular,
+    popularityScore,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -147,7 +152,6 @@ export function normalizeVideoRow(raw, index = 0) {
 
 /**
  * Devuelve de forma instantánea y síncrona los datos pre-horneados
- * para SEO, Googlebot y el primer fotograma (0ms de latencia).
  */
 export function getInitialV4Videos() {
   if (Array.isArray(fallbackVideos) && fallbackVideos.length > 0) {
@@ -158,11 +162,17 @@ export function getInitialV4Videos() {
 
 /**
  * Carga vídeos implementando una estrategia de Caché Diario (SWR).
- * Si el usuario ya entró hoy, devuelve el caché de localStorage al instante.
- * Si es el primer acceso del día o forzado, consulta Google Sheets y actualiza el caché.
  */
 export async function loadV4Videos(forceRefresh = false) {
   const today = new Date().toISOString().substring(0, 10);
+
+  // Limpiar versiones anteriores del caché
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V4');
+      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V5');
+    } catch (e) {}
+  }
 
   // 1. Comprobar caché local de hoy en localStorage
   if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
@@ -217,7 +227,6 @@ export async function loadV4Videos(forceRefresh = false) {
                 .reverse(); // Los nuevos añadidos al final de la hoja van primero en la web
 
               if (formatted.length > 0) {
-                // Guardar en caché para el resto del día
                 try {
                   localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
                   localStorage.setItem(CACHE_KEY_DATE, today);

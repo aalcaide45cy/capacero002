@@ -1,14 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, Layers, Sparkles, Flame, Download, GraduationCap, Zap } from 'lucide-react';
+import { Search, X, Layers, Sparkles, Flame } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
-
-const FILTER_PRESETS = [
-  { id: 'newest', label: 'Más Nuevos', icon: Sparkles, desc: 'Últimos publicados' },
-  { id: 'popular', label: 'Más Populares', icon: Flame, desc: 'Tutoriales top' },
-  { id: 'downloads', label: 'Con Descargas .3MF', icon: Download, desc: 'Perfiles listos' },
-  { id: 'course', label: 'Curso Bambu Studio', icon: GraduationCap, desc: 'Ordenado #1 al #15' },
-  { id: 'tips', label: 'Trucos Rápidos', icon: Zap, desc: 'Ajustes express' }
-];
 
 export default function V4VideoGrid({
   videos,
@@ -18,6 +10,7 @@ export default function V4VideoGrid({
   onSearchChange,
   onSelectVideo,
 }) {
+  // Solo los 2 filtros solicitados: 'newest' (Más Nuevos por defecto) y 'popular' (Más Populares)
   const [activeSortFilter, setActiveSortFilter] = useState('newest');
 
   // Categorías dinámicas desde los vídeos
@@ -31,6 +24,7 @@ export default function V4VideoGrid({
 
   // Filtrado y Ordenación Inteligente
   const filteredVideos = useMemo(() => {
+    // 1. Filtrar por búsqueda de texto
     let result = videos.filter((video) => {
       const q = searchQuery.toLowerCase().trim();
       const matchesQuery =
@@ -43,35 +37,18 @@ export default function V4VideoGrid({
       return matchesQuery;
     });
 
-    // Filtro por categoría temática (si no es 'Todos')
+    // 2. Filtrar por categoría temática (si no es 'Todos')
     if (activeCategory !== 'Todos') {
       result = result.filter(v => v.category?.toLowerCase() === activeCategory?.toLowerCase());
     }
 
-    // Filtro por botón de acceso rápido
+    // 3. Ordenar según el botón seleccionado
     if (activeSortFilter === 'popular') {
-      result = [...result].sort((a, b) => {
-        if (a.isPopular && !b.isPopular) return -1;
-        if (!a.isPopular && b.isPopular) return 1;
-        return 0;
-      });
-    } else if (activeSortFilter === 'downloads') {
-      result = result.filter(v => v.hasDownloads);
-    } else if (activeSortFilter === 'course') {
-      // Filtrar y ordenar serie de Bambu Studio de forma didáctica (#1, #2, #3...)
-      const courseVideos = result.filter(v => v.chapterNumber !== null || (v.category && v.category.toLowerCase().includes('bambu')));
-      result = [...(courseVideos.length > 0 ? courseVideos : result)].sort((a, b) => {
-        if (a.chapterNumber !== null && b.chapterNumber !== null) {
-          return a.chapterNumber - b.chapterNumber;
-        }
-        if (a.chapterNumber !== null) return -1;
-        if (b.chapterNumber !== null) return 1;
-        return 0;
-      });
-    } else if (activeSortFilter === 'tips') {
-      result = result.filter(v => v.category === 'Trucos Rápidos' || v.hasTip);
+      result = [...result].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+    } else {
+      // 'newest': mantiene el orden cronológico inverso (el último publicado primero)
+      result = [...result];
     }
-    // 'newest' mantiene el orden cronológico por defecto (el más reciente publicado primero)
 
     return result;
   }, [videos, activeCategory, searchQuery, activeSortFilter]);
@@ -89,7 +66,7 @@ export default function V4VideoGrid({
             </span>
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Filtra por novedades, popularidad, descargas o explora por categorías temáticas.
+            Explora las últimas novedades, los tutoriales más populares o filtra por categorías.
           </p>
         </div>
 
@@ -112,26 +89,33 @@ export default function V4VideoGrid({
         )}
       </div>
 
-      {/* ================= BOTONES DE FILTRO RÁPIDO ================= */}
-      <div className="flex items-center gap-2.5 overflow-x-auto pb-2 mb-5 no-scrollbar">
-        {FILTER_PRESETS.map((preset) => {
-          const Icon = preset.icon;
-          const isActive = activeSortFilter === preset.id;
-          return (
-            <button
-              key={preset.id}
-              onClick={() => setActiveSortFilter(preset.id)}
-              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95 ${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
-                  : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40 shadow-sm'
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-cyan-400'}`} />
-              <span>{preset.label}</span>
-            </button>
-          );
-        })}
+      {/* ================= BOTONES EXCLUSIVOS: MÁS NUEVOS Y MÁS POPULARES ================= */}
+      <div className="flex items-center gap-3 mb-5">
+        {/* Botón 1: Más Nuevos */}
+        <button
+          onClick={() => setActiveSortFilter('newest')}
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeSortFilter === 'newest'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
+              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40'
+          }`}
+        >
+          <Sparkles className={`w-4 h-4 ${activeSortFilter === 'newest' ? 'text-white' : 'text-cyan-400'}`} />
+          <span>Más Nuevos</span>
+        </button>
+
+        {/* Botón 2: Más Populares */}
+        <button
+          onClick={() => setActiveSortFilter('popular')}
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
+            activeSortFilter === 'popular'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
+              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40'
+          }`}
+        >
+          <Flame className={`w-4 h-4 ${activeSortFilter === 'popular' ? 'text-white' : 'text-amber-400'}`} />
+          <span>Más Populares</span>
+        </button>
       </div>
 
       {/* ================= CATEGORÍAS TEMÁTICAS ================= */}

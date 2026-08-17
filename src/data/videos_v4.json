@@ -17,7 +17,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 60,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -40,7 +40,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -63,7 +63,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 8.1,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -86,7 +86,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 9,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -109,7 +109,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 10,
-    "isPopular": false,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -132,7 +132,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 11,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -155,7 +155,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 12,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -178,7 +178,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 13,
-    "isPopular": false,
+    "popularityScore": 50,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -201,7 +201,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 14,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -224,7 +224,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 15,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -247,7 +247,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 1,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -270,7 +270,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 2,
-    "isPopular": false,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -293,7 +293,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 50,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -316,7 +316,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 3,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -339,7 +339,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": false,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -362,7 +362,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": false,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -385,7 +385,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 4,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -408,7 +408,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 80,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -431,7 +431,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 5,
-    "isPopular": true,
+    "popularityScore": 75,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -454,7 +454,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 70,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -477,7 +477,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 95,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -500,7 +500,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 6,
-    "isPopular": true,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -523,7 +523,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 90,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -546,7 +546,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 7,
-    "isPopular": true,
+    "popularityScore": 85,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -569,7 +569,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": null,
-    "isPopular": false,
+    "popularityScore": 65,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -592,7 +592,7 @@
     ],
     "isFeatured": false,
     "chapterNumber": 8,
-    "isPopular": false,
+    "popularityScore": 30,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
@@ -615,7 +615,7 @@
     ],
     "isFeatured": true,
     "chapterNumber": null,
-    "isPopular": true,
+    "popularityScore": 100,
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true
