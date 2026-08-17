@@ -46,8 +46,11 @@ export default function V4Hero({
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
+              width="240"
+              height="72"
+              fetchpriority="high"
               draggable="false"
-              className="relative w-36 sm:w-48 md:w-60 h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_25px_rgba(37,117,196,0.65)] breathe-animation pointer-events-none select-none"
+              className="relative w-36 sm:w-48 md:w-60 h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_20px_rgba(37,117,196,0.5)] pointer-events-none select-none"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
@@ -102,8 +105,7 @@ export default function V4Hero({
           {/* Botón Destacado: COLABORACIONES */}
           <button
             onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
-            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.7)] hover:shadow-[0_0_35px_rgba(34,211,238,0.9)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0"
-            style={{ animation: 'breathe 2.5s ease-in-out infinite' }}
+            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.6)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0 subtle-pulse"
             title="Contactar para Colaboraciones"
           >
             <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
@@ -199,6 +201,10 @@ export default function V4Hero({
                     <img
                       src={featuredVideo.thumbnail}
                       alt={featuredVideo.title}
+                      width="480"
+                      height="270"
+                      loading="eager"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       onError={(e) => {
                         e.target.src = '/logo-capa-cero.webp';

@@ -54,8 +54,8 @@ export default function V4SearchBar({
             placeholder=""
           />
 
-          {/* Typewriter effect for placeholder */}
-          {!searchQuery && (
+          {/* Typewriter effect for placeholder (Solo cuando la barra Hero está activa) */}
+          {!searchQuery && !isSticky && (
             <div className="absolute inset-y-0 left-11 sm:left-14 right-10 sm:right-14 flex items-center pointer-events-none text-zinc-400 text-xs sm:text-base overflow-hidden whitespace-nowrap">
               <Typewriter
                 options={{
@@ -135,6 +135,10 @@ export default function V4SearchBar({
               <img
                 src="/logo-capa-cero.webp"
                 alt="Capa Cero"
+                width="160"
+                height="40"
+                loading="lazy"
+                decoding="async"
                 draggable="false"
                 className="w-auto h-12 sm:h-10 object-contain rounded-lg drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] pointer-events-none select-none"
                 style={{
@@ -164,8 +168,8 @@ export default function V4SearchBar({
               placeholder=""
             />
 
-            {/* Typewriter en buscador Sticky */}
-            {!searchQuery && (
+            {/* Typewriter en buscador Sticky (Solo cuando la barra sticky está en pantalla) */}
+            {!searchQuery && isSticky && (
               <div className="absolute inset-y-0 left-9 right-8 flex items-center pointer-events-none text-zinc-400 text-xs sm:text-sm overflow-hidden whitespace-nowrap">
                 <Typewriter
                   options={{

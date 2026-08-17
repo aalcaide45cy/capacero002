@@ -272,17 +272,20 @@ export const initAnalyticsSession = async () => {
     return currentSession;
 };
 
-// Temporizador de permanencia activa (se pausa si la pestaña está en segundo plano)
+// Temporizador de permanencia activa optimizado (evita escrituras constantes en disco y gasto de batería)
 const setupActiveTimeTracker = () => {
     if (activeDwellInterval) clearInterval(activeDwellInterval);
 
     window.addEventListener('focus', () => { isWindowFocused = true; lastTickTime = Date.now(); });
-    window.addEventListener('blur', () => { isWindowFocused = false; });
+    window.addEventListener('blur', () => { isWindowFocused = false; persistCurrentSession(); });
     document.addEventListener('visibilitychange', () => {
         isWindowFocused = !document.hidden;
         lastTickTime = Date.now();
+        if (document.hidden) persistCurrentSession();
     });
+    window.addEventListener('pagehide', () => { persistCurrentSession(); });
 
+    let ticksCount = 0;
     activeDwellInterval = setInterval(() => {
         if (!isWindowFocused || !currentSession) return;
 
@@ -290,7 +293,7 @@ const setupActiveTimeTracker = () => {
         const deltaSec = Math.round((now - lastTickTime) / 1000);
         lastTickTime = now;
 
-        if (deltaSec > 0 && deltaSec < 5) {
+        if (deltaSec > 0 && deltaSec < 15) {
             currentSession.totalActiveSeconds = (currentSession.totalActiveSeconds || 0) + deltaSec;
             if (currentActiveSection && sectionTimes[currentActiveSection] !== undefined) {
                 sectionTimes[currentActiveSection] += deltaSec;
@@ -298,10 +301,13 @@ const setupActiveTimeTracker = () => {
                 sectionTimes[currentActiveSection] = (sectionTimes[currentActiveSection] || 0) + deltaSec;
             }
 
-            // Persistir periódicamente cada 5 segundos
-            persistCurrentSession();
+            ticksCount++;
+            // Persistir de forma eficiente cada 15 segundos en segundo plano
+            if (ticksCount % 3 === 0) {
+                persistCurrentSession();
+            }
         }
-    }, 2000);
+    }, 5000);
 };
 
 // Cambiar la sección activa actual para medir tiempo de permanencia (Dwell Time)
@@ -312,30 +318,44 @@ export const setActiveSection = (sectionName) => {
     }
 };
 
-// Rastreador de Scroll Depth (25%, 50%, 75%, 100%)
+// Rastreador de Scroll Depth optimizado con requestAnimationFrame
 let reachedMilestones = new Set();
 const setupScrollTracker = () => {
+    let ticking = false;
     const handleScroll = () => {
-        const h = document.documentElement;
-        const b = document.body;
-        const st = 'scrollTop';
-        const sh = 'scrollHeight';
-        const percent = Math.min(100, Math.round(((h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight)) * 100));
+        if (reachedMilestones.size >= 4) {
+            window.removeEventListener('scroll', handleScroll);
+            return;
+        }
 
-        [25, 50, 75, 100].forEach(milestone => {
-            if (percent >= milestone && !reachedMilestones.has(milestone)) {
-                reachedMilestones.add(milestone);
-                if (currentSession) {
-                    currentSession.scrollDepth = milestone;
-                    persistCurrentSession();
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const h = document.documentElement;
+                const b = document.body;
+                const totalHeight = (h.scrollHeight || b.scrollHeight) - h.clientHeight;
+                if (totalHeight > 0) {
+                    const scrollPos = h.scrollTop || b.scrollTop || window.scrollY;
+                    const percent = Math.min(100, Math.round((scrollPos / totalHeight) * 100));
+
+                    [25, 50, 75, 100].forEach(milestone => {
+                        if (percent >= milestone && !reachedMilestones.has(milestone)) {
+                            reachedMilestones.add(milestone);
+                            if (currentSession) {
+                                currentSession.scrollDepth = milestone;
+                                persistCurrentSession();
+                            }
+                            saveEvent({
+                                sessionId: getSessionId(),
+                                type: 'scroll_depth',
+                                details: { depth: milestone }
+                            });
+                        }
+                    });
                 }
-                saveEvent({
-                    sessionId: getSessionId(),
-                    type: 'scroll_depth',
-                    details: { depth: milestone }
-                });
-            }
-        });
+                ticking = false;
+            });
+            ticking = true;
+        }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

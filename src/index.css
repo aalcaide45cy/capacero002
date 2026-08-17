@@ -13,57 +13,59 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Custom Glow Effect */
+/* GPU-Accelerated Glow & Hover Effects (Zero CPU/GPU Thermal Throttling) */
 .glow-blue-hover {
-  transition: all 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .glow-blue-hover:hover {
-  box-shadow: 0 0 20px rgba(37, 117, 196, 0.6), 0 0 40px rgba(37, 117, 196, 0.3);
+  box-shadow: 0 0 20px rgba(37, 117, 196, 0.6), 0 0 35px rgba(37, 117, 196, 0.3);
   transform: translateY(-2px);
-  animation: breathe 3s ease-in-out infinite;
 }
 
 .glow-blue-static {
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.glow-blue-static:hover {
-  box-shadow: 0 0 20px rgba(37, 117, 196, 0.6), 0 0 40px rgba(37, 117, 196, 0.3);
-  animation: breathe 3s ease-in-out infinite;
+.glow-blue-static:hover,
+.glow-blue-static:focus-within {
+  box-shadow: 0 0 15px rgba(37, 117, 196, 0.45);
 }
 
-/* Breathing animation for social buttons */
-@keyframes breathe {
-
-  0%,
-  100% {
-    box-shadow: 0 0 10px rgba(37, 117, 196, 0.4);
+/* Subtle, hardware-accelerated pulse for hero CTA (uses transform/opacity only) */
+@keyframes subtle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-
   50% {
-    box-shadow: 0 0 25px rgba(37, 117, 196, 0.8), 0 0 35px rgba(37, 117, 196, 0.4);
+    transform: scale(1.02);
+    opacity: 0.96;
   }
 }
 
-.breathe-animation {
-  animation: breathe 3s ease-in-out infinite;
+.subtle-pulse {
+  animation: subtle-pulse 3s ease-in-out infinite;
+  will-change: transform;
 }
 
-.breathe-animation-delayed {
-  animation: breathe 3s ease-in-out infinite;
-  animation-delay: 1.5s;
+@media (prefers-reduced-motion: reduce) {
+  .subtle-pulse {
+    animation: none !important;
+  }
 }
 
 /* Search bar focus effect */
 .search-focus:focus {
-  animation: breathe 3s ease-in-out infinite;
+  border-color: #2575c4 !important;
+  box-shadow: 0 0 12px rgba(37, 117, 196, 0.5) !important;
 }
 
 /* Configuración estándar para móviles (Zoom, desplazamiento y toques nativos) */
@@ -72,23 +74,19 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Deshabilitar arrastre, selección y marco azul/gris al pulsar cualquier imagen o logotipo en móviles */
+/* Deshabilitar arrastre y selección no deseada en imágenes */
 img {
-  -webkit-user-drag: none !important;
-  -khtml-user-drag: none !important;
-  -moz-user-drag: none !important;
-  -o-user-drag: none !important;
-  user-drag: none !important;
-  -webkit-touch-callout: none !important;
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-tap-highlight-color: transparent !important;
-  pointer-events: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Enlaces y botones con imagen no muestran marco de toque */
 a, button {
-  -webkit-tap-highlight-color: transparent !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Evitar que Safari iOS haga auto-zoom al enfocar cualquier input */
@@ -96,4 +94,4 @@ a, button {
   input, select, textarea {
     font-size: 16px !important;
   }
-}
+}

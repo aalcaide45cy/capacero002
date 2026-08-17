@@ -3,6 +3,9 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V4';
+const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V4';
+
 /**
  * Convierte cualquier URL de Google Sheets a su enlace directo CSV público
  */
@@ -87,6 +90,11 @@ export function extractValidDownloads(row) {
 export function normalizeVideoRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
+  // Si ya viene normalizado desde el build estático o caché
+  if (raw.youtubeId && raw.title && raw.category) {
+    return raw;
+  }
+
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
   const videoId = extractYouTubeId(rawUrl);
@@ -127,26 +135,56 @@ export function normalizeVideoRow(raw, index = 0) {
 }
 
 /**
- * Carga vídeos desde la URL oficial de Google Sheets en CSV con fallback seguro
+ * Devuelve de forma instantánea y síncrona los datos pre-horneados
+ * para SEO, Googlebot y el primer fotograma (0ms de latencia).
  */
-export async function loadV4Videos() {
+export function getInitialV4Videos() {
+  if (Array.isArray(fallbackVideos) && fallbackVideos.length > 0) {
+    return fallbackVideos.map(normalizeVideoRow).filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Carga vídeos implementando una estrategia de Caché Diario (SWR).
+ * Si el usuario ya entró hoy, devuelve el caché de localStorage al instante.
+ * Si es el primer acceso del día o forzado, consulta Google Sheets y actualiza el caché.
+ */
+export async function loadV4Videos(forceRefresh = false) {
+  const today = new Date().toISOString().substring(0, 10);
+
+  // 1. Comprobar caché local de hoy en localStorage
+  if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const cachedDate = localStorage.getItem(CACHE_KEY_DATE);
+      const cachedData = localStorage.getItem(CACHE_KEY_DATA);
+      if (cachedDate === today && cachedData) {
+        const parsed = JSON.parse(cachedData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error leyendo caché local de vídeos:', e);
+    }
+  }
+
+  // 2. Si no hay caché o ha caducado, consultar Google Sheets
   try {
     const targetUrl = DEFAULT_SHEET_CSV_URL;
-
-    // Si no hay URL configurada, usar directamente los datos de respaldo locales
     if (!targetUrl) {
-      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+      return getInitialV4Videos();
     }
 
     const response = await fetch(targetUrl);
     if (!response.ok) {
       console.warn(`Error al conectar con Google Sheets (${response.status}), usando datos locales.`);
-      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+      return getInitialV4Videos();
     }
 
     const csvText = await response.text();
     if (!csvText || !csvText.trim()) {
-      return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+      return getInitialV4Videos();
     }
 
     return new Promise((resolve) => {
@@ -166,28 +204,32 @@ export async function loadV4Videos() {
                 .map(normalizeVideoRow)
                 .filter(Boolean);
 
-              // Si la hoja tiene filas válidas, usarlas. Si estaba vacía, usar datos de respaldo.
               if (formatted.length > 0) {
+                // Guardar en caché para el resto del día
+                try {
+                  localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
+                  localStorage.setItem(CACHE_KEY_DATE, today);
+                } catch (err) {}
                 resolve(formatted);
               } else {
-                resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+                resolve(getInitialV4Videos());
               }
             } else {
-              resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+              resolve(getInitialV4Videos());
             }
           } catch (err) {
             console.error('Error parseando filas de Google Sheet:', err);
-            resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+            resolve(getInitialV4Videos());
           }
         },
         error: (err) => {
           console.warn('Error en PapaParse:', err);
-          resolve((fallbackVideos || []).map(normalizeVideoRow).filter(Boolean));
+          resolve(getInitialV4Videos());
         }
       });
     });
   } catch (err) {
-    console.warn('Fallo cargando vídeos V4:', err);
-    return (fallbackVideos || []).map(normalizeVideoRow).filter(Boolean);
+    console.warn('Fallo cargando vídeos V4 desde Google Sheets:', err);
+    return getInitialV4Videos();
   }
 }

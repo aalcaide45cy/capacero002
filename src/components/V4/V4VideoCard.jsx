@@ -19,6 +19,10 @@ export default function V4VideoCard({ video, onSelect }) {
         <img
           src={video.thumbnail}
           alt={video.title}
+          width="480"
+          height="270"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={(e) => {
             e.target.src = '/logo-capa-cero-small.png';

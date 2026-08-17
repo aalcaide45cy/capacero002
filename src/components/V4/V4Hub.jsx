@@ -8,12 +8,12 @@ import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
 import CollaborationModal from '../CollaborationModal';
-import { loadV4Videos } from '../../utils/loadV4Videos';
+import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 
 export default function V4Hub() {
-  const [videos, setVideos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Inicialización síncrona instantánea: 0ms de espera para Googlebot y visitantes
+  const [videos, setVideos] = useState(() => getInitialV4Videos());
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
@@ -33,7 +33,7 @@ export default function V4Hub() {
     else if (activeTab === 'downloads') setActiveSection('Descargas');
   }, [activeTab]);
 
-  // Scroll listener for sticky searchbar & compact header with smooth rAF & hysteresis
+  // Scroll listener optimizado con requestAnimationFrame
   useEffect(() => {
     let ticking = false;
     const handleScroll = () => {
@@ -63,15 +63,15 @@ export default function V4Hub() {
     }
   }, []);
 
-  // Load videos directly from the secure official Google Sheet source
+  // Sincronización en segundo plano con caché diario (SWR)
   useEffect(() => {
-    const fetchVideos = async () => {
-      setIsLoading(true);
-      const data = await loadV4Videos();
-      setVideos(data || []);
-      setIsLoading(false);
-    };
-    fetchVideos();
+    let isMounted = true;
+    loadV4Videos().then((freshData) => {
+      if (isMounted && Array.isArray(freshData) && freshData.length > 0) {
+        setVideos(freshData);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
   }, []);
 
   // Find featured video (or first video)
@@ -117,46 +117,37 @@ export default function V4Hub() {
 
       {/* Main Content Area based on Tab */}
       <main className="flex-1">
-        {isLoading ? (
-          <div className="text-center py-24">
-            <div className="inline-block w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <p className="text-sm font-semibold text-zinc-400">Cargando videoteca de Capa Cero...</p>
-          </div>
-        ) : (
+        {activeTab === 'videos' && (
           <>
-            {activeTab === 'videos' && (
-              <>
-                <V4VideoGrid
-                  videos={videos}
-                  activeCategory={activeCategory}
-                  onSelectCategory={setActiveCategory}
-                  searchQuery={searchQuery}
-                  onSearchChange={handleSearchChange}
-                  onSelectVideo={(v) => setSelectedVideoModal(v)}
-                />
-                <V4Doctor3D
-                  videos={videos}
-                  onSelectVideo={(v) => setSelectedVideoModal(v)}
-                  onSearchWithQuery={handleSearchWithQuery}
-                />
-              </>
-            )}
-
-            {activeTab === 'doctor' && (
-              <V4Doctor3D
-                videos={videos}
-                onSelectVideo={(v) => setSelectedVideoModal(v)}
-                onSearchWithQuery={handleSearchWithQuery}
-              />
-            )}
-
-            {activeTab === 'downloads' && (
-              <V4Downloads
-                videos={videos}
-                onSelectVideo={(v) => setSelectedVideoModal(v)}
-              />
-            )}
+            <V4VideoGrid
+              videos={videos}
+              activeCategory={activeCategory}
+              onSelectCategory={setActiveCategory}
+              searchQuery={searchQuery}
+              onSearchChange={handleSearchChange}
+              onSelectVideo={(v) => setSelectedVideoModal(v)}
+            />
+            <V4Doctor3D
+              videos={videos}
+              onSelectVideo={(v) => setSelectedVideoModal(v)}
+              onSearchWithQuery={handleSearchWithQuery}
+            />
           </>
+        )}
+
+        {activeTab === 'doctor' && (
+          <V4Doctor3D
+            videos={videos}
+            onSelectVideo={(v) => setSelectedVideoModal(v)}
+            onSearchWithQuery={handleSearchWithQuery}
+          />
+        )}
+
+        {activeTab === 'downloads' && (
+          <V4Downloads
+            videos={videos}
+            onSelectVideo={(v) => setSelectedVideoModal(v)}
+          />
         )}
       </main>
 
