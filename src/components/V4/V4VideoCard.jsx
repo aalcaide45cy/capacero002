@@ -59,22 +59,21 @@ export default function V4VideoCard({ video, onSelect }) {
         />
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" />
-
-        {/* Category Pill */}
-        {video.category && (
-          <div className="absolute top-3 left-3">
-            <span className="bg-zinc-950/80 backdrop-blur-md text-zinc-300 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-zinc-800 shadow">
-              {video.category}
-            </span>
-          </div>
-        )}
-
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Content Area */}
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         
+        {/* Category Pill (No tapa la miniatura) */}
+        {video.category && (
+          <div className="mb-2">
+            <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/50 border border-cyan-800/40 px-2 py-0.5 rounded-md">
+              {video.category}
+            </span>
+          </div>
+        )}
+
         {/* Title */}
         <h3
           onClick={handleSelect}

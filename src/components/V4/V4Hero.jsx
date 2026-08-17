@@ -1,6 +1,13 @@
 import React from 'react';
-import { Play, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
-import { trackSocialClick, trackSubscribe, trackVideoOpen } from '../../utils/analytics';
+import { Play, Download, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
+import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
+
+function formatCounter(num) {
+  if (num === undefined || num === null || isNaN(num) || num <= 0) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(num);
+}
 
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -213,21 +220,23 @@ export default function V4Hero({
                     />
                     
                     {/* Overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/30 to-transparent" />
-
-                    {/* Top Badge */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow">
-                        ⭐ Último Vídeo
-                      </span>
-                      <span className="bg-zinc-950/80 backdrop-blur-md text-zinc-300 text-[11px] font-medium px-2 py-0.5 rounded-md border border-zinc-800">
-                        {featuredVideo.category}
-                      </span>
-                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                   </div>
 
                   {/* Info Block */}
                   <div className="p-4 sm:p-5 text-left">
+                    {/* Category & Featured Badge above Title (No tapa la miniatura) */}
+                    <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                      <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                        ⭐ Último Vídeo
+                      </span>
+                      {featuredVideo.category && (
+                        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/50 border border-cyan-800/40 px-2 py-0.5 rounded-md">
+                          {featuredVideo.category}
+                        </span>
+                      )}
+                    </div>
+
                     <h2
                       onClick={() => onSelectVideo(featuredVideo)}
                       className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 cursor-pointer transition-colors mb-2"
@@ -241,14 +250,51 @@ export default function V4Hero({
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-zinc-800/80">
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-zinc-800/80">
                       <button
                         onClick={() => onSelectVideo(featuredVideo)}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors"
+                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition-colors py-1 shrink-0"
                       >
                         <Play className="w-3.5 h-3.5 fill-cyan-400" />
                         <span>Ver Vídeo</span>
                       </button>
+
+                      {/* YouTube Stats + Descargas in Hero */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 bg-zinc-950/70 border border-zinc-800/90 px-2 py-1 rounded-lg">
+                          <span className="flex items-center gap-1 hover:text-zinc-200 transition-colors" title={`${featuredVideo.views || 0} reproducciones`}>
+                            <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                            <span>{formatCounter(featuredVideo.views)}</span>
+                          </span>
+                          <span className="flex items-center gap-1 hover:text-rose-300 transition-colors" title={`${featuredVideo.likes || 0} me gusta`}>
+                            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/30" />
+                            <span>{formatCounter(featuredVideo.likes)}</span>
+                          </span>
+                          <span className="flex items-center gap-1 hover:text-cyan-300 transition-colors" title={`${featuredVideo.comments || 0} comentarios`}>
+                            <MessageCircle className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>{formatCounter(featuredVideo.comments)}</span>
+                          </span>
+                        </div>
+
+                        {featuredVideo.hasDownloads && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (featuredVideo.downloads?.[0]) {
+                                trackDownload(featuredVideo.downloads[0], featuredVideo);
+                                window.open(featuredVideo.downloads[0].url, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                            className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 bg-cyan-950/70 hover:bg-cyan-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all shadow-sm shrink-0 cursor-pointer"
+                            title="Abrir enlace de descarga directamente"
+                          >
+                            <Download className="w-3 h-3 text-cyan-400" />
+                            <span className="hidden sm:inline">Descargas</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
