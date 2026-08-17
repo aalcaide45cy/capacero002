@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Download, Lightbulb, ExternalLink, Eye, Heart, MessageCircle } from 'lucide-react';
+import { Download, Lightbulb, ExternalLink, Eye, Heart, MessageCircle } from 'lucide-react';
 import { trackCardClick, trackDownload } from '../../utils/analytics';
 
 // Función para formatear números compactos sin palabras (ej: 2719 -> 2.7k, 6882 -> 6.9k, 179 -> 179)
@@ -8,6 +8,24 @@ function formatCounter(num) {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(num);
+}
+
+// Acorta nombres largos de categoría para que no desborden en tarjetas estrechas
+function getShortCategory(category) {
+  if (!category) return '';
+  const c = category.trim();
+  const map = {
+    'Perfiles y Calibración': 'Perfiles',
+    'Hardware y Boquillas': 'Hardware',
+    'Multicolor y AMS': 'Multicolor',
+    'Grabado Láser': 'Láser',
+    'Trucos Rápidos': 'Trucos',
+    'Modelado 3D': 'Modelado',
+    'Bambu Studio': 'Bambu Studio'
+  };
+  if (map[c]) return map[c];
+  if (c.length > 12) return c.substring(0, 10) + '...';
+  return c;
 }
 
 export default function V4VideoCard({ video, onSelect }) {
@@ -35,6 +53,7 @@ export default function V4VideoCard({ video, onSelect }) {
   const viewsCount = formatCounter(video.views);
   const likesCount = formatCounter(video.likes);
   const commentsCount = formatCounter(video.comments);
+  const shortCategory = getShortCategory(video.category);
 
   return (
     <div className="group bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left">
@@ -91,51 +110,57 @@ export default function V4VideoCard({ video, onSelect }) {
           </div>
         )}
 
-        {/* Footer Actions */}
-        <div className="mt-auto pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+        {/* Footer Actions: 3-column Grid (Izquierda, Centro Centrado, Derecha) */}
+        <div className="mt-auto pt-3 border-t border-zinc-800/80 grid grid-cols-[auto_1fr_auto] items-center gap-1.5 sm:gap-2">
           
-          {/* Etiqueta de Categoría (Ubicada abajo a la izquierda en lugar de Ver Vídeo) */}
-          {video.category ? (
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-1 rounded-md shrink-0 truncate max-w-[130px] sm:max-w-[150px]">
-              {video.category}
-            </span>
-          ) : (
-            <span />
-          )}
+          {/* 1. Izquierda: Etiqueta de Categoría Compacta */}
+          <div className="flex items-center justify-start min-w-0">
+            {shortCategory ? (
+              <span
+                className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-1 rounded-md shrink-0 truncate max-w-[95px] sm:max-w-[110px]"
+                title={video.category}
+              >
+                {shortCategory}
+              </span>
+            ) : (
+              <span />
+            )}
+          </div>
 
-          {/* Estadísticas de YouTube + Botón Descargas */}
-          <div className="flex items-center gap-2">
-            {/* Contadores con Iconos Bonitos sin palabras */}
-            <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 bg-zinc-950/70 border border-zinc-800/90 px-2 py-1 rounded-lg">
+          {/* 2. Centro: Estadísticas de YouTube Perfectamente Centradas */}
+          <div className="flex items-center justify-center min-w-0">
+            <div className="inline-flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-medium text-zinc-400 bg-zinc-950/80 border border-zinc-800/90 px-1.5 sm:px-2.5 py-1 rounded-lg shrink-0">
               {/* Reproducciones (Ojo) */}
               <span className="flex items-center gap-1 hover:text-zinc-200 transition-colors" title={`${video.views || 0} reproducciones`}>
-                <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-zinc-400 shrink-0" />
                 <span>{viewsCount}</span>
               </span>
 
               {/* Me Gusta (Corazón) */}
               <span className="flex items-center gap-1 hover:text-rose-300 transition-colors" title={`${video.likes || 0} me gusta`}>
-                <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/30" />
+                <Heart className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-500 fill-rose-500/30 shrink-0" />
                 <span>{likesCount}</span>
               </span>
 
               {/* Comentarios (Burbuja) */}
               <span className="flex items-center gap-1 hover:text-cyan-300 transition-colors" title={`${video.comments || 0} comentarios`}>
-                <MessageCircle className="w-3.5 h-3.5 text-cyan-400" />
+                <MessageCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400 shrink-0" />
                 <span>{commentsCount}</span>
               </span>
             </div>
+          </div>
 
-            {/* Botón Descargas directo a la URL del recurso */}
+          {/* 3. Derecha: Botón Descargas o Enlace a YouTube */}
+          <div className="flex items-center justify-end min-w-0">
             {video.hasDownloads ? (
               <button
                 type="button"
                 onClick={handleDirectDownload}
-                className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 bg-cyan-950/70 hover:bg-cyan-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all shadow-sm hover:shadow-cyan-500/30 shrink-0 cursor-pointer"
-                title="Abrir enlace de descarga directamente"
+                className="text-[10px] sm:text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 bg-cyan-950/70 hover:bg-cyan-900/80 px-2 sm:px-2.5 py-1 rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all shadow-sm hover:shadow-cyan-500/30 shrink-0 cursor-pointer whitespace-nowrap"
+                title="Descargar recursos y perfiles .3MF"
               >
-                <Download className="w-3 h-3 text-cyan-400" />
-                <span className="hidden sm:inline">Descargas</span>
+                <Download className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span>Descargas</span>
               </button>
             ) : (
               <a

@@ -9,6 +9,23 @@ function formatCounter(num) {
   return String(num);
 }
 
+function getShortCategory(category) {
+  if (!category) return '';
+  const c = category.trim();
+  const map = {
+    'Perfiles y Calibración': 'Perfiles',
+    'Hardware y Boquillas': 'Hardware',
+    'Multicolor y AMS': 'Multicolor',
+    'Grabado Láser': 'Láser',
+    'Trucos Rápidos': 'Trucos',
+    'Modelado 3D': 'Modelado',
+    'Bambu Studio': 'Bambu Studio'
+  };
+  if (map[c]) return map[c];
+  if (c.length > 12) return c.substring(0, 10) + '...';
+  return c;
+}
+
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
   <svg
