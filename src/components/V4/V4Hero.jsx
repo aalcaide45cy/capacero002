@@ -228,12 +228,12 @@ export default function V4Hero({
 
                   {/* Info Block */}
                   <div className="p-4 sm:p-5 text-left">
-                    <h3
+                    <h2
                       onClick={() => onSelectVideo(featuredVideo)}
                       className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 cursor-pointer transition-colors mb-2"
                     >
                       {featuredVideo.title}
-                    </h3>
+                    </h2>
 
                     {featuredVideo.hasDescription && (
                       <p className="text-xs sm:text-sm text-zinc-400 line-clamp-2 mb-3">

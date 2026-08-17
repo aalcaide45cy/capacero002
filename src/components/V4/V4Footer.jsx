@@ -14,16 +14,20 @@ export default function V4Footer({ onOpenCollaboration }) {
           <img
             src="/logo-capa-cero.webp"
             alt="Capa Cero Logo"
+            width="160"
+            height="48"
+            loading="lazy"
+            decoding="async"
             className="h-11 sm:h-12 w-auto rounded-xl object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
           />
           <div className="text-left">
-            <h4 className="text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</h4>
-            <p className="text-xs text-zinc-400">Tutoriales, guías y trucos reales de impresión 3D para makers.</p>
+            <span className="block text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</span>
+            <p className="text-xs text-zinc-300">Tutoriales, guías y trucos reales de impresión 3D para makers.</p>
           </div>
         </div>
 
         {/* Links */}
-        <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-zinc-400">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-zinc-300">
           <a
             href={subscribeUrl}
             target="_blank"
@@ -46,13 +50,13 @@ export default function V4Footer({ onOpenCollaboration }) {
               <span>Colaboraciones</span>
             </button>
           )}
-          <a href="/politica-privacidad" className="hover:text-zinc-200 transition-colors">
+          <a href="/politica-privacidad" className="hover:text-cyan-300 transition-colors">
             Privacidad y Cookies
           </a>
         </div>
 
         {/* Copyright */}
-        <div className="text-xs text-zinc-600">
+        <div className="text-xs text-zinc-400">
           © {new Date().getFullYear()} Capa Cero. Creado para la comunidad 3D.
         </div>
 

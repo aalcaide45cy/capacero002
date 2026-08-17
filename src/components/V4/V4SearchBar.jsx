@@ -45,6 +45,7 @@ export default function V4SearchBar({
           <input
             type="text"
             value={searchQuery}
+            aria-label="Buscar tutoriales, trucos y perfiles de impresión 3D"
             onChange={(e) => {
               const val = e.target.value;
               setSearchQuery(val);
@@ -86,7 +87,7 @@ export default function V4SearchBar({
 
         {/* Sugerencias Rápidas de Búsqueda */}
         <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-2 text-xs">
-          <span className="text-zinc-500 font-semibold text-[11px] mr-1 hidden sm:inline">
+          <span className="text-zinc-400 font-semibold text-[11px] mr-1 hidden sm:inline">
             🔥 Sugerencias:
           </span>
           {[
@@ -104,7 +105,7 @@ export default function V4SearchBar({
                 trackSearch(term);
                 window.scrollTo({ top: 460, behavior: 'smooth' });
               }}
-              className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 hover:text-cyan-300 border border-zinc-800 hover:border-cyan-500/40 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 shadow-sm"
+              className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-cyan-300 border border-zinc-800 hover:border-cyan-500/40 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 shadow-sm"
             >
               {term}
             </button>
@@ -131,7 +132,7 @@ export default function V4SearchBar({
           
           {/* Logo Pequeño Sticky (Protegido contra arrastre) */}
           <div className="flex items-center shrink-0">
-            <a href="/" className="block select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
+            <a href="/" tabIndex={isSticky ? 0 : -1} className="block select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
               <img
                 src="/logo-capa-cero.webp"
                 alt="Capa Cero"
@@ -159,6 +160,8 @@ export default function V4SearchBar({
             <input
               type="text"
               value={searchQuery}
+              aria-label="Buscar tutoriales"
+              tabIndex={isSticky ? 0 : -1}
               onChange={(e) => {
                 const val = e.target.value;
                 setSearchQuery(val);
@@ -189,6 +192,7 @@ export default function V4SearchBar({
                   setSearchQuery('');
                   trackSearch('');
                 }}
+                tabIndex={isSticky ? 0 : -1}
                 className="absolute inset-y-0 right-3 flex items-center text-zinc-400 hover:text-white transition-colors"
                 aria-label="Limpiar búsqueda"
               >
@@ -203,6 +207,7 @@ export default function V4SearchBar({
               href="https://www.youtube.com/@CapaCero0"
               target="_blank"
               rel="noopener noreferrer"
+              tabIndex={isSticky ? 0 : -1}
               onClick={() => trackSocialClick && trackSocialClick('YouTube')}
               className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
               title="YouTube"
@@ -215,6 +220,7 @@ export default function V4SearchBar({
               href="https://www.tiktok.com/@capacero"
               target="_blank"
               rel="noopener noreferrer"
+              tabIndex={isSticky ? 0 : -1}
               onClick={() => trackSocialClick && trackSocialClick('TikTok')}
               className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
               title="TikTok"
@@ -229,6 +235,7 @@ export default function V4SearchBar({
               href="https://www.instagram.com/capa.cero_3d/"
               target="_blank"
               rel="noopener noreferrer"
+              tabIndex={isSticky ? 0 : -1}
               onClick={() => trackSocialClick && trackSocialClick('Instagram')}
               className="flex items-center justify-center w-8 h-8 bg-black border border-[#2575c4] rounded-full group transition-all duration-300 hover:scale-110 flex-shrink-0"
               title="Instagram"
@@ -242,6 +249,7 @@ export default function V4SearchBar({
                 e.preventDefault();
                 onOpenCollaboration && onOpenCollaboration();
               }}
+              tabIndex={isSticky ? 0 : -1}
               className="relative flex items-center justify-center h-8 px-4 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[11px] sm:text-[12px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_12px_rgba(59,130,246,0.5)] hover:shadow-[0_0_20px_rgba(34,211,238,0.7)] uppercase tracking-wider whitespace-nowrap overflow-hidden group cursor-pointer active:scale-95 flex-shrink-0 border border-cyan-300/40"
               title="Contactar para Colaboraciones"
             >
@@ -261,6 +269,7 @@ export default function V4SearchBar({
             href="https://www.youtube.com/@CapaCero0"
             target="_blank"
             rel="noopener noreferrer"
+            tabIndex={isSticky ? 0 : -1}
             onClick={() => trackSocialClick && trackSocialClick('YouTube')}
             className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="YouTube"
@@ -273,6 +282,7 @@ export default function V4SearchBar({
             href="https://www.tiktok.com/@capacero"
             target="_blank"
             rel="noopener noreferrer"
+            tabIndex={isSticky ? 0 : -1}
             onClick={() => trackSocialClick && trackSocialClick('TikTok')}
             className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="TikTok"
@@ -287,6 +297,7 @@ export default function V4SearchBar({
             href="https://www.instagram.com/capa.cero_3d/"
             target="_blank"
             rel="noopener noreferrer"
+            tabIndex={isSticky ? 0 : -1}
             onClick={() => trackSocialClick && trackSocialClick('Instagram')}
             className="flex items-center justify-center w-11 h-11 bg-black border-2 border-[#2575c4] rounded-full group transition-all hover:scale-110 shadow-[0_0_10px_rgba(37,117,196,0.3)] flex-shrink-0"
             title="Instagram"
@@ -299,4 +310,3 @@ export default function V4SearchBar({
     </>
   );
 }
-

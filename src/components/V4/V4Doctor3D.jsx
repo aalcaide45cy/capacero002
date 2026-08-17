@@ -80,7 +80,10 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
   });
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-zinc-900">
+    <section
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-zinc-900"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '0 600px' }}
+    >
       
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-10">
@@ -91,7 +94,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
         <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
           🩺 Doctor 3D: Soluciona los Fallos de tu Máquina
         </h2>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-2">
+        <p className="text-xs sm:text-sm text-zinc-300 mt-2">
           Selecciona el síntoma de tu impresión para ver las 3 causas directas y el tutorial de YouTube donde lo resolvemos paso a paso.
         </p>
       </div>
@@ -112,21 +115,21 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                 className={`p-3.5 sm:p-4 rounded-2xl text-left transition-all duration-200 flex items-center justify-between gap-3 border ${
                   isSelected
                     ? 'bg-zinc-900 border-cyan-500/50 shadow-lg shadow-blue-500/10 ring-1 ring-cyan-500/40'
-                    : 'bg-zinc-950/80 hover:bg-zinc-900/60 border-zinc-800/80 text-zinc-400'
+                    : 'bg-zinc-950/80 hover:bg-zinc-900/60 border-zinc-800/80 text-zinc-300'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl shrink-0">{prob.icon}</span>
                   <div>
-                    <h4 className={`text-sm font-bold leading-snug ${isSelected ? 'text-white' : 'text-zinc-300'}`}>
+                    <span className={`text-sm font-bold leading-snug block ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
                       {prob.title}
-                    </h4>
-                    <p className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">
+                    </span>
+                    <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
                       {prob.subtitle}
                     </p>
                   </div>
                 </div>
-                <ArrowRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? 'text-cyan-400 translate-x-1' : 'text-zinc-600'}`} />
+                <ArrowRight className={`w-4 h-4 shrink-0 transition-transform ${isSelected ? 'text-cyan-400 translate-x-1' : 'text-zinc-500'}`} />
               </button>
             );
           })}
@@ -141,7 +144,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
               <h3 className="text-lg sm:text-xl font-bold text-white leading-tight">
                 {selectedProblem.title}
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-300 mt-0.5">
                 {selectedProblem.subtitle}
               </p>
             </div>
@@ -159,7 +162,7 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
                   <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     {idx + 1}
                   </span>
-                  <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
                     {step}
                   </p>
                 </div>
@@ -171,8 +174,8 @@ export default function V4Doctor3D({ videos, onSelectVideo, onSearchWithQuery })
           <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             {matchingVideo ? (
               <>
-                <div className="text-xs text-zinc-400 text-center sm:text-left">
-                  <span className="text-zinc-500 block">Tutorial recomendado en el canal:</span>
+                <div className="text-xs text-zinc-300 text-center sm:text-left">
+                  <span className="text-zinc-400 block">Tutorial recomendado en el canal:</span>
                   <strong className="text-white line-clamp-1">{matchingVideo.title}</strong>
                 </div>
                 <button

@@ -1,12 +1,15 @@
 import React from 'react';
-import { Download, ExternalLink, Play, Sparkles, FileText, CheckCircle } from 'lucide-react';
+import { Download, ExternalLink, Play } from 'lucide-react';
 import { trackDownload } from '../../utils/analytics';
 
 export default function V4Downloads({ videos, onSelectVideo }) {
   const downloadVideos = videos.filter((v) => v.hasDownloads);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <section
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '0 500px' }}
+    >
       
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto mb-10">
@@ -17,7 +20,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
         <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
           📥 Perfiles de Laminado y Archivos .3MF
         </h2>
-        <p className="text-xs sm:text-sm text-zinc-400 mt-2">
+        <p className="text-xs sm:text-sm text-zinc-300 mt-2">
           Descarga perfiles optimizados para Bambu Studio, modelos de calibración y presets listos para imprimir.
         </p>
       </div>
@@ -34,7 +37,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
                   <span className="text-[11px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded">
                     {video.category}
                   </span>
-                  <span className="text-[11px] text-zinc-500 font-semibold">
+                  <span className="text-[11px] text-zinc-400 font-semibold">
                     {video.downloads.length} {video.downloads.length === 1 ? 'Recurso' : 'Recursos'}
                   </span>
                 </div>
@@ -47,7 +50,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
                 </h3>
 
                 {video.hasDescription && (
-                  <p className="text-xs text-zinc-400 line-clamp-2 mb-4">
+                  <p className="text-xs text-zinc-300 line-clamp-2 mb-4">
                     {video.description}
                   </p>
                 )}
@@ -86,7 +89,7 @@ export default function V4Downloads({ videos, onSelectVideo }) {
         </div>
       ) : (
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-12 text-center max-w-md mx-auto">
-          <Download className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+          <Download className="w-10 h-10 text-zinc-500 mx-auto mb-3" />
           <h3 className="text-base font-bold text-white mb-1">Próximas descargas disponibles</h3>
           <p className="text-xs text-zinc-400">
             Los perfiles y archivos .3MF de los tutoriales estarán disponibles muy pronto en esta sección.
