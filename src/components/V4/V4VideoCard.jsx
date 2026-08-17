@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Download, Lightbulb, ExternalLink, Eye, Heart, MessageCircle } from 'lucide-react';
-import { trackCardClick } from '../../utils/analytics';
+import { trackCardClick, trackDownload } from '../../utils/analytics';
 
 // Función para formatear números compactos sin palabras (ej: 2719 -> 2.7k, 6882 -> 6.9k, 179 -> 179)
 function formatCounter(num) {
@@ -14,6 +14,22 @@ export default function V4VideoCard({ video, onSelect }) {
   const handleSelect = () => {
     trackCardClick(video);
     if (onSelect) onSelect(video);
+  };
+
+  const handleDirectDownload = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (video.downloads && video.downloads.length > 0) {
+      const dl = video.downloads[0];
+      trackDownload(dl, video);
+      window.open(dl.url, '_blank', 'noopener,noreferrer');
+    } else if (onSelect) {
+      onSelect(video);
+    }
+  };
+
+  const handleExternalLink = (e) => {
+    e.stopPropagation();
   };
 
   const viewsCount = formatCounter(video.views);
@@ -120,12 +136,13 @@ export default function V4VideoCard({ video, onSelect }) {
               </span>
             </div>
 
-            {/* Botón Descargas o Enlace */}
+            {/* Botón Descargas directo a la URL del recurso */}
             {video.hasDownloads ? (
               <button
-                onClick={handleSelect}
-                className="text-[11px] font-semibold text-zinc-300 hover:text-cyan-300 flex items-center gap-1 bg-zinc-800/80 hover:bg-zinc-700 px-2.5 py-1 rounded-lg border border-zinc-700/60 transition-colors shrink-0"
-                title="Descargar recursos y perfiles .3MF"
+                type="button"
+                onClick={handleDirectDownload}
+                className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 bg-cyan-950/70 hover:bg-cyan-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all shadow-sm hover:shadow-cyan-500/30 shrink-0 cursor-pointer"
+                title="Abrir enlace de descarga directamente"
               >
                 <Download className="w-3 h-3 text-cyan-400" />
                 <span className="hidden sm:inline">Descargas</span>
@@ -135,6 +152,7 @@ export default function V4VideoCard({ video, onSelect }) {
                 href={video.youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleExternalLink}
                 className="text-[11px] font-medium text-zinc-500 hover:text-zinc-300 flex items-center p-1 transition-colors shrink-0"
                 title="Abrir en YouTube"
               >
