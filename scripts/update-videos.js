@@ -66,6 +66,13 @@ function normalizeVideoRow(raw, index = 0) {
                   title.toLowerCase().includes('#short');
   if (isShort) return null;
 
+  const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
+  const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
+
+  const popularKeywords = ['costura', 'tiempo', 'dinero', 'warping', 'calibrac', 'perfil', 'boquilla', 'algolaser', 'secretos', 'ams', 'resistencia', 'calidad', 'truco'];
+  const tLower = title.toLowerCase();
+  const isPopular = isFeatured || popularKeywords.some(kw => tLower.includes(kw));
+
   return {
     id: raw.id || `video-${index + 1}`,
     title: title || `Tutorial #${index + 1}`,
@@ -77,6 +84,8 @@ function normalizeVideoRow(raw, index = 0) {
     consejoClave,
     downloads,
     isFeatured,
+    chapterNumber,
+    isPopular,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -108,8 +117,9 @@ async function main() {
             const u = (row.URL_Youtube || row.url_youtube || '').trim();
             return t.length > 0 || u.length > 0;
           })
-          .map(normalizeVideoRow)
-          .filter(Boolean);
+          .map((row, idx) => normalizeVideoRow(row, idx))
+          .filter(Boolean)
+          .reverse(); // Los nuevos añadidos al final de la hoja van primero en la web
 
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 

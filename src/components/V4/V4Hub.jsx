@@ -74,8 +74,8 @@ export default function V4Hub() {
     return () => { isMounted = false; };
   }, []);
 
-  // Find featured video (or first video)
-  const featuredVideo = (videos || []).find((v) => v?.isFeatured) || (videos || [])[0] || null;
+  // El vídeo en Hero es siempre el último que se ha publicado (el primero de la lista)
+  const featuredVideo = (videos || [])[0] || null;
 
   const handleSearchWithQuery = (query) => {
     setActiveTab('videos');

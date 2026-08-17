@@ -117,6 +117,15 @@ export function normalizeVideoRow(raw, index = 0) {
                   title.toLowerCase().includes('#short');
   if (isShort) return null;
 
+  // Extraer número de capítulo si tiene formato #1, #2, #8.1, #15
+  const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
+  const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
+
+  // Detección de vídeos populares / esenciales
+  const popularKeywords = ['costura', 'tiempo', 'dinero', 'warping', 'calibrac', 'perfil', 'boquilla', 'algolaser', 'secretos', 'ams', 'resistencia', 'calidad', 'truco'];
+  const tLower = title.toLowerCase();
+  const isPopular = isFeatured || popularKeywords.some(kw => tLower.includes(kw));
+
   return {
     id: raw.id || `video-${index + 1}`,
     title: title || `Tutorial #${index + 1}`,
@@ -128,6 +137,8 @@ export function normalizeVideoRow(raw, index = 0) {
     consejoClave,
     downloads,
     isFeatured,
+    chapterNumber,
+    isPopular,
     hasDownloads: downloads.length > 0,
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
@@ -140,7 +151,7 @@ export function normalizeVideoRow(raw, index = 0) {
  */
 export function getInitialV4Videos() {
   if (Array.isArray(fallbackVideos) && fallbackVideos.length > 0) {
-    return fallbackVideos.map(normalizeVideoRow).filter(Boolean);
+    return fallbackVideos.map((v, idx) => normalizeVideoRow(v, idx)).filter(Boolean);
   }
   return [];
 }
@@ -201,8 +212,9 @@ export async function loadV4Videos(forceRefresh = false) {
                   const u = (row.URL_Youtube || row.url_youtube || '').trim();
                   return t.length > 0 || u.length > 0;
                 })
-                .map(normalizeVideoRow)
-                .filter(Boolean);
+                .map((row, idx) => normalizeVideoRow(row, idx))
+                .filter(Boolean)
+                .reverse(); // Los nuevos añadidos al final de la hoja van primero en la web
 
               if (formatted.length > 0) {
                 // Guardar en caché para el resto del día
