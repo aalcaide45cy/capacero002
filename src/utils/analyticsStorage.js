@@ -935,7 +935,7 @@ function crearYFormatearPestanaEstadisticas() {
 }
 
 /**
- * RECEPTOR WEBHOOK POST
+ * RECEPTOR WEBHOOK POST (Recepción de analíticas en tiempo real)
  */
 function doPost(e) {
   try {
@@ -945,11 +945,26 @@ function doPost(e) {
       sheet = ss.insertSheet("Estadisticas");
     }
     
+    // Si la hoja no tiene encabezados, crearlos automáticamente
     if (sheet.getLastRow() === 0) {
-      crearYFormatearPestanaEstadisticas();
+      var headers = [
+        "Timestamp", "ID_Sesion", "Pais", "Codigo_Pais", "Bandera",
+        "Region_Provincia", "Ciudad", "Dispositivo", "Sistema_Operativo",
+        "Navegador", "Canal_Origen", "Tiempo_Activo_Segundos", "Suscrito",
+        "Suscrito_Desde", "Secciones_Vistas", "Tarjetas_Clicadas",
+        "Descargas_Realizadas", "Busquedas_Tecleadas", "Doctor3D_Consultas"
+      ];
+      sheet.appendRow(headers);
     }
     
-    var data = JSON.parse(e.postData.contents);
+    var data = {};
+    if (e && e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (parseErr) {
+        data = {};
+      }
+    }
     
     var row = [
       data.timestamp || new Date().toISOString(),
@@ -966,11 +981,11 @@ function doPost(e) {
       data.totalActiveSeconds || 0,
       data.hasSubscribed ? "SI" : "NO",
       data.subscribedFrom || "",
-      JSON.stringify(data.dwellTimes || {}),
-      (data.clickedCards || []).join(" | "),
-      (data.downloads || []).join(" | "),
-      (data.searches || []).join(" | "),
-      (data.doctorConsults || []).join(" | ")
+      typeof data.dwellTimes === 'object' ? JSON.stringify(data.dwellTimes) : (data.dwellTimes || "{}"),
+      Array.isArray(data.clickedCards) ? data.clickedCards.join(" | ") : (data.clickedCards || ""),
+      Array.isArray(data.downloads) ? data.downloads.join(" | ") : (data.downloads || ""),
+      Array.isArray(data.searches) ? data.searches.join(" | ") : (data.searches || ""),
+      Array.isArray(data.doctorConsults) ? data.doctorConsults.join(" | ") : (data.doctorConsults || "")
     ];
     
     sheet.appendRow(row);
