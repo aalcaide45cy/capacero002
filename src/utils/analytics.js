@@ -1,13 +1,14 @@
 /**
  * Capa Cero Analytics Engine v4
  * Sistema integral de telemetría, geolocalización, atribución de suscriptores,
- * dwell time por secciones, interacciones y persistencia local de alto rendimiento.
+ * dwell time por secciones, interacciones y sincronización inteligente con Google Sheets
+ * sin impacto en el rendimiento ni en los Core Web Vitals.
  */
 
 import { saveSession, saveEvent } from './analyticsStorage';
 
-// --- CONFIGURACIÓN DE GOOGLE SHEETS (Desconectado temporalmente según petición) ---
-const GOOGLE_SHEETS_ENABLED = false;
+// --- CONFIGURACIÓN DE GOOGLE SHEETS ---
+const GOOGLE_SHEETS_ENABLED = true;
 const SHEETS_DB_URL = "https://script.google.com/macros/s/AKfycbx4_oOWg3bri93p57u2q__jeo33S0ZHT2VSMSHQEGBL_LMTD-g6H5KTw-fyP76h5AI/exec";
 
 // Identificadores únicos y persistentes
@@ -103,7 +104,7 @@ export const getDeviceDetails = () => {
         device,
         os,
         browser,
-        screen: `${window.screen.width}x${window.screen.height}`,
+        screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
         language: navigator.language || 'es-ES'
     };
 };
@@ -173,7 +174,13 @@ let currentActiveSection = 'Hero Principal';
 let lastTickTime = Date.now();
 let isWindowFocused = true;
 
-// Envío a Google Sheets (Modular, admite webhook guardado en localStorage)
+// Buffers de interacciones en memoria
+let sessionClickedCards = [];
+let sessionDownloadedItems = [];
+let sessionSearchTerms = [];
+let sessionDoctorConsults = [];
+
+// Envío a Google Sheets (Asíncrono de 0ms con sendBeacon o fetch keepalive)
 export const sendToSheetsIfEnabled = (extraData = {}) => {
     try {
         const customWebhook = localStorage.getItem('capa_cero_sheets_webhook');
@@ -196,15 +203,28 @@ export const sendToSheetsIfEnabled = (extraData = {}) => {
             hasSubscribed: currentSession?.hasSubscribed || false,
             subscribedFrom: currentSession?.subscribedFrom || '',
             dwellTimes: currentSession?.dwellTimes || { ...sectionTimes },
+            clickedCards: [...new Set(sessionClickedCards)],
+            downloads: [...new Set(sessionDownloadedItems)],
+            searches: [...new Set(sessionSearchTerms)],
+            doctorConsults: [...new Set(sessionDoctorConsults)],
             ...extraData
         };
 
-        fetch(targetUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload)
-        }).catch(() => {});
+        const jsonStr = JSON.stringify(payload);
+
+        // Envío en segundo plano sin bloquear el hilo principal (sendBeacon cuesta 0ms)
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+            const blob = new Blob([jsonStr], { type: 'text/plain;charset=utf-8' });
+            navigator.sendBeacon(targetUrl, blob);
+        } else {
+            fetch(targetUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                keepalive: true,
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: jsonStr
+            }).catch(() => {});
+        }
     } catch (e) {}
 };
 
@@ -263,27 +283,46 @@ export const initAnalyticsSession = async () => {
         }
     });
 
-    // Iniciar temporizador de tiempo activo (con detección de visibilidad)
+    // Iniciar temporizador de tiempo activo
     setupActiveTimeTracker();
 
     // Iniciar observador de scroll depth
     setupScrollTracker();
 
+    // Sincronizar con Google Sheets en segundo plano sin retrasar el primer render
+    if (typeof window !== 'undefined') {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => sendToSheetsIfEnabled(), { timeout: 3500 });
+        } else {
+            setTimeout(() => sendToSheetsIfEnabled(), 3000);
+        }
+    }
+
     return currentSession;
 };
 
-// Temporizador de permanencia activa optimizado (evita escrituras constantes en disco y gasto de batería)
+// Temporizador de permanencia activa optimizado
 const setupActiveTimeTracker = () => {
     if (activeDwellInterval) clearInterval(activeDwellInterval);
 
     window.addEventListener('focus', () => { isWindowFocused = true; lastTickTime = Date.now(); });
-    window.addEventListener('blur', () => { isWindowFocused = false; persistCurrentSession(); });
+    window.addEventListener('blur', () => {
+        isWindowFocused = false;
+        persistCurrentSession();
+        sendToSheetsIfEnabled();
+    });
     document.addEventListener('visibilitychange', () => {
         isWindowFocused = !document.hidden;
         lastTickTime = Date.now();
-        if (document.hidden) persistCurrentSession();
+        if (document.hidden) {
+            persistCurrentSession();
+            sendToSheetsIfEnabled();
+        }
     });
-    window.addEventListener('pagehide', () => { persistCurrentSession(); });
+    window.addEventListener('pagehide', () => {
+        persistCurrentSession();
+        sendToSheetsIfEnabled();
+    });
 
     let ticksCount = 0;
     activeDwellInterval = setInterval(() => {
@@ -365,8 +404,11 @@ const setupScrollTracker = () => {
 
 // 1. Clic en Tarjeta de Vídeo / Producto
 export const trackCardClick = (cardData) => {
+    const title = cardData.title || cardData.name || 'Tutorial';
+    sessionClickedCards.push(title);
+
     const payload = {
-        title: cardData.title || cardData.name || 'Tutorial',
+        title,
         id: cardData.id || '',
         category: cardData.category || 'General',
         sourceSection: currentActiveSection
@@ -382,15 +424,18 @@ export const trackCardClick = (cardData) => {
         window.gtag('event', 'select_content', {
             content_type: 'video_card',
             item_id: cardData.id,
-            item_name: cardData.title || cardData.name
+            item_name: title
         });
     }
 };
 
 // 2. Apertura de Modal de Vídeo / Reproducción
 export const trackVideoOpen = (video) => {
+    const title = video.title || 'Tutorial';
+    sessionClickedCards.push(title);
+
     const payload = {
-        title: video.title || 'Tutorial',
+        title,
         id: video.id || '',
         category: video.category || 'General',
         youtubeId: video.youtubeId || ''
@@ -434,9 +479,8 @@ export const trackSubscribe = (sourceContext = 'Hero CTA', videoDetails = null) 
     });
 
     sendToSheetsIfEnabled({
-        action: 'log_subscribe',
-        source: attribution,
-        videoTitle: videoTitle || 'Canal General'
+        hasSubscribed: true,
+        subscribedFrom: attribution
     });
 
     if (window.gtag) {
@@ -450,8 +494,11 @@ export const trackSubscribe = (sourceContext = 'Hero CTA', videoDetails = null) 
 
 // 4. Descarga de Perfil / Archivo .3MF
 export const trackDownload = (downloadItem, video = null) => {
+    const label = downloadItem.label || downloadItem.name || 'Descarga';
+    sessionDownloadedItems.push(label);
+
     const payload = {
-        label: downloadItem.label || downloadItem.name || 'Descarga',
+        label,
         url: downloadItem.url || '',
         videoTitle: video?.title || 'Descarga Directa',
         category: video?.category || 'Recursos'
@@ -473,6 +520,8 @@ export const trackDownload = (downloadItem, video = null) => {
 
 // 5. Diagnóstico de Doctor 3D
 export const trackDoctorSelect = (problem, clickedVideo = false) => {
+    sessionDoctorConsults.push(problem.title);
+
     saveEvent({
         sessionId: getSessionId(),
         type: 'doctor3d_select',
@@ -488,6 +537,7 @@ export const trackDoctorSelect = (problem, clickedVideo = false) => {
 let searchDebounce = null;
 export const trackSearch = (searchTerm, resultsCount = 0) => {
     if (!searchTerm || searchTerm.trim().length < 2) return;
+    sessionSearchTerms.push(searchTerm.trim());
 
     if (searchDebounce) clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
