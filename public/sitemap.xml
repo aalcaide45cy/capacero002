@@ -1,10 +1,281 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://www.capacero3d.com/</loc>
     <lastmod>2026-08-17</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/D6zKWJAS6G0/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Todo lo que Necesitas Saber sobre el Laminado en Bambu Studio #8.1</video:title>
+      <video:description>Interpretación de la vista previa de corte: retracciones, velocidades, cambios de capas y costuras.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/D6zKWJAS6G0</video:player_loc>
+      <video:publication_date>2026-08-17T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>43</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/PCbMinEbUd4/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¡Adiós a las costuras! El truco definitivo en Bambu Studio</video:title>
+      <video:description>Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/PCbMinEbUd4</video:player_loc>
+      <video:publication_date>2026-08-13T10:45:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2719</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/hZvIHMnxb3w/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Movimiento por el Viewport y Ajustes de Placas #8</video:title>
+      <video:description>Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/hZvIHMnxb3w</video:player_loc>
+      <video:publication_date>2026-08-10T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>215</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/9otbdJPW1WA/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Fusion 360 para Principiantes: Modela tu Primera Mesa</video:title>
+      <video:description>Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/9otbdJPW1WA</video:player_loc>
+      <video:publication_date>2026-08-06T10:30:25Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>222</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/-uD_McDZ3Qk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Perfiles de Impresión: Los Ajustes Clave que Olvidas #7</video:title>
+      <video:description>Descubre los ajustes críticos de los perfiles de proceso en Bambu Studio para no arruinar tus piezas.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/-uD_McDZ3Qk</video:player_loc>
+      <video:publication_date>2026-08-03T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>352</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/oDGtU6Z2VYM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Ahorra la Mitad del Tiempo en Bambu Studio: 3 Ejemplos Reales</video:title>
+      <video:description>Reduce horas de impresión sin perder resistencia ni acabado visual optimizando rellenos y perímetros.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/oDGtU6Z2VYM</video:player_loc>
+      <video:publication_date>2026-07-31T10:30:33Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2012</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/-ZIU1pywxiQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Perfiles vs Filamentos en Bambu Studio: Diferencias Clave #6</video:title>
+      <video:description>Aprende la diferencia real entre ajustar el filamento y ajustar el perfil de impresión.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/-ZIU1pywxiQ</video:player_loc>
+      <video:publication_date>2026-07-27T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>607</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/OHLka3HAwn0/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Deja de Tirar Dinero: La Técnica Pro para Impresiones Gigantes</video:title>
+      <video:description>Cómo imprimir piezas de gran volumen ahorrando metros de filamento y evitando fallos de warping.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/OHLka3HAwn0</video:player_loc>
+      <video:publication_date>2026-07-24T11:30:24Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2720</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/fpvQEW7-9vo/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>AlgoLaser Pixi 10W: ¿El Mejor Grabador Láser por Menos de 300€?</video:title>
+      <video:description>Análisis a fondo y pruebas reales de corte y grabado con el AlgoLaser Pixi 10W.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/fpvQEW7-9vo</video:player_loc>
+      <video:publication_date>2026-07-22T11:00:16Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>242</video:view_count>
+      <video:category>Grabado Láser</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/DNouZLKOnpk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Boquillas Estándar vs High-Flow: ¿Cuál Elegir? #5</video:title>
+      <video:description>Comparativa real de caudal volumétrico y velocidades entre hotends estándar y de alto flujo.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/DNouZLKOnpk</video:player_loc>
+      <video:publication_date>2026-07-19T15:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>383</video:view_count>
+      <video:category>Hardware y Boquillas</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/w-DRE8UtD9s/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¡Deja de Imprimir Textos Feos! El Truco de Alta Resolución</video:title>
+      <video:description>Consigue letras y leyendas nítidas en la primera capa o superficies superiores con estos ajustes.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/w-DRE8UtD9s</video:player_loc>
+      <video:publication_date>2026-07-15T09:05:11Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>6005</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/zXLmMLsKLe4/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Cómo Elegir la Placa de Impresión en Bambu Studio #4</video:title>
+      <video:description>Diferencias entre placa PEI texturada, placa fría, placa suave y ajustes en el software.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/zXLmMLsKLe4</video:player_loc>
+      <video:publication_date>2026-07-13T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>486</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/kYbpS-vwqJM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¡Deja de Imprimir Basura! Cómo Arreglar Modelos de IA</video:title>
+      <video:description>Aprende a reparar mallas rotas, caras invertidas y geometrías no-manifold procedentes de generadores de IA.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/kYbpS-vwqJM</video:player_loc>
+      <video:publication_date>2026-07-10T09:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2309</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/v3SFbjI8BEE/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Lo que Hace ChatGPT con Bambu Studio te Sorprenderá</video:title>
+      <video:description>Cómo usar la inteligencia artificial para resolver dudas de laminado, G-code y orientación de piezas.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/v3SFbjI8BEE</video:player_loc>
+      <video:publication_date>2026-07-09T07:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>980</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/cfs1ctvUC-8/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Configura tu Primer Entorno en Bambu Studio Correctamente #3</video:title>
+      <video:description>Paso a paso para vincular tu impresora Bambu Lab, configurar la nube y tu área de trabajo.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/cfs1ctvUC-8</video:player_loc>
+      <video:publication_date>2026-07-06T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>388</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/lP0FvQZ6uwk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¿Lo Sabías? Los Ajustes SECRETOS de Bambu Studio Explicados</video:title>
+      <video:description>Funciones ocultas del laminador que mejoran drásticamente la calidad superficial y la adherencia.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/lP0FvQZ6uwk</video:player_loc>
+      <video:publication_date>2026-07-05T04:30:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>6882</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/YUMNakCgUJs/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Ecosistema Bambu Lab: Guía Completa para Principiantes #2</video:title>
+      <video:description>Todo sobre el funcionamiento conjunto de la máquina, Bambu Handy, MakerWorld y Bambu Studio.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/YUMNakCgUJs</video:player_loc>
+      <video:publication_date>2026-06-29T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>407</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/hVCS-uyGflk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Instalación de Bambu Studio: Guía Paso a Paso #1</video:title>
+      <video:description>Primeros pasos desde la descarga oficial hasta la configuración inicial sin errores.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/hVCS-uyGflk</video:player_loc>
+      <video:publication_date>2026-06-22T11:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>480</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/IFTgPS3a6v8/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15</video:title>
+      <video:description>Añade texto tridimensional sobre cualquier superficie curva o plana y crea modificadores de relleno.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/IFTgPS3a6v8</video:player_loc>
+      <video:publication_date>2026-06-21T04:12:21Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>150</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/3BtSMuvl8BQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14</video:title>
+      <video:description>Herramientas de pintura por capas, por relleno de cubos y por triángulos en modelos multicolor.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/3BtSMuvl8BQ</video:player_loc>
+      <video:publication_date>2026-06-20T10:58:48Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>180</video:view_count>
+      <video:category>Multicolor y AMS</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/mzItWgN4a5c/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13</video:title>
+      <video:description>Ensambla piezas separadas directamente en la placa sin necesidad de abrir un programa de modelado.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/mzItWgN4a5c</video:player_loc>
+      <video:publication_date>2026-06-20T10:58:42Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>140</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/ozlbqVkcinE/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Grupos y Jerarquías en Bambu Studio | Guía de mallas booleanas #12</video:title>
+      <video:description>Domina las operaciones de unión, resta y corte booleano de volúmenes directamente en el slicer.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/ozlbqVkcinE</video:player_loc>
+      <video:publication_date>2026-06-20T10:58:10Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>130</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/STc2U-cqecQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>No Hagas Esto al Cortar en Bambustudio | Guía Completa #11</video:title>
+      <video:description>Cómo cortar modelos grandes para imprimir por partes con uniones perfectas y sin holguras.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/STc2U-cqecQ</video:player_loc>
+      <video:publication_date>2026-06-20T10:58:04Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>160</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/RNWxu9tsB-k/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Escala, rota y posiciona: controles esenciales de BambuStudio #10</video:title>
+      <video:description>Atajos de teclado y trucos de posicionamiento para optimizar el espacio en la cama de impresión.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/RNWxu9tsB-k</video:player_loc>
+      <video:publication_date>2026-06-20T10:58:01Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>120</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/sIzQPJSVdvo/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¿Perdido en la interfaz? Todo lo que necesitas saber #9</video:title>
+      <video:description>Guía rápida para entender cada botón, panel lateral y menú superior sin perder el tiempo.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/sIzQPJSVdvo</video:player_loc>
+      <video:publication_date>2026-06-20T10:57:52Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>110</video:view_count>
+      <video:category>Bambu Studio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/1ol3BaUnJ8Y/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Probando Madimaker: ¿La Mejor Alternativa para Descargar Modelos 3D?</video:title>
+      <video:description>Análisis de la plataforma y cómo preparar los archivos descargados para laminar en Bambu Studio.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/1ol3BaUnJ8Y</video:player_loc>
+      <video:publication_date>2026-05-23T01:00:06Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>376</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/nPaTKz9Zqcs/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Adiós a las Limitaciones del AMS: Imprime Multicolor de Esta Forma</video:title>
+      <video:description>Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/nPaTKz9Zqcs</video:player_loc>
+      <video:publication_date>2026-03-15T09:39:01Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2729</video:view_count>
+      <video:category>Multicolor y AMS</video:category>
+    </video:video>
   </url>
   <url>
     <loc>https://www.capacero3d.com/producto/Pixi-001</loc>

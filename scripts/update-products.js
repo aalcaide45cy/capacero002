@@ -141,59 +141,180 @@ async function main() {
         const INDEX_HTML_PATH = path.resolve(__dirname, '../index.html');
         let indexHtml = fs.readFileSync(INDEX_HTML_PATH, 'utf-8');
 
+        // Leer vídeos para incluirlos en el SEO y Sitemap
+        const VIDEOS_PATH = path.join(DATA_DIR, 'videos_v4.json');
+        let allVideos = [];
+        if (fs.existsSync(VIDEOS_PATH)) {
+            try {
+                allVideos = JSON.parse(fs.readFileSync(VIDEOS_PATH, 'utf-8'));
+            } catch (e) {}
+        }
+
+        function escapeXml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+        }
+
         // 1. Generate JSON-LD (Structured Data)
         const jsonLd = {
             "@context": "https://schema.org",
-            "@type": "ItemList",
-            "itemListElement": allProducts.map((p, index) => {
-                const item = {
-                    "@type": "Product",
-                    "name": p.name,
-                    "description": p.description || p.name,
-                    "image": p.image && p.image.length > 0 ? `https://www.capacero3d.com${p.image[0]}` : "https://www.capacero3d.com/logo-capa-cero-small.png",
-                    "review": {
-                        "@type": "Review",
-                        "reviewRating": {
-                            "@type": "Rating",
-                            "ratingValue": "5",
-                            "bestRating": "5"
-                        },
-                        "author": {
-                            "@type": "Organization",
-                            "name": "Capa Cero"
-                        }
+            "@graph": [
+                {
+                    "@type": "WebSite",
+                    "@id": "https://www.capacero3d.com/#website",
+                    "url": "https://www.capacero3d.com/",
+                    "name": "Capa Cero 3D",
+                    "description": "Videoteca oficial de tutoriales de Bambu Studio, perfiles de calibración 3MF y trucos de impresión 3D.",
+                    "publisher": {
+                        "@id": "https://www.capacero3d.com/#organization"
                     },
-                    "aggregateRating": {
-                        "@type": "AggregateRating",
-                        "ratingValue": "4.8",
-                        "reviewCount": "125"
+                    "potentialAction": {
+                        "@type": "SearchAction",
+                        "target": "https://www.capacero3d.com/?q={search_term_string}",
+                        "query-input": "required name=search_term_string"
                     }
-                };
-                // Only include static price in SEO if showPrice is explicitly true
-                if (p.showPrice && p.price) {
-                    item.offers = {
-                        "@type": "Offer",
-                        "price": p.price.replace(/[^\d.,]/g, '').replace(',', '.') || '0',
-                        "priceCurrency": "EUR",
-                        "availability": "https://schema.org/InStock"
-                    };
+                },
+                {
+                    "@type": "Organization",
+                    "@id": "https://www.capacero3d.com/#organization",
+                    "name": "Capa Cero 3D",
+                    "url": "https://www.capacero3d.com/",
+                    "logo": "https://www.capacero3d.com/logo-capa-cero.webp",
+                    "sameAs": [
+                        "https://www.youtube.com/@CapaCero0",
+                        "https://makerworld.com/en/@capa_cero",
+                        "https://www.instagram.com/capa.cero_3d/",
+                        "https://www.tiktok.com/@capacero"
+                    ]
+                },
+                {
+                    "@type": "ItemList",
+                    "@id": "https://www.capacero3d.com/#videoteca",
+                    "name": "Videoteca de Tutoriales Bambu Studio e Impresión 3D",
+                    "description": "Lista completa de tutoriales y guías paso a paso de Capa Cero 3D",
+                    "numberOfItems": allVideos.length,
+                    "itemListElement": allVideos.map((v, index) => ({
+                        "@type": "ListItem",
+                        "position": index + 1,
+                        "item": {
+                            "@type": "VideoObject",
+                            "name": v.title,
+                            "description": v.description || `Tutorial de ${v.title} por Capa Cero 3D.`,
+                            "thumbnailUrl": [v.thumbnail || `https://img.youtube.com/vi/${v.youtubeId}/hqdefault.jpg`],
+                            "uploadDate": v.publishedAt || "2026-08-17T11:00:06Z",
+                            "contentUrl": v.youtubeUrl,
+                            "embedUrl": `https://www.youtube-nocookie.com/embed/${v.youtubeId}`,
+                            "interactionStatistic": [
+                                {
+                                    "@type": "InteractionCounter",
+                                    "interactionType": { "@type": "WatchAction" },
+                                    "userInteractionCount": v.views || 100
+                                },
+                                {
+                                    "@type": "InteractionCounter",
+                                    "interactionType": { "@type": "LikeAction" },
+                                    "userInteractionCount": v.likes || 10
+                                }
+                            ],
+                            "author": {
+                                "@type": "Person",
+                                "name": "Capa Cero 3D"
+                            },
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "Capa Cero 3D",
+                                "logo": "https://www.capacero3d.com/logo-capa-cero.webp"
+                            }
+                        }
+                    }))
+                },
+                {
+                    "@type": "ItemList",
+                    "@id": "https://www.capacero3d.com/#catalogo",
+                    "name": "Catálogo de Productos y Herramientas 3D Recomendadas",
+                    "numberOfItems": allProducts.length,
+                    "itemListElement": allProducts.map((p, index) => {
+                        const item = {
+                            "@type": "Product",
+                            "name": p.name,
+                            "description": p.description || p.name,
+                            "image": p.image && p.image.length > 0 ? `https://www.capacero3d.com${p.image[0]}` : "https://www.capacero3d.com/logo-capa-cero-small.png",
+                            "review": {
+                                "@type": "Review",
+                                "reviewRating": {
+                                    "@type": "Rating",
+                                    "ratingValue": "5",
+                                    "bestRating": "5"
+                                },
+                                "author": {
+                                    "@type": "Organization",
+                                    "name": "Capa Cero"
+                                }
+                            },
+                            "aggregateRating": {
+                                "@type": "AggregateRating",
+                                "ratingValue": "4.8",
+                                "reviewCount": "125"
+                            }
+                        };
+                        if (p.showPrice && p.price) {
+                            item.offers = {
+                                "@type": "Offer",
+                                "price": p.price.replace(/[^\d.,]/g, '').replace(',', '.') || '0',
+                                "priceCurrency": "EUR",
+                                "availability": "https://schema.org/InStock"
+                            };
+                        }
+                        return {
+                            "@type": "ListItem",
+                            "position": index + 1,
+                            "url": `https://www.capacero3d.com/producto/${p.id}`,
+                            "item": item
+                        };
+                    })
                 }
-                return {
-                    "@type": "ListItem",
-                    "position": index + 1,
-                    "url": `https://www.capacero3d.com/producto/${p.id}`,
-                    "item": item
-                };
-            })
+            ]
         };
 
         const jsonLdScript = `\n  <script type="application/ld+json" id="seo-jsonld">\n${JSON.stringify(jsonLd, null, 2)}\n  </script>\n`;
 
-        // 2. Generate Fallback HTML (For crawlers that don't execute JS)
-        const fallbackHtml = `\n  <noscript id="seo-fallback" style="display:none;">\n    <h1>Catálogo de Productos - Capa Cero</h1>\n    <ul>\n${allProducts.map(p => `      <li><a href="/producto/${p.id}">${p.name}</a>${p.showPrice && p.price ? ` - ${p.price}` : ''}</li>`).join('\n')}\n    </ul>\n  </noscript>\n`;
+        // 2. Generate Fallback HTML (For search engines and crawlers that don't execute JS)
+        const fallbackHtml = `\n  <noscript id="seo-fallback">
+    <header>
+      <h1>Capa Cero 3D | Videoteca Oficial de Tutoriales Bambu Studio e Impresión 3D</h1>
+      <p>Aprende Bambu Studio e impresión 3D paso a paso. Videoteca oficial de Capa Cero con perfiles 3MF, trucos de calibración, solución de errores y optimización de filamento.</p>
+    </header>
+
+    <main>
+      <section>
+        <h2>Tutoriales y Guías de Bambu Studio</h2>
+        <ul>
+${allVideos.map(v => `          <li>
+            <h3><a href="${v.youtubeUrl}" target="_blank" rel="noopener noreferrer">${v.title}</a></h3>
+            <p>${v.description || ''}</p>
+            ${v.consejoClave ? `<p><strong>Tip:</strong> ${v.consejoClave}</p>` : ''}
+            ${v.downloads && v.downloads.length > 0 ? `<p><a href="${v.downloads[0].url}">Descargar Archivo</a></p>` : ''}
+          </li>`).join('\n')}
+        </ul>
+      </section>
+
+      <section>
+        <h2>Catálogo de Productos y Herramientas 3D</h2>
+        <ul>
+${allProducts.map(p => `          <li><a href="/producto/${p.id}">${p.name}</a>${p.showPrice && p.price ? ` - ${p.price}` : ''}</li>`).join('\n')}
+        </ul>
+      </section>
+    </main>
+  </noscript>\n`;
 
         // Remove old injections if they exist to prevent duplicates
         indexHtml = indexHtml.replace(/[\s]*<script type="application\/ld\+json" id="seo-jsonld">[\s\S]*?<\/script>[\s]*/, '');
+        indexHtml = indexHtml.replace(/[\s]*<script type="application\/ld\+json">[\s\S]*?<\/script>[\s]*/, '');
         indexHtml = indexHtml.replace(/[\s]*<noscript id="seo-fallback"[\s\S]*?<\/noscript>[\s]*/, '');
 
         // Inject new blocks
@@ -204,18 +325,29 @@ async function main() {
         console.log('✅ Injected structured JSON-LD and HTML Fallback into index.html');
 
         // ============================================
-        // 🗺️ SITEMAP GENERATION
+        // 🗺️ GOOGLE VIDEO & STANDARD SITEMAP GENERATION
         // ============================================
         const SITEMAP_PATH = path.resolve(__dirname, '../public/sitemap.xml');
         const today = new Date().toISOString().split('T')[0];
 
         const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://www.capacero3d.com/</loc>
     <lastmod>${today}</lastmod>
     <changefreq>daily</changefreq>
-    <priority>1.0</priority>
+    <priority>1.0</priority>${allVideos.map(v => `
+    <video:video>
+      <video:thumbnail_loc>${v.thumbnail}</video:thumbnail_loc>
+      <video:title>${escapeXml(v.title)}</video:title>
+      <video:description>${escapeXml(v.description || v.title)}</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/${v.youtubeId}</video:player_loc>
+      <video:publication_date>${v.publishedAt || (today + 'T00:00:00Z')}</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>${v.views || 100}</video:view_count>
+      <video:category>${escapeXml(v.category || 'Bambu Studio')}</video:category>
+    </video:video>`).join('')}
   </url>${allProducts.map(p => `
   <url>
     <loc>https://www.capacero3d.com/producto/${p.id}</loc>
@@ -226,7 +358,7 @@ async function main() {
 </urlset>`;
 
         fs.writeFileSync(SITEMAP_PATH, sitemapXml);
-        console.log(`✅ Generated sitemap.xml with ${allProducts.length + 1} URLs`);
+        console.log(`✅ Generated sitemap.xml with Google Video rich metadata (${allVideos.length} videos + ${allProducts.length} products)`);
 
         console.log('\n🎉 ALL DONE! System is ready for production.\n');
 

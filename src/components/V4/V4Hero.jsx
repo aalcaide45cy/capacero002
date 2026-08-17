@@ -185,14 +185,6 @@ export default function V4Hero({
                     Gratis
                   </span>
                 </a>
-
-                <button
-                  onClick={() => onOpenTab('videos')}
-                  className="flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-200 hover:text-white font-semibold text-sm px-5 py-3.5 rounded-xl border border-zinc-800 hover:border-cyan-500/40 transition-all active:scale-[0.98]"
-                >
-                  <span>Explorar Tutoriales</span>
-                  <ArrowRight className="w-4 h-4 text-cyan-400" />
-                </button>
               </div>
 
               {/* Highlights Pillars */}
