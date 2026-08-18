@@ -584,71 +584,20 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
           {/* ================= SECCIÓN DE APUNTES Y MARCADORES CON TIMESTAMP ================= */}
           <div className="bg-zinc-900/70 border border-zinc-800/90 rounded-2xl p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-cyan-400" />
-                <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                  Mis Apuntes y Marcadores de esta Lección
-                </h4>
-              </div>
-
-              {/* Botón rápido para guardar/restaurar todo en JSON */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    exportProgressBackup();
-                    setBackupNotice('✅ Copia JSON descargada con tus notas y progreso.');
-                    setTimeout(() => setBackupNotice(null), 3500);
-                  }}
-                  className="text-[11px] font-bold text-cyan-300 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/30 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Descargar copia de seguridad con todas tus notas y progreso"
-                >
-                  <Download className="w-3 h-3" />
-                  <span>Guardar JSON</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputModalRef.current?.click()}
-                  className="text-[11px] font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Restaurar notas y progreso desde un archivo JSON"
-                >
-                  <Upload className="w-3 h-3 text-blue-400" />
-                  <span>Restaurar JSON</span>
-                </button>
-
-                <input
-                  ref={fileInputModalRef}
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      const res = importProgressBackup(event.target?.result);
-                      if (res.success) {
-                        setNotesTick((prev) => prev + 1);
-                        setBackupNotice('✅ Notas y progreso restaurados con éxito.');
-                      } else {
-                        setBackupNotice(`❌ ${res.message}`);
-                      }
-                      setTimeout(() => setBackupNotice(null), 4000);
-                    };
-                    reader.readAsText(file);
-                    e.target.value = '';
-                  }}
-                  className="hidden"
-                />
-              </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Bookmark className="w-4 h-4 text-cyan-400" />
+              <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                Mis Apuntes y Marcadores de esta Lección
+              </h4>
             </div>
 
-            {backupNotice && (
-              <div className="mb-3 p-2 bg-blue-950/80 border border-cyan-500/40 text-cyan-200 text-xs font-bold rounded-lg text-center">
-                {backupNotice}
-              </div>
-            )}
+            {/* Mensaje de ayuda explicativo y amigable */}
+            <div className="bg-cyan-950/30 border border-cyan-500/20 rounded-xl p-2.5 sm:p-3 mb-3.5 flex items-start gap-2.5">
+              <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+              <p className="text-[11px] sm:text-xs text-cyan-100/90 leading-relaxed">
+                <strong>¿Has visto un truco o ajuste importante?</strong> Guarda el momento exacto mientras ves el vídeo añadiendo una nota rápida. Así podrás repasarlo cuando quieras o hacer clic en el minuto para saltar directo a esa parte.
+              </p>
+            </div>
 
             {/* Formulario para añadir apunte en el minuto actual */}
             <form onSubmit={handleCreateNote} className="flex flex-col sm:flex-row items-stretch gap-2.5 mb-3.5">

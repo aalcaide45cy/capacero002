@@ -8,13 +8,7 @@
     "category": "Curso BambuStudio",
     "description": "Interpretación de la vista previa de corte: retracciones, velocidades, cambios de capas y costuras.",
     "consejoClave": "Comprueba la pestaña de 'Velocidad de flujo' para asegurarte de que no supera el límite de tu boquilla.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 8.1,
     "popularityScore": 114,
@@ -22,7 +16,7 @@
     "views": 43,
     "likes": 11,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -35,13 +29,7 @@
     "category": "Perfiles y Calibración",
     "description": "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.",
     "consejoClave": "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": true,
     "chapterNumber": null,
     "popularityScore": 2562,
@@ -49,7 +37,7 @@
     "views": 2719,
     "likes": 179,
     "comments": 32,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -62,13 +50,7 @@
     "category": "Curso BambuStudio",
     "description": "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.",
     "consejoClave": "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 8,
     "popularityScore": 162,
@@ -76,7 +58,7 @@
     "views": 215,
     "likes": 14,
     "comments": 3,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -89,13 +71,7 @@
     "category": "Modelado 3D",
     "description": "Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.",
     "consejoClave": "Trabaja siempre con restricciones y cotas paramétricas para poder editar el diseño fácilmente.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 272,
@@ -103,7 +79,7 @@
     "views": 222,
     "likes": 25,
     "comments": 5,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -116,13 +92,7 @@
     "category": "Curso BambuStudio",
     "description": "Descubre los ajustes críticos de los perfiles de proceso en Bambu Studio para no arruinar tus piezas.",
     "consejoClave": "Guarda perfiles independientes para filamentos especiales como PETG, TPU o filamentos con fibra.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 7,
     "popularityScore": 245,
@@ -130,7 +100,7 @@
     "views": 352,
     "likes": 21,
     "comments": 4,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -143,13 +113,7 @@
     "category": "Trucos Rápidos",
     "description": "Reduce horas de impresión sin perder resistencia ni acabado visual optimizando rellenos y perímetros.",
     "consejoClave": "Aumenta la velocidad de relleno y perímetros internos manteniendo las paredes externas a velocidad media.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 1451,
@@ -157,7 +121,7 @@
     "views": 2012,
     "likes": 125,
     "comments": 23,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -170,13 +134,7 @@
     "category": "Curso BambuStudio",
     "description": "Aprende la diferencia real entre ajustar el filamento y ajustar el perfil de impresión.",
     "consejoClave": "No cambies la temperatura en el perfil de proceso; hazlo siempre en el ajuste del filamento.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 6,
     "popularityScore": 561,
@@ -184,7 +142,7 @@
     "views": 607,
     "likes": 50,
     "comments": 9,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -197,13 +155,7 @@
     "category": "Trucos Rápidos",
     "description": "Cómo imprimir piezas de gran volumen ahorrando metros de filamento y evitando fallos de warping.",
     "consejoClave": "Usa borde exterior (brim) amplio y mantén la puerta cerrada en materiales técnicos.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 2172,
@@ -211,7 +163,7 @@
     "views": 2720,
     "likes": 190,
     "comments": 34,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -224,13 +176,7 @@
     "category": "Grabado Láser",
     "description": "Análisis a fondo y pruebas reales de corte y grabado con el AlgoLaser Pixi 10W.",
     "consejoClave": "Calibra el foco milimétricamente y usa siempre asistencia de aire (Air Assist).",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 124,
@@ -238,7 +184,7 @@
     "views": 242,
     "likes": 10,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -251,13 +197,7 @@
     "category": "Curso BambuStudio",
     "description": "Comparativa real de caudal volumétrico y velocidades entre hotends estándar y de alto flujo.",
     "consejoClave": "Las boquillas High-Flow te permiten subir el caudal volumétrico máximo hasta un 40%.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 5,
     "popularityScore": 258,
@@ -265,7 +205,7 @@
     "views": 383,
     "likes": 22,
     "comments": 4,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -278,13 +218,7 @@
     "category": "Bambu Studio",
     "description": "Consigue letras y leyendas nítidas en la primera capa o superficies superiores con estos ajustes.",
     "consejoClave": "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 4261,
@@ -292,7 +226,7 @@
     "views": 6005,
     "likes": 366,
     "comments": 66,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -305,13 +239,7 @@
     "category": "Curso BambuStudio",
     "description": "Diferencias entre placa PEI texturada, placa fría, placa suave y ajustes en el software.",
     "consejoClave": "Selecciona siempre el tipo de placa exacto en el desplegable superior de Bambu Studio.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 4,
     "popularityScore": 369,
@@ -319,7 +247,7 @@
     "views": 486,
     "likes": 32,
     "comments": 6,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -332,13 +260,7 @@
     "category": "Modelado 3D",
     "description": "Aprende a reparar mallas rotas, caras invertidas y geometrías no-manifold procedentes de generadores de IA.",
     "consejoClave": "Utiliza la herramienta de reparación de malla integrada de Bambu Studio antes de laminar.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 1811,
@@ -346,7 +268,7 @@
     "views": 2309,
     "likes": 158,
     "comments": 28,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -359,13 +281,7 @@
     "category": "Trucos Rápidos",
     "description": "Cómo usar la inteligencia artificial para resolver dudas de laminado, G-code y orientación de piezas.",
     "consejoClave": "Pide a ChatGPT que calcule el coste energético y de material por gramo para tus presupuestos.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 788,
@@ -373,7 +289,7 @@
     "views": 980,
     "likes": 69,
     "comments": 12,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -386,13 +302,7 @@
     "category": "Curso BambuStudio",
     "description": "Paso a paso para vincular tu impresora Bambu Lab, configurar la nube y tu área de trabajo.",
     "consejoClave": "Activa el modo Desarrollador/Avanzado para desbloquear todos los parámetros de control.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 3,
     "popularityScore": 229,
@@ -400,7 +310,7 @@
     "views": 388,
     "likes": 19,
     "comments": 3,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -413,13 +323,7 @@
     "category": "Bambu Studio",
     "description": "Funciones ocultas del laminador que mejoran drásticamente la calidad superficial y la adherencia.",
     "consejoClave": "Explora el ajuste de compensación dimensional si tus piezas encajables quedan demasiado justas.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 4698,
@@ -427,7 +331,7 @@
     "views": 6882,
     "likes": 401,
     "comments": 72,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -440,13 +344,7 @@
     "category": "Curso BambuStudio",
     "description": "Todo sobre el funcionamiento conjunto de la máquina, Bambu Handy, MakerWorld y Bambu Studio.",
     "consejoClave": "Sincroniza tus perfiles de filamento en la nube para tenerlos disponibles en cualquier ordenador.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 2,
     "popularityScore": 301,
@@ -454,7 +352,7 @@
     "views": 407,
     "likes": 26,
     "comments": 5,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -467,13 +365,7 @@
     "category": "Curso BambuStudio",
     "description": "Primeros pasos desde la descarga oficial hasta la configuración inicial sin errores.",
     "consejoClave": "Descarga siempre el instalador desde la web oficial de Bambu Lab o su GitHub de versiones estables.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 1,
     "popularityScore": 268,
@@ -481,7 +373,7 @@
     "views": 480,
     "likes": 22,
     "comments": 4,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -494,13 +386,7 @@
     "category": "Curso BambuStudio",
     "description": "Añade texto tridimensional sobre cualquier superficie curva o plana y crea modificadores de relleno.",
     "consejoClave": "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 15,
     "popularityScore": 165,
@@ -508,7 +394,7 @@
     "views": 150,
     "likes": 15,
     "comments": 3,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -521,13 +407,7 @@
     "category": "Curso BambuStudio",
     "description": "Herramientas de pintura por capas, por relleno de cubos y por triángulos en modelos multicolor.",
     "consejoClave": "Usa la herramienta de relleno por ángulo para pintar caras completas en un solo clic.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 14,
     "popularityScore": 198,
@@ -535,7 +415,7 @@
     "views": 180,
     "likes": 18,
     "comments": 3,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -548,13 +428,7 @@
     "category": "Curso BambuStudio",
     "description": "Ensambla piezas separadas directamente en la placa sin necesidad de abrir un programa de modelado.",
     "consejoClave": "Usa conectores de espiga o cola de milano automáticos para unir piezas grandes.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 13,
     "popularityScore": 154,
@@ -562,7 +436,7 @@
     "views": 140,
     "likes": 14,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -575,13 +449,7 @@
     "category": "Curso BambuStudio",
     "description": "Domina las operaciones de unión, resta y corte booleano de volúmenes directamente en el slicer.",
     "consejoClave": "Agrupa piezas del mismo material para procesar ajustes en bloque.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 12,
     "popularityScore": 133,
@@ -589,7 +457,7 @@
     "views": 130,
     "likes": 12,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -602,13 +470,7 @@
     "category": "Curso BambuStudio",
     "description": "Cómo cortar modelos grandes para imprimir por partes con uniones perfectas y sin holguras.",
     "consejoClave": "Añade conectores tipo pin con tolerancia de 0.15mm para un montaje firme.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 11,
     "popularityScore": 176,
@@ -616,7 +478,7 @@
     "views": 160,
     "likes": 16,
     "comments": 3,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -629,13 +491,7 @@
     "category": "Curso BambuStudio",
     "description": "Atajos de teclado y trucos de posicionamiento para optimizar el espacio en la cama de impresión.",
     "consejoClave": "Orienta las caras visuales principales en vertical para evitar marcas de capas escalonadas.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 10,
     "popularityScore": 122,
@@ -643,7 +499,7 @@
     "views": 120,
     "likes": 11,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -656,13 +512,7 @@
     "category": "Curso BambuStudio",
     "description": "Guía rápida para entender cada botón, panel lateral y menú superior sin perder el tiempo.",
     "consejoClave": "Usa la barra de búsqueda de parámetros (Ctrl+F) para encontrar cualquier ajuste al instante.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": 9,
     "popularityScore": 111,
@@ -670,7 +520,7 @@
     "views": 110,
     "likes": 10,
     "comments": 2,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -683,13 +533,7 @@
     "category": "Modelado 3D",
     "description": "Análisis de la plataforma y cómo preparar los archivos descargados para laminar en Bambu Studio.",
     "consejoClave": "Verifica siempre la escala del archivo importado antes de mandar a la cola de impresión.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 268,
@@ -697,7 +541,7 @@
     "views": 376,
     "likes": 23,
     "comments": 4,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   },
@@ -710,13 +554,7 @@
     "category": "Multicolor y AMS",
     "description": "Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.",
     "consejoClave": "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.",
-    "downloads": [
-      {
-        "id": 1,
-        "url": "https://makerworld.com/en/@capa_cero",
-        "label": "Descargar Recurso 1"
-      }
-    ],
+    "downloads": [],
     "isFeatured": false,
     "chapterNumber": null,
     "popularityScore": 1103,
@@ -724,7 +562,7 @@
     "views": 2729,
     "likes": 83,
     "comments": 15,
-    "hasDownloads": true,
+    "hasDownloads": false,
     "hasTip": true,
     "hasDescription": true
   }
