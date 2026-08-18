@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
+import { saveCourseProgress } from '../../utils/courseProgress';
 
 // Función para normalizar la clave de curso
 function extractCourseKey(category) {
@@ -113,6 +114,10 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   useEffect(() => {
     if (video) {
       trackVideoOpen(video);
+      const courseKey = extractCourseKey(video.category);
+      if (courseKey) {
+        saveCourseProgress(courseKey, video);
+      }
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
