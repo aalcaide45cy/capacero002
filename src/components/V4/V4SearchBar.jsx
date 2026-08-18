@@ -130,18 +130,18 @@ export default function V4SearchBar({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
           
-          {/* Logo Pequeño Sticky (Protegido contra arrastre) */}
+          {/* Logo Pequeño Sticky (Emblema clásico de Capa Cero) */}
           <div className="flex items-center shrink-0">
             <a href="/" tabIndex={isSticky ? 0 : -1} className="block select-none" style={{ WebkitTapHighlightColor: 'transparent' }}>
               <img
-                src="/logo-capa-cero.webp"
-                alt="Capa Cero"
-                width="160"
-                height="40"
+                src="/logo-emblem.webp"
+                alt="Capa Cero 3D"
+                width="44"
+                height="44"
                 loading="lazy"
                 decoding="async"
                 draggable="false"
-                className="w-auto h-12 sm:h-10 object-contain rounded-lg drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] pointer-events-none select-none"
+                className="w-10 h-10 sm:w-11 sm:h-11 object-contain rounded-xl drop-shadow-[0_0_12px_rgba(37,117,196,0.5)] pointer-events-none select-none"
                 style={{
                   WebkitTouchCallout: 'none',
                   WebkitUserDrag: 'none',

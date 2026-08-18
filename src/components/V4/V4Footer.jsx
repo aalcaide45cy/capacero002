@@ -12,13 +12,13 @@ export default function V4Footer({ onOpenCollaboration }) {
         {/* Brand */}
         <div className="flex items-center gap-3.5">
           <img
-            src="/logo-capa-cero.webp"
+            src="/logo-emblem.webp"
             alt="Capa Cero Logo"
-            width="160"
+            width="48"
             height="48"
             loading="lazy"
             decoding="async"
-            className="h-11 sm:h-12 w-auto rounded-xl object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-contain drop-shadow-[0_0_15px_rgba(37,117,196,0.5)]"
           />
           <div className="text-left">
             <span className="block text-sm sm:text-base font-extrabold text-white">Capa Cero 3D</span>

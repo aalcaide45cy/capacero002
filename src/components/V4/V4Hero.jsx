@@ -57,10 +57,6 @@ export default function V4Hero({
     <section className={`relative overflow-hidden transition-all duration-500 ease-in-out border-b border-zinc-900/80 bg-transparent ${
       isSearching ? 'pt-4 pb-4 md:pt-6 md:pb-6' : 'pt-8 pb-12 md:py-16'
     }`}>
-      {/* Subtle Electric Blue Ambient Glows */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[550px] h-[350px] bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-40 right-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* ================= TOP BRAND SHOWCASE (PROMINENT LOGO & CTA) ================= */}
@@ -74,11 +70,11 @@ export default function V4Hero({
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              width="540"
-              height="304"
+              width="840"
+              height="472"
               fetchpriority="high"
               draggable="false"
-              className="w-72 sm:w-96 md:w-[480px] lg:w-[540px] max-w-[96vw] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
+              className="w-full max-w-[340px] sm:max-w-[560px] md:max-w-[720px] lg:max-w-[840px] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
