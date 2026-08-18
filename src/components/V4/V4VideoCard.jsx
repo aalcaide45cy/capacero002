@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Lightbulb, ExternalLink, Eye, Heart, MessageCircle } from 'lucide-react';
+import { Download, Lightbulb, ExternalLink, Eye, Heart, MessageCircle, Calendar, Clock } from 'lucide-react';
 import { trackCardClick, trackDownload } from '../../utils/analytics';
 
 // Función para formatear números compactos sin palabras (ej: 2719 -> 2.7k, 6882 -> 6.9k, 179 -> 179)
@@ -61,7 +61,11 @@ export default function V4VideoCard({ video, onSelect }) {
   const shortCategory = getShortCategory(video.category);
 
   return (
-    <div className="group bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left">
+    <div className={`group bg-zinc-900/80 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left ${
+      video.isScheduled 
+        ? 'border-amber-500/40 hover:border-amber-400/70 shadow-amber-950/20' 
+        : 'border-zinc-800/80 hover:border-zinc-700'
+    }`}>
       
       {/* Thumbnail Area */}
       <div
@@ -75,15 +79,27 @@ export default function V4VideoCard({ video, onSelect }) {
           height="270"
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+            video.isScheduled ? 'brightness-75 grayscale-[20%]' : ''
+          }`}
           onError={(e) => {
             e.target.src = '/logo-capa-cero-small.png';
             e.target.className = 'w-full h-full object-contain p-8 bg-zinc-950 opacity-40';
           }}
         />
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+        {/* Overlay Oscurecido + Badge "Estreno el día..." para vídeos programados */}
+        {video.isScheduled ? (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center z-10">
+            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[11px] sm:text-xs font-black px-3.5 py-1.5 rounded-xl border border-amber-300/40 shadow-xl flex items-center gap-1.5 uppercase tracking-wider">
+              <Calendar className="w-3.5 h-3.5 text-white" />
+              <span>{video.scheduledDateFormatted || 'Estreno Próximamente'}</span>
+            </div>
+          </div>
+        ) : (
+          /* Gradient Overlay Estándar */
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+        )}
       </div>
 
       {/* Content Area */}

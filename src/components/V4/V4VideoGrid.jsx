@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck } from 'lucide-react';
+import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import { 
   getCourseProgress, 
@@ -459,18 +459,31 @@ export default function V4VideoGrid({
                         <img
                           src={video.thumbnail}
                           alt={video.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
+                            video.isScheduled ? 'brightness-75 grayscale-[20%]' : ''
+                          }`}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" />
+
+                        {/* Overlay Oscurecido + Badge "Estreno el día..." para lecciones programadas */}
+                        {video.isScheduled ? (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center z-10">
+                            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[10px] sm:text-[11px] font-black px-3 py-1.5 rounded-xl border border-amber-300/40 shadow-xl flex items-center gap-1.5 uppercase tracking-wider">
+                              <Calendar className="w-3.5 h-3.5 text-white" />
+                              <span>{video.scheduledDateFormatted || 'Estreno Próximamente'}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/20 to-transparent" />
+                        )}
                         
                         {/* Badge de número de lección */}
-                        <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-700 to-cyan-600 text-white text-xs font-black px-3 py-1 rounded-lg shadow-md border border-cyan-300/40 flex items-center gap-1.5">
+                        <div className="absolute top-3 left-3 bg-gradient-to-r from-blue-700 to-cyan-600 text-white text-xs font-black px-3 py-1 rounded-lg shadow-md border border-cyan-300/40 flex items-center gap-1.5 z-20">
                           <BookOpen className="w-3.5 h-3.5" />
                           <span>Lección #{lessonNumber}</span>
                         </div>
 
                         {/* Badges de Progreso (En Curso / Completada) */}
-                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
                           {isCurrent && (
                             <span className="bg-cyan-950/90 text-cyan-300 border border-cyan-400/60 text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow-md animate-pulse">
                               <Play className="w-2.5 h-2.5 fill-cyan-300" />
@@ -486,11 +499,13 @@ export default function V4VideoGrid({
                         </div>
 
                         {/* Botón flotante Play */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                          <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                            <Play className="w-5 h-5 fill-white translate-x-0.5" />
+                        {!video.isScheduled && (
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 z-10">
+                            <div className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <Play className="w-5 h-5 fill-white translate-x-0.5" />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Info de la lección */}

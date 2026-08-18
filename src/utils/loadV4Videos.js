@@ -183,6 +183,17 @@ export function normalizeVideoRow(raw, index = 0) {
   const likes = raw.likes !== undefined ? raw.likes : stats.likes;
   const comments = raw.comments !== undefined ? raw.comments : stats.comments;
 
+  const rawScheduled = String(raw.Programado || raw.programado || raw.Fecha_Estreno || raw.fecha_estreno || raw.Estreno || raw.estreno || raw.Fecha_Programada || raw.fecha_programada || raw.Estado || '').trim();
+  const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
+  const isFuture = publishedAt && !isNaN(new Date(publishedAt).getTime()) && new Date(publishedAt).getTime() > Date.now();
+  const isScheduled = isStateScheduled || Boolean(raw.isScheduled) || isFuture;
+  
+  let scheduledDateFormatted = null;
+  if (isScheduled) {
+    const dateCandidate = raw.Fecha_Estreno || raw.fecha_estreno || raw.Programado || raw.programado || (isFuture ? publishedAt : '');
+    scheduledDateFormatted = formatScheduledDate(dateCandidate);
+  }
+
   const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : ((likes * 10) + Math.round(views / 10) + (isFeatured ? 500 : 0));
 
   return {
@@ -196,6 +207,8 @@ export function normalizeVideoRow(raw, index = 0) {
     consejoClave,
     downloads,
     isFeatured,
+    isScheduled,
+    scheduledDateFormatted,
     chapterNumber,
     popularityScore,
     publishedAt,
@@ -206,6 +219,23 @@ export function normalizeVideoRow(raw, index = 0) {
     hasTip: Boolean(consejoClave),
     hasDescription: Boolean(description)
   };
+}
+
+export function formatScheduledDate(rawDate) {
+  if (!rawDate) return 'Estreno Próximamente';
+  const str = String(rawDate).trim();
+  if (str.toLowerCase().includes('estreno') || str.toLowerCase().includes('el día') || str.toLowerCase().includes('el dia')) {
+    return str;
+  }
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const options = { day: 'numeric', month: 'long' };
+      const formatted = d.toLocaleDateString('es-ES', options);
+      return `Estreno el día ${formatted}`;
+    }
+  } catch (e) {}
+  return `Estreno el día ${str}`;
 }
 
 /**
