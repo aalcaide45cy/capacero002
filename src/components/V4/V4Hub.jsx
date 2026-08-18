@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import V4Hero from './V4Hero';
 import V4SearchBar from './V4SearchBar';
 import V4VideoGrid from './V4VideoGrid';
