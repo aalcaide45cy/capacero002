@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, CheckCircle, ChevronRight, Download, Eye, Heart } from 'lucide-react';
+import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2 } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 
 function formatCounter(num) {
@@ -7,6 +7,33 @@ function formatCounter(num) {
   if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(num);
+}
+
+// Extrae el nombre del curso de forma estricta e inteligente
+function extractCourseName(video) {
+  if (!video) return null;
+  const cat = (video.category || '').trim();
+
+  // 1. Si la categoría comienza explícitamente por "Curso" o "curso" (con espacio, dos puntos o pegado)
+  if (/^curso/i.test(cat)) {
+    let name = cat.replace(/^curso\s*:?\s*/i, '').trim();
+    // Normalizar BambuStudio a Bambu Studio
+    if (/^bambustudio$/i.test(name)) name = 'Bambu Studio';
+    if (!name) name = 'Bambu Studio';
+    return name;
+  }
+
+  // 2. Si no tiene "Curso" en la categoría, pero es un capítulo numerado (#1 al #15) de Bambu Studio
+  if (video.chapterNumber !== null && typeof video.chapterNumber === 'number') {
+    const titleLower = (video.title || '').toLowerCase();
+    const catLower = cat.toLowerCase();
+    if (titleLower.includes('bambu') || catLower.includes('bambu')) {
+      return 'Bambu Studio';
+    }
+  }
+
+  // Si no cumple ninguna de las dos, es un tutorial independiente y NO pertenece a un curso
+  return null;
 }
 
 export default function V4VideoGrid({
@@ -30,19 +57,12 @@ export default function V4VideoGrid({
     return ['Todos', ...Array.from(set)];
   }, [videos]);
 
-  // Detección y agrupación dinámica de Cursos:
-  // Categorías que empiezan por 'Curso ' o 'curso ', más retrocompatibilidad con 'Bambu Studio'
+  // Agrupación de Cursos
   const coursesData = useMemo(() => {
     const map = {};
-    videos.forEach((video) => {
-      const cat = (video.category || '').trim();
-      let courseName = null;
 
-      if (/^curso\s+/i.test(cat)) {
-        courseName = cat.replace(/^curso\s+/i, '').trim();
-      } else if (cat.toLowerCase() === 'bambu studio') {
-        courseName = 'Bambu Studio';
-      }
+    videos.forEach((video) => {
+      const courseName = extractCourseName(video);
 
       if (courseName) {
         if (!map[courseName]) {
@@ -66,7 +86,7 @@ export default function V4VideoGrid({
       }
     });
 
-    // Ordenar las lecciones dentro de cada curso en orden ascendente (Lección 1, 2, 3... 15)
+    // Ordenar las lecciones dentro de cada curso en orden ascendente (Lección 1 -> Lección 2 -> ... -> Lección 15)
     Object.values(map).forEach((course) => {
       course.videos.sort((a, b) => {
         if (a.chapterNumber !== null && b.chapterNumber !== null) {
@@ -122,6 +142,11 @@ export default function V4VideoGrid({
     }
   };
 
+  const handleGoBackToCourses = () => {
+    setSelectedCourseName(null);
+    window.scrollTo({ top: 350, behavior: 'smooth' });
+  };
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       
@@ -136,7 +161,7 @@ export default function V4VideoGrid({
             </span>
             <span className="text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full">
               {activeSortFilter === 'courses'
-                ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos disponibles`)
+                ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
                 : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
             </span>
           </h2>
@@ -144,7 +169,7 @@ export default function V4VideoGrid({
             {activeSortFilter === 'courses'
               ? (activeCourse 
                   ? 'Sigue el orden de lecciones paso a paso desde el nivel básico hasta experto.' 
-                  : 'Rutas de aprendizaje guiadas por módulos para dominar cada herramienta desde cero.')
+                  : 'Rutas de aprendizaje guiadas para dominar cada herramienta desde cero.')
               : 'Explora las últimas novedades, los tutoriales más populares o filtra por categorías.'}
           </p>
         </div>
@@ -168,15 +193,15 @@ export default function V4VideoGrid({
         )}
       </div>
 
-      {/* ================= BOTONES PRINCIPALES: MÁS NUEVOS, MÁS POPULARES Y CURSOS ================= */}
+      {/* ================= BOTONES PRINCIPALES (ALTURA EXACTA UNIFORME h-11) ================= */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         {/* Botón 1: Más Nuevos */}
         <button
           onClick={() => handleSwitchFilter('newest')}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
+          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
             activeSortFilter === 'newest'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
           }`}
         >
           <Sparkles className={`w-4 h-4 ${activeSortFilter === 'newest' ? 'text-white' : 'text-cyan-400'}`} />
@@ -186,28 +211,28 @@ export default function V4VideoGrid({
         {/* Botón 2: Más Populares */}
         <button
           onClick={() => handleSwitchFilter('popular')}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
+          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
             activeSortFilter === 'popular'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
           }`}
         >
           <Flame className={`w-4 h-4 ${activeSortFilter === 'popular' ? 'text-white' : 'text-amber-400'}`} />
           <span>Más Populares</span>
         </button>
 
-        {/* Botón 3: Cursos */}
+        {/* Botón 3: Cursos (Misma altura exacta h-11) */}
         <button
           onClick={() => handleSwitchFilter('courses')}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer active:scale-95 ${
+          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
             activeSortFilter === 'courses'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800/90 hover:border-cyan-500/40'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
           }`}
         >
           <GraduationCap className={`w-4 h-4 ${activeSortFilter === 'courses' ? 'text-white' : 'text-emerald-400'}`} />
           <span>🎓 Cursos</span>
-          <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/40">
+          <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none">
             {coursesList.length}
           </span>
         </button>
@@ -219,33 +244,66 @@ export default function V4VideoGrid({
           {/* Sub-vista A: DETALLE DE UN CURSO ESPECÍFICO CON SUS LECCIONES ORDENADAS */}
           {activeCourse ? (
             <div className="space-y-6">
-              {/* Botón de retorno y cabecera del curso */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 bg-gradient-to-r from-blue-950/40 via-zinc-900/80 to-zinc-900/40 border border-cyan-500/30 rounded-2xl shadow-xl">
-                <div className="flex flex-col gap-2">
+              
+              {/* BARRA DE NAVEGACIÓN SUPERIOR SUPER DESTACADA E INTUITIVA */}
+              <div className="flex flex-col gap-4">
+                
+                {/* Breadcrumb + Botón Volver Destacado */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950/90 border border-zinc-800 p-3.5 sm:p-4 rounded-2xl">
+                  {/* Botón Volver Súper Destacado */}
                   <button
-                    onClick={() => setSelectedCourseName(null)}
-                    className="inline-flex items-center gap-2 text-xs font-bold text-cyan-300 hover:text-cyan-100 transition-colors w-fit cursor-pointer"
+                    onClick={handleGoBackToCourses}
+                    className="inline-flex items-center gap-2.5 bg-gradient-to-r from-blue-900/70 to-zinc-900 hover:from-blue-700 hover:to-cyan-700 text-white hover:text-white border-2 border-cyan-500/60 hover:border-cyan-400 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shadow-lg shadow-blue-950/60 transition-all duration-300 cursor-pointer active:scale-95 group"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Volver a todos los cursos</span>
+                    <ArrowLeft className="w-4 h-4 text-cyan-300 group-hover:-translate-x-1 transition-transform" />
+                    <span>← Volver al Catálogo de Cursos</span>
                   </button>
-                  <h3 className="text-xl sm:text-2xl font-black text-white">
-                    {activeCourse.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-zinc-300">
-                    Ruta estructurada de <strong className="text-cyan-300">{activeCourse.videos.length} lecciones</strong> ordenadas de principio a fin.
-                  </p>
+
+                  {/* Indicador de Ubicación / Breadcrumb */}
+                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                    <span 
+                      onClick={handleGoBackToCourses} 
+                      className="hover:text-cyan-300 cursor-pointer transition-colors"
+                    >
+                      Cursos
+                    </span>
+                    <span className="text-zinc-600">/</span>
+                    <span className="text-cyan-300 font-bold">{activeCourse.name}</span>
+                  </div>
                 </div>
 
-                {activeCourse.videos.length > 0 && (
-                  <button
-                    onClick={() => onSelectVideo && onSelectVideo(activeCourse.videos[0])}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-3 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 shrink-0 cursor-pointer border border-cyan-400/40"
-                  >
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>Empezar Lección 1</span>
-                  </button>
-                )}
+                {/* Banner de Bienvenida al Curso */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 sm:p-8 bg-gradient-to-r from-blue-950/60 via-zinc-900 to-cyan-950/40 border border-cyan-500/40 rounded-3xl shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="relative z-10 flex flex-col gap-2 max-w-2xl">
+                    <div className="inline-flex items-center gap-2 text-xs font-black tracking-wider text-cyan-300 uppercase bg-blue-950/80 px-3 py-1 rounded-full border border-cyan-500/40 w-fit">
+                      <GraduationCap className="w-4 h-4 text-cyan-400" />
+                      <span>Ruta Oficial de Aprendizaje</span>
+                    </div>
+
+                    <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                      {activeCourse.title}
+                    </h3>
+                    
+                    <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+                      Sigue el temario ordenado paso a paso con las <strong className="text-cyan-300">{activeCourse.videos.length} lecciones prácticas</strong> diseñadas para aprender desde cero y sin rodeos.
+                    </p>
+                  </div>
+
+                  {activeCourse.videos.length > 0 && (
+                    <div className="relative z-10 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                      <button
+                        onClick={() => onSelectVideo && onSelectVideo(activeCourse.videos[0])}
+                        className="flex items-center justify-center gap-2.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-6 py-3.5 rounded-2xl shadow-xl shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                      >
+                        <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                        <span>Empezar desde la Lección #1</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Grid de lecciones del curso ordenadas */}
@@ -309,6 +367,18 @@ export default function V4VideoGrid({
                   );
                 })}
               </div>
+
+              {/* Botón Inferior para Volver a los Cursos al final de la página */}
+              <div className="pt-8 pb-4 flex justify-center">
+                <button
+                  onClick={handleGoBackToCourses}
+                  className="inline-flex items-center gap-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4 text-cyan-400" />
+                  <span>Volver a la Lista de Cursos</span>
+                </button>
+              </div>
+
             </div>
           ) : (
             /* Sub-vista B: CATÁLOGO DE TODOS LOS CURSOS DISPONIBLES */
@@ -316,7 +386,10 @@ export default function V4VideoGrid({
               {coursesList.map((course) => (
                 <div
                   key={course.id}
-                  onClick={() => setSelectedCourseName(course.name)}
+                  onClick={() => {
+                    setSelectedCourseName(course.name);
+                    window.scrollTo({ top: 350, behavior: 'smooth' });
+                  }}
                   className="group bg-gradient-to-b from-zinc-900/90 to-zinc-950 border border-zinc-800 hover:border-cyan-500/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col cursor-pointer text-left"
                 >
                   {/* Portada del curso */}
@@ -328,7 +401,7 @@ export default function V4VideoGrid({
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
                     
-                    <div className="absolute top-3 left-3 bg-blue-600/90 text-white text-[11px] font-black px-2.5 py-1 rounded-md border border-cyan-400/40 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="absolute top-3 left-3 bg-blue-600/90 text-white text-[11px] font-black px-2.5 py-1 rounded-md border border-cyan-400/40 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
                       <GraduationCap className="w-3.5 h-3.5" />
                       <span>Curso Completo</span>
                     </div>
