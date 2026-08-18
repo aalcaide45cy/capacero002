@@ -71,15 +71,15 @@ export default function V4Hero({
           <div className={`relative group transition-all duration-500 select-none pointer-events-none ${
             isSearching ? 'mb-3 scale-90 sm:scale-95' : 'mb-6 scale-100'
           }`}>
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/30 to-cyan-500/30 rounded-3xl blur-2xl opacity-75 pointer-events-none" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/30 via-cyan-500/25 to-blue-600/30 rounded-3xl blur-2xl opacity-75 pointer-events-none" />
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              width="240"
-              height="72"
+              width="480"
+              height="270"
               fetchpriority="high"
               draggable="false"
-              className="relative w-36 sm:w-48 md:w-60 h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_20px_rgba(37,117,196,0.5)] pointer-events-none select-none"
+              className="relative w-64 sm:w-80 md:w-[420px] max-w-[94vw] h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_30px_rgba(37,117,196,0.6)] pointer-events-none select-none transition-all duration-300"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
