@@ -1,7 +1,21 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw } from 'lucide-react';
+import { 
+  X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, 
+  Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw, 
+  Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload
+} from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
-import { saveCourseProgress } from '../../utils/courseProgress';
+import { 
+  saveCourseProgress, 
+  getVideoPlaybackTime, 
+  saveVideoPlaybackTime, 
+  getVideoNotes, 
+  addVideoNote, 
+  deleteVideoNote, 
+  formatSecondsToTime,
+  exportProgressBackup,
+  importProgressBackup
+} from '../../utils/courseProgress';
 
 // Función para normalizar la clave de curso
 function extractCourseKey(category) {
@@ -20,16 +34,43 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   const [showSubReminder, setShowSubReminder] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(null); // 5, 4, 3, 2, 1, 0 o null
   
+  // Estados para reanudación de tiempo y notas
+  const [resumeNotice, setResumeNotice] = useState(null);
+  const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
+  const [noteInputText, setNoteInputText] = useState('');
+  const [notesTick, setNotesTick] = useState(0);
+  const [backupNotice, setBackupNotice] = useState(null);
+
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
   const onSelectVideoRef = useRef(onSelectVideo);
   const hasTriggeredRef = useRef(false);
   const countdownTimerRef = useRef(null);
+  const ytPlayerRef = useRef(null);
+  const playbackTrackerRef = useRef(null);
+  const fileInputModalRef = useRef(null);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
     onSelectVideoRef.current = onSelectVideo;
   }, [onSelectVideo]);
+
+  // Escuchar actualizaciones de notas en tiempo real
+  useEffect(() => {
+    const handleNotesUpdate = () => {
+      setNotesTick((prev) => prev + 1);
+    };
+    window.addEventListener('capacero-notes-updated', handleNotesUpdate);
+    return () => {
+      window.removeEventListener('capacero-notes-updated', handleNotesUpdate);
+    };
+  }, []);
+
+  // Notas asociadas al vídeo actual
+  const currentVideoNotes = useMemo(() => {
+    if (!video) return [];
+    return getVideoNotes(video.youtubeId || video.id);
+  }, [video, notesTick]);
 
   // Cálculo inteligente de la Siguiente Lección o Siguiente Vídeo Recomendado
   const { nextVideo, relatedVideos, isCourseLesson, currentLessonIndex, totalCourseLessons } = useMemo(() => {
@@ -101,15 +142,35 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     };
   }, [video, allVideos]);
 
+  // Cálculo del segundo de inicio exacto para reanudar (-5 segundos)
+  const initialStartSecond = useMemo(() => {
+    if (!video) return 0;
+    const saved = getVideoPlaybackTime(video.youtubeId || video.id);
+    if (saved > 10) {
+      return Math.max(0, Math.floor(saved - 5));
+    }
+    return 0;
+  }, [video?.youtubeId, video?.id]);
+
   // Actualizar ref del siguiente vídeo y resetear estados al cambiar de vídeo
   useEffect(() => {
     nextVideoRef.current = nextVideo;
     hasTriggeredRef.current = false;
     setCountdownSeconds(null);
+    setNoteInputText('');
+    
+    if (initialStartSecond > 0) {
+      setResumeNotice(`Reanudando desde el minuto ${formatSecondsToTime(initialStartSecond)} (-5s de cortesía)`);
+      const timer = setTimeout(() => setResumeNotice(null), 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setResumeNotice(null);
+    }
+
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
     }
-  }, [video?.youtubeId, nextVideo]);
+  }, [video?.youtubeId, nextVideo, initialStartSecond]);
 
   useEffect(() => {
     if (video) {
@@ -181,7 +242,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     }
   };
 
-  // ================= CAPTURA DE FIN DE VÍDEO CON YOUTUBE API & POSTMESSAGE =================
+  // ================= SEGUIMIENTO DE REPRODUCCIÓN EN TIEMPO REAL & YOUTUBE API =================
   useEffect(() => {
     const startCountdown = () => {
       if (hasTriggeredRef.current) return;
@@ -190,7 +251,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
       setCountdownSeconds(5);
     };
 
-    // 1. Escuchar eventos postMessage de YouTube Player Iframe (State 0 = ENDED)
+    // 1. Escuchar eventos postMessage de YouTube Player Iframe
     const handleWindowMessage = (event) => {
       try {
         let payload = event.data;
@@ -209,15 +270,34 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
     window.addEventListener('message', handleWindowMessage);
 
-    // 2. Inicializar YouTube IFrame Player API oficial
-    let ytPlayer = null;
+    // 2. Inicializar YouTube IFrame Player API oficial y rastreador de segundos
     const playerId = `yt-iframe-${video?.youtubeId}`;
 
     function setupYTPlayer() {
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
         try {
-          ytPlayer = new window.YT.Player(playerId, {
+          ytPlayerRef.current = new window.YT.Player(playerId, {
             events: {
+              onReady: () => {
+                // Iniciar rastreador de segundos periódicos
+                if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+                playbackTrackerRef.current = setInterval(() => {
+                  if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+                    try {
+                      const cur = ytPlayerRef.current.getCurrentTime();
+                      if (cur && !isNaN(cur)) {
+                        setCurrentLiveSeconds(Math.floor(cur));
+                        const state = ytPlayerRef.current.getPlayerState();
+                        // State 1 = PLAYING
+                        if (state === 1) {
+                          const courseKey = extractCourseKey(video?.category);
+                          saveVideoPlaybackTime(video?.youtubeId || video?.id, cur, courseKey);
+                        }
+                      }
+                    } catch (err) {}
+                  }
+                }, 1000);
+              },
               onStateChange: (e) => {
                 if (e && e.data === 0) {
                   startCountdown();
@@ -249,8 +329,11 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
     return () => {
       window.removeEventListener('message', handleWindowMessage);
-      if (ytPlayer && typeof ytPlayer.destroy === 'function') {
-        try { ytPlayer.destroy(); } catch (e) {}
+      if (playbackTrackerRef.current) {
+        clearInterval(playbackTrackerRef.current);
+      }
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+        try { ytPlayerRef.current.destroy(); } catch (e) {}
       }
     };
   }, [video?.youtubeId]);
@@ -259,9 +342,9 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
   
-  // URL limpia y compatible universalmente sin problemas de sandbox o pantalla en negro
+  // URL con parámetro de inicio exacto si existe reanudación
   const embedUrl = video.youtubeId
-    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1`
+    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -276,6 +359,32 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     if (onSelectVideo) {
       onSelectVideo(targetVideo);
     }
+  };
+
+  // Salto a timestamp específico al hacer clic en un apunte
+  const handleSeekToTimestamp = (sec) => {
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
+      ytPlayerRef.current.seekTo(sec, true);
+      if (typeof ytPlayerRef.current.playVideo === 'function') {
+        ytPlayerRef.current.playVideo();
+      }
+    }
+  };
+
+  // Guardar nuevo apunte con el segundo actual
+  const handleCreateNote = (e) => {
+    e.preventDefault();
+    if (!noteInputText.trim()) return;
+
+    const courseKey = extractCourseKey(video.category) || '';
+    addVideoNote(video.youtubeId || video.id, currentLiveSeconds, noteInputText, courseKey, video.title);
+    setNoteInputText('');
+    setNotesTick((prev) => prev + 1);
+  };
+
+  const handleDeleteNote = (noteId) => {
+    deleteVideoNote(video.youtubeId || video.id, noteId);
+    setNotesTick((prev) => prev + 1);
   };
 
   // SVG Ring calculation: Radius 32, Circumference = 2 * PI * 32 = 201.06
@@ -298,7 +407,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
         
         {/* Top Bar with Close */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-zinc-800/80 bg-zinc-900/60">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {video.category && (
               <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-2.5 py-1 rounded-md border border-zinc-700/50">
                 {video.category}
@@ -335,7 +444,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             <>
               {/* key={video.youtubeId} garantiza el desmontaje limpio */}
               <iframe
-                key={video.youtubeId}
+                key={`${video.youtubeId}-${initialStartSecond}`}
                 id={`yt-iframe-${video.youtubeId}`}
                 src={embedUrl}
                 title={video.title}
@@ -344,6 +453,14 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                 allowFullScreen
               />
 
+              {/* Aviso flotante de reanudación exacta (-5s) */}
+              {resumeNotice && (
+                <div className="absolute top-4 left-4 z-20 bg-blue-950/90 text-cyan-200 border border-cyan-400/60 text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xl flex items-center gap-2 animate-fade-in backdrop-blur-sm">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{resumeNotice}</span>
+                </div>
+              )}
+
               {/* ================= OVERLAY ANIMADO CON ANILLO DE 5 SEGUNDOS ================= */}
               {countdownSeconds !== null && nextVideo && (
                 <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 animate-fade-in">
@@ -351,7 +468,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                   {/* Anillo de cuenta regresiva SVG */}
                   <div className="relative w-24 h-24 flex items-center justify-center mb-4">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                      {/* Círculo de fondo */}
                       <circle
                         cx="40"
                         cy="40"
@@ -360,7 +476,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                         strokeWidth="6"
                         fill="transparent"
                       />
-                      {/* Círculo de progreso que se va completando */}
                       <circle
                         cx="40"
                         cy="40"
@@ -374,7 +489,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                       />
                     </svg>
                     
-                    {/* Número central de segundos */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-2xl font-black text-white leading-none">
                         {countdownSeconds}
@@ -385,7 +499,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                     </div>
                   </div>
 
-                  {/* Textos Informativos */}
                   <h4 className="text-base sm:text-lg font-black text-white mb-1 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-cyan-400" />
                     <span>{isCourseLesson ? '¡Lección Completada!' : '¡Vídeo Completado!'}</span>
@@ -395,7 +508,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                     Siguiente: <strong className="text-cyan-300">{nextVideo.title}</strong>
                   </p>
 
-                  {/* Botones de Control: Saltar ahora / Cancelar */}
                   <div className="flex items-center gap-3">
                     <button
                       onClick={handleImmediateSkip}
@@ -438,7 +550,9 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-zinc-900/90 border-b border-zinc-800/80">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-medium text-zinc-300">Reproducción continua automática activada</span>
+            <span className="font-medium text-zinc-300">
+              {initialStartSecond > 0 ? `Reanudación activa (${formatSecondsToTime(currentLiveSeconds)})` : 'Reproducción continua activada'}
+            </span>
           </div>
 
           <a
@@ -466,6 +580,139 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
               {video.title}
             </h2>
+          </div>
+
+          {/* ================= SECCIÓN DE APUNTES Y MARCADORES CON TIMESTAMP ================= */}
+          <div className="bg-zinc-900/70 border border-zinc-800/90 rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-cyan-400" />
+                <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                  Mis Apuntes y Marcadores de esta Lección
+                </h4>
+              </div>
+
+              {/* Botón rápido para guardar/restaurar todo en JSON */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportProgressBackup();
+                    setBackupNotice('✅ Copia JSON descargada con tus notas y progreso.');
+                    setTimeout(() => setBackupNotice(null), 3500);
+                  }}
+                  className="text-[11px] font-bold text-cyan-300 hover:text-white bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/30 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Descargar copia de seguridad con todas tus notas y progreso"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Guardar JSON</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputModalRef.current?.click()}
+                  className="text-[11px] font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Restaurar notas y progreso desde un archivo JSON"
+                >
+                  <Upload className="w-3 h-3 text-blue-400" />
+                  <span>Restaurar JSON</span>
+                </button>
+
+                <input
+                  ref={fileInputModalRef}
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const res = importProgressBackup(event.target?.result);
+                      if (res.success) {
+                        setNotesTick((prev) => prev + 1);
+                        setBackupNotice('✅ Notas y progreso restaurados con éxito.');
+                      } else {
+                        setBackupNotice(`❌ ${res.message}`);
+                      }
+                      setTimeout(() => setBackupNotice(null), 4000);
+                    };
+                    reader.readAsText(file);
+                    e.target.value = '';
+                  }}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {backupNotice && (
+              <div className="mb-3 p-2 bg-blue-950/80 border border-cyan-500/40 text-cyan-200 text-xs font-bold rounded-lg text-center">
+                {backupNotice}
+              </div>
+            )}
+
+            {/* Formulario para añadir apunte en el minuto actual */}
+            <form onSubmit={handleCreateNote} className="flex flex-col sm:flex-row items-stretch gap-2.5 mb-3.5">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={noteInputText}
+                  onChange={(e) => setNoteInputText(e.target.value)}
+                  placeholder={`Escribe un apunte o truco en el minuto ${formatSecondsToTime(currentLiveSeconds)}...`}
+                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-cyan-400 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!noteInputText.trim()}
+                className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-extrabold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Marcar [{formatSecondsToTime(currentLiveSeconds)}]</span>
+              </button>
+            </form>
+
+            {/* Lista de notas guardadas para este vídeo */}
+            {currentVideoNotes.length > 0 ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {currentVideoNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="flex items-center justify-between gap-3 p-2.5 bg-zinc-950/80 border border-zinc-800 hover:border-cyan-500/40 rounded-xl transition-colors group/note"
+                  >
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                      {/* Botón de timestamp para saltar directo a ese segundo */}
+                      <button
+                        type="button"
+                        onClick={() => handleSeekToTimestamp(note.timestamp)}
+                        className="inline-flex items-center gap-1 text-[11px] font-black text-cyan-300 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 px-2 py-0.5 rounded-md transition-all active:scale-95 cursor-pointer shrink-0"
+                        title="Hacer clic para saltar a este momento del vídeo"
+                      >
+                        <Play className="w-2.5 h-2.5 fill-cyan-300" />
+                        <span>{note.timeFormatted}</span>
+                      </button>
+
+                      <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed truncate group-hover/note:whitespace-normal">
+                        {note.text}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteNote(note.id)}
+                      className="text-zinc-500 hover:text-red-400 p-1 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                      title="Eliminar este apunte"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-zinc-500 italic">
+                Aún no tienes notas guardadas en este vídeo. Pulsa "Marcar" durante la reproducción para guardar trucos con su minuto exacto.
+              </p>
+            )}
           </div>
 
           {/* Description (ONLY if present) */}
@@ -548,7 +795,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                 onClick={() => handleSelectSuggestedVideo(nextVideo)}
                 className="group/next flex flex-col sm:flex-row items-center gap-4 bg-zinc-950/80 hover:bg-zinc-950 border border-zinc-800 hover:border-cyan-500/50 p-3 rounded-xl cursor-pointer transition-all duration-300 shadow-md"
               >
-                {/* Minia con icono Play */}
                 <div className="relative w-full sm:w-40 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
                   <img
                     src={nextVideo.thumbnail}
@@ -567,7 +813,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                   )}
                 </div>
 
-                {/* Info y botón */}
                 <div className="flex-1 flex flex-col justify-between w-full">
                   <div>
                     <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wide block mb-1">

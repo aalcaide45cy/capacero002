@@ -1,8 +1,10 @@
 /**
- * Capa Cero - Gestor de Progreso de Cursos en LocalStorage
+ * Capa Cero - Gestor Integral de Progreso, Tiempos de Reproducción y Apuntes/Notas en LocalStorage
  */
 
 const PROGRESS_STORAGE_KEY = 'CAPACERO_COURSE_PROGRESS_V1';
+const TIMESTAMPS_STORAGE_KEY = 'CAPACERO_VIDEO_TIMESTAMPS_V1';
+const NOTES_STORAGE_KEY = 'CAPACERO_STUDY_NOTES_V1';
 
 // Función para normalizar claves de cursos (ej: 'Bambu Studio' -> 'bambu-studio')
 export function normalizeCourseSlug(name) {
@@ -16,8 +18,26 @@ export function normalizeCourseSlug(name) {
 }
 
 /**
- * Obtiene todo el mapa de progreso de todos los cursos
+ * Formatea segundos a formato MM:SS o HH:MM:SS
  */
+export function formatSecondsToTime(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = s % 60;
+
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+
+  if (hours > 0) {
+    const hh = String(hours).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  }
+  return `${mm}:${ss}`;
+}
+
+// ================= 1. PROGRESO DE CURSOS =================
+
 export function getAllCoursesProgress() {
   if (typeof window === 'undefined' || !window.localStorage) return {};
   try {
@@ -29,19 +49,13 @@ export function getAllCoursesProgress() {
   }
 }
 
-/**
- * Obtiene el progreso de un curso específico
- */
 export function getCourseProgress(courseName) {
   const slug = normalizeCourseSlug(courseName);
   const all = getAllCoursesProgress();
   return all[slug] || null;
 }
 
-/**
- * Guarda el progreso actual de una lección
- */
-export function saveCourseProgress(courseName, video) {
+export function saveCourseProgress(courseName, video, currentPlaybackTime = null) {
   if (!courseName || !video || typeof window === 'undefined' || !window.localStorage) return;
   const slug = normalizeCourseSlug(courseName);
   const all = getAllCoursesProgress();
@@ -67,16 +81,16 @@ export function saveCourseProgress(courseName, video) {
 
   try {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(all));
-    // Disparar evento personalizado para sincronización reactiva inmediata entre componentes
     window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { slug, progress: all[slug] } }));
   } catch (e) {
     console.warn('Error guardando progreso en localStorage:', e);
   }
+
+  if (currentPlaybackTime !== null && currentPlaybackTime > 0) {
+    saveVideoPlaybackTime(video.youtubeId || video.id, currentPlaybackTime, courseName);
+  }
 }
 
-/**
- * Reinicia el progreso de un curso específico
- */
 export function resetCourseProgress(courseName) {
   if (!courseName || typeof window === 'undefined' || !window.localStorage) return;
   const slug = normalizeCourseSlug(courseName);
@@ -92,14 +106,108 @@ export function resetCourseProgress(courseName) {
   }
 }
 
-/**
- * Exporta una copia de seguridad en archivo .json descargable
- */
+// ================= 2. TIEMPOS EXACTOS DE REANUDACIÓN DE VÍDEO (-5s) =================
+
+export function getAllVideoTimestamps() {
+  if (typeof window === 'undefined' || !window.localStorage) return {};
+  try {
+    const raw = localStorage.getItem(TIMESTAMPS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+export function getVideoPlaybackTime(videoId) {
+  if (!videoId) return 0;
+  const all = getAllVideoTimestamps();
+  const item = all[videoId];
+  return typeof item === 'object' ? item.seconds || 0 : (typeof item === 'number' ? item : 0);
+}
+
+export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
+  if (!videoId || typeof window === 'undefined' || !window.localStorage) return;
+  const all = getAllVideoTimestamps();
+  all[videoId] = {
+    seconds: Math.floor(seconds),
+    courseName,
+    updatedAt: new Date().toISOString()
+  };
+  try {
+    localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
+
+// ================= 3. APUNTES Y MARCADORES CON TIMESTAMP =================
+
+export function getAllStudyNotes() {
+  if (typeof window === 'undefined' || !window.localStorage) return {};
+  try {
+    const raw = localStorage.getItem(NOTES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+export function getVideoNotes(videoId) {
+  if (!videoId) return [];
+  const all = getAllStudyNotes();
+  return Array.isArray(all[videoId]) ? all[videoId] : [];
+}
+
+export function addVideoNote(videoId, timestampInSeconds, noteText, courseName = '', videoTitle = '') {
+  if (!videoId || !noteText || !noteText.trim() || typeof window === 'undefined' || !window.localStorage) return null;
+  const all = getAllStudyNotes();
+  const list = Array.isArray(all[videoId]) ? [...all[videoId]] : [];
+
+  const newNote = {
+    id: `note_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    videoId,
+    timestamp: Math.max(0, Math.floor(timestampInSeconds || 0)),
+    timeFormatted: formatSecondsToTime(timestampInSeconds || 0),
+    text: noteText.trim(),
+    courseName,
+    videoTitle,
+    createdAt: new Date().toISOString()
+  };
+
+  list.push(newNote);
+  // Ordenar notas por segundo en el vídeo
+  list.sort((a, b) => a.timestamp - b.timestamp);
+  all[videoId] = list;
+
+  try {
+    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
+    window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list } }));
+    return newNote;
+  } catch (e) {
+    console.warn('Error guardando apunte:', e);
+    return null;
+  }
+}
+
+export function deleteVideoNote(videoId, noteId) {
+  if (!videoId || !noteId || typeof window === 'undefined' || !window.localStorage) return;
+  const all = getAllStudyNotes();
+  if (Array.isArray(all[videoId])) {
+    all[videoId] = all[videoId].filter(n => n.id !== noteId);
+    try {
+      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
+      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: all[videoId] } }));
+    } catch (e) {}
+  }
+}
+
+// ================= 4. COPIA DE SEGURIDAD Y RESTAURACIÓN INTEGRAL JSON =================
+
 export function exportProgressBackup() {
   const data = {
-    version: '1.0',
+    version: '2.0',
     exportDate: new Date().toISOString(),
     courseProgress: getAllCoursesProgress(),
+    videoTimestamps: getAllVideoTimestamps(),
+    studyNotes: getAllStudyNotes(),
     system: 'Capa Cero 3D Academy'
   };
 
@@ -109,26 +217,43 @@ export function exportProgressBackup() {
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = `capacero-progreso-${new Date().toISOString().substring(0, 10)}.json`;
+  a.download = `capacero-respaldo-completo-${new Date().toISOString().substring(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-/**
- * Restaura una copia de seguridad a partir de un texto JSON o archivo
- */
 export function importProgressBackup(jsonContent) {
   try {
     const data = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
-    if (data && typeof data === 'object' && data.courseProgress) {
-      localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(data.courseProgress));
-      window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: data.courseProgress } }));
-      return { success: true, message: 'Progreso restaurado correctamente' };
+    if (data && typeof data === 'object') {
+      let restoredCount = 0;
+
+      if (data.courseProgress) {
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(data.courseProgress));
+        restoredCount++;
+      }
+      if (data.videoTimestamps) {
+        localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(data.videoTimestamps));
+        restoredCount++;
+      }
+      if (data.studyNotes) {
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(data.studyNotes));
+        restoredCount++;
+      }
+
+      if (restoredCount > 0) {
+        window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: data.courseProgress } }));
+        window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: data.studyNotes } }));
+        return { 
+          success: true, 
+          message: '¡Copia restaurada con éxito! Progreso, tiempos y notas recuperados.' 
+        };
+      }
     }
-    return { success: false, message: 'El archivo no tiene una estructura válida de Capa Cero' };
+    return { success: false, message: 'El archivo JSON no tiene un formato válido de Capa Cero.' };
   } catch (e) {
-    return { success: false, message: 'Error procesando el archivo JSON' };
+    return { success: false, message: 'Error al leer el archivo JSON.' };
   }
 }

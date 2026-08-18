@@ -118,28 +118,13 @@ export default function V4Hub() {
       {/* Main Content Area based on Tab */}
       <main className="flex-1">
         {activeTab === 'videos' && (
-          <>
-            <V4VideoGrid
-              videos={videos}
-              activeCategory={activeCategory}
-              onSelectCategory={setActiveCategory}
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              onSelectVideo={(v) => setSelectedVideoModal(v)}
-            />
-            <V4Doctor3D
-              videos={videos}
-              onSelectVideo={(v) => setSelectedVideoModal(v)}
-              onSearchWithQuery={handleSearchWithQuery}
-            />
-          </>
-        )}
-
-        {activeTab === 'doctor' && (
-          <V4Doctor3D
+          <V4VideoGrid
             videos={videos}
+            activeCategory={activeCategory}
+            onSelectCategory={setActiveCategory}
+            searchQuery={searchQuery}
+            onSearchChange={handleSearchChange}
             onSelectVideo={(v) => setSelectedVideoModal(v)}
-            onSearchWithQuery={handleSearchWithQuery}
           />
         )}
 

@@ -277,7 +277,7 @@ export default function V4VideoGrid({
               {/* BARRA DE NAVEGACIÓN SUPERIOR SUPER DESTACADA E INTUITIVA */}
               <div className="flex flex-col gap-4">
                 
-                {/* Breadcrumb + Botón Volver Destacado */}
+                {/* Breadcrumb + Botón Volver Destacado + Acceso a Copia de Seguridad JSON */}
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950/90 border border-zinc-800 p-3.5 sm:p-4 rounded-2xl">
                   {/* Botón Volver Súper Destacado */}
                   <button
@@ -288,16 +288,41 @@ export default function V4VideoGrid({
                     <span>← Volver al Catálogo de Cursos</span>
                   </button>
 
-                  {/* Indicador de Ubicación / Breadcrumb */}
-                  <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
-                    <span 
-                      onClick={handleGoBackToCourses} 
-                      className="hover:text-cyan-300 cursor-pointer transition-colors"
-                    >
-                      Cursos
-                    </span>
-                    <span className="text-zinc-600">/</span>
-                    <span className="text-cyan-300 font-bold">{activeCourse.name}</span>
+                  {/* Grupo Derecha: Breadcrumb + Botones Backup JSON */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                      <span 
+                        onClick={handleGoBackToCourses} 
+                        className="hover:text-cyan-300 cursor-pointer transition-colors"
+                      >
+                        Cursos
+                      </span>
+                      <span className="text-zinc-600">/</span>
+                      <span className="text-cyan-300 font-bold">{activeCourse.name}</span>
+                    </div>
+
+                    <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+
+                    {/* Botones Backup JSON */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleExportBackup}
+                        className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-cyan-300 border border-cyan-500/40 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm"
+                        title="Guardar copia de seguridad en JSON"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Guardar JSON</span>
+                      </button>
+
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm"
+                        title="Restaurar copia de seguridad desde JSON"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Restaurar JSON</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
