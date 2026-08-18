@@ -7,6 +7,7 @@ import V4Doctor3D from './V4Doctor3D';
 import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
+import V4CircuitBackground from './V4CircuitBackground';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
@@ -97,8 +98,11 @@ export default function V4Hub() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
+    <div className="relative min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
+      {/* Fondo Decorativo Tecnológico con Pistas de Circuito y Pulsos de Energía */}
+      <V4CircuitBackground />
+
       {/* Hero with Centered Logo, Socials, Colaboraciones, and Integrated SearchBar */}
       <V4Hero
         featuredVideo={featuredVideo}
