@@ -36,7 +36,7 @@ export default function V4SearchBar({
   return (
     <>
       {/* ================= 1. BUSCADOR HERO (Estático, siempre en su posición natural sin saltos) ================= */}
-      <div className="w-full max-w-3xl mx-auto px-4 mt-4 mb-6 relative z-10">
+      <div className="w-full max-w-3xl mx-auto px-4 mt-1 mb-3 sm:mb-4 relative z-10">
         <div className="relative w-full">
           <div className="absolute inset-y-0 left-3.5 sm:left-4 flex items-center pointer-events-none z-10">
             <Search className="w-5 h-5 text-[#2575c4]" />

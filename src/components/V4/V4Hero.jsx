@@ -55,26 +55,26 @@ export default function V4Hero({
 
   return (
     <section className={`relative overflow-hidden transition-all duration-500 ease-in-out border-b border-zinc-900/80 bg-transparent ${
-      isSearching ? 'pt-4 pb-4 md:pt-6 md:pb-6' : 'pt-8 pb-12 md:py-16'
+      isSearching ? 'pt-2 pb-2' : 'pt-2 pb-6 md:pt-3 md:pb-8'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* ================= TOP BRAND SHOWCASE (PROMINENT LOGO & CTA) ================= */}
         <div className={`flex flex-col items-center justify-center text-center transition-all duration-500 ${
-          isSearching ? 'mb-2 md:mb-4' : 'mb-8 md:mb-12'
+          isSearching ? 'mb-1' : 'mb-2 sm:mb-3'
         }`}>
           {/* Logo Principal Integrado Sin Cortes Ni Marcos */}
           <div className={`relative transition-all duration-500 select-none pointer-events-none w-full flex justify-center ${
-            isSearching ? 'mb-2 scale-90 sm:scale-95' : 'mb-6 scale-100'
+            isSearching ? 'mb-1 scale-90 sm:scale-95' : 'mb-2 scale-100'
           }`}>
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              width="1040"
-              height="585"
+              width="720"
+              height="350"
               fetchpriority="high"
               draggable="false"
-              className="w-full max-w-[420px] sm:max-w-[680px] md:max-w-[880px] lg:max-w-[1040px] xl:max-w-[1140px] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
+              className="w-full max-w-[340px] sm:max-w-[480px] md:max-w-[620px] lg:max-w-[720px] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
@@ -86,7 +86,7 @@ export default function V4Hero({
           </div>
 
           {/* Redes Sociales Circulares (Azul Eléctrico) */}
-          <div className="flex items-center justify-center gap-4 sm:gap-5 mb-5">
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mb-3">
             {/* YouTube */}
             <a
               href="https://www.youtube.com/@CapaCero0"

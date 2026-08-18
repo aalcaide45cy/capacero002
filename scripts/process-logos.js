@@ -18,20 +18,22 @@ async function processAllLogos() {
 
   console.log('✅ Generated public/logo-emblem.webp (Square emblem for sticky bar)');
 
-  // 2. Process large wide Logo Fondo with pure black seamless feathering
-  const meta = await sharp(bannerInput).metadata();
-  const w = 1440;
-  const h = Math.round((meta.height / meta.width) * w);
+  // 2. Process trimmed panoramic Logo Fondo (removes excess black vertical margins)
+  const trimmed = await sharp(bannerInput)
+    .trim({ threshold: 5 })
+    .toBuffer({ resolveWithObject: true });
 
-  // SVG Elliptical gradient: center 100% opaque, edges fade to 0% smoothly
+  const w = 1400;
+  const h = Math.round((trimmed.info.height / trimmed.info.width) * w);
+
   const maskSvg = `
     <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="fade" cx="50%" cy="50%" rx="48%" ry="45%">
+        <radialGradient id="fade" cx="50%" cy="50%" rx="48%" ry="48%">
           <stop offset="0%" stop-color="white" stop-opacity="1" />
-          <stop offset="50%" stop-color="white" stop-opacity="1" />
-          <stop offset="75%" stop-color="white" stop-opacity="0.85" />
-          <stop offset="92%" stop-color="white" stop-opacity="0.1" />
+          <stop offset="55%" stop-color="white" stop-opacity="1" />
+          <stop offset="80%" stop-color="white" stop-opacity="0.85" />
+          <stop offset="94%" stop-color="white" stop-opacity="0.15" />
           <stop offset="100%" stop-color="white" stop-opacity="0" />
         </radialGradient>
       </defs>
@@ -41,21 +43,21 @@ async function processAllLogos() {
 
   const maskPng = await sharp(Buffer.from(maskSvg)).png().toBuffer();
 
-  await sharp(bannerInput)
+  await sharp(trimmed.data)
     .resize(w, h)
     .ensureAlpha()
     .composite([{ input: maskPng, blend: 'dest-in' }])
     .webp({ quality: 92, effort: 6 })
     .toFile('public/logo-capa-cero.webp');
 
-  await sharp(bannerInput)
+  await sharp(trimmed.data)
     .resize(w, h)
     .ensureAlpha()
     .composite([{ input: maskPng, blend: 'dest-in' }])
     .png({ quality: 90, compressionLevel: 9 })
     .toFile('public/logo-capa-cero.png');
 
-  console.log('✅ Generated public/logo-capa-cero.webp (Large wide banner logo)');
+  console.log('✅ Generated compact panoramic public/logo-capa-cero.webp (' + w + 'x' + h + ')');
 }
 
 processAllLogos().catch(console.error);
