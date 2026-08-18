@@ -67,19 +67,18 @@ export default function V4Hero({
         <div className={`flex flex-col items-center justify-center text-center transition-all duration-500 ${
           isSearching ? 'mb-2 md:mb-4' : 'mb-8 md:mb-12'
         }`}>
-          {/* Logo Principal con Esquinas Redondeadas (rounded-2xl), protegido contra arrastre y toque en móviles */}
-          <div className={`relative group transition-all duration-500 select-none pointer-events-none ${
-            isSearching ? 'mb-3 scale-90 sm:scale-95' : 'mb-6 scale-100'
+          {/* Logo Principal Integrado Sin Cortes Ni Marcos */}
+          <div className={`relative transition-all duration-500 select-none pointer-events-none ${
+            isSearching ? 'mb-2 scale-90 sm:scale-95' : 'mb-5 scale-100'
           }`}>
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/30 via-cyan-500/25 to-blue-600/30 rounded-3xl blur-2xl opacity-75 pointer-events-none" />
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              width="480"
-              height="270"
+              width="540"
+              height="304"
               fetchpriority="high"
               draggable="false"
-              className="relative w-64 sm:w-80 md:w-[420px] max-w-[94vw] h-auto rounded-2xl mx-auto object-contain drop-shadow-[0_0_30px_rgba(37,117,196,0.6)] pointer-events-none select-none transition-all duration-300"
+              className="w-72 sm:w-96 md:w-[480px] lg:w-[540px] max-w-[96vw] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
