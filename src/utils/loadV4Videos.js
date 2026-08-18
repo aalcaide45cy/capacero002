@@ -3,8 +3,9 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V8';
-const CACHE_KEY_DATE = 'CAPACERO_VIDEOS_CACHE_DATE_V8';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V9';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V9';
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 // Fechas de publicación reales de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
@@ -223,24 +224,28 @@ export function getInitialV4Videos() {
  * Carga vídeos implementando una estrategia de Caché Diario (SWR).
  */
 export async function loadV4Videos(forceRefresh = false) {
-  const today = new Date().toISOString().substring(0, 10);
+  const now = Date.now();
 
-  // Limpiar versiones anteriores del caché
+  // Limpiar versiones obsoletas del caché anterior
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V4');
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V5');
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V6');
       localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V7');
+      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V8');
+      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_DATE_V8');
     } catch (e) {}
   }
 
-  // 1. Comprobar caché local de hoy en localStorage
+  // 1. Comprobar caché local válido de los últimos 5 minutos
   if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
     try {
-      const cachedDate = localStorage.getItem(CACHE_KEY_DATE);
+      const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
       const cachedData = localStorage.getItem(CACHE_KEY_DATA);
-      if (cachedDate === today && cachedData) {
+      const cachedTime = cachedTimeStr ? parseInt(cachedTimeStr, 10) : 0;
+
+      if (cachedData && cachedTime && (now - cachedTime < CACHE_TTL_MS)) {
         const parsed = JSON.parse(cachedData);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
@@ -251,7 +256,7 @@ export async function loadV4Videos(forceRefresh = false) {
     }
   }
 
-  // 2. Si no hay caché o ha caducado, consultar Google Sheets
+  // 2. Si no hay caché o pasaron más de 5 minutos, consultar Google Sheets
   try {
     const targetUrl = DEFAULT_SHEET_CSV_URL;
     if (!targetUrl) {
@@ -292,7 +297,7 @@ export async function loadV4Videos(forceRefresh = false) {
               if (formatted.length > 0) {
                 try {
                   localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
-                  localStorage.setItem(CACHE_KEY_DATE, today);
+                  localStorage.setItem(CACHE_KEY_TIME, Date.now().toString());
                 } catch (err) {}
                 resolve(formatted);
               } else {
