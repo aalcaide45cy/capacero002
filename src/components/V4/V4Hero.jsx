@@ -64,17 +64,17 @@ export default function V4Hero({
           isSearching ? 'mb-2 md:mb-4' : 'mb-8 md:mb-12'
         }`}>
           {/* Logo Principal Integrado Sin Cortes Ni Marcos */}
-          <div className={`relative transition-all duration-500 select-none pointer-events-none ${
-            isSearching ? 'mb-2 scale-90 sm:scale-95' : 'mb-5 scale-100'
+          <div className={`relative transition-all duration-500 select-none pointer-events-none w-full flex justify-center ${
+            isSearching ? 'mb-2 scale-90 sm:scale-95' : 'mb-6 scale-100'
           }`}>
             <img
               src="/logo-capa-cero.webp"
               alt="Capa Cero 3D"
-              width="840"
-              height="472"
+              width="1040"
+              height="585"
               fetchpriority="high"
               draggable="false"
-              className="w-full max-w-[340px] sm:max-w-[560px] md:max-w-[720px] lg:max-w-[840px] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
+              className="w-full max-w-[420px] sm:max-w-[680px] md:max-w-[880px] lg:max-w-[1040px] xl:max-w-[1140px] h-auto mx-auto object-contain pointer-events-none select-none transition-all duration-300"
               style={{
                 WebkitTouchCallout: 'none',
                 WebkitUserDrag: 'none',
