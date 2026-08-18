@@ -164,6 +164,8 @@ export default function V4Hub() {
       {selectedVideoModal && (
         <V4VideoModal
           video={selectedVideoModal}
+          allVideos={videos}
+          onSelectVideo={(v) => setSelectedVideoModal(v)}
           onClose={() => setSelectedVideoModal(null)}
         />
       )}
