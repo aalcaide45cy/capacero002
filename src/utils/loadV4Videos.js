@@ -3,8 +3,8 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V10';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V10';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V11';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V11';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 // Mapa de vídeos programados con sus fechas de estreno
