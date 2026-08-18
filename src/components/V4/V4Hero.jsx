@@ -12,6 +12,11 @@ function formatCounter(num) {
 function getShortCategory(category) {
   if (!category) return '';
   const c = category.trim();
+  if (/^curso/i.test(c)) {
+    let name = c.replace(/^curso\s*:?\s*/i, '').trim();
+    if (/^bambustudio$/i.test(name)) name = 'Bambu Studio';
+    return `Curso ${name}`;
+  }
   const map = {
     'Perfiles y Calibración': 'Perfiles',
     'Hardware y Boquillas': 'Hardware',
@@ -22,7 +27,7 @@ function getShortCategory(category) {
     'Bambu Studio': 'Bambu Studio'
   };
   if (map[c]) return map[c];
-  if (c.length > 12) return c.substring(0, 10) + '...';
+  if (c.length > 18) return c.substring(0, 16) + '...';
   return c;
 }
 
@@ -247,22 +252,19 @@ export default function V4Hero({
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-zinc-800/80">
-                      {/* Etiquetas de categoría y último vídeo abajo a la izquierda */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-zinc-800/80">
+                      {/* Etiqueta de categoría a la izquierda */}
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
-                          ⭐ Último Vídeo
-                        </span>
                         {featuredVideo.category && (
-                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2 py-0.5 rounded-md">
-                            {featuredVideo.category}
+                          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-1 rounded-md shadow-sm">
+                            {getShortCategory(featuredVideo.category)}
                           </span>
                         )}
                       </div>
 
-                      {/* YouTube Stats + Descargas in Hero */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-400 bg-zinc-950/70 border border-zinc-800/90 px-2 py-1 rounded-lg">
+                      {/* YouTube Stats + Botón Descargas */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2.5 text-[11px] font-medium text-zinc-400 bg-zinc-950/70 border border-zinc-800/90 px-2.5 py-1 rounded-lg">
                           <span className="flex items-center gap-1 hover:text-zinc-200 transition-colors" title={`${featuredVideo.views || 0} reproducciones`}>
                             <Eye className="w-3.5 h-3.5 text-zinc-400" />
                             <span>{formatCounter(featuredVideo.views)}</span>
@@ -288,11 +290,11 @@ export default function V4Hero({
                                 window.open(featuredVideo.downloads[0].url, '_blank', 'noopener,noreferrer');
                               }
                             }}
-                            className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 flex items-center gap-1 bg-cyan-950/70 hover:bg-cyan-900/80 px-2.5 py-1 rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-all shadow-sm shrink-0 cursor-pointer"
+                            className="text-[11px] font-bold text-cyan-300 hover:text-white flex items-center gap-1.5 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 px-3 py-1 rounded-lg transition-all shadow-sm shrink-0 cursor-pointer"
                             title="Abrir enlace de descarga directamente"
                           >
-                            <Download className="w-3 h-3 text-cyan-400" />
-                            <span className="hidden sm:inline">Descargas</span>
+                            <Download className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Descargas</span>
                           </button>
                         )}
                       </div>
