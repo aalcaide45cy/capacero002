@@ -1,16 +1,112 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen } from 'lucide-react';
+import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen, FastForward } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
+
+// Función para normalizar la clave de curso
+function extractCourseKey(category) {
+  if (!category) return null;
+  const c = category.trim();
+  if (/^curso/i.test(c)) {
+    let name = c.replace(/^curso\s*:?\s*/i, '').trim().toLowerCase();
+    if (name === 'bambustudio') name = 'bambu studio';
+    return name;
+  }
+  return null;
+}
 
 export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onClose }) {
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [showSubReminder, setShowSubReminder] = useState(false);
+  const [autoAdvanceNotice, setAutoAdvanceNotice] = useState(null);
+  
   const scrollContainerRef = useRef(null);
+  const nextVideoRef = useRef(null);
+  const onSelectVideoRef = useRef(onSelectVideo);
+  const iframeRef = useRef(null);
+
+  // Mantener las referencias actualizadas para evitar cierres obsoletos (stale closures)
+  useEffect(() => {
+    onSelectVideoRef.current = onSelectVideo;
+  }, [onSelectVideo]);
+
+  // Cálculo inteligente de la Siguiente Lección o Siguiente Vídeo Recomendado
+  const { nextVideo, relatedVideos, isCourseLesson, currentLessonIndex, totalCourseLessons } = useMemo(() => {
+    if (!video || !Array.isArray(allVideos) || allVideos.length === 0) {
+      return { nextVideo: null, relatedVideos: [], isCourseLesson: false, currentLessonIndex: 0, totalCourseLessons: 0 };
+    }
+
+    const courseKey = extractCourseKey(video.category);
+    const otherVideos = allVideos.filter(v => v.id !== video.id && v.youtubeId !== video.youtubeId);
+
+    let next = null;
+    let isCourse = false;
+    let lessonIdx = 0;
+    let totalLessons = 0;
+
+    // 1. SI ES UN CURSO: Obtener toda la secuencia del curso ordenada de forma ascendente
+    if (courseKey) {
+      isCourse = true;
+      const courseVideos = allVideos.filter(v => extractCourseKey(v.category) === courseKey);
+      
+      // Ordenar lecciones cronológicamente por capítulo (1 -> 2 -> ... -> 15)
+      courseVideos.sort((a, b) => {
+        if (a.chapterNumber !== null && b.chapterNumber !== null) {
+          return a.chapterNumber - b.chapterNumber;
+        }
+        if (a.chapterNumber !== null) return -1;
+        if (b.chapterNumber !== null) return 1;
+        return new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime();
+      });
+
+      totalLessons = courseVideos.length;
+      const foundIdx = courseVideos.findIndex(v => v.id === video.id || v.youtubeId === video.youtubeId);
+      
+      if (foundIdx !== -1) {
+        lessonIdx = foundIdx + 1;
+        if (foundIdx < courseVideos.length - 1) {
+          next = courseVideos[foundIdx + 1];
+        }
+      }
+    }
+
+    // 2. Si no es curso o no encontró siguiente en el curso, buscar en la misma categoría
+    if (!next && !isCourse) {
+      const sameCat = otherVideos.filter(v => (v.category || '').toLowerCase().trim() === (video.category || '').toLowerCase().trim());
+      if (sameCat.length > 0) {
+        next = sameCat[0];
+      }
+    }
+
+    // 3. Fallback: vídeo más popular
+    if (!next && otherVideos.length > 0 && !isCourse) {
+      next = [...otherVideos].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0))[0];
+    }
+
+    // 4. Vídeos relacionados adicionales
+    const remaining = otherVideos.filter(v => !next || v.id !== next.id);
+    const sameCatRemaining = remaining.filter(v => (v.category || '').toLowerCase().trim() === (video.category || '').toLowerCase().trim());
+    const related = sameCatRemaining.length >= 2 
+      ? sameCatRemaining.slice(0, 2) 
+      : [...sameCatRemaining, ...remaining.filter(v => !sameCatRemaining.includes(v))].slice(0, 2);
+
+    return {
+      nextVideo: next,
+      relatedVideos: related,
+      isCourseLesson: isCourse,
+      currentLessonIndex: lessonIdx,
+      totalCourseLessons: totalLessons
+    };
+  }, [video, allVideos]);
+
+  // Actualizar ref del siguiente vídeo
+  useEffect(() => {
+    nextVideoRef.current = nextVideo;
+  }, [nextVideo]);
 
   useEffect(() => {
     if (video) {
       trackVideoOpen(video);
-      // Reset scroll position when switching to another video
+      setAutoAdvanceNotice(null);
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -29,64 +125,97 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     };
   }, [onClose]);
 
-  // Cálculo inteligente de la Siguiente Lección o Siguiente Vídeo Recomendado
-  const { nextVideo, relatedVideos, isCourseLesson } = useMemo(() => {
-    if (!video || !Array.isArray(allVideos) || allVideos.length === 0) {
-      return { nextVideo: null, relatedVideos: [], isCourseLesson: false };
-    }
-
-    const currentCat = (video.category || '').toLowerCase().trim();
-    const isCourse = currentCat.startsWith('curso') || currentCat === 'bambu studio';
-    const otherVideos = allVideos.filter(v => v.id !== video.id && v.youtubeId !== video.youtubeId);
-
-    let next = null;
-
-    // 1. Si tiene número de capítulo (ej: #1, #2, #8, #8.1, #9), buscar el capítulo inmediatamente superior
-    if (video.chapterNumber !== null && typeof video.chapterNumber === 'number') {
-      const sameCategoryChapters = otherVideos
-        .filter(v => {
-          const vCat = (v.category || '').toLowerCase().trim();
-          return (vCat === currentCat || isCourse) && typeof v.chapterNumber === 'number' && v.chapterNumber > video.chapterNumber;
-        })
-        .sort((a, b) => a.chapterNumber - b.chapterNumber);
-
-      if (sameCategoryChapters.length > 0) {
-        next = sameCategoryChapters[0];
+  // ================= SISTEMA DE SALTO AUTOMÁTICO AL FINALIZAR VÍDEO (YOUTUBE API & POSTMESSAGE) =================
+  useEffect(() => {
+    const triggerNextVideo = () => {
+      const target = nextVideoRef.current;
+      const onSelect = onSelectVideoRef.current;
+      if (target && onSelect) {
+        setAutoAdvanceNotice(`Reproduciendo siguiente lección: ${target.title}`);
+        setTimeout(() => {
+          onSelect(target);
+        }, 1200);
       }
-    }
-
-    // 2. Si no encontró siguiente por capítulo, buscar el siguiente de la misma categoría
-    if (!next) {
-      const sameCat = otherVideos.filter(v => (v.category || '').toLowerCase().trim() === currentCat);
-      if (sameCat.length > 0) {
-        next = sameCat[0];
-      }
-    }
-
-    // 3. Si aún no hay, tomar el vídeo más popular
-    if (!next && otherVideos.length > 0) {
-      next = [...otherVideos].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0))[0];
-    }
-
-    // 4. Seleccionar 2 vídeos relacionados adicionales (excluyendo el actual y el 'next')
-    const remaining = otherVideos.filter(v => !next || v.id !== next.id);
-    const sameCatRemaining = remaining.filter(v => (v.category || '').toLowerCase().trim() === currentCat);
-    const related = sameCatRemaining.length >= 2 
-      ? sameCatRemaining.slice(0, 2) 
-      : [...sameCatRemaining, ...remaining.filter(v => !sameCatRemaining.includes(v))].slice(0, 2);
-
-    return {
-      nextVideo: next,
-      relatedVideos: related,
-      isCourseLesson: Boolean(isCourse && video.chapterNumber !== null)
     };
-  }, [video, allVideos]);
+
+    // 1. Escuchar eventos postMessage de YouTube Player Iframe (State 0 = ENDED)
+    const handleWindowMessage = (event) => {
+      try {
+        let payload = event.data;
+        if (typeof payload === 'string') {
+          payload = JSON.parse(payload);
+        }
+        if (payload) {
+          // info 0 o state 0 representa que el vídeo de YouTube ha llegado al final
+          if (payload.event === 'onStateChange' && (payload.info === 0 || payload.data === 0)) {
+            triggerNextVideo();
+          } else if (payload.info === 0 && payload.event !== 'infoDelivery') {
+            triggerNextVideo();
+          }
+        }
+      } catch (e) {
+        // Ignorar mensajes no JSON de extensiones del navegador
+      }
+    };
+
+    window.addEventListener('message', handleWindowMessage);
+
+    // 2. Inicializar YouTube IFrame Player API oficial para captura garantizada
+    let ytPlayer = null;
+    const playerId = `yt-iframe-${video?.youtubeId}`;
+
+    function setupYTPlayer() {
+      if (window.YT && window.YT.Player && document.getElementById(playerId)) {
+        try {
+          ytPlayer = new window.YT.Player(playerId, {
+            events: {
+              onStateChange: (e) => {
+                // e.data === 0 es YT.PlayerState.ENDED
+                if (e && e.data === 0) {
+                  triggerNextVideo();
+                }
+              }
+            }
+          });
+        } catch (err) {
+          // Si ya estaba ligado
+        }
+      }
+    }
+
+    if (window.YT && window.YT.Player) {
+      setupYTPlayer();
+    } else {
+      // Cargar script de la API si no existe
+      if (!document.getElementById('youtube-iframe-api-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
+
+      const prevCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCallback === 'function') prevCallback();
+        setupYTPlayer();
+      };
+    }
+
+    return () => {
+      window.removeEventListener('message', handleWindowMessage);
+      if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+        try { ytPlayer.destroy(); } catch (e) {}
+      }
+    };
+  }, [video?.youtubeId]);
 
   if (!video) return null;
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const embedUrl = video.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0`
+    ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&origin=${encodeURIComponent(origin)}`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -121,7 +250,13 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                 {video.category}
               </span>
             )}
-            {video.chapterNumber !== null && (
+            {isCourseLesson && totalCourseLessons > 0 && (
+              <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40 flex items-center gap-1">
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Lección {currentLessonIndex} de {totalCourseLessons}</span>
+              </span>
+            )}
+            {video.chapterNumber !== null && !isCourseLesson && (
               <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40">
                 Capítulo #{video.chapterNumber}
               </span>
@@ -133,7 +268,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
+            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer"
             aria-label="Cerrar modal"
           >
             <X className="w-5 h-5" />
@@ -143,13 +278,32 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
         {/* Video Player */}
         <div className="relative aspect-video w-full bg-black">
           {embedUrl ? (
-            <iframe
-              src={embedUrl}
-              title={video.title}
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            <>
+              <iframe
+                id={`yt-iframe-${video.youtubeId}`}
+                ref={iframeRef}
+                src={embedUrl}
+                title={video.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+
+              {/* Aviso de Salto Automático al Siguiente Vídeo */}
+              {autoAdvanceNotice && (
+                <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20 animate-fade-in">
+                  <div className="w-12 h-12 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-3 animate-pulse border border-cyan-400/40">
+                    <FastForward className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-base sm:text-lg font-black text-white mb-1">
+                    ¡Vídeo completado!
+                  </h4>
+                  <p className="text-xs sm:text-sm text-cyan-200 font-medium max-w-md">
+                    {autoAdvanceNotice}
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
               <Youtube className="w-16 h-16 text-[#2575c4] mb-3" />
@@ -171,7 +325,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-zinc-900/90 border-b border-zinc-800/80">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-medium text-zinc-300">Reproductor Oficial Capa Cero</span>
+            <span className="font-medium text-zinc-300">Reproducción continua automática activada</span>
           </div>
 
           <a
@@ -268,7 +422,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                     <Sparkles className="w-4 h-4 text-cyan-400" />
                   )}
                   <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                    {isCourseLesson ? 'Siguiente Lección del Curso' : 'Siguiente Tutorial Recomendado'}
+                    {isCourseLesson ? 'Siguiente Lección del Curso (Salto Automático)' : 'Siguiente Tutorial Recomendado'}
                   </h4>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
