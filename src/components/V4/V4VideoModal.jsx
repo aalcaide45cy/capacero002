@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen, FastForward } from 'lucide-react';
+import { X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 
 // Función para normalizar la clave de curso
@@ -17,12 +17,13 @@ function extractCourseKey(category) {
 export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onClose }) {
   const [downloadedCount, setDownloadedCount] = useState(0);
   const [showSubReminder, setShowSubReminder] = useState(false);
-  const [autoAdvanceNotice, setAutoAdvanceNotice] = useState(null);
+  const [countdownSeconds, setCountdownSeconds] = useState(null); // 5, 4, 3, 2, 1, 0 o null
   
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
   const onSelectVideoRef = useRef(onSelectVideo);
   const hasTriggeredRef = useRef(false);
+  const countdownTimerRef = useRef(null);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
       }
     }
 
-    // 2. Si no es curso o no encontró siguiente en el curso, buscar en la misma categoría
+    // 2. Si NO es curso (o si es el último del curso), buscar en la misma categoría
     if (!next && !isCourse) {
       const sameCat = otherVideos.filter(v => (v.category || '').toLowerCase().trim() === (video.category || '').toLowerCase().trim());
       if (sameCat.length > 0) {
@@ -77,9 +78,10 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
       }
     }
 
-    // 3. Fallback: vídeo más popular
-    if (!next && otherVideos.length > 0 && !isCourse) {
-      next = [...otherVideos].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0))[0];
+    // 3. Fallback general para cualquier tutorial: pasar al siguiente más popular
+    if (!next && otherVideos.length > 0) {
+      const sortedByPopularity = [...otherVideos].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+      next = sortedByPopularity[0];
     }
 
     // 4. Vídeos relacionados adicionales
@@ -98,11 +100,14 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     };
   }, [video, allVideos]);
 
-  // Actualizar ref del siguiente vídeo y resetear flag de disparo al cambiar de vídeo
+  // Actualizar ref del siguiente vídeo y resetear estados al cambiar de vídeo
   useEffect(() => {
     nextVideoRef.current = nextVideo;
     hasTriggeredRef.current = false;
-    setAutoAdvanceNotice(null);
+    setCountdownSeconds(null);
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+    }
   }, [video?.youtubeId, nextVideo]);
 
   useEffect(() => {
@@ -126,21 +131,58 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     };
   }, [onClose]);
 
-  // ================= SISTEMA DE SALTO AUTOMÁTICO AL FINALIZAR VÍDEO (YOUTUBE API & POSTMESSAGE) =================
+  // ================= TEMPORIZADOR DE 5 SEGUNDOS =================
   useEffect(() => {
-    const triggerNextVideo = () => {
-      if (hasTriggeredRef.current) return;
+    if (countdownSeconds === null) return;
+
+    if (countdownSeconds === 0) {
+      // Tiempo cumplido: saltar al siguiente vídeo
       const target = nextVideoRef.current;
       const onSelect = onSelectVideoRef.current;
-
+      setCountdownSeconds(null);
       if (target && onSelect) {
-        hasTriggeredRef.current = true;
-        setAutoAdvanceNotice(`Cargando siguiente lección: ${target.title}`);
-        setTimeout(() => {
-          onSelect(target);
-          setAutoAdvanceNotice(null);
-        }, 800);
+        onSelect(target);
       }
+      return;
+    }
+
+    countdownTimerRef.current = setTimeout(() => {
+      setCountdownSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => {
+      if (countdownTimerRef.current) {
+        clearTimeout(countdownTimerRef.current);
+      }
+    };
+  }, [countdownSeconds]);
+
+  const handleCancelCountdown = () => {
+    setCountdownSeconds(null);
+    if (countdownTimerRef.current) {
+      clearTimeout(countdownTimerRef.current);
+    }
+  };
+
+  const handleImmediateSkip = () => {
+    setCountdownSeconds(null);
+    if (countdownTimerRef.current) {
+      clearTimeout(countdownTimerRef.current);
+    }
+    const target = nextVideoRef.current;
+    const onSelect = onSelectVideoRef.current;
+    if (target && onSelect) {
+      onSelect(target);
+    }
+  };
+
+  // ================= CAPTURA DE FIN DE VÍDEO CON YOUTUBE API & POSTMESSAGE =================
+  useEffect(() => {
+    const startCountdown = () => {
+      if (hasTriggeredRef.current) return;
+      if (!nextVideoRef.current) return;
+      hasTriggeredRef.current = true;
+      setCountdownSeconds(5);
     };
 
     // 1. Escuchar eventos postMessage de YouTube Player Iframe (State 0 = ENDED)
@@ -151,16 +193,13 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
           payload = JSON.parse(payload);
         }
         if (payload) {
-          // info 0 o data 0 representa que el vídeo de YouTube ha terminado
           if (payload.event === 'onStateChange' && (payload.info === 0 || payload.data === 0)) {
-            triggerNextVideo();
+            startCountdown();
           } else if (payload.info === 0 && payload.event !== 'infoDelivery') {
-            triggerNextVideo();
+            startCountdown();
           }
         }
-      } catch (e) {
-        // Ignorar mensajes no JSON
-      }
+      } catch (e) {}
     };
 
     window.addEventListener('message', handleWindowMessage);
@@ -176,14 +215,12 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             events: {
               onStateChange: (e) => {
                 if (e && e.data === 0) {
-                  triggerNextVideo();
+                  startCountdown();
                 }
               }
             }
           });
-        } catch (err) {
-          // Ya ligado
-        }
+        } catch (err) {}
       }
     }
 
@@ -230,10 +267,18 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   };
 
   const handleSelectSuggestedVideo = (targetVideo) => {
+    handleCancelCountdown();
     if (onSelectVideo) {
       onSelectVideo(targetVideo);
     }
   };
+
+  // SVG Ring calculation: Radius 32, Circumference = 2 * PI * 32 = 201.06
+  const circleRadius = 32;
+  const circleCircumference = 2 * Math.PI * circleRadius;
+  const circleOffset = countdownSeconds !== null 
+    ? circleCircumference - ((5 - countdownSeconds) / 5) * circleCircumference
+    : circleCircumference;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
@@ -279,11 +324,11 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
           </button>
         </div>
 
-        {/* Video Player */}
+        {/* Video Player & Countdown Overlay */}
         <div className="relative aspect-video w-full bg-black">
           {embedUrl ? (
             <>
-              {/* key={video.youtubeId} garantiza el desmontaje limpio y evita la pantalla en negro al cambiar de lección */}
+              {/* key={video.youtubeId} garantiza el desmontaje limpio */}
               <iframe
                 key={video.youtubeId}
                 id={`yt-iframe-${video.youtubeId}`}
@@ -294,18 +339,76 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                 allowFullScreen
               />
 
-              {/* Aviso breve de Salto Automático al Siguiente Vídeo */}
-              {autoAdvanceNotice && (
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20 animate-fade-in pointer-events-none">
-                  <div className="w-12 h-12 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-3 animate-pulse border border-cyan-400/40">
-                    <FastForward className="w-6 h-6" />
+              {/* ================= OVERLAY ANIMADO CON ANILLO DE 5 SEGUNDOS ================= */}
+              {countdownSeconds !== null && nextVideo && (
+                <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 animate-fade-in">
+                  
+                  {/* Anillo de cuenta regresiva SVG */}
+                  <div className="relative w-24 h-24 flex items-center justify-center mb-4">
+                    <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                      {/* Círculo de fondo */}
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r={circleRadius}
+                        className="stroke-zinc-800"
+                        strokeWidth="6"
+                        fill="transparent"
+                      />
+                      {/* Círculo de progreso que se va completando */}
+                      <circle
+                        cx="40"
+                        cy="40"
+                        r={circleRadius}
+                        className="stroke-cyan-400 transition-all duration-1000 ease-linear"
+                        strokeWidth="6"
+                        strokeDasharray={circleCircumference}
+                        strokeDashoffset={circleOffset}
+                        strokeLinecap="round"
+                        fill="transparent"
+                      />
+                    </svg>
+                    
+                    {/* Número central de segundos */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-black text-white leading-none">
+                        {countdownSeconds}
+                      </span>
+                      <span className="text-[9px] font-bold text-cyan-300 uppercase tracking-wider mt-0.5">
+                        seg
+                      </span>
+                    </div>
                   </div>
-                  <h4 className="text-base sm:text-lg font-black text-white mb-1">
-                    ¡Vídeo completado!
+
+                  {/* Textos Informativos */}
+                  <h4 className="text-base sm:text-lg font-black text-white mb-1 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span>{isCourseLesson ? '¡Lección Completada!' : '¡Vídeo Completado!'}</span>
                   </h4>
-                  <p className="text-xs sm:text-sm text-cyan-200 font-medium max-w-md">
-                    {autoAdvanceNotice}
+                  
+                  <p className="text-xs sm:text-sm text-zinc-300 font-medium max-w-md line-clamp-1 mb-5">
+                    Siguiente: <strong className="text-cyan-300">{nextVideo.title}</strong>
                   </p>
+
+                  {/* Botones de Control: Saltar ahora / Cancelar */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleImmediateSkip}
+                      className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                    >
+                      <Play className="w-4 h-4 fill-white" />
+                      <span>Saltar Ahora</span>
+                    </button>
+
+                    <button
+                      onClick={handleCancelCountdown}
+                      className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Cancelar</span>
+                    </button>
+                  </div>
+
                 </div>
               )}
             </>
@@ -380,8 +483,8 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             </div>
           )}
 
-          {/* Downloads Section (ONLY if downloads exist) */}
-          {video.hasDownloads && (
+          {/* Downloads Section (SOLO APARECE SI TIENE ENLACES REALES EN GOOGLE SHEETS) */}
+          {Boolean(video.hasDownloads && Array.isArray(video.downloads) && video.downloads.length > 0) && (
             <div className="border border-cyan-500/30 bg-cyan-950/20 rounded-2xl p-4 sm:p-5">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
@@ -427,7 +530,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                     <Sparkles className="w-4 h-4 text-cyan-400" />
                   )}
                   <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                    {isCourseLesson ? 'Siguiente Lección del Curso (Salto Automático)' : 'Siguiente Tutorial Recomendado'}
+                    {isCourseLesson ? 'Siguiente Lección del Curso' : 'Siguiente Tutorial Recomendado'}
                   </h4>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
