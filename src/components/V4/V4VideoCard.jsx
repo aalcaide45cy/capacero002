@@ -61,10 +61,10 @@ export default function V4VideoCard({ video, onSelect }) {
   const shortCategory = getShortCategory(video.category);
 
   return (
-    <div className={`group bg-zinc-900/80 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left ${
+    <div className={`group bg-zinc-950 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col h-full text-left ${
       video.isScheduled 
         ? 'border-blue-900/50 hover:border-cyan-500/60 shadow-blue-950/20' 
-        : 'border-zinc-800/80 hover:border-zinc-700'
+        : 'border-zinc-800/90 hover:border-zinc-700'
     }`}>
       
       {/* Thumbnail Area */}

@@ -331,7 +331,7 @@ export default function V4VideoGrid({
                 </div>
 
                 {/* Nota Explicativa y Sincera de Privacidad y Backup */}
-                <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3 text-left">
+                <div className="bg-zinc-950 border border-zinc-800/90 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3 text-left shadow-lg">
                   <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <p className="text-xs text-zinc-300/90 leading-relaxed">
                     <strong className="text-white font-bold">Tu privacidad y tu aprendizaje:</strong> Capa Cero es una web 100% estática y privada. No guardamos tus datos en ningún servidor externo ni te pedimos registros. Tus lecciones vistas, notas y minuto exacto se guardan solo en la memoria de este navegador. Usa <strong className="text-cyan-300">Backup Progreso</strong> para descargar tu archivo de respaldo por si vas a cambiar de equipo, y <strong className="text-blue-300">Restaurar Progreso</strong> para retomar tus cursos exactamente donde los dejaste.
@@ -339,7 +339,7 @@ export default function V4VideoGrid({
                 </div>
 
                 {/* Banner de Bienvenida y Progreso al Curso */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 sm:p-8 bg-gradient-to-r from-blue-950/60 via-zinc-900 to-cyan-950/40 border border-cyan-500/40 rounded-3xl shadow-2xl relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 sm:p-8 bg-zinc-950 border border-cyan-500/40 rounded-3xl shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
                   
                   <div className="relative z-10 flex flex-col gap-2 max-w-2xl text-left">
@@ -455,10 +455,10 @@ export default function V4VideoGrid({
                         saveCourseProgress(activeCourse.name, video);
                         onSelectVideo && onSelectVideo(video);
                       }}
-                      className={`group bg-zinc-900/80 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left cursor-pointer relative ${
+                      className={`group bg-zinc-950 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col h-full text-left cursor-pointer relative ${
                         isCurrent
                           ? 'border-cyan-400/80 ring-2 ring-cyan-500/30 shadow-cyan-950/50'
-                          : 'border-zinc-800/80 hover:border-cyan-500/50'
+                          : 'border-zinc-800/90 hover:border-cyan-500/50'
                       }`}
                     >
                       {/* Thumbnail con Badges de Estado */}
@@ -572,7 +572,7 @@ export default function V4VideoGrid({
                       onClick={() => {
                         setSelectedCourseName(course.name);
                       }}
-                      className="group bg-gradient-to-b from-zinc-900/90 to-zinc-950 border border-zinc-800 hover:border-cyan-500/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col cursor-pointer text-left"
+                      className="group bg-zinc-950 border border-zinc-800/90 hover:border-cyan-500/60 rounded-3xl overflow-hidden shadow-2xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col cursor-pointer text-left"
                     >
                       {/* Portada del curso */}
                       <div className="relative aspect-video w-full bg-zinc-950 overflow-hidden">

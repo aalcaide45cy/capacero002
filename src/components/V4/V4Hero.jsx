@@ -54,7 +54,7 @@ export default function V4Hero({
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   return (
-    <section className={`relative overflow-hidden transition-all duration-500 ease-in-out border-b border-zinc-900 bg-gradient-to-b from-black via-zinc-950 to-black ${
+    <section className={`relative overflow-hidden transition-all duration-500 ease-in-out border-b border-zinc-900/80 bg-transparent ${
       isSearching ? 'pt-4 pb-4 md:pt-6 md:pb-6' : 'pt-8 pb-12 md:py-16'
     }`}>
       {/* Subtle Electric Blue Ambient Glows */}
@@ -212,7 +212,7 @@ export default function V4Hero({
             {/* Right Column: Featured Video Showcase */}
             <div className="lg:col-span-5 w-full">
               {featuredVideo ? (
-                <div className="relative group bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-cyan-500/50 shadow-blue-950/40 hover:shadow-cyan-500/10">
+                <div className="relative group bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-cyan-500/50 shadow-blue-950/40 hover:shadow-cyan-500/10">
                   
                   {/* Thumbnail Container */}
                   <div
