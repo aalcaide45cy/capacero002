@@ -74,8 +74,11 @@ export default function V4Hub() {
     return () => { isMounted = false; };
   }, []);
 
-  // El vídeo en Hero es siempre el último que se ha publicado (el primero de la lista)
-  const featuredVideo = (videos || [])[0] || null;
+  // El vídeo en Hero es siempre el último que se ha publicado (no programado)
+  const featuredVideo = useMemo(() => {
+    if (!videos || videos.length === 0) return null;
+    return videos.find((v) => !v.isScheduled) || videos[0];
+  }, [videos]);
 
   const handleSearchWithQuery = (query) => {
     setActiveTab('videos');

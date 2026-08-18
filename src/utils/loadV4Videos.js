@@ -3,12 +3,30 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V9';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V9';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V10';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V10';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
+
+// Mapa de vídeos programados con sus fechas de estreno
+export const SCHEDULED_VIDEOS_MAP = {
+  'sIzQPJSVdvo': { isScheduled: true, scheduledDate: '2026-08-21T11:00:00Z', label: 'Estreno el día 21 de agosto' },
+  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-24T11:00:00Z', label: 'Estreno el día 24 de agosto' },
+  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-08-28T11:00:00Z', label: 'Estreno el día 28 de agosto' },
+  'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-08-31T11:00:00Z', label: 'Estreno el día 31 de agosto' },
+  'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-04T11:00:00Z', label: 'Estreno el día 4 de septiembre' },
+  '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-07T11:00:00Z', label: 'Estreno el día 7 de septiembre' },
+  'IFTgPS3a6v8': { isScheduled: true, scheduledDate: '2026-09-11T11:00:00Z', label: 'Estreno el día 11 de septiembre' }
+};
 
 // Fechas de publicación reales de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
+  'IFTgPS3a6v8': '2026-09-11T11:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
+  '3BtSMuvl8BQ': '2026-09-07T11:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
+  'mzItWgN4a5c': '2026-09-04T11:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
+  'ozlbqVkcinE': '2026-08-31T11:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
+  'STc2U-cqecQ': '2026-08-28T11:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
+  'RNWxu9tsB-k': '2026-08-24T11:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
+  'sIzQPJSVdvo': '2026-08-21T11:00:00Z', // #9 Interfaz (PROGRAMADO)
   'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado (¡ÚLTIMO PUBLICADO!)
   'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras! (¡PENÚLTIMO!)
   'hZvIHMnxb3w': '2026-08-10T11:00:06Z', // #8 Movimiento Viewport
@@ -27,13 +45,6 @@ const YOUTUBE_PUBLISH_DATES = {
   'lP0FvQZ6uwk': '2026-07-05T04:30:06Z', // Ajustes SECRETOS
   'YUMNakCgUJs': '2026-06-29T11:00:06Z', // #2 Ecosistema Bambu Lab
   'hVCS-uyGflk': '2026-06-22T11:00:06Z', // #1 Instalación Bambu Studio
-  'IFTgPS3a6v8': '2026-06-21T04:12:21Z', // #15 Textos y Modificadores
-  '3BtSMuvl8BQ': '2026-06-20T10:58:48Z', // #14 Pintar Objetos
-  'mzItWgN4a5c': '2026-06-20T10:58:42Z', // #13 Montaje de Objetos
-  'ozlbqVkcinE': '2026-06-20T10:58:10Z', // #12 Grupos y Jerarquías
-  'STc2U-cqecQ': '2026-06-20T10:58:04Z', // #11 No Hagas Esto al Cortar
-  'RNWxu9tsB-k': '2026-06-20T10:58:01Z', // #10 Escala, rota y posiciona
-  'sIzQPJSVdvo': '2026-06-20T10:57:52Z', // #9 Interfaz
   '1ol3BaUnJ8Y': '2026-05-23T01:00:06Z', // Madimaker
   'nPaTKz9Zqcs': '2026-03-15T09:39:01Z'  // AMS Multicolor
 };
@@ -183,15 +194,29 @@ export function normalizeVideoRow(raw, index = 0) {
   const likes = raw.likes !== undefined ? raw.likes : stats.likes;
   const comments = raw.comments !== undefined ? raw.comments : stats.comments;
 
-  const rawScheduled = String(raw.Programado || raw.programado || raw.Fecha_Estreno || raw.fecha_estreno || raw.Estreno || raw.estreno || raw.Fecha_Programada || raw.fecha_programada || raw.Estado || '').trim();
+  const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
+  const rawScheduled = String(
+    raw.Programado || raw.programado || 
+    raw.Fecha_Estreno || raw.fecha_estreno || 
+    raw.Estreno || raw.estreno || 
+    raw.Fecha_Programada || raw.fecha_programada || 
+    raw.Fecha_Publicacion || raw.fecha_publicacion ||
+    raw.Fecha || raw.fecha ||
+    raw.Estado || raw.estado || ''
+  ).trim();
+
   const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
   const isFuture = publishedAt && !isNaN(new Date(publishedAt).getTime()) && new Date(publishedAt).getTime() > Date.now();
-  const isScheduled = isStateScheduled || Boolean(raw.isScheduled) || isFuture;
+  const isScheduled = Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled) || isFuture;
   
   let scheduledDateFormatted = null;
   if (isScheduled) {
-    const dateCandidate = raw.Fecha_Estreno || raw.fecha_estreno || raw.Programado || raw.programado || (isFuture ? publishedAt : '');
-    scheduledDateFormatted = formatScheduledDate(dateCandidate);
+    if (scheduledConfig?.label) {
+      scheduledDateFormatted = scheduledConfig.label;
+    } else {
+      const dateCandidate = raw.Fecha_Estreno || raw.fecha_estreno || raw.Programado || raw.programado || raw.Fecha || raw.fecha || (isFuture ? publishedAt : '');
+      scheduledDateFormatted = formatScheduledDate(dateCandidate);
+    }
   }
 
   const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : ((likes * 10) + Math.round(views / 10) + (isFeatured ? 500 : 0));

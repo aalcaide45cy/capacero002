@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, 
   Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw, 
-  Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload
+  Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar
 } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 import { 
@@ -422,6 +422,12 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             {video.chapterNumber !== null && !isCourseLesson && (
               <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40">
                 Capítulo #{video.chapterNumber}
+              </span>
+            )}
+            {video.isScheduled && (
+              <span className="text-xs font-black text-amber-300 bg-amber-950/90 px-2.5 py-1 rounded-md border border-amber-500/50 flex items-center gap-1 shadow-sm">
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span>{video.scheduledDateFormatted || 'Estreno Programado'}</span>
               </span>
             )}
             <span className="text-xs text-zinc-500 font-medium hidden sm:inline-block">
