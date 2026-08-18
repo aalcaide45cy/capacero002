@@ -22,9 +22,9 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
   const onSelectVideoRef = useRef(onSelectVideo);
-  const iframeRef = useRef(null);
+  const hasTriggeredRef = useRef(false);
 
-  // Mantener las referencias actualizadas para evitar cierres obsoletos (stale closures)
+  // Mantener las referencias actualizadas
   useEffect(() => {
     onSelectVideoRef.current = onSelectVideo;
   }, [onSelectVideo]);
@@ -98,15 +98,16 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     };
   }, [video, allVideos]);
 
-  // Actualizar ref del siguiente vídeo
+  // Actualizar ref del siguiente vídeo y resetear flag de disparo al cambiar de vídeo
   useEffect(() => {
     nextVideoRef.current = nextVideo;
-  }, [nextVideo]);
+    hasTriggeredRef.current = false;
+    setAutoAdvanceNotice(null);
+  }, [video?.youtubeId, nextVideo]);
 
   useEffect(() => {
     if (video) {
       trackVideoOpen(video);
-      setAutoAdvanceNotice(null);
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -128,13 +129,17 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   // ================= SISTEMA DE SALTO AUTOMÁTICO AL FINALIZAR VÍDEO (YOUTUBE API & POSTMESSAGE) =================
   useEffect(() => {
     const triggerNextVideo = () => {
+      if (hasTriggeredRef.current) return;
       const target = nextVideoRef.current;
       const onSelect = onSelectVideoRef.current;
+
       if (target && onSelect) {
-        setAutoAdvanceNotice(`Reproduciendo siguiente lección: ${target.title}`);
+        hasTriggeredRef.current = true;
+        setAutoAdvanceNotice(`Cargando siguiente lección: ${target.title}`);
         setTimeout(() => {
           onSelect(target);
-        }, 1200);
+          setAutoAdvanceNotice(null);
+        }, 800);
       }
     };
 
@@ -146,7 +151,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
           payload = JSON.parse(payload);
         }
         if (payload) {
-          // info 0 o state 0 representa que el vídeo de YouTube ha llegado al final
+          // info 0 o data 0 representa que el vídeo de YouTube ha terminado
           if (payload.event === 'onStateChange' && (payload.info === 0 || payload.data === 0)) {
             triggerNextVideo();
           } else if (payload.info === 0 && payload.event !== 'infoDelivery') {
@@ -154,13 +159,13 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
           }
         }
       } catch (e) {
-        // Ignorar mensajes no JSON de extensiones del navegador
+        // Ignorar mensajes no JSON
       }
     };
 
     window.addEventListener('message', handleWindowMessage);
 
-    // 2. Inicializar YouTube IFrame Player API oficial para captura garantizada
+    // 2. Inicializar YouTube IFrame Player API oficial
     let ytPlayer = null;
     const playerId = `yt-iframe-${video?.youtubeId}`;
 
@@ -170,7 +175,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
           ytPlayer = new window.YT.Player(playerId, {
             events: {
               onStateChange: (e) => {
-                // e.data === 0 es YT.PlayerState.ENDED
                 if (e && e.data === 0) {
                   triggerNextVideo();
                 }
@@ -178,7 +182,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
             }
           });
         } catch (err) {
-          // Si ya estaba ligado
+          // Ya ligado
         }
       }
     }
@@ -186,7 +190,6 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
     if (window.YT && window.YT.Player) {
       setupYTPlayer();
     } else {
-      // Cargar script de la API si no existe
       if (!document.getElementById('youtube-iframe-api-script')) {
         const tag = document.createElement('script');
         tag.id = 'youtube-iframe-api-script';
@@ -213,9 +216,10 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   if (!video) return null;
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  // URL limpia y compatible universalmente sin problemas de sandbox o pantalla en negro
   const embedUrl = video.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&origin=${encodeURIComponent(origin)}`
+    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -279,19 +283,20 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
         <div className="relative aspect-video w-full bg-black">
           {embedUrl ? (
             <>
+              {/* key={video.youtubeId} garantiza el desmontaje limpio y evita la pantalla en negro al cambiar de lección */}
               <iframe
+                key={video.youtubeId}
                 id={`yt-iframe-${video.youtubeId}`}
-                ref={iframeRef}
                 src={embedUrl}
                 title={video.title}
                 className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
 
-              {/* Aviso de Salto Automático al Siguiente Vídeo */}
+              {/* Aviso breve de Salto Automático al Siguiente Vídeo */}
               {autoAdvanceNotice && (
-                <div className="absolute inset-0 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20 animate-fade-in">
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center z-20 animate-fade-in pointer-events-none">
                   <div className="w-12 h-12 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-3 animate-pulse border border-cyan-400/40">
                     <FastForward className="w-6 h-6" />
                   </div>

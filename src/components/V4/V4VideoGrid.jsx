@@ -136,7 +136,6 @@ export default function V4VideoGrid({
 
   const handleGoBackToCourses = () => {
     setSelectedCourseName(null);
-    window.scrollTo({ top: 350, behavior: 'smooth' });
   };
 
   return (
@@ -380,7 +379,6 @@ export default function V4VideoGrid({
                   key={course.id}
                   onClick={() => {
                     setSelectedCourseName(course.name);
-                    window.scrollTo({ top: 350, behavior: 'smooth' });
                   }}
                   className="group bg-gradient-to-b from-zinc-900/90 to-zinc-950 border border-zinc-800 hover:border-cyan-500/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col cursor-pointer text-left"
                 >
