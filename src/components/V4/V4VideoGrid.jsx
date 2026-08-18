@@ -143,14 +143,21 @@ export default function V4VideoGrid({
       result = result.filter(v => v.category?.toLowerCase() === activeCategory?.toLowerCase());
     }
 
+    // Separar publicados y programados: los publicados van PRIMERO, los programados AL FINAL
+    const published = result.filter(v => !v.isScheduled);
+    const scheduled = result.filter(v => v.isScheduled);
+
     if (activeSortFilter === 'popular') {
-      result = [...result].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+      published.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+      scheduled.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
     } else {
-      // 'newest': orden cronológico inverso
-      result = [...result];
+      // 'newest': Más nuevos publicados primero
+      published.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      // Programados ordenados por fecha de estreno más próxima
+      scheduled.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
     }
 
-    return result;
+    return [...published, ...scheduled];
   }, [videos, activeCategory, searchQuery, activeSortFilter]);
 
   const handleSwitchFilter = (filterType) => {
@@ -464,11 +471,11 @@ export default function V4VideoGrid({
                           }`}
                         />
 
-                        {/* Overlay Oscurecido + Badge "Estreno el día..." para lecciones programadas */}
+                        {/* Overlay Oscurecido + Badge "Estreno el día..." con colores de la web (Azul Eléctrico y Cyan) */}
                         {video.isScheduled ? (
-                          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center z-10">
-                            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[10px] sm:text-[11px] font-black px-3 py-1.5 rounded-xl border border-amber-300/40 shadow-xl flex items-center gap-1.5 uppercase tracking-wider">
-                              <Calendar className="w-3.5 h-3.5 text-white" />
+                          <div className="absolute inset-0 bg-black/65 backdrop-blur-[1.5px] flex flex-col items-center justify-center p-3 text-center z-10">
+                            <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white text-[10px] sm:text-[11px] font-black px-3.5 py-1.5 rounded-xl border border-cyan-300/40 shadow-xl shadow-blue-950/80 flex items-center gap-1.5 uppercase tracking-wider">
+                              <Calendar className="w-3.5 h-3.5 text-cyan-200" />
                               <span>{video.scheduledDateFormatted || 'Estreno Próximamente'}</span>
                             </div>
                           </div>

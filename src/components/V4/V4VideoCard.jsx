@@ -63,7 +63,7 @@ export default function V4VideoCard({ video, onSelect }) {
   return (
     <div className={`group bg-zinc-900/80 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-lg transition-all duration-300 flex flex-col h-full text-left ${
       video.isScheduled 
-        ? 'border-amber-500/40 hover:border-amber-400/70 shadow-amber-950/20' 
+        ? 'border-blue-900/50 hover:border-cyan-500/60 shadow-blue-950/20' 
         : 'border-zinc-800/80 hover:border-zinc-700'
     }`}>
       
@@ -88,11 +88,11 @@ export default function V4VideoCard({ video, onSelect }) {
           }}
         />
 
-        {/* Overlay Oscurecido + Badge "Estreno el día..." para vídeos programados */}
+        {/* Overlay Oscurecido + Badge "Estreno el día..." con colores de la web (Azul Eléctrico y Cyan) */}
         {video.isScheduled ? (
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-3 text-center z-10">
-            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[11px] sm:text-xs font-black px-3.5 py-1.5 rounded-xl border border-amber-300/40 shadow-xl flex items-center gap-1.5 uppercase tracking-wider">
-              <Calendar className="w-3.5 h-3.5 text-white" />
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-[1.5px] flex flex-col items-center justify-center p-3 text-center z-10">
+            <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 text-white text-[11px] sm:text-xs font-black px-3.5 py-1.5 rounded-xl border border-cyan-300/40 shadow-xl shadow-blue-950/80 flex items-center gap-1.5 uppercase tracking-wider">
+              <Calendar className="w-3.5 h-3.5 text-cyan-200" />
               <span>{video.scheduledDateFormatted || 'Estreno Próximamente'}</span>
             </div>
           </div>

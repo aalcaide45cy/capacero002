@@ -425,8 +425,8 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
               </span>
             )}
             {video.isScheduled && (
-              <span className="text-xs font-black text-amber-300 bg-amber-950/90 px-2.5 py-1 rounded-md border border-amber-500/50 flex items-center gap-1 shadow-sm">
-                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-xs font-black text-cyan-200 bg-blue-950/90 px-2.5 py-1 rounded-md border border-cyan-400/50 flex items-center gap-1 shadow-sm">
+                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{video.scheduledDateFormatted || 'Estreno Programado'}</span>
               </span>
             )}
