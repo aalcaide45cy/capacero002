@@ -14,6 +14,11 @@ function formatCounter(num) {
 function getShortCategory(category) {
   if (!category) return '';
   const c = category.trim();
+  if (/^curso/i.test(c)) {
+    let name = c.replace(/^curso\s*:?\s*/i, '').trim();
+    if (/^bambustudio$/i.test(name)) name = 'Bambu Studio';
+    return `Curso ${name}`;
+  }
   const map = {
     'Perfiles y Calibración': 'Perfiles',
     'Hardware y Boquillas': 'Hardware',
@@ -24,7 +29,7 @@ function getShortCategory(category) {
     'Bambu Studio': 'Bambu Studio'
   };
   if (map[c]) return map[c];
-  if (c.length > 12) return c.substring(0, 10) + '...';
+  if (c.length > 18) return c.substring(0, 16) + '...';
   return c;
 }
 

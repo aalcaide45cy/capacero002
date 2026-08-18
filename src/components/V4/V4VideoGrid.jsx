@@ -9,30 +9,22 @@ function formatCounter(num) {
   return String(num);
 }
 
-// Extrae el nombre del curso de forma estricta e inteligente
+// Extrae el nombre del curso de forma ESTRICTA:
+// SOLO si la categoría empieza por la palabra "Curso" o "curso"
 function extractCourseName(video) {
   if (!video) return null;
   const cat = (video.category || '').trim();
 
-  // 1. Si la categoría comienza explícitamente por "Curso" o "curso" (con espacio, dos puntos o pegado)
+  // 1. Debe comenzar OBLIGATORIAMENTE por "Curso" o "curso" (con espacio, dos puntos o pegado)
   if (/^curso/i.test(cat)) {
     let name = cat.replace(/^curso\s*:?\s*/i, '').trim();
-    // Normalizar BambuStudio a Bambu Studio
+    // Normalizar BambuStudio a Bambu Studio si viene pegado
     if (/^bambustudio$/i.test(name)) name = 'Bambu Studio';
     if (!name) name = 'Bambu Studio';
     return name;
   }
 
-  // 2. Si no tiene "Curso" en la categoría, pero es un capítulo numerado (#1 al #15) de Bambu Studio
-  if (video.chapterNumber !== null && typeof video.chapterNumber === 'number') {
-    const titleLower = (video.title || '').toLowerCase();
-    const catLower = cat.toLowerCase();
-    if (titleLower.includes('bambu') || catLower.includes('bambu')) {
-      return 'Bambu Studio';
-    }
-  }
-
-  // Si no cumple ninguna de las dos, es un tutorial independiente y NO pertenece a un curso
+  // Si la categoría es "Bambu Studio", "BambuStudio" o cualquier otra que NO tenga la palabra "Curso", NO forma parte de ningún curso
   return null;
 }
 
