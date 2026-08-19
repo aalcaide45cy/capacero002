@@ -293,21 +293,21 @@ export default function V4VideoGrid({
         </div>
       )}
 
-      {/* Header Controls (Completamente centrado en PC y Móvil) */}
-      <div className="flex flex-col items-center text-center justify-center gap-1.5 mb-6">
-        <div className="flex flex-wrap items-center justify-center gap-2.5">
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+      {/* Header Controls (Completamente centrado y con tipografía destacada en PC y Móvil) */}
+      <div className="flex flex-col items-center text-center justify-center gap-2 mb-7">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
             {activeSortFilter === 'courses' 
               ? (activeCourse ? `Curso: ${activeCourse.name}` : 'Academia de Cursos Estructurados') 
               : 'Videoteca de Tutoriales y Trucos'}
           </h2>
-          <span className="text-xs font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-500/40 px-3 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-sm">
+          <span className="text-xs sm:text-sm font-extrabold text-cyan-300 bg-cyan-950/80 border border-cyan-500/50 px-3.5 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(0,229,255,0.25)]">
             {activeSortFilter === 'courses'
               ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
               : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
           </span>
         </div>
-        <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto">
+        <p className="text-sm sm:text-base md:text-lg text-zinc-300 max-w-3xl mx-auto font-normal leading-relaxed mt-1">
           {activeSortFilter === 'courses'
             ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
             : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
