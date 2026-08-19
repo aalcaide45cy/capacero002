@@ -403,28 +403,30 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     setNotesTick((prev) => prev + 1);
   };
 
-  const handleStartEdit = (note) => {
-    setEditingNoteId(note.id);
-    setEditingNoteText(note.text);
-    setEditingNoteTimeFormatted(note.timeFormatted || '00:00');
+  const handleStartEdit = (e, note) => {
+    if (e) e.stopPropagation();
+    setNoteToEdit({
+      id: note.id,
+      text: note.text,
+      timeFormatted: note.timeFormatted || '00:00',
+      timestamp: note.timestamp,
+      videoTitle: video.title
+    });
   };
 
-  const handleSaveEdit = (note) => {
-    if (!editingNoteText.trim()) return;
-    updateVideoNote(video.youtubeId || video.id, note.id, editingNoteText, editingNoteTimeFormatted);
-    setEditingNoteId(null);
-    setEditingNoteText('');
-    setEditingNoteTimeFormatted('00:00');
+  const handleSaveEditModal = () => {
+    if (!noteToEdit || !noteToEdit.text.trim()) return;
+    updateVideoNote(video.youtubeId || video.id, noteToEdit.id, noteToEdit.text, noteToEdit.timeFormatted);
+    setNoteToEdit(null);
     setNotesTick((prev) => prev + 1);
   };
 
-  const handleCancelEdit = () => {
-    setEditingNoteId(null);
-    setEditingNoteText('');
-    setEditingNoteTimeFormatted('00:00');
+  const handleCancelEditModal = () => {
+    setNoteToEdit(null);
   };
 
-  const handlePromptDelete = (note) => {
+  const handlePromptDelete = (e, note) => {
+    if (e) e.stopPropagation();
     setNoteToDelete({
       ...note,
       videoTitle: video.title
@@ -715,103 +717,43 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                 {currentVideoNotes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-3 bg-zinc-950/80 border border-zinc-800 hover:border-cyan-500/40 rounded-xl transition-colors space-y-2"
+                    className="flex items-center justify-between gap-3 p-3 bg-zinc-950/80 border border-zinc-800 hover:border-cyan-500/40 rounded-xl transition-colors group/note"
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
                       {/* Botón de timestamp para saltar directo a ese segundo */}
                       <button
                         type="button"
                         onClick={() => handleSeekToTimestamp(note.timestamp)}
-                        className="inline-flex items-center gap-1 text-[11px] font-black text-cyan-300 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 px-2 py-0.5 rounded-md transition-all active:scale-95 cursor-pointer shrink-0"
+                        className="inline-flex items-center gap-1 text-[11px] font-black text-cyan-300 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0 shadow-sm"
                         title="Hacer clic para saltar a este momento del vídeo"
                       >
                         <Play className="w-2.5 h-2.5 fill-cyan-300" />
                         <span>{note.timeFormatted}</span>
                       </button>
 
-                      {editingNoteId !== note.id && (
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(note)}
-                            className="text-zinc-400 hover:text-cyan-300 p-1 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer"
-                            title="Editar apunte"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handlePromptDelete(note)}
-                            className="text-zinc-400 hover:text-rose-400 p-1 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer"
-                            title="Eliminar apunte"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {editingNoteId === note.id ? (
-                      <div className="space-y-2.5 pt-1">
-                        {/* Selector de tiempo con botón rápido de minuto actual */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-zinc-900 border border-zinc-800">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1 shrink-0">
-                              <Clock className="w-3 h-3 text-cyan-400" />
-                              <span>Minuto:</span>
-                            </span>
-                            <input
-                              type="text"
-                              value={editingNoteTimeFormatted}
-                              onChange={(e) => setEditingNoteTimeFormatted(e.target.value)}
-                              placeholder="MM:SS"
-                              className="bg-zinc-950 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2 py-0.5 text-xs text-cyan-300 font-mono font-bold w-20 text-center focus:outline-none"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setEditingNoteTimeFormatted(formatSecondsToTime(currentLiveSeconds))}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-[10px] font-bold text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
-                            title="Poner el segundo exacto que se está reproduciendo ahora en el vídeo"
-                          >
-                            <FastForward className="w-3 h-3" />
-                            <span>Usar minuto actual ({formatSecondsToTime(currentLiveSeconds)})</span>
-                          </button>
-                        </div>
-
-                        <textarea
-                          value={editingNoteText}
-                          onChange={(e) => setEditingNoteText(e.target.value)}
-                          rows={2}
-                          className="w-full bg-zinc-900 border-2 border-cyan-500 rounded-xl p-2.5 text-xs sm:text-sm text-white focus:outline-none resize-none leading-relaxed"
-                          placeholder="Editar apunte..."
-                          autoFocus
-                        />
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={handleCancelEdit}
-                            className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors cursor-pointer"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSaveEdit(note)}
-                            disabled={!editingNoteText.trim()}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer active:scale-95"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Guardar cambios</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed">
+                      <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed break-words flex-1">
                         {note.text}
                       </p>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleStartEdit(e, note)}
+                        className="text-zinc-400 hover:text-cyan-300 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                        title="Editar apunte y minuto"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handlePromptDelete(e, note)}
+                        className="text-zinc-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                        title="Eliminar apunte"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1000,6 +942,97 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
       </div>
     </div>
+
+    {/* Modal Grande de Edición de Apunte (Capa Superior Viewport Z-[100]) */}
+    {noteToEdit && (
+      <div 
+        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-zinc-900 border-2 border-cyan-500/50 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scale-up text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 shrink-0">
+                <Edit3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-white">Editar Apunte</h4>
+                <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[280px]">
+                  {noteToEdit.videoTitle || video.title}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCancelEditModal}
+              className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Selector de Minuto y Botón de Segundo Actual */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-zinc-950 border border-zinc-800">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 shrink-0">
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Minuto:</span>
+              </span>
+              <input
+                type="text"
+                value={noteToEdit.timeFormatted}
+                onChange={(e) => setNoteToEdit({ ...noteToEdit, timeFormatted: e.target.value })}
+                placeholder="MM:SS"
+                className="bg-zinc-900 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-mono font-bold w-24 text-center focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setNoteToEdit({ ...noteToEdit, timeFormatted: formatSecondsToTime(currentLiveSeconds) })}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-xs font-bold text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
+              title="Poner el segundo exacto que se está reproduciendo ahora"
+            >
+              <FastForward className="w-3.5 h-3.5" />
+              <span>Usar minuto actual ({formatSecondsToTime(currentLiveSeconds)})</span>
+            </button>
+          </div>
+
+          {/* Textarea de la Nota */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-zinc-400">Texto del apunte:</label>
+            <textarea
+              value={noteToEdit.text}
+              onChange={(e) => setNoteToEdit({ ...noteToEdit, text: e.target.value })}
+              rows={4}
+              className="w-full bg-zinc-950 border-2 border-zinc-800 focus:border-cyan-400 rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none resize-none leading-relaxed"
+              placeholder="Escribe el contenido del apunte..."
+              autoFocus
+            />
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={handleCancelEditModal}
+              className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEditModal}
+              disabled={!noteToEdit.text.trim()}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 shadow-lg shadow-cyan-950 transition-all cursor-pointer active:scale-95"
+            >
+              <Check className="w-3.5 h-3.5" />
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Modal Grande de Confirmación para Eliminar Apunte (Capa Superior Viewport Z-[100]) */}
     {noteToDelete && (
