@@ -164,14 +164,21 @@ export async function subscribeToPushNotifications() {
       isPwa: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     };
 
-    if (SHEETS_DB_URL) {
+    if (SHEETS_DB_URL && payload.endpoint) {
       try {
-        await fetch(SHEETS_DB_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const jsonPayload = JSON.stringify(payload);
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          const blob = new Blob([jsonPayload], { type: 'text/plain;charset=utf-8' });
+          navigator.sendBeacon(SHEETS_DB_URL, blob);
+        } else {
+          await fetch(SHEETS_DB_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            keepalive: true,
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: jsonPayload
+          });
+        }
       } catch (err) {
         console.warn('Error enviando suscripción push a Google Sheets:', err);
       }
