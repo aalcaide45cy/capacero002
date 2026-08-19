@@ -376,6 +376,21 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           </div>
         </div>
 
+        {/* Banner de Instrucciones Claras y Directas */}
+        <div className="mx-5 sm:mx-6 mt-3 p-3 bg-gradient-to-r from-blue-950/50 via-zinc-900 to-cyan-950/50 border border-cyan-500/30 rounded-2xl shrink-0">
+          <div className="flex items-start gap-2.5">
+            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs leading-relaxed text-zinc-300">
+              <p>
+                <strong className="text-white">¿Para qué sirve?</strong> Conecta tu PC y móvil para tener exactamente los mismos apuntes y progreso en ambos.
+              </p>
+              <p>
+                <strong className="text-cyan-300">¿Qué ocurrirá?</strong> Al vincular, tus notas se fusionan. A partir de ahí, cualquier cambio (crear, editar o borrar) se sincronizará automáticamente en tiempo real.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Contenido según pestaña */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar">
           
@@ -403,13 +418,13 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                 <span>Esperando escaneo con la cámara del móvil...</span>
               </div>
 
-              <div className="space-y-1.5 max-w-sm">
+              <div className="space-y-1 max-w-sm">
                 <h4 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
                   <Smartphone className="w-4 h-4 text-cyan-400" />
                   <span>Apunta con la cámara de tu teléfono</span>
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Abre la cámara de tu iPhone / Android y enfoca este código QR. Al tocar el enlace, <strong>los datos de ambos dispositivos se sincronizarán y combinarán en los dos sentidos</strong>.
+                  Abre la cámara de tu móvil y enfoca este código QR. Al tocar el enlace, se completará la sincronización en 2 segundos.
                 </p>
               </div>
 
