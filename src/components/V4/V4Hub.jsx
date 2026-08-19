@@ -33,37 +33,42 @@ export default function V4Hub() {
     const handleCheckSyncHash = async () => {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash;
+      if (!hash || hash === '#' || hash === '') return;
       
       // Caso 1: Emparejamiento por Nube (#pair=CPXXXX)
-      if (hash && hash.startsWith('#pair=')) {
+      if (hash.startsWith('#pair=')) {
         const pairId = hash.replace('#pair=', '').trim();
+        // Limpiar inmediatamente el hash de la barra de direcciones
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {}
+
         if (pairId) {
-          setSyncToastMessage('⏳ Sincronizando con tu PC...');
+          setSyncToastMessage('⏳ Sincronizando notas con tu otro dispositivo...');
           const res = await completeQRExchange(pairId);
-          if (res.success) {
+          if (res && res.success) {
             setSyncToastMessage('🎉 ' + res.message);
           } else {
-            setSyncToastMessage('⚠️ ' + (res.message || 'Error al sincronizar'));
+            setSyncToastMessage(null);
           }
-          setTimeout(() => setSyncToastMessage(null), 6000);
-          try {
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          } catch (e) {}
+          setTimeout(() => setSyncToastMessage(null), 4000);
         }
       }
       
       // Caso 2: Carga directa por URL (#sync=...)
-      else if (hash && hash.startsWith('#sync=')) {
-        const payload = hash.replace('#sync=', '');
+      else if (hash.startsWith('#sync=')) {
+        const payload = hash.replace('#sync=', '').trim();
+        // Limpiar inmediatamente el hash de la barra de direcciones
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {}
+
         if (payload) {
           const res = applySyncPayload(payload);
-          if (res.success) {
-            setSyncToastMessage('🎉 ¡Dispositivos sincronizados con éxito! Se han fusionado tus notas y lecciones.');
-            setTimeout(() => setSyncToastMessage(null), 6000);
+          if (res && res.success) {
+            setSyncToastMessage('🎉 ¡Dispositivos sincronizados con éxito! Se han fusionado tus notas.');
+            setTimeout(() => setSyncToastMessage(null), 4000);
           }
-          try {
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          } catch (e) {}
         }
       }
     };
