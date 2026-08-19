@@ -30,18 +30,25 @@ export default function V4Hub() {
     initAnalyticsSession();
   }, []);
 
-  // Si la app está instalada (PWA en Windows/Android/iOS) y aún no tiene permiso de avisos, lanzar el diálogo nativo del sistema
+  // Si la app está instalada (PWA en Windows/Android/iOS):
+  // 1. Si no tiene permiso ('default'), lanza el diálogo nativo del sistema.
+  // 2. Si ya lo tenía concedido ('granted'), renueva y sincroniza la suscripción silenciosamente.
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const isStandalone = 
         window.matchMedia('(display-mode: standalone)').matches || 
         window.navigator.standalone === true;
       
-      if (isStandalone && Notification.permission === 'default') {
-        const timer = setTimeout(() => {
+      if (isStandalone) {
+        if (Notification.permission === 'default') {
+          const timer = setTimeout(() => {
+            subscribeToPushNotifications();
+          }, 600);
+          return () => clearTimeout(timer);
+        } else if (Notification.permission === 'granted') {
+          // Re-sincronizar en segundo plano sin molestar al usuario
           subscribeToPushNotifications();
-        }, 800);
-        return () => clearTimeout(timer);
+        }
       }
     }
   }, []);
