@@ -155,15 +155,18 @@ a, button {
 }
 
 .animate-circuit-pulse-1 {
-  animation: circuit-dash-1 6s ease-in-out infinite;
+  animation: circuit-dash-1 7s ease-in-out infinite;
+  will-change: stroke-dashoffset;
 }
 
 .animate-circuit-pulse-2 {
-  animation: circuit-dash-2 8.5s ease-in-out 2.5s infinite;
+  animation: circuit-dash-2 9.5s ease-in-out 2.5s infinite;
+  will-change: stroke-dashoffset;
 }
 
 .animate-circuit-pulse-3 {
-  animation: circuit-dash-3 10.5s ease-in-out 5s infinite;
+  animation: circuit-dash-3 12s ease-in-out 5s infinite;
+  will-change: stroke-dashoffset;
 }
 
 @media (prefers-reduced-motion: reduce) {
