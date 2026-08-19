@@ -24,6 +24,14 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   // Inicializar QR y Polling al abrir
   useEffect(() => {
     if (isOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          stopCamera();
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+
       setCopied(false);
       setErrorMessage(null);
       setManualCode('');
@@ -49,15 +57,16 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           }, 1500);
         }
       });
+
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        stopCamera();
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      };
     } else {
       stopCamera();
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     }
-
-    return () => {
-      stopCamera();
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
   }, [isOpen]);
 
   // Manejo de Cámara al cambiar pestañas
@@ -223,9 +232,15 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
+      onClick={() => {
+        stopCamera();
+        onClose();
+      }}
+    >
       <div 
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative text-left max-h-[90vh]"
+        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative text-left max-h-[90vh] cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -187,11 +187,20 @@ export default function V4Hub() {
       
       {/* Banner Flotante de Sincronización QR Exitosa */}
       {syncToastMessage && (
-        <div className="fixed top-6 right-6 z-50 max-w-md p-4 bg-zinc-950/95 backdrop-blur-md border-2 border-emerald-400 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center gap-3 animate-fade-in">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center shrink-0 shadow-md">
-            <Sparkles className="w-4 h-4 text-white" />
+        <div className="fixed top-6 right-6 z-50 max-w-md p-4 bg-zinc-950/95 backdrop-blur-md border-2 border-emerald-400 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center shrink-0 shadow-md">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <p className="leading-snug">{syncToastMessage}</p>
           </div>
-          <p className="leading-snug">{syncToastMessage}</p>
+          <button
+            onClick={() => setSyncToastMessage(null)}
+            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0 ml-2"
+            aria-label="Cerrar aviso"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 

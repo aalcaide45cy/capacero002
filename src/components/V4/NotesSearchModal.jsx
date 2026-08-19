@@ -58,6 +58,16 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, allVid
     setNotesTick((prev) => prev + 1);
   };
 
+  React.useEffect(() => {
+    if (isOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   const handleSelectNoteItem = (note) => {
     if (!onSelectNote) return;
 
@@ -78,9 +88,12 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, allVid
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
+      onClick={onClose}
+    >
       <div 
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] relative text-left"
+        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] relative text-left cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header del Modal */}

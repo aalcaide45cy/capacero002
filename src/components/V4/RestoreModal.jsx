@@ -6,6 +6,16 @@ export default function RestoreModal({ isOpen, onClose, onRestoreSuccess }) {
   const [errorMessage, setErrorMessage] = useState(null);
   const fileInputRef = useRef(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleProcessFile = (file) => {
@@ -45,9 +55,12 @@ export default function RestoreModal({ isOpen, onClose, onRestoreSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
+      onClick={onClose}
+    >
       <div 
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative text-left"
+        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative text-left cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Hidden input */}
