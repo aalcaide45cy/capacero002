@@ -230,30 +230,39 @@ export function importProgressBackup(jsonContent) {
     if (data && typeof data === 'object') {
       let restoredCount = 0;
 
-      if (data.courseProgress) {
-        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(data.courseProgress));
+      // 1. Progreso de Cursos (estándar, directo o legados)
+      const courseProg = data.courseProgress || data.courses || data.progress || (data.lastVideoId || data.completedVideoIds ? data : null);
+      if (courseProg && typeof courseProg === 'object') {
+        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(courseProg));
         restoredCount++;
       }
-      if (data.videoTimestamps) {
-        localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(data.videoTimestamps));
+
+      // 2. Tiempos y Minuto Exacto de Reproducción
+      const timestamps = data.videoTimestamps || data.timestamps || data.times;
+      if (timestamps && typeof timestamps === 'object') {
+        localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(timestamps));
         restoredCount++;
       }
-      if (data.studyNotes) {
-        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(data.studyNotes));
+
+      // 3. Mis Apuntes y Marcadores
+      const notes = data.studyNotes || data.notes || data.apuntes;
+      if (notes && typeof notes === 'object') {
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
         restoredCount++;
       }
 
       if (restoredCount > 0) {
-        window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: data.courseProgress } }));
-        window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: data.studyNotes } }));
+        window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: courseProg } }));
+        window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: notes } }));
         return { 
           success: true, 
-          message: '¡Copia restaurada con éxito! Progreso, tiempos y notas recuperados.' 
+          message: '¡Progreso, minuto exacto y apuntes restaurados con éxito!' 
         };
       }
     }
-    return { success: false, message: 'El archivo JSON no tiene un formato válido de Capa Cero.' };
+    return { success: false, message: 'El archivo JSON no contiene datos reconocibles de Capa Cero.' };
   } catch (e) {
-    return { success: false, message: 'Error al leer el archivo JSON.' };
+    console.error('Error importando backup:', e);
+    return { success: false, message: 'Error al procesar el archivo JSON: formato no válido.' };
   }
 }
