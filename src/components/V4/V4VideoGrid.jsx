@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import NotesSearchModal from './NotesSearchModal';
+import BackupModal from './BackupModal';
+import RestoreModal from './RestoreModal';
 import { 
   getCourseProgress, 
   getAllCoursesProgress, 
@@ -51,6 +53,8 @@ export default function V4VideoGrid({
   const [progressTick, setProgressTick] = useState(0);
   const [backupMessage, setBackupMessage] = useState(null);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const filtersContainerRef = useRef(null);
   const hasTriggeredHintRef = useRef(false);
@@ -395,6 +399,26 @@ export default function V4VideoGrid({
                 {totalNotesCount}
               </span>
             )}
+          </button>
+
+          {/* Botón 5: Backup Notas */}
+          <button
+            onClick={() => setIsBackupModalOpen(true)}
+            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-cyan-500/40 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-sm"
+            title="Exportar copia de seguridad de notas y progreso"
+          >
+            <Download className="w-4 h-4 text-cyan-400" />
+            <span>Backup Notas</span>
+          </button>
+
+          {/* Botón 6: Restaurar Notas */}
+          <button
+            onClick={() => setIsRestoreModalOpen(true)}
+            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-blue-500/40 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-sm"
+            title="Restaurar notas y progreso desde archivo JSON"
+          >
+            <Upload className="w-4 h-4 text-blue-400" />
+            <span>Restaurar Notas</span>
           </button>
         </div>
       </div>
@@ -895,6 +919,27 @@ export default function V4VideoGrid({
         onClose={() => setIsNotesModalOpen(false)}
         onSelectNote={handleSelectNoteFromModal}
         allVideos={videos}
+      />
+
+      {/* Modal Explicativo de Copia de Seguridad */}
+      <BackupModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        onExportSuccess={(msg) => {
+          setBackupMessage(msg);
+          setTimeout(() => setBackupMessage(null), 4000);
+        }}
+      />
+
+      {/* Modal Explicativo de Restauración */}
+      <RestoreModal
+        isOpen={isRestoreModalOpen}
+        onClose={() => setIsRestoreModalOpen(false)}
+        onRestoreSuccess={(msg) => {
+          setProgressTick((prev) => prev + 1);
+          setBackupMessage(msg);
+          setTimeout(() => setBackupMessage(null), 4500);
+        }}
       />
 
     </section>
