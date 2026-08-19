@@ -54,6 +54,21 @@ export default function V4Hero({
   children
 }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
+  const [isStandalone, setIsStandalone] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkStandalone = () => {
+        const standalone = 
+          window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true ||
+          document.referrer.includes('android-app://');
+        setIsStandalone(Boolean(standalone));
+      };
+      checkStandalone();
+      window.addEventListener('appinstalled', () => setIsStandalone(true));
+    }
+  }, []);
 
   return (
     <section className={`relative overflow-hidden transition-all duration-500 ease-in-out border-b border-zinc-900/80 bg-transparent ${
@@ -131,15 +146,17 @@ export default function V4Hero({
           {/* Grupo de Acciones: Instalar App, Avisos Push y Colaboraciones */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-2">
             
-            {/* Botón: Instalar App PWA */}
-            <button
-              onClick={(e) => { e.preventDefault(); onOpenInstall && onOpenInstall(); }}
-              className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
-              title="Instalar App Capa Cero 3D en pantalla de inicio"
-            >
-              <Smartphone className="w-4 h-4 text-cyan-400" />
-              <span>Instalar App</span>
-            </button>
+            {/* Botón: Instalar App PWA (Oculto automáticamente si ya está instalada / abierta como App) */}
+            {!isStandalone && (
+              <button
+                onClick={(e) => { e.preventDefault(); onOpenInstall && onOpenInstall(); }}
+                className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
+                title="Instalar App Capa Cero 3D en pantalla de inicio"
+              >
+                <Smartphone className="w-4 h-4 text-cyan-400" />
+                <span>Instalar App</span>
+              </button>
+            )}
 
             {/* Botón: Notificaciones Push */}
             <button

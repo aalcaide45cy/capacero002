@@ -31,6 +31,24 @@ export default function V4Hub() {
     initAnalyticsSession();
   }, []);
 
+  // En la primera apertura de la app (o PWA instalada), invitar automáticamente a activar notificaciones
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const isStandalone = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        window.navigator.standalone === true;
+      const hasPrompted = localStorage.getItem('capacero_auto_prompted_push');
+      
+      if (!hasPrompted && Notification.permission === 'default') {
+        const timer = setTimeout(() => {
+          setIsNotificationModalOpen(true);
+          localStorage.setItem('capacero_auto_prompted_push', 'true');
+        }, isStandalone ? 800 : 2500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, []);
+
   // Actualizar la sección activa según la pestaña actual
   useEffect(() => {
     if (activeTab === 'videos') setActiveSection('Videoteca Grid');
