@@ -720,6 +720,36 @@ export const exportAnalyticsToJSON = (sessions, events) => {
 // URL de la pestaña de estadísticas publicada en Google Sheets
 export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1728927826";
 
+// Obtener métricas y registros de notificaciones push desde Google Sheets
+export const fetchPushStats = async () => {
+    try {
+        const url = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        const data = await res.json();
+        return {
+            success: true,
+            total: data.total || 0,
+            mobiles: data.mobiles || 0,
+            pcs: data.pcs || 0,
+            expired: data.expired || 0,
+            devices: data.devices || [],
+            history: data.history || []
+        };
+    } catch (e) {
+        console.warn("Error obteniendo estadísticas push:", e);
+        return {
+            success: false,
+            total: 0,
+            mobiles: 0,
+            pcs: 0,
+            expired: 0,
+            devices: [],
+            history: []
+        };
+    }
+};
+
 // Sincronizar con Google Sheets (leer e importar filas remotas si existen)
 export const syncWithGoogleSheet = async () => {
     try {

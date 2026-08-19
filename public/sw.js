@@ -99,9 +99,15 @@ self.addEventListener('push', (event) => {
     }
   } else {
     // Si el push se envió como ping VAPID directo sin cifrado, consultar última notificación de Google Sheets
-    getDataPromise = fetch(GOOGLE_SHEETS_WEBHOOK + '?action=latest_notification')
+    const fetchUrl = GOOGLE_SHEETS_WEBHOOK + '?action=latest_notification&t=' + Date.now();
+    getDataPromise = fetch(fetchUrl, {
+      method: 'GET',
+      mode: 'cors',
+      redirect: 'follow',
+      cache: 'no-store'
+    })
       .then((res) => res.json())
-      .catch(() => ({
+      .catch((err) => ({
         title: 'Capa Cero 3D',
         body: '¡Nuevo tutorial o actualización disponible en la academia!',
         url: 'https://www.capacero3d.com'

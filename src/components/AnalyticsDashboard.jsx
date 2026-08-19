@@ -5,7 +5,7 @@ import {
     Monitor, Tablet, ArrowUpRight, TrendingUp, ShieldCheck, CheckCircle2,
     Calendar, Sparkles, Filter, Trash2, Database, ExternalLink, HelpCircle,
     Play, X, Info, ChevronRight, Copy, Check, SlidersHorizontal, Eye,
-    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown
+    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown, Bell
 } from 'lucide-react';
 import {
     loadAnalyticsData,
@@ -16,7 +16,8 @@ import {
     clearAnalyticsDB,
     RECOMMENDED_SHEET_COLUMNS,
     GOOGLE_APPS_SCRIPT_CODE,
-    syncWithGoogleSheet
+    syncWithGoogleSheet,
+    fetchPushStats
 } from '../utils/analyticsStorage';
 import { loadV4Videos, getYouTubeThumbnail } from '../utils/loadV4Videos';
 
@@ -37,6 +38,7 @@ export default function AnalyticsDashboard() {
     const [sessions, setSessions] = useState([]);
     const [events, setEvents] = useState([]);
     const [videosMetadata, setVideosMetadata] = useState([]);
+    const [pushStats, setPushStats] = useState({ total: 0, mobiles: 0, pcs: 0, expired: 0, devices: [], history: [] });
     const [activeTab, setActiveTab] = useState('overview');
 
     // Granular Filters State
@@ -113,6 +115,8 @@ export default function AnalyticsDashboard() {
             const data = await loadAnalyticsData(mode);
             setSessions(data.sessions || []);
             setEvents(data.events || []);
+            const pStats = await fetchPushStats();
+            setPushStats(pStats);
         } catch (err) {
             console.error("Error cargando estadísticas:", err);
         }
@@ -714,6 +718,7 @@ export default function AnalyticsDashboard() {
                 <div className="flex items-center gap-2 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 overflow-x-auto no-scrollbar">
                     {[
                         { id: 'overview', label: 'Visión General', icon: BarChart2 },
+                        { id: 'push', label: 'Notificaciones Push & PWA', icon: Bell },
                         { id: 'geo', label: 'Geolocalización & Países', icon: Globe },
                         { id: 'subscriptions', label: 'Suscripciones & Origen', icon: Heart },
                         { id: 'content', label: 'Tarjetas & Tirón', icon: Layers },
@@ -1130,6 +1135,160 @@ export default function AnalyticsDashboard() {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ================= TAB PUSH: NOTIFICACIONES PUSH & PWA ================= */}
+                {activeTab === 'push' && (
+                    <div className="space-y-6 text-left">
+                        {/* KPI Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                                    <Smartphone className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{pushStats.mobiles}</div>
+                                    <div className="text-xs text-zinc-400 font-semibold">Móviles Activos (iOS/Android)</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-center text-blue-300">
+                                    <Monitor className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-white">{pushStats.pcs}</div>
+                                    <div className="text-xs text-zinc-400 font-semibold">PCs Activos (Windows/Mac)</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
+                                    <Users className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-emerald-400">{pushStats.total}</div>
+                                    <div className="text-xs text-zinc-400 font-semibold">Total Dispositivos Activos</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-rose-950/60 border border-rose-500/40 flex items-center justify-center text-rose-300">
+                                    <Trash2 className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-rose-400">{pushStats.expired}</div>
+                                    <div className="text-xs text-zinc-400 font-semibold">Caducados / Desinstalados</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Historial de Notificaciones Enviadas */}
+                        <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl">
+                            <div className="flex items-center justify-between gap-4 mb-4">
+                                <div>
+                                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                        <Bell className="w-5 h-5 text-cyan-400" />
+                                        Historial de Notificaciones Enviadas
+                                    </h3>
+                                    <p className="text-xs text-zinc-400 mt-0.5">
+                                        Registro de avisos push emitidos desde el panel de Google Sheets.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {pushStats.history.length === 0 ? (
+                                <div className="py-10 text-center text-xs text-zinc-500">
+                                    No hay notificaciones registradas todavía en el historial.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider">
+                                                <th className="py-3 px-3">Fecha</th>
+                                                <th className="py-3 px-3">Título</th>
+                                                <th className="py-3 px-3">Mensaje</th>
+                                                <th className="py-3 px-3">Enlace</th>
+                                                <th className="py-3 px-3 text-center">Móviles</th>
+                                                <th className="py-3 px-3 text-center">PCs</th>
+                                                <th className="py-3 px-3 text-center">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-900 text-zinc-300">
+                                            {pushStats.history.map((h, idx) => (
+                                                <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
+                                                    <td className="py-3 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">{h.timestamp}</td>
+                                                    <td className="py-3 px-3 font-bold text-white">{h.title}</td>
+                                                    <td className="py-3 px-3 text-zinc-300 max-w-xs truncate">{h.body}</td>
+                                                    <td className="py-3 px-3">
+                                                        <a href={h.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline max-w-[140px] truncate block">
+                                                            {h.url}
+                                                        </a>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center font-bold text-cyan-300">{h.mobiles || 0}</td>
+                                                    <td className="py-3 px-3 text-center font-bold text-blue-300">{h.pcs || 0}</td>
+                                                    <td className="py-3 px-3 text-center font-extrabold text-emerald-400">{h.delivered || 0}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Dispositivos Registrados */}
+                        <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl">
+                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
+                                <Smartphone className="w-5 h-5 text-blue-400" />
+                                Dispositivos Suscritos a Avisos
+                            </h3>
+                            <p className="text-xs text-zinc-400 mb-4">
+                                Lista de terminales que tienen la app instalada o el permiso push otorgado.
+                            </p>
+
+                            {pushStats.devices.length === 0 ? (
+                                <div className="py-8 text-center text-xs text-zinc-500">
+                                    No hay dispositivos registrados todavía.
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider">
+                                                <th className="py-3 px-3">Fecha Alta</th>
+                                                <th className="py-3 px-3">Dispositivo</th>
+                                                <th className="py-3 px-3">Sistema Operativo</th>
+                                                <th className="py-3 px-3">Navegador</th>
+                                                <th className="py-3 px-3 text-center">PWA Instalada</th>
+                                                <th className="py-3 px-3 text-center">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-900 text-zinc-300">
+                                            {pushStats.devices.map((d, idx) => (
+                                                <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
+                                                    <td className="py-3 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">{d.timestamp}</td>
+                                                    <td className="py-3 px-3 font-bold text-white">{d.device}</td>
+                                                    <td className="py-3 px-3 text-zinc-300">{d.os}</td>
+                                                    <td className="py-3 px-3 text-zinc-300">{d.browser}</td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${d.isPwa === 'SI' ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40' : 'bg-zinc-800 text-zinc-400'}`}>
+                                                            {d.isPwa}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${d.status === 'ACTIVO' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' : 'bg-rose-950 text-rose-300 border border-rose-500/40'}`}>
+                                                            {d.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
