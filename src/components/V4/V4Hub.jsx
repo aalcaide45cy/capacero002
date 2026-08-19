@@ -40,15 +40,21 @@ export default function V4Hub() {
         window.navigator.standalone === true;
       
       if (isStandalone) {
-        if (Notification.permission === 'default') {
-          const timer = setTimeout(() => {
-            subscribeToPushNotifications();
-          }, 600);
-          return () => clearTimeout(timer);
-        } else if (Notification.permission === 'granted') {
-          // Re-sincronizar en segundo plano sin molestar al usuario
+        // Intentar inmediatamente
+        subscribeToPushNotifications();
+
+        // Y en el primer toque del usuario (requisito de iOS WebKit para user activation)
+        const handleFirstInteraction = () => {
           subscribeToPushNotifications();
-        }
+        };
+
+        window.addEventListener('touchend', handleFirstInteraction, { once: true, passive: true });
+        window.addEventListener('click', handleFirstInteraction, { once: true, passive: true });
+
+        return () => {
+          window.removeEventListener('touchend', handleFirstInteraction);
+          window.removeEventListener('click', handleFirstInteraction);
+        };
       }
     }
   }, []);

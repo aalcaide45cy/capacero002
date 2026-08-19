@@ -121,12 +121,19 @@ export async function subscribeToPushNotifications() {
     }
     await navigator.serviceWorker.ready;
 
-    // 3. Crear suscripción VAPID
-    const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: convertedVapidKey
-    });
+    // 3. Obtener suscripción existente o crear una nueva VAPID
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedVapidKey
+      });
+    }
+
+    if (!subscription) {
+      throw new Error('No se pudo generar la suscripción Push en el navegador');
+    }
 
     const subJson = subscription.toJSON();
     const { os, device, browser } = getDeviceContext();
