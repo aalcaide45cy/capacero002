@@ -28,6 +28,7 @@
     "@uiw/codemirror-theme-vscode": "^4.25.10",
     "framer-motion": "^12.33.0",
     "highlight.js": "^11.11.1",
+    "jsqr": "^1.4.0",
     "katex": "^0.17.0",
     "lucide-react": "^0.563.0",
     "papaparse": "^5.5.3",

@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, QrCode, Copy, Check, Smartphone, Monitor, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock } from 'lucide-react';
-import { generateSyncUrl, applySyncPayload, getAllStudyNotes, getAllCoursesProgress } from '../../utils/courseProgress';
+import jsQR from 'jsqr';
+import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle } from 'lucide-react';
+import { generateSyncUrl, applySyncPayload, getAllStudyNotes } from '../../utils/courseProgress';
 
 export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const [copied, setCopied] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
-  const [activeTab, setActiveTab] = useState('qr'); // 'qr' o 'paste'
+  const [activeTab, setActiveTab] = useState('qr'); // 'qr' | 'camera' | 'paste'
   const [syncUrl, setSyncUrl] = useState('');
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const animFrameIdRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -17,8 +25,110 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
       setCopied(false);
       setErrorMessage(null);
       setManualCode('');
+      setCameraError(null);
+    } else {
+      stopCamera();
     }
   }, [isOpen]);
+
+  // Detener la cámara al desmontar o cambiar de pestaña
+  useEffect(() => {
+    if (activeTab !== 'camera') {
+      stopCamera();
+    } else {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [activeTab]);
+
+  const stopCamera = () => {
+    if (animFrameIdRef.current) {
+      cancelAnimationFrame(animFrameIdRef.current);
+      animFrameIdRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    stopCamera();
+    setCameraError(null);
+
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Tu navegador no permite acceso a la cámara o requiere HTTPS.');
+      }
+
+      // Intentar primero con cámara trasera (si es móvil) o webcam (si es PC)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+      }).catch(async () => {
+        return await navigator.mediaDevices.getUserMedia({ video: true });
+      });
+
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute('playsinline', 'true');
+        await videoRef.current.play();
+        setCameraActive(true);
+        scanQRCode();
+      }
+    } catch (err) {
+      console.warn('Error accediendo a la cámara:', err);
+      setCameraError(err.message || 'No se pudo acceder a la cámara o el permiso fue denegado.');
+      setCameraActive(false);
+    }
+  };
+
+  const scanQRCode = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+
+    if (!video || !canvas) return;
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+
+      if (width && height) {
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(video, 0, 0, width, height);
+
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert'
+        });
+
+        if (code && code.data) {
+          let payload = code.data;
+          if (payload.includes('#sync=')) {
+            payload = payload.split('#sync=')[1];
+          }
+
+          const res = applySyncPayload(payload);
+          if (res.success) {
+            stopCamera();
+            if (onSyncSuccess) {
+              onSyncSuccess('✅ ' + res.message);
+            }
+            onClose();
+            return;
+          }
+        }
+      }
+    }
+
+    animFrameIdRef.current = requestAnimationFrame(scanQRCode);
+  };
 
   if (!isOpen) return null;
 
@@ -77,13 +187,16 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                 </span>
               </h3>
               <p className="text-xs text-zinc-400">
-                Pasa tus notas y progreso entre PC y Móvil al instante
+                Transfiere notas y progreso entre tu PC y tu iPhone en ambos sentidos
               </p>
             </div>
           </div>
 
           <button
-            onClick={onClose}
+            onClick={() => {
+              stopCamera();
+              onClose();
+            }}
             className="p-2 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
             aria-label="Cerrar modal"
           >
@@ -91,38 +204,54 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           </button>
         </div>
 
-        {/* Selector de Pestañas */}
-        <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5">
+        {/* Selector de 3 Pestañas */}
+        <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5 gap-1">
+          {/* Pestaña 1: Mostrar QR */}
           <button
             onClick={() => setActiveTab('qr')}
-            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               activeTab === 'qr'
                 ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Smartphone className="w-4 h-4 text-cyan-400" />
-            <span>1. Escanear con Móvil</span>
+            <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+            <span>1. Mostrar QR</span>
           </button>
 
+          {/* Pestaña 2: Escanear con Cámara */}
+          <button
+            onClick={() => setActiveTab('camera')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeTab === 'camera'
+                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 text-emerald-400" />
+            <span>2. Escanear QR</span>
+          </button>
+
+          {/* Pestaña 3: Pegar Enlace */}
           <button
             onClick={() => setActiveTab('paste')}
-            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               activeTab === 'paste'
                 ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Link2 className="w-4 h-4 text-blue-400" />
-            <span>2. Enlace / Del Móvil al PC</span>
+            <Link2 className="w-3.5 h-3.5 text-blue-400" />
+            <span>3. Pegar Enlace</span>
           </button>
         </div>
 
         {/* Contenido según pestaña */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar">
-          {activeTab === 'qr' ? (
+          
+          {/* ================= 1. PESTAÑA: MOSTRAR QR ================= */}
+          {activeTab === 'qr' && (
             <div className="flex flex-col items-center text-center space-y-4">
-              {/* Tarjeta con Código QR */}
               <div className="p-4 bg-white rounded-3xl shadow-[0_0_30px_rgba(0,229,255,0.25)] border-4 border-cyan-400/40 inline-flex items-center justify-center">
                 {syncUrl ? (
                   <QRCodeSVG
@@ -138,18 +267,16 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                 )}
               </div>
 
-              {/* Instrucción */}
               <div className="space-y-1.5 max-w-sm">
                 <h4 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
                   <Smartphone className="w-4 h-4 text-cyan-400" />
-                  <span>Apunta la cámara de tu teléfono aquí</span>
+                  <span>Para pasar datos al otro dispositivo</span>
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Abre la app Cámara de tu iPhone o Android y toca la notificación para transferir tus <strong className="text-cyan-300">{totalNotes} notas</strong> y cursos al teléfono sin registros.
+                  Apunta con la cámara de tu iPhone, o dale a <strong>"Escanear QR"</strong> en el otro dispositivo para transferir tus <strong className="text-cyan-300">{totalNotes} notas</strong> y avance de inmediato.
                 </p>
               </div>
 
-              {/* Botón copiar enlace rápido */}
               <button
                 onClick={handleCopyLink}
                 className="w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700 hover:border-cyan-400/60 px-4 py-2.5 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
@@ -167,13 +294,62 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                 )}
               </button>
             </div>
-          ) : (
+          )}
+
+          {/* ================= 2. PESTAÑA: ESCANEAR CON CÁMARA / WEBCAM ================= */}
+          {activeTab === 'camera' && (
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="relative w-full aspect-video max-w-sm bg-black rounded-2xl overflow-hidden border-2 border-cyan-500/40 flex items-center justify-center shadow-lg">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                />
+                <canvas ref={canvasRef} className="hidden" />
+
+                {/* Guía visual de escaneo y láser animado */}
+                {cameraActive && (
+                  <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
+                    <div className="w-44 h-44 border-2 border-dashed border-cyan-400/90 rounded-2xl relative">
+                      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee] animate-pulse" />
+                    </div>
+                    <span className="text-[11px] font-bold text-white bg-black/75 px-3 py-1 rounded-full mt-3 backdrop-blur-sm border border-zinc-700">
+                      Enfoca el código QR de tu iPhone aquí
+                    </span>
+                  </div>
+                )}
+
+                {/* Error de cámara */}
+                {cameraError && (
+                  <div className="absolute inset-0 bg-zinc-950 p-5 flex flex-col items-center justify-center text-center space-y-3">
+                    <AlertTriangle className="w-8 h-8 text-amber-400" />
+                    <p className="text-xs text-zinc-300 font-medium max-w-xs">{cameraError}</p>
+                    <button
+                      onClick={startCamera}
+                      className="px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-bold text-white hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Reintentar</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-zinc-400 max-w-sm leading-relaxed">
+                Abre <strong>Sincronizar QR</strong> en tu iPhone (Pestaña 1) y <strong>muestra la pantalla de tu móvil delante de la webcam de tu PC</strong>. Se escaneará en 1 segundo automáticamente.
+              </div>
+            </div>
+          )}
+
+          {/* ================= 3. PESTAÑA: PEGAR ENLACE ================= */}
+          {activeTab === 'paste' && (
             <div className="space-y-4 text-left">
               <div className="bg-blue-950/40 border border-blue-500/30 p-3.5 rounded-2xl flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-zinc-300 leading-relaxed">
-                  <strong className="text-white block mb-0.5">¿Cómo pasar notas del Móvil de vuelta al PC?</strong>
-                  En tu móvil, entra en este mismo botón de Sincronizar, dale a <strong className="text-cyan-300">"Copiar Enlace"</strong> (o envíatelo por WhatsApp Web / AirDrop) y pégalo en este recuadro.
+                  <strong className="text-white block mb-0.5">Pegar Enlace Directo</strong>
+                  Si no deseas usar la cámara, dale a <strong className="text-cyan-300">"Copiar Enlace"</strong> en tu móvil, envíatelo por WhatsApp Web o AirDrop y pégalo aquí.
                 </div>
               </div>
 
