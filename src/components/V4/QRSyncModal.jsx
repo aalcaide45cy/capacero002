@@ -1,19 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import jsQR from 'jsqr';
-import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle, Radio } from 'lucide-react';
-import { initiateQRSyncSession, pollQRSyncSession, completeQRExchange, applySyncPayload, getAllStudyNotes } from '../../utils/courseProgress';
+import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle, Trash2, AlertCircle } from 'lucide-react';
+import { initiateQRSyncSession, pollQRSyncSession, completeQRExchange, applySyncPayload, getAllStudyNotes, getAllCoursesProgress, clearAllLocalDeviceData } from '../../utils/courseProgress';
 
 export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const [copied, setCopied] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
-  const [activeTab, setActiveTab] = useState('qr'); // 'qr' | 'camera' | 'paste'
+  const [activeTab, setActiveTab] = useState('qr');
   const [syncUrl, setSyncUrl] = useState('');
   const [pairId, setPairId] = useState('');
-  const [isWaitingForPhone, setIsWaitingForPhone] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -21,9 +21,20 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const animFrameIdRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
-  // Inicializar QR y Polling al abrir
+  // Detectar si es móvil (iPhone/Android) o PC
+  const isMobile = typeof window !== 'undefined' && (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent || '') || window.innerWidth < 768);
+
+  // Inicializar estado según dispositivo al abrir
   useEffect(() => {
     if (isOpen) {
+      // En móvil se abre por defecto en "Escanear QR" (cámara); en PC en "Mostrar QR"
+      setActiveTab(isMobile ? 'camera' : 'qr');
+      setCopied(false);
+      setErrorMessage(null);
+      setManualCode('');
+      setCameraError(null);
+      setIsConfirmingDelete(false);
+
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
           stopCamera();
@@ -32,18 +43,13 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
       };
       window.addEventListener('keydown', handleKeyDown);
 
-      setCopied(false);
-      setErrorMessage(null);
-      setManualCode('');
-      setCameraError(null);
-      setIsWaitingForPhone(true);
-
+      // Iniciar sesión de emparejamiento para generar QR
       initiateQRSyncSession().then((session) => {
         if (session) {
           setSyncUrl(session.syncUrl);
           setPairId(session.pairId);
 
-          // Iniciar polling en el PC para recibir datos del móvil en cuanto escanee
+          // Iniciar polling en segundo plano
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           pollIntervalRef.current = setInterval(async () => {
             const pollRes = await pollQRSyncSession(session.pairId);
@@ -67,19 +73,19 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
       stopCamera();
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     }
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   // Manejo de Cámara al cambiar pestañas
   useEffect(() => {
     if (activeTab !== 'camera') {
       stopCamera();
-    } else {
+    } else if (isOpen) {
       startCamera();
     }
     return () => {
       stopCamera();
     };
-  }, [activeTab]);
+  }, [activeTab, isOpen]);
 
   const stopCamera = () => {
     if (animFrameIdRef.current) {
@@ -148,7 +154,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           const raw = code.data;
           stopCamera();
 
-          // Caso 1: Código de emparejamiento #pair=CPXXXX
           if (raw.includes('#pair=')) {
             const pId = raw.split('#pair=')[1];
             const exRes = await completeQRExchange(pId);
@@ -157,9 +162,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               onClose();
               return;
             }
-          }
-          // Caso 2: Código directo #sync=...
-          else if (raw.includes('#sync=')) {
+          } else if (raw.includes('#sync=')) {
             const payload = raw.split('#sync=')[1];
             const appRes = applySyncPayload(payload);
             if (appRes.success) {
@@ -208,7 +211,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
         setErrorMessage(res.message || 'Código no válido');
       }
     } else {
-      // Intentar como pairId directo
       const res = await completeQRExchange(raw);
       if (res.success) {
         if (onSyncSuccess) onSyncSuccess('✅ ' + res.message);
@@ -225,13 +227,41 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
     }
   };
 
+  const handleDeleteAllLocal = () => {
+    const res = clearAllLocalDeviceData();
+    if (res.success) {
+      if (onSyncSuccess) {
+        onSyncSuccess('🗑️ Todos los datos locales de este dispositivo han sido eliminados.');
+      }
+      onClose();
+    }
+  };
+
   const allNotes = getAllStudyNotes();
   let totalNotes = 0;
   Object.values(allNotes).forEach((arr) => {
     if (Array.isArray(arr)) totalNotes += arr.length;
   });
 
+  const allCourses = getAllCoursesProgress();
+  const totalCourses = Object.keys(allCourses).length;
+
   if (!isOpen) return null;
+
+  // Definición de pestañas según dispositivo
+  const tabsList = isMobile
+    ? [
+        { id: 'camera', label: '1. Escanear QR', icon: Camera, color: 'text-emerald-400' },
+        { id: 'paste', label: '2. Pegar Enlace', icon: Link2, color: 'text-blue-400' },
+        { id: 'qr', label: '3. Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
+        { id: 'delete', label: '4. Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
+      ]
+    : [
+        { id: 'qr', label: '1. Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
+        { id: 'camera', label: '2. Escanear QR', icon: Camera, color: 'text-emerald-400' },
+        { id: 'paste', label: '3. Pegar Enlace', icon: Link2, color: 'text-blue-400' },
+        { id: 'delete', label: '4. Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
+      ];
 
   return (
     <div 
@@ -255,11 +285,11 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               <h3 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                 <span>Sincronizar Dispositivos</span>
                 <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full uppercase">
-                  Bidireccional
+                  Privado
                 </span>
               </h3>
               <p className="text-xs text-zinc-400">
-                Transfiere y fusiona notas entre PC y Móvil con la cámara del teléfono
+                Sincroniza y fusiona notas entre PC y Móvil al instante
               </p>
             </div>
           </div>
@@ -276,49 +306,35 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           </button>
         </div>
 
-        {/* Selector de 3 Pestañas */}
-        <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5 gap-1">
-          <button
-            onClick={() => setActiveTab('qr')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              activeTab === 'qr'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <QrCode className="w-3.5 h-3.5 text-cyan-400" />
-            <span>1. Mostrar QR</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('camera')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              activeTab === 'camera'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Camera className="w-3.5 h-3.5 text-emerald-400" />
-            <span>2. Escanear QR</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('paste')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              activeTab === 'paste'
-                ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Link2 className="w-3.5 h-3.5 text-blue-400" />
-            <span>3. Pegar Enlace</span>
-          </button>
+        {/* Selector de Pestañas Adaptativo */}
+        <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5 gap-1 overflow-x-auto no-scrollbar">
+          {tabsList.map((t) => {
+            const Icon = t.icon;
+            const isSelected = activeTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setActiveTab(t.id);
+                  setIsConfirmingDelete(false);
+                }}
+                className={`flex-1 min-w-fit px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${t.color}`} />
+                <span>{t.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Contenido según pestaña */}
         <div className="p-5 sm:p-6 space-y-4 overflow-y-auto custom-scrollbar">
           
-          {/* ================= 1. PESTAÑA: MOSTRAR QR ================= */}
+          {/* ================= PESTAÑA: MOSTRAR QR ================= */}
           {activeTab === 'qr' && (
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative p-4 bg-white rounded-3xl shadow-[0_0_30px_rgba(0,229,255,0.25)] border-4 border-cyan-400/40 inline-flex items-center justify-center">
@@ -345,10 +361,10 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               <div className="space-y-1.5 max-w-sm">
                 <h4 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
                   <Smartphone className="w-4 h-4 text-cyan-400" />
-                  <span>Apunta con la cámara de tu iPhone / Móvil</span>
+                  <span>Apunta con la cámara de tu teléfono</span>
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Abre la cámara de tu teléfono y enfoca este código QR. Al tocar el enlace, <strong>los datos de ambos dispositivos se sincronizarán y combinarán automáticamente en los dos sentidos</strong>.
+                  Abre la cámara de tu iPhone / Android y enfoca este código QR. Al tocar el enlace, <strong>los datos de ambos dispositivos se sincronizarán y combinarán en los dos sentidos</strong>.
                 </p>
               </div>
 
@@ -371,7 +387,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
-          {/* ================= 2. PESTAÑA: ESCANEAR CON CÁMARA ================= */}
+          {/* ================= PESTAÑA: ESCANEAR CON CÁMARA ================= */}
           {activeTab === 'camera' && (
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative w-full aspect-video max-w-sm bg-black rounded-2xl overflow-hidden border-2 border-cyan-500/40 flex items-center justify-center shadow-lg">
@@ -410,19 +426,19 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               </div>
 
               <div className="text-xs text-zinc-400 max-w-sm leading-relaxed">
-                Abre <strong>Sincronizar QR</strong> en tu otro dispositivo y enfoca su código QR con esta cámara para transferir y fusionar datos al instante.
+                Abre <strong>Sincronizar QR</strong> en tu PC (Pestaña 1) y <strong>enfoca la pantalla de tu ordenador con esta cámara</strong> para sincronizar y combinar notas al instante.
               </div>
             </div>
           )}
 
-          {/* ================= 3. PESTAÑA: PEGAR ENLACE ================= */}
+          {/* ================= PESTAÑA: PEGAR ENLACE ================= */}
           {activeTab === 'paste' && (
             <div className="space-y-4 text-left">
               <div className="bg-blue-950/40 border border-blue-500/30 p-3.5 rounded-2xl flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-zinc-300 leading-relaxed">
                   <strong className="text-white block mb-0.5">Pegar Enlace o Código</strong>
-                  Pega aquí el enlace de sincronización o código PIN temporal para sincronizar los dos dispositivos.
+                  Pega aquí el enlace de sincronización o código PIN para sincronizar los dos dispositivos sin usar la cámara.
                 </div>
               </div>
 
@@ -455,11 +471,68 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
+          {/* ================= PESTAÑA: ELIMINAR DATOS ================= */}
+          {activeTab === 'delete' && (
+            <div className="space-y-4 text-left">
+              <div className="bg-rose-950/30 border border-rose-500/30 p-4 rounded-2xl flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-zinc-300 leading-relaxed">
+                  <strong className="text-white block mb-0.5">Eliminar datos solo en este dispositivo</strong>
+                  Esta opción restablecerá a cero tus notas de estudio y cursos completados <strong className="text-rose-300">únicamente en la memoria de este navegador</strong>.
+                  <br className="my-1" />
+                  Los datos que tengas en otros dispositivos o que hayas sincronizado previamente <strong>no se verán afectados</strong>.
+                </div>
+              </div>
+
+              {/* Resumen de datos que se eliminarán */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-2xl">
+                  <span className="text-xs text-zinc-400 block font-medium">Notas a eliminar</span>
+                  <strong className="text-base text-rose-400 font-black">{totalNotes}</strong>
+                </div>
+                <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-2xl">
+                  <span className="text-xs text-zinc-400 block font-medium">Cursos iniciados</span>
+                  <strong className="text-base text-rose-400 font-black">{totalCourses}</strong>
+                </div>
+              </div>
+
+              {!isConfirmingDelete ? (
+                <button
+                  onClick={() => setIsConfirmingDelete(true)}
+                  className="w-full flex items-center justify-center gap-2 bg-rose-950/60 hover:bg-rose-900 text-rose-200 hover:text-white border border-rose-500/50 hover:border-rose-400 text-xs sm:text-sm font-bold px-5 py-3 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm mt-2"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-400" />
+                  <span>Eliminar datos de este dispositivo</span>
+                </button>
+              ) : (
+                <div className="p-4 bg-rose-950/80 border-2 border-rose-500 rounded-2xl space-y-3 animate-fade-in text-center">
+                  <p className="text-xs text-white font-bold leading-snug">
+                    ⚠️ ¿Estás seguro? Esta acción borrará de forma permanente tus notas y avance en este navegador.
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => setIsConfirmingDelete(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleDeleteAllLocal}
+                      className="px-4 py-2 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer shadow-lg active:scale-95"
+                    >
+                      Sí, Eliminar Definitivamente
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Garantía de Fusión Inteligente y Privacidad */}
           <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-[11px] text-zinc-400">
             <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>
-              <strong>Fusión Sin Pérdida:</strong> Ambos dispositivos comparan y combinan sus notas sin duplicados.
+              <strong>Fusión Segura:</strong> Ambos dispositivos comparan y combinan sus notas sin duplicados.
             </span>
           </div>
         </div>

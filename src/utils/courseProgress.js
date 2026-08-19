@@ -475,3 +475,25 @@ export async function completeQRExchange(pairId) {
 
   return { success: false, message: 'No se pudo completar el intercambio.' };
 }
+
+// ================= 7. BORRADO LOCAL EXCLUSIVO DE ESTE DISPOSITIVO =================
+export function clearAllLocalDeviceData() {
+  if (typeof window === 'undefined' || !window.localStorage) return { success: false };
+  try {
+    localStorage.removeItem(PROGRESS_STORAGE_KEY);
+    localStorage.removeItem(TIMESTAMPS_STORAGE_KEY);
+    localStorage.removeItem(NOTES_STORAGE_KEY);
+
+    window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: {} } }));
+    window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: {} } }));
+
+    return { 
+      success: true, 
+      message: 'Todos los apuntes y cursos han sido eliminados de este dispositivo.' 
+    };
+  } catch (e) {
+    console.error('Error eliminando datos locales:', e);
+    return { success: false, message: 'Error al eliminar los datos locales.' };
+  }
+}
+

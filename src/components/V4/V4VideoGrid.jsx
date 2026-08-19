@@ -313,6 +313,27 @@ export default function V4VideoGrid({
               ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
               : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
           </p>
+
+          {/* Botón Central Destacado: Sincronizar QR */}
+          <div className="flex justify-center mt-5 mb-2">
+            <button
+              onClick={() => setIsQRSyncModalOpen(true)}
+              className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-zinc-900 to-cyan-950/90 hover:from-blue-900/90 hover:via-zinc-800 hover:to-cyan-900/90 border border-cyan-400/50 hover:border-cyan-300 text-white shadow-[0_0_20px_rgba(0,229,255,0.18)] hover:shadow-[0_0_30px_rgba(0,229,255,0.4)] transition-all duration-200 active:scale-95 cursor-pointer"
+              title="Sincroniza notas y progreso entre tus dispositivos"
+            >
+              <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 group-hover:scale-110 transition-transform">
+                <QrCode className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <span className="text-sm font-black text-white block tracking-tight group-hover:text-cyan-200 transition-colors">
+                  Sincronizar QR
+                </span>
+                <span className="text-[11px] font-medium text-cyan-300/80 block">
+                  Sincroniza notas y progreso
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -410,36 +431,6 @@ export default function V4VideoGrid({
                 {totalNotesCount}
               </span>
             )}
-          </button>
-
-          {/* Botón 5: Backup Notas */}
-          <button
-            onClick={() => setIsBackupModalOpen(true)}
-            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-cyan-500/40 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-sm"
-            title="Exportar copia de seguridad de notas y progreso"
-          >
-            <Download className="w-4 h-4 text-cyan-400" />
-            <span>Backup Notas</span>
-          </button>
-
-          {/* Botón 6: Restaurar Notas */}
-          <button
-            onClick={() => setIsRestoreModalOpen(true)}
-            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-blue-500/40 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-sm"
-            title="Restaurar notas y progreso desde archivo JSON"
-          >
-            <Upload className="w-4 h-4 text-blue-400" />
-            <span>Restaurar Notas</span>
-          </button>
-
-          {/* Botón 7: Sincronizar por QR */}
-          <button
-            onClick={() => setIsQRSyncModalOpen(true)}
-            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950/90 to-cyan-950/90 hover:from-blue-900 hover:to-cyan-900 text-cyan-200 hover:text-white border border-cyan-400/50 hover:border-cyan-300 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-md"
-            title="Sincronizar notas y progreso entre PC y Móvil mediante código QR"
-          >
-            <QrCode className="w-4 h-4 text-cyan-400" />
-            <span>Sincronizar QR</span>
           </button>
         </div>
       </div>
