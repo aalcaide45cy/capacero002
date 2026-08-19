@@ -91,9 +91,12 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     });
   }, [allNotesList, searchQuery]);
 
+  const [confirmingDeleteNoteId, setConfirmingDeleteNoteId] = useState(null);
+
   const handleDelete = (e, videoId, noteId) => {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     deleteVideoNote(videoId, noteId);
+    setConfirmingDeleteNoteId(null);
     setNotesTick((prev) => prev + 1);
   };
 
@@ -282,14 +285,41 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                     {note.createdAt ? new Date(note.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
 
-                  <button
-                    onClick={(e) => handleDelete(e, note.videoId, note.id)}
-                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1"
-                    title="Eliminar este apunte"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span className="text-[10px]">Eliminar</span>
-                  </button>
+                  {confirmingDeleteNoteId === note.id ? (
+                    <div className="flex items-center gap-1.5 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[11px] text-rose-300 font-bold">¿Borrar apunte?</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(e, note.videoId, note.id)}
+                        className="px-2 py-0.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black cursor-pointer shadow-sm active:scale-95"
+                      >
+                        Sí
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmingDeleteNoteId(null);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmingDeleteNoteId(note.id);
+                      }}
+                      className="text-zinc-500 hover:text-rose-400 transition-colors p-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
+                      title="Eliminar este apunte"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">Eliminar</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))

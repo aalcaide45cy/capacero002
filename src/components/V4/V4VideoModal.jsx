@@ -38,6 +38,7 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
   const [noteInputText, setNoteInputText] = useState('');
   const [notesTick, setNotesTick] = useState(0);
+  const [confirmingDeleteNoteId, setConfirmingDeleteNoteId] = useState(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState(() => {
     const vId = getVaultId();
     const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
@@ -695,14 +696,37 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="text-zinc-500 hover:text-red-400 p-1 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
-                      title="Eliminar este apunte"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {confirmingDeleteNoteId === note.id ? (
+                      <div className="flex items-center gap-1.5 shrink-0 animate-fade-in">
+                        <span className="text-[10px] text-rose-300 font-bold">¿Borrar?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteNote(note.id);
+                            setConfirmingDeleteNoteId(null);
+                          }}
+                          className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black cursor-pointer shadow-sm active:scale-95"
+                        >
+                          Sí
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDeleteNoteId(null)}
+                          className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteNoteId(note.id)}
+                        className="text-zinc-500 hover:text-red-400 p-1 rounded-md hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+                        title="Eliminar este apunte"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

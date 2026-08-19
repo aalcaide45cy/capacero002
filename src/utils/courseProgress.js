@@ -356,8 +356,33 @@ export function generateSyncUrl() {
   }
 }
 
-// Aplicar datos recibidos por QR con Fusión Inteligente (Smart Merge)
-export function applySyncPayload(encodedPayload) {
+export function updateVideoNote(videoId, noteId, newText) {
+  if (!videoId || !noteId || !newText || !newText.trim() || typeof window === 'undefined' || !window.localStorage) return null;
+  const all = getAllStudyNotes();
+  if (Array.isArray(all[videoId])) {
+    const list = all[videoId].map((n) => {
+      if (n.id === noteId) {
+        return {
+          ...n,
+          text: newText.trim(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return n;
+    });
+    all[videoId] = list;
+    try {
+      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
+      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list } }));
+      syncVaultPush(true);
+      return list.find(n => n.id === noteId);
+    } catch (e) {}
+  }
+  return null;
+}
+
+// Aplicar datos recibidos por QR o Nube (Sincronización exacta o Unión inicial)
+export function applySyncPayload(encodedPayload, isInitialMerge = false) {
   try {
     if (!encodedPayload) return { success: false, message: 'Código de sincronización vacío' };
     
@@ -375,7 +400,22 @@ export function applySyncPayload(encodedPayload) {
     const importedTimestamps = data.vt || data.videoTimestamps || {};
     const importedNotes = data.sn || data.studyNotes || {};
 
-    // 1. Fusión de Notas (Smart Merge: se agregan las notas nuevas sin borrar las que ya tenías)
+    if (!isInitialMerge) {
+      // 1. Sincronización exacta de Bóveda: El estado de la nube es la verdad (incluye borrados y ediciones)
+      localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(importedNotes));
+      localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(importedCourses));
+      localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(importedTimestamps));
+
+      window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: importedCourses } }));
+      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: importedNotes } }));
+
+      return {
+        success: true,
+        message: '¡Sincronización establecida!'
+      };
+    }
+
+    // 2. Unión Inicial (Smart Merge solo la primera vez que se emparejan 2 dispositivos con notas previas)
     const currentNotes = getAllStudyNotes();
     const mergedNotes = { ...currentNotes };
 
@@ -407,7 +447,6 @@ export function applySyncPayload(encodedPayload) {
 
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(mergedNotes));
 
-    // 2. Fusión de Cursos (Smart Merge: unión de todas las lecciones completadas)
     const currentCourses = getAllCoursesProgress();
     const mergedCourses = { ...currentCourses };
 
@@ -427,18 +466,16 @@ export function applySyncPayload(encodedPayload) {
 
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(mergedCourses));
 
-    // 3. Fusión de Tiempos de Reproducción
     const currentTimestamps = getAllVideoTimestamps();
     const mergedTimestamps = { ...currentTimestamps, ...importedTimestamps };
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
 
-    // Notificar eventos para actualizar la UI en vivo en el navegador
     window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: mergedCourses } }));
     window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: mergedNotes } }));
 
     return {
       success: true,
-      message: '¡Dispositivos sincronizados con éxito! Tus notas y lecciones han sido combinadas.'
+      message: '¡Sincronización establecida!'
     };
   } catch (e) {
     console.error('Error aplicando sincronización:', e);
