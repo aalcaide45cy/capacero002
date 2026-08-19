@@ -322,9 +322,18 @@ export function applySyncPayload(encodedPayload) {
       const incomingList = Array.isArray(importedNotes[vidId]) ? importedNotes[vidId] : [];
 
       incomingList.forEach((incomingNote) => {
-        const alreadyExists = existingList.some(
-          (ex) => ex.id === incomingNote.id || (ex.timestamp === incomingNote.timestamp && ex.text === incomingNote.text)
-        );
+        if (!incomingNote || !incomingNote.text) return;
+        const normIncomingText = incomingNote.text.trim().toLowerCase();
+        const normIncomingTime = Math.floor(incomingNote.timestamp || 0);
+
+        const alreadyExists = existingList.some((ex) => {
+          if (!ex) return false;
+          if (ex.id && incomingNote.id && ex.id === incomingNote.id) return true;
+          const normExText = (ex.text || '').trim().toLowerCase();
+          const normExTime = Math.floor(ex.timestamp || 0);
+          return normExTime === normIncomingTime && normExText === normIncomingText;
+        });
+
         if (!alreadyExists) {
           existingList.push(incomingNote);
         }
