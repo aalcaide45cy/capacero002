@@ -97,13 +97,19 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     setNotesTick((prev) => prev + 1);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
+      const origOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') onClose();
       };
       window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = origOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     }
   }, [isOpen, onClose]);
 
@@ -163,7 +169,7 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
           </button>
         </div>
 
-        {/* Banner de Estado de Sincronización Activa / Feedback */}
+        {/* Banner de Estado de Sincronización Activa */}
         <div className="px-5 py-2.5 bg-zinc-900/60 border-b border-zinc-900 flex flex-wrap items-center justify-between gap-3 text-xs">
           {syncState.status === 'synced' && syncState.vaultId && (
             <div className="flex items-center gap-2 text-emerald-400 font-medium">
@@ -177,16 +183,29 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
           {syncState.status === 'syncing' && (
             <div className="flex items-center gap-2 text-cyan-300 font-medium animate-pulse">
               <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />
-              <span>Sincronizando notas con la nube...</span>
+              <span>Sincronizando notas en segundo plano...</span>
             </div>
           )}
 
           {syncState.status === 'unlinked' && (
-            <div className="flex items-center gap-2 text-amber-300 font-medium">
-              <Cloud className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>
-                <strong className="text-white">Modo Local:</strong> Notas guardadas solo en este equipo.
-              </span>
+            <div className="flex items-center justify-between w-full gap-2 text-amber-300 font-medium">
+              <div className="flex items-center gap-2">
+                <Cloud className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  <strong className="text-white">Modo Local:</strong> Notas guardadas en este equipo.
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  if (onOpenQRSync) onOpenQRSync();
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all cursor-pointer shrink-0"
+                title="Vincular con tu móvil mediante código QR"
+              >
+                <QrCode className="w-3 h-3 text-cyan-400" />
+                <span>Vincular con QR</span>
+              </button>
             </div>
           )}
 
@@ -194,36 +213,10 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
             <div className="flex items-center gap-2 text-rose-300 font-medium">
               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
               <span>
-                <strong className="text-white">Sin Conexión Cloud:</strong> Tus notas siguen 100% a salvo en local.
+                <strong className="text-white">Sin Conexión:</strong> Tus notas siguen 100% a salvo en local.
               </span>
             </div>
           )}
-
-          <div className="flex items-center gap-2">
-            {syncState.vaultId ? (
-              <button
-                onClick={handleManualRefresh}
-                disabled={isRefreshing}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
-                title="Comprobar y descargar notas recientes de tu otro dispositivo"
-              >
-                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
-                <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onClose();
-                  if (onOpenQRSync) onOpenQRSync();
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all cursor-pointer"
-                title="Vincular con tu móvil mediante código QR"
-              >
-                <QrCode className="w-3 h-3 text-cyan-400" />
-                <span>Vincular con QR</span>
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Input Buscador de Notas */}
@@ -250,7 +243,7 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
         </div>
 
         {/* Lista de Resultados de Notas */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3 custom-scrollbar">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3 custom-scrollbar overscroll-contain">
           {filteredNotes.length > 0 ? (
             filteredNotes.map((note) => (
               <div

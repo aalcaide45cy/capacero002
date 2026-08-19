@@ -530,7 +530,7 @@ export function syncVaultPush(immediate = false) {
 }
 
 /**
- * Descarga y fusión silenciosa de cambios desde la Bóveda en la nube
+ * Descarga y fusión silenciosa de cambios desde la nube
  */
 export async function syncVaultPull() {
   const vaultId = getVaultId();
@@ -547,24 +547,37 @@ export async function syncVaultPull() {
   dispatchSyncStatus('syncing');
 
   try {
-    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=vault_pull&vaultId=${encodeURIComponent(vaultId)}`);
+    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        type: 'vault_pull',
+        vaultId: vaultId
+      })
+    });
+
     if (res.ok) {
-      const data = await res.json();
-      if (data.status === 'success' && data.payload) {
+      const rawText = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch (jsonErr) {}
+
+      if (data && data.status === 'success' && data.payload) {
         applySyncPayload(data.payload);
         const now = new Date().toISOString();
         setLastSyncTime(now);
         dispatchSyncStatus('synced', { lastSync: now });
-        return { success: true, message: 'Notas sincronizadas con éxito.' };
-      } else if (data.status === 'not_found') {
+        return { success: true, message: 'Notas sincronizadas.' };
+      } else if (data && data.status === 'not_found') {
         dispatchSyncStatus('unlinked');
         return { success: false, reason: 'not_found' };
       }
     }
   } catch (err) {
     const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
-    dispatchSyncStatus(isOffline ? 'offline' : 'error', { error: err.message });
-    return { success: false, error: err.message };
+    dispatchSyncStatus(isOffline ? 'offline' : 'error');
+    return { success: false, error: 'Error de red' };
   }
 
   dispatchSyncStatus('synced');

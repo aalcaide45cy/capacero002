@@ -40,6 +40,9 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   // Inicializar estado según dispositivo al abrir
   useEffect(() => {
     if (isOpen) {
+      const origOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
       // En móvil se abre por defecto en "Escanear QR" (cámara); en PC en "Mostrar QR"
       setActiveTab(isMobile ? 'camera' : 'qr');
       setCopied(false);
@@ -78,6 +81,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
       });
 
       return () => {
+        document.body.style.overflow = origOverflow;
         window.removeEventListener('keydown', handleKeyDown);
         stopCamera();
         if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -344,26 +348,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Banner de Sincronización Activa si ya está emparejado */}
-        {currentVaultId && (
-          <div className="px-5 py-2.5 bg-emerald-950/40 border-b border-emerald-500/20 flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-emerald-400 font-medium">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>
-                <strong className="text-white">Sincronización activa</strong> ({currentVaultId})
-              </span>
-            </div>
-            <button
-              onClick={handleForceSyncNow}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer"
-              title="Sincronizar ahora"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Sincronizar ahora</span>
-            </button>
-          </div>
-        )}
 
         {/* Botones de Pestañas en Grid 2x2 (móvil) / 4 columnas (PC) - ¡Cero Scroll! */}
         <div className="px-5 pt-4 pb-2 bg-zinc-950/90 border-b border-zinc-900">
