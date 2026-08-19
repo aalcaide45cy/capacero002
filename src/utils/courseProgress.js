@@ -377,44 +377,64 @@ export function generateSyncUrl() {
   }
 }
 
-export function updateVideoNote(videoId, noteId, newText) {
+export function parseTimeToSeconds(timeStr) {
+  if (!timeStr) return 0;
+  if (typeof timeStr === 'number') return Math.max(0, Math.floor(timeStr));
+  const parts = String(timeStr).trim().split(':').map(Number);
+  if (parts.some(isNaN)) return 0;
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  return 0;
+}
+
+export function updateVideoNote(videoId, noteId, newText, newTimestamp = null) {
   if (!noteId || !newText || !newText.trim() || typeof window === 'undefined' || !window.localStorage) return null;
   const all = getAllStudyNotes();
   let found = false;
   let updatedNote = null;
 
+  const updateEntry = (n) => {
+    let finalSec = n.timestamp;
+    let finalFormatted = n.timeFormatted;
+    if (newTimestamp !== null && newTimestamp !== undefined) {
+      if (typeof newTimestamp === 'number') {
+        finalSec = Math.max(0, Math.floor(newTimestamp));
+        finalFormatted = formatSecondsToTime(finalSec);
+      } else if (typeof newTimestamp === 'string' && newTimestamp.trim()) {
+        finalSec = parseTimeToSeconds(newTimestamp);
+        finalFormatted = formatSecondsToTime(finalSec);
+      }
+    }
+    found = true;
+    updatedNote = {
+      ...n,
+      text: newText.trim(),
+      timestamp: finalSec,
+      timeFormatted: finalFormatted,
+      updatedAt: new Date().toISOString()
+    };
+    return updatedNote;
+  };
+
   // 1. Intentar en clave específica si se proporciona
   if (videoId && Array.isArray(all[videoId])) {
-    all[videoId] = all[videoId].map((n) => {
-      if (n.id === noteId) {
-        found = true;
-        updatedNote = {
-          ...n,
-          text: newText.trim(),
-          updatedAt: new Date().toISOString()
-        };
-        return updatedNote;
-      }
-      return n;
-    });
+    all[videoId] = all[videoId].map((n) => (n.id === noteId ? updateEntry(n) : n));
+    all[videoId].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
   }
 
   // 2. Si no se encontró por videoId, buscar en todas las claves
   if (!found) {
     Object.keys(all).forEach((vKey) => {
       if (Array.isArray(all[vKey])) {
-        all[vKey] = all[vKey].map((n) => {
-          if (n.id === noteId) {
-            found = true;
-            updatedNote = {
-              ...n,
-              text: newText.trim(),
-              updatedAt: new Date().toISOString()
-            };
-            return updatedNote;
-          }
-          return n;
-        });
+        all[vKey] = all[vKey].map((n) => (n.id === noteId ? updateEntry(n) : n));
+        all[vKey].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
       }
     });
   }

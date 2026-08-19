@@ -7,6 +7,7 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
   const [notesTick, setNotesTick] = useState(0);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingText, setEditingText] = useState('');
+  const [editingTime, setEditingTime] = useState('00:00');
   const [noteToDelete, setNoteToDelete] = useState(null);
   const [syncState, setSyncState] = useState({
     vaultId: null,
@@ -101,14 +102,16 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     e.stopPropagation();
     setEditingNoteId(note.id);
     setEditingText(note.text);
+    setEditingTime(note.timeFormatted || '00:00');
   };
 
   const handleSaveEdit = (e, note) => {
     e.stopPropagation();
     if (!editingText.trim()) return;
-    updateVideoNote(note.videoId, note.id, editingText);
+    updateVideoNote(note.videoId, note.id, editingText, editingTime);
     setEditingNoteId(null);
     setEditingText('');
+    setEditingTime('00:00');
     setNotesTick((prev) => prev + 1);
   };
 
@@ -116,6 +119,7 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     e.stopPropagation();
     setEditingNoteId(null);
     setEditingText('');
+    setEditingTime('00:00');
   };
 
   const handlePromptDelete = (e, note) => {
@@ -304,9 +308,28 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                   </span>
                 </div>
 
-                {/* Texto del apunte o Editor en vivo */}
+                {/* Texto del apunte o Editor en vivo con ajuste de tiempo */}
                 {editingNoteId === note.id ? (
-                  <div className="space-y-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                  <div className="space-y-2.5 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-zinc-950/80 border border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5 shrink-0">
+                          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Minuto exacto:</span>
+                        </span>
+                        <input
+                          type="text"
+                          value={editingTime}
+                          onChange={(e) => setEditingTime(e.target.value)}
+                          placeholder="MM:SS"
+                          className="bg-zinc-900 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-mono font-bold w-24 text-center focus:outline-none"
+                        />
+                      </div>
+                      <span className="text-[10px] text-zinc-500 italic">
+                        (ej: 03:45 o 1:12:30)
+                      </span>
+                    </div>
+
                     <textarea
                       value={editingText}
                       onChange={(e) => setEditingText(e.target.value)}
@@ -327,10 +350,10 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                         type="button"
                         onClick={(e) => handleSaveEdit(e, note)}
                         disabled={!editingText.trim()}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer active:scale-95"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Guardar</span>
+                        <span>Guardar cambios</span>
                       </button>
                     </div>
                   </div>

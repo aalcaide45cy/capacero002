@@ -382,7 +382,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     }
   };
 
-  // Salto a timestamp específico al hacer clic en un apunte
+  // Salto a timestamp específico
   const handleSeekToTimestamp = (sec) => {
     if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
       ytPlayerRef.current.seekTo(sec, true);
@@ -406,19 +406,22 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const handleStartEdit = (note) => {
     setEditingNoteId(note.id);
     setEditingNoteText(note.text);
+    setEditingNoteTimeFormatted(note.timeFormatted || '00:00');
   };
 
   const handleSaveEdit = (note) => {
     if (!editingNoteText.trim()) return;
-    updateVideoNote(video.youtubeId || video.id, note.id, editingNoteText);
+    updateVideoNote(video.youtubeId || video.id, note.id, editingNoteText, editingNoteTimeFormatted);
     setEditingNoteId(null);
     setEditingNoteText('');
+    setEditingNoteTimeFormatted('00:00');
     setNotesTick((prev) => prev + 1);
   };
 
   const handleCancelEdit = () => {
     setEditingNoteId(null);
     setEditingNoteText('');
+    setEditingNoteTimeFormatted('00:00');
   };
 
   const handlePromptDelete = (note) => {
@@ -443,12 +446,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     : circleCircumference;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"
-        onClick={onClose}
-      />
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"
+          onClick={onClose}
+        />
 
       {/* Modal Container */}
       <div className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 my-auto flex flex-col text-left">
@@ -748,7 +752,34 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     </div>
 
                     {editingNoteId === note.id ? (
-                      <div className="space-y-2 pt-1">
+                      <div className="space-y-2.5 pt-1">
+                        {/* Selector de tiempo con botón rápido de minuto actual */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1 shrink-0">
+                              <Clock className="w-3 h-3 text-cyan-400" />
+                              <span>Minuto:</span>
+                            </span>
+                            <input
+                              type="text"
+                              value={editingNoteTimeFormatted}
+                              onChange={(e) => setEditingNoteTimeFormatted(e.target.value)}
+                              placeholder="MM:SS"
+                              className="bg-zinc-950 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2 py-0.5 text-xs text-cyan-300 font-mono font-bold w-20 text-center focus:outline-none"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setEditingNoteTimeFormatted(formatSecondsToTime(currentLiveSeconds))}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-[10px] font-bold text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
+                            title="Poner el segundo exacto que se está reproduciendo ahora en el vídeo"
+                          >
+                            <FastForward className="w-3 h-3" />
+                            <span>Usar minuto actual ({formatSecondsToTime(currentLiveSeconds)})</span>
+                          </button>
+                        </div>
+
                         <textarea
                           value={editingNoteText}
                           onChange={(e) => setEditingNoteText(e.target.value)}
@@ -769,10 +800,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                             type="button"
                             onClick={() => handleSaveEdit(note)}
                             disabled={!editingNoteText.trim()}
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer active:scale-95"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Guardar</span>
+                            <span>Guardar cambios</span>
                           </button>
                         </div>
                       </div>
@@ -968,62 +999,63 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         </div>
 
       </div>
+    </div>
 
-      {/* Modal Grande de Confirmación para Eliminar Apunte */}
-      {noteToDelete && (
-        <div 
-          className="fixed inset-0 z-70 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="bg-zinc-900 border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-left">
-            <div className="flex items-start gap-3.5">
-              <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 shrink-0">
-                <AlertCircle className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="text-base font-black text-white">¿Eliminar este apunte?</h4>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Esta acción no se puede deshacer y se sincronizará con tus otros dispositivos.
-                </p>
-              </div>
+    {/* Modal Grande de Confirmación para Eliminar Apunte (Capa Superior Viewport Z-[100]) */}
+    {noteToDelete && (
+      <div 
+        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-zinc-900 border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-left">
+          <div className="flex items-start gap-3.5">
+            <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 shrink-0">
+              <AlertCircle className="w-6 h-6" />
             </div>
-
-            {/* Previsualización del apunte */}
-            <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="font-bold text-zinc-300 truncate max-w-[200px]">
-                  {noteToDelete.videoTitle || video.title}
-                </span>
-                <span className="text-cyan-400 font-mono font-bold">
-                  {noteToDelete.timeFormatted || '00:00'}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-200 italic line-clamp-3">
-                "{noteToDelete.text}"
+            <div>
+              <h4 className="text-base font-black text-white">¿Eliminar este apunte?</h4>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Esta acción no se puede deshacer y se sincronizará con tus otros dispositivos.
               </p>
             </div>
+          </div>
 
-            {/* Botones de acción */}
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setNoteToDelete(null)}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950 transition-all cursor-pointer active:scale-95"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Sí, Eliminar Apunte</span>
-              </button>
+          {/* Previsualización del apunte */}
+          <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-bold text-zinc-300 truncate max-w-[200px]">
+                {noteToDelete.videoTitle || video.title}
+              </span>
+              <span className="text-cyan-400 font-mono font-bold">
+                {noteToDelete.timeFormatted || '00:00'}
+              </span>
             </div>
+            <p className="text-xs text-zinc-200 italic line-clamp-3">
+              "{noteToDelete.text}"
+            </p>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setNoteToDelete(null)}
+              className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950 transition-all cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Sí, Eliminar Apunte</span>
+            </button>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+  </>
   );
 }
