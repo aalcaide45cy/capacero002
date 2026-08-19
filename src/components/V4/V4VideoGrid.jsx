@@ -688,7 +688,7 @@ export default function V4VideoGrid({
                         
                         <div className="absolute top-3 left-3 bg-blue-600/90 text-white text-[11px] font-black px-2.5 py-1 rounded-md border border-cyan-400/40 uppercase tracking-wider flex items-center gap-1.5 shadow-md">
                           <GraduationCap className="w-3.5 h-3.5" />
-                          <span>Curso Completo</span>
+                          <span>Curso</span>
                         </div>
 
                         <div className="absolute bottom-3 right-3 bg-black/80 text-cyan-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-cyan-500/30">
