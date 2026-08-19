@@ -266,3 +266,111 @@ export function importProgressBackup(jsonContent) {
     return { success: false, message: 'Error al procesar el archivo JSON: formato no válido.' };
   }
 }
+
+// ================= 5. SINCRONIZACIÓN INSTANTÁNEA POR QR BIDIRECCIONAL =================
+
+// Generar URL con payload comprimido para el QR
+export function generateSyncUrl() {
+  const data = {
+    v: '2.0',
+    cp: getAllCoursesProgress(),
+    vt: getAllVideoTimestamps(),
+    sn: getAllStudyNotes(),
+    t: Date.now()
+  };
+
+  try {
+    const jsonStr = JSON.stringify(data);
+    // Codificación Base64 segura para UTF-8 y URLs
+    const encoded = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
+      return String.fromCharCode('0x' + p1);
+    }));
+    
+    const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.capacero3d.com/';
+    return `${baseUrl}#sync=${encoded}`;
+  } catch (e) {
+    console.error('Error generando Sync URL:', e);
+    return null;
+  }
+}
+
+// Aplicar datos recibidos por QR con Fusión Inteligente (Smart Merge)
+export function applySyncPayload(encodedPayload) {
+  try {
+    if (!encodedPayload) return { success: false, message: 'Código de sincronización vacío' };
+    
+    // Decodificar Base64 seguro
+    const jsonStr = decodeURIComponent(atob(encodedPayload).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    const data = JSON.parse(jsonStr);
+    if (!data || typeof data !== 'object') {
+      return { success: false, message: 'Datos de sincronización inválidos' };
+    }
+
+    const importedCourses = data.cp || data.courseProgress || {};
+    const importedTimestamps = data.vt || data.videoTimestamps || {};
+    const importedNotes = data.sn || data.studyNotes || {};
+
+    // 1. Fusión de Notas (Smart Merge: se agregan las notas nuevas sin borrar las que ya tenías)
+    const currentNotes = getAllStudyNotes();
+    const mergedNotes = { ...currentNotes };
+
+    Object.keys(importedNotes).forEach((vidId) => {
+      const existingList = Array.isArray(mergedNotes[vidId]) ? [...mergedNotes[vidId]] : [];
+      const incomingList = Array.isArray(importedNotes[vidId]) ? importedNotes[vidId] : [];
+
+      incomingList.forEach((incomingNote) => {
+        const alreadyExists = existingList.some(
+          (ex) => ex.id === incomingNote.id || (ex.timestamp === incomingNote.timestamp && ex.text === incomingNote.text)
+        );
+        if (!alreadyExists) {
+          existingList.push(incomingNote);
+        }
+      });
+
+      existingList.sort((a, b) => a.timestamp - b.timestamp);
+      mergedNotes[vidId] = existingList;
+    });
+
+    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(mergedNotes));
+
+    // 2. Fusión de Cursos (Smart Merge: unión de todas las lecciones completadas)
+    const currentCourses = getAllCoursesProgress();
+    const mergedCourses = { ...currentCourses };
+
+    Object.keys(importedCourses).forEach((courseKey) => {
+      const curr = mergedCourses[courseKey] || { completedVideoIds: [], completedLessons: 0 };
+      const inc = importedCourses[courseKey] || { completedVideoIds: [], completedLessons: 0 };
+
+      const combinedIds = Array.from(new Set([...(curr.completedVideoIds || []), ...(inc.completedVideoIds || [])]));
+      mergedCourses[courseKey] = {
+        ...curr,
+        ...inc,
+        completedVideoIds: combinedIds,
+        completedLessons: combinedIds.length,
+        lastUpdated: new Date().toISOString()
+      };
+    });
+
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(mergedCourses));
+
+    // 3. Fusión de Tiempos de Reproducción
+    const currentTimestamps = getAllVideoTimestamps();
+    const mergedTimestamps = { ...currentTimestamps, ...importedTimestamps };
+    localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
+
+    // Notificar eventos para actualizar la UI en vivo en el navegador
+    window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: mergedCourses } }));
+    window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: mergedNotes } }));
+
+    return {
+      success: true,
+      message: '¡Dispositivos sincronizados con éxito! Tus notas y lecciones han sido combinadas.'
+    };
+  } catch (e) {
+    console.error('Error aplicando sincronización:', e);
+    return { success: false, message: 'Error procesando el código de sincronización.' };
+  }
+}

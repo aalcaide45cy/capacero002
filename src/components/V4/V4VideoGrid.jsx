@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
+import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock, QrCode } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import NotesSearchModal from './NotesSearchModal';
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
+import QRSyncModal from './QRSyncModal';
 import { 
   getCourseProgress, 
   getAllCoursesProgress, 
@@ -55,6 +56,7 @@ export default function V4VideoGrid({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [isQRSyncModalOpen, setIsQRSyncModalOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const filtersContainerRef = useRef(null);
   const hasTriggeredHintRef = useRef(false);
@@ -419,6 +421,16 @@ export default function V4VideoGrid({
           >
             <Upload className="w-4 h-4 text-blue-400" />
             <span>Restaurar Notas</span>
+          </button>
+
+          {/* Botón 7: Sincronizar por QR */}
+          <button
+            onClick={() => setIsQRSyncModalOpen(true)}
+            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950/90 to-cyan-950/90 hover:from-blue-900 hover:to-cyan-900 text-cyan-200 hover:text-white border border-cyan-400/50 hover:border-cyan-300 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-md"
+            title="Sincronizar notas y progreso entre PC y Móvil mediante código QR"
+          >
+            <QrCode className="w-4 h-4 text-cyan-400" />
+            <span>Sincronizar QR</span>
           </button>
         </div>
       </div>
@@ -939,6 +951,17 @@ export default function V4VideoGrid({
           setProgressTick((prev) => prev + 1);
           setBackupMessage(msg);
           setTimeout(() => setBackupMessage(null), 4500);
+        }}
+      />
+
+      {/* Modal de Sincronización QR Bidireccional */}
+      <QRSyncModal
+        isOpen={isQRSyncModalOpen}
+        onClose={() => setIsQRSyncModalOpen(false)}
+        onSyncSuccess={(msg) => {
+          setProgressTick((prev) => prev + 1);
+          setBackupMessage(msg);
+          setTimeout(() => setBackupMessage(null), 5000);
         }}
       />
 

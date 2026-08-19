@@ -13,6 +13,8 @@ import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
+import { applySyncPayload } from '../../utils/courseProgress';
+import { Sparkles } from 'lucide-react';
 
 export default function V4Hub() {
   // Inicialización síncrona instantánea: 0ms de espera para Googlebot y visitantes
@@ -24,6 +26,33 @@ export default function V4Hub() {
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  const [syncToastMessage, setSyncToastMessage] = useState(null);
+
+  // Detección automática al escanear QR con la cámara del móvil (URL con #sync=)
+  useEffect(() => {
+    const handleCheckSyncHash = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash;
+      if (hash && hash.startsWith('#sync=')) {
+        const payload = hash.replace('#sync=', '');
+        if (payload) {
+          const res = applySyncPayload(payload);
+          if (res.success) {
+            setSyncToastMessage('🎉 ¡Dispositivos sincronizados con éxito! Se han fusionado tus notas y lecciones.');
+            setTimeout(() => setSyncToastMessage(null), 6000);
+          }
+          // Limpiar la URL para dejarla limpia
+          try {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          } catch (e) {}
+        }
+      }
+    };
+
+    handleCheckSyncHash();
+    window.addEventListener('hashchange', handleCheckSyncHash);
+    return () => window.removeEventListener('hashchange', handleCheckSyncHash);
+  }, []);
 
   // Iniciar sesión de analítica completa en el montaje
   useEffect(() => {
@@ -132,6 +161,16 @@ export default function V4Hub() {
   return (
     <div className="relative min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-[#2575c4] selection:text-white">
       
+      {/* Banner Flotante de Sincronización QR Exitosa */}
+      {syncToastMessage && (
+        <div className="fixed top-6 right-6 z-50 max-w-md p-4 bg-zinc-950/95 backdrop-blur-md border-2 border-emerald-400 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center gap-3 animate-fade-in">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center shrink-0 shadow-md">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <p className="leading-snug">{syncToastMessage}</p>
+        </div>
+      )}
+
       {/* Fondo Decorativo Tecnológico con Pistas de Circuito y Pulsos de Energía */}
       <V4CircuitBackground />
 
