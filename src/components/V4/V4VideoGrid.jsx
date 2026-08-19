@@ -51,15 +51,37 @@ export default function V4VideoGrid({
   const [progressTick, setProgressTick] = useState(0);
   const [backupMessage, setBackupMessage] = useState(null);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  const [showHint, setShowHint] = useState(true);
+  const [showHint, setShowHint] = useState(false);
+  const filtersContainerRef = useRef(null);
+  const hasTriggeredHintRef = useRef(false);
   const fileInputRef = useRef(null);
 
-  // Desvanecer la animación de la manita flotante después de 4.5 segundos
+  // Activar la animación de la manita flotante cuando el usuario hace scroll y entra en la zona de botones
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowHint(false);
-    }, 4500);
-    return () => clearTimeout(timer);
+    const target = filtersContainerRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasTriggeredHintRef.current) {
+            hasTriggeredHintRef.current = true;
+            setShowHint(true);
+
+            // Se anima y tras 4 segundos se desvanece suavemente
+            setTimeout(() => {
+              setShowHint(false);
+            }, 4000);
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+
+    observer.observe(target);
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   // Escuchar eventos de actualización de progreso en tiempo real
@@ -280,7 +302,7 @@ export default function V4VideoGrid({
       </div>
 
       {/* Selector de Modos con Scroll Horizontal y Manita Flotante Animada */}
-      <div className="relative mb-8 group">
+      <div ref={filtersContainerRef} className="relative mb-8 group">
         {/* Manita Flotante Animada Original (Desplazamiento horizontal + desvanecimiento) */}
         <AnimatePresence>
           {showHint && (
