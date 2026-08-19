@@ -1,13 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
+import NotesSearchModal from './NotesSearchModal';
 import { 
   getCourseProgress, 
   getAllCoursesProgress, 
   saveCourseProgress, 
   resetCourseProgress, 
   exportProgressBackup, 
-  importProgressBackup 
+  importProgressBackup,
+  getAllStudyNotes
 } from '../../utils/courseProgress';
 
 function formatCounter(num) {
@@ -47,6 +49,9 @@ export default function V4VideoGrid({
   const [selectedCourseName, setSelectedCourseName] = useState(null);
   const [progressTick, setProgressTick] = useState(0);
   const [backupMessage, setBackupMessage] = useState(null);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [showSwipeHandMode, setShowSwipeHandMode] = useState(true);
+  const [showSwipeHandCat, setShowSwipeHandCat] = useState(true);
   const fileInputRef = useRef(null);
 
   // Escuchar eventos de actualización de progreso en tiempo real
@@ -160,6 +165,23 @@ export default function V4VideoGrid({
     return [...published, ...scheduled];
   }, [videos, activeCategory, searchQuery, activeSortFilter]);
 
+  // Calcular total de apuntes existentes
+  const totalNotesCount = useMemo(() => {
+    const rawAll = getAllStudyNotes();
+    let count = 0;
+    Object.values(rawAll).forEach((arr) => {
+      if (Array.isArray(arr)) count += arr.length;
+    });
+    return count;
+  }, [progressTick, isNotesModalOpen]);
+
+  const handleSelectNoteFromModal = (videoObj, timestamp) => {
+    onSelectVideo({
+      ...videoObj,
+      startTimestamp: timestamp
+    });
+  };
+
   const handleSwitchFilter = (filterType) => {
     setActiveSortFilter(filterType);
     if (filterType !== 'courses') {
@@ -226,22 +248,22 @@ export default function V4VideoGrid({
         </div>
       )}
 
-      {/* Header Controls */}
+      {/* Header Controls (Centrado perfecto del contador de vídeos en móvil) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <span>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
               {activeSortFilter === 'courses' 
                 ? (activeCourse ? `Curso: ${activeCourse.name}` : 'Academia de Cursos Estructurados') 
                 : 'Videoteca de Tutoriales y Trucos'}
-            </span>
-            <span className="text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-full">
+            </h2>
+            <span className="text-xs font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-500/40 px-3 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-sm">
               {activeSortFilter === 'courses'
                 ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
                 : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
             </span>
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+          </div>
+          <p className="text-xs sm:text-sm text-zinc-400 mt-1.5">
             {activeSortFilter === 'courses'
               ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
               : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
@@ -249,49 +271,80 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Selector de Modos: Más Nuevos / Más Populares / 🎓 Cursos */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-8">
-        {/* Botón 1: Más Nuevos */}
-        <button
-          onClick={() => handleSwitchFilter('newest')}
-          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
-            activeSortFilter === 'newest'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
-          }`}
-        >
-          <Sparkles className={`w-4 h-4 ${activeSortFilter === 'newest' ? 'text-white' : 'text-cyan-400'}`} />
-          <span>Más Nuevos</span>
-        </button>
+      {/* Selector de Modos con Scroll Horizontal y Manita Animada en Móvil */}
+      <div className="relative mb-8">
+        {showSwipeHandMode && (
+          <div 
+            onClick={() => setShowSwipeHandMode(false)}
+            className="sm:hidden absolute right-1 -top-3.5 z-20 pointer-events-none flex items-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.7)] border border-cyan-300/60 backdrop-blur-md"
+          >
+            <span className="text-xs transform -scale-x-100 inline-block animate-horizontal-slide">👉</span>
+            <span className="uppercase tracking-wider text-[9px]">Desliza</span>
+          </div>
+        )}
 
-        {/* Botón 2: Más Populares */}
-        <button
-          onClick={() => handleSwitchFilter('popular')}
-          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
-            activeSortFilter === 'popular'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
-          }`}
+        <div 
+          onScroll={() => setShowSwipeHandMode(false)}
+          onTouchStart={() => setShowSwipeHandMode(false)}
+          className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
         >
-          <Flame className={`w-4 h-4 ${activeSortFilter === 'popular' ? 'text-white' : 'text-amber-400'}`} />
-          <span>Más Populares</span>
-        </button>
+          {/* Botón 1: Más Nuevos */}
+          <button
+            onClick={() => handleSwitchFilter('newest')}
+            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+              activeSortFilter === 'newest'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+            }`}
+          >
+            <Sparkles className={`w-4 h-4 ${activeSortFilter === 'newest' ? 'text-white' : 'text-cyan-400'}`} />
+            <span>Más Nuevos</span>
+          </button>
 
-        {/* Botón 3: Cursos */}
-        <button
-          onClick={() => handleSwitchFilter('courses')}
-          className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border ${
-            activeSortFilter === 'courses'
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-              : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
-          }`}
-        >
-          <GraduationCap className={`w-4 h-4 ${activeSortFilter === 'courses' ? 'text-white' : 'text-emerald-400'}`} />
-          <span>🎓 Cursos</span>
-          <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none">
-            {coursesList.length}
-          </span>
-        </button>
+          {/* Botón 2: Más Populares */}
+          <button
+            onClick={() => handleSwitchFilter('popular')}
+            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+              activeSortFilter === 'popular'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+            }`}
+          >
+            <Flame className={`w-4 h-4 ${activeSortFilter === 'popular' ? 'text-white' : 'text-amber-400'}`} />
+            <span>Más Populares</span>
+          </button>
+
+          {/* Botón 3: Cursos */}
+          <button
+            onClick={() => handleSwitchFilter('courses')}
+            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+              activeSortFilter === 'courses'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
+                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+            }`}
+          >
+            <GraduationCap className={`w-4 h-4 ${activeSortFilter === 'courses' ? 'text-white' : 'text-emerald-400'}`} />
+            <span>🎓 Cursos</span>
+            <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none ml-0.5">
+              {coursesList.length}
+            </span>
+          </button>
+
+          {/* Botón 4: Busca en tus Notas (Modal Lupa) */}
+          <button
+            onClick={() => setIsNotesModalOpen(true)}
+            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950/80 to-zinc-900 hover:from-blue-900 hover:to-cyan-900 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-md"
+            title="Buscar entre todas tus notas de estudio"
+          >
+            <Search className="w-4 h-4 text-cyan-400" />
+            <span>Busca en tus notas</span>
+            {totalNotesCount > 0 && (
+              <span className="text-[10px] font-extrabold bg-cyan-500 text-black px-1.5 py-0.5 rounded-full leading-none ml-0.5">
+                {totalNotesCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ================= VISTA DE CURSOS (MODO: 'courses') ================= */}
@@ -701,27 +754,43 @@ export default function V4VideoGrid({
       ) : (
         /* ================= VISTA ESTÁNDAR DE VIDEOTECA (MÁS NUEVOS / MÁS POPULARES) ================= */
         <div>
-          {/* Categorías Temáticas */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar border-b border-zinc-800/60">
-            <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mr-1 hidden sm:inline-block">
-              Temas:
-            </span>
-            {categories.map((cat) => {
-              const isActive = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onSelectCategory(cat)}
-                  className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? 'bg-blue-950/90 border border-cyan-400/60 text-cyan-200 shadow-sm'
-                      : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
+          {/* Categorías Temáticas con manita flotante en móvil */}
+          <div className="relative mb-6">
+            {showSwipeHandCat && (
+              <div 
+                onClick={() => setShowSwipeHandCat(false)}
+                className="sm:hidden absolute right-1 -top-3 z-20 pointer-events-none flex items-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.7)] border border-cyan-300/60 backdrop-blur-md"
+              >
+                <span className="text-xs transform -scale-x-100 inline-block animate-horizontal-slide">👉</span>
+                <span className="uppercase tracking-wider text-[9px]">Desliza</span>
+              </div>
+            )}
+
+            <div 
+              onScroll={() => setShowSwipeHandCat(false)}
+              onTouchStart={() => setShowSwipeHandCat(false)}
+              className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-zinc-800/60 scroll-smooth"
+            >
+              <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mr-1 hidden sm:inline-block shrink-0">
+                Temas:
+              </span>
+              {categories.map((cat) => {
+                const isActive = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => onSelectCategory(cat)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'bg-blue-950/90 border border-cyan-400/60 text-cyan-200 shadow-sm scale-[1.02]'
+                        : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Grid de vídeos estándar */}
@@ -746,6 +815,14 @@ export default function V4VideoGrid({
           )}
         </div>
       )}
+
+      {/* Modal Buscador de Apuntes y Notas */}
+      <NotesSearchModal
+        isOpen={isNotesModalOpen}
+        onClose={() => setIsNotesModalOpen(false)}
+        onSelectNote={handleSelectNoteFromModal}
+        allVideos={videos}
+      />
 
     </section>
   );

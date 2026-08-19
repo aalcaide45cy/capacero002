@@ -176,3 +176,18 @@ a, button {
     animation: none !important;
   }
 }
+
+/* Indicador de Manita Flotante Animada en Móvil */
+@keyframes horizontal-slide {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-8px);
+  }
+}
+
+.animate-horizontal-slide {
+  animation: horizontal-slide 1.2s infinite ease-in-out;
+  will-change: transform;
+}
