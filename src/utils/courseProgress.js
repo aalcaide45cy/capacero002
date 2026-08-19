@@ -657,7 +657,7 @@ export async function initiateQRSyncSession() {
   const payload = getLocalSyncPayload();
 
   try {
-    fetch(APPS_SCRIPT_ENDPOINT, {
+    await fetch(APPS_SCRIPT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -666,7 +666,7 @@ export async function initiateQRSyncSession() {
         vaultId: vaultId,
         payload: payload
       })
-    }).catch(() => {});
+    });
   } catch (e) {}
 
   const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.capacero3d.com/';
@@ -685,7 +685,7 @@ export async function pollQRSyncSession(pairId) {
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ready' && data.payload) {
-        applySyncPayload(data.payload);
+        applySyncPayload(data.payload, true);
         const now = new Date().toISOString();
         setLastSyncTime(now);
         dispatchSyncStatus('synced', { lastSync: now });
@@ -721,7 +721,7 @@ export async function completeQRExchange(pairId) {
     if (res.ok) {
       const data = await res.json();
       if (data.sourcePayload) {
-        applySyncPayload(data.sourcePayload);
+        applySyncPayload(data.sourcePayload, true);
       }
       const now = new Date().toISOString();
       setLastSyncTime(now);
