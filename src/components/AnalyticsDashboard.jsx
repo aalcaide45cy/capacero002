@@ -112,6 +112,14 @@ export default function AnalyticsDashboard() {
     const fetchData = async (mode = dataMode) => {
         setIsLoading(true);
         try {
+            // En modo En Vivo, sincronizar automáticamente con Google Sheets para cargar todas las visitas mundiales al entrar
+            if (mode === 'live') {
+                try {
+                    await syncWithGoogleSheet();
+                } catch (syncErr) {
+                    console.warn("Auto-sincronización inicial omitida o sin conexión:", syncErr);
+                }
+            }
             const data = await loadAnalyticsData(mode);
             setSessions(data.sessions || []);
             setEvents(data.events || []);
