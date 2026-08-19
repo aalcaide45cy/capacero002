@@ -383,3 +383,95 @@ export function applySyncPayload(encodedPayload) {
     return { success: false, message: 'Error procesando el código de sincronización.' };
   }
 }
+
+// ================= 6. ENLACE EN LA NUBE ASISTIDO POR GOOGLE APPS SCRIPT (RAM CACHE) =================
+const APPS_SCRIPT_ENDPOINT = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
+
+// Obtener payload local codificado
+export function getLocalSyncPayload() {
+  const data = {
+    v: '2.0',
+    cp: getAllCoursesProgress(),
+    vt: getAllVideoTimestamps(),
+    sn: getAllStudyNotes(),
+    t: Date.now()
+  };
+  const jsonStr = JSON.stringify(data);
+  return btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
+    return String.fromCharCode('0x' + p1);
+  }));
+}
+
+// Iniciar sesión de enlace temporal (El PC crea el enlace y muestra el QR)
+export async function initiateQRSyncSession() {
+  const pairId = 'CP' + Math.floor(1000 + Math.random() * 9000);
+  const payload = getLocalSyncPayload();
+
+  try {
+    fetch(APPS_SCRIPT_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'qr_sync_init',
+        pairId: pairId,
+        payload: payload
+      })
+    }).catch(() => {});
+  } catch (e) {}
+
+  const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.capacero3d.com/';
+  return {
+    pairId,
+    syncUrl: `${baseUrl}#pair=${pairId}`
+  };
+}
+
+// El PC consulta si el iPhone ya escaneó el QR y mandó sus datos
+export async function pollQRSyncSession(pairId) {
+  if (!pairId) return { status: 'waiting' };
+  try {
+    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=qr_sync_poll&pairId=${encodeURIComponent(pairId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'ready' && data.payload) {
+        const applyRes = applySyncPayload(data.payload);
+        return { status: 'ready', success: true, message: applyRes.message };
+      }
+    }
+  } catch (e) {}
+  return { status: 'waiting' };
+}
+
+// El iPhone procesa el escaneo del QR del PC (#pair=CPXXXX)
+export async function completeQRExchange(pairId) {
+  if (!pairId) return { success: false, message: 'ID de emparejamiento no válido' };
+  const phonePayload = getLocalSyncPayload();
+
+  try {
+    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        type: 'qr_sync_exchange',
+        pairId: pairId,
+        payload: phonePayload
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sourcePayload) {
+        applySyncPayload(data.sourcePayload);
+        return {
+          success: true,
+          message: '¡Dispositivos sincronizados y combinados en ambos sentidos con éxito!'
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Error completando intercambio QR:', e);
+  }
+
+  return { success: false, message: 'No se pudo completar el intercambio.' };
+}

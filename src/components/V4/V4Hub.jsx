@@ -13,7 +13,7 @@ import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
-import { applySyncPayload } from '../../utils/courseProgress';
+import { applySyncPayload, completeQRExchange } from '../../utils/courseProgress';
 import { Sparkles } from 'lucide-react';
 
 export default function V4Hub() {
@@ -28,12 +28,32 @@ export default function V4Hub() {
   const [isSticky, setIsSticky] = useState(false);
   const [syncToastMessage, setSyncToastMessage] = useState(null);
 
-  // Detección automática al escanear QR con la cámara del móvil (URL con #sync=)
+  // Detección automática al escanear QR con la cámara del móvil (URL con #pair= o #sync=)
   useEffect(() => {
-    const handleCheckSyncHash = () => {
+    const handleCheckSyncHash = async () => {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash;
-      if (hash && hash.startsWith('#sync=')) {
+      
+      // Caso 1: Emparejamiento por Nube (#pair=CPXXXX)
+      if (hash && hash.startsWith('#pair=')) {
+        const pairId = hash.replace('#pair=', '').trim();
+        if (pairId) {
+          setSyncToastMessage('⏳ Sincronizando con tu PC...');
+          const res = await completeQRExchange(pairId);
+          if (res.success) {
+            setSyncToastMessage('🎉 ' + res.message);
+          } else {
+            setSyncToastMessage('⚠️ ' + (res.message || 'Error al sincronizar'));
+          }
+          setTimeout(() => setSyncToastMessage(null), 6000);
+          try {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          } catch (e) {}
+        }
+      }
+      
+      // Caso 2: Carga directa por URL (#sync=...)
+      else if (hash && hash.startsWith('#sync=')) {
         const payload = hash.replace('#sync=', '');
         if (payload) {
           const res = applySyncPayload(payload);
@@ -41,7 +61,6 @@ export default function V4Hub() {
             setSyncToastMessage('🎉 ¡Dispositivos sincronizados con éxito! Se han fusionado tus notas y lecciones.');
             setTimeout(() => setSyncToastMessage(null), 6000);
           }
-          // Limpiar la URL para dejarla limpia
           try {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
           } catch (e) {}

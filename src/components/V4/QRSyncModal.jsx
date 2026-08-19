@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import jsQR from 'jsqr';
-import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle } from 'lucide-react';
-import { generateSyncUrl, applySyncPayload, getAllStudyNotes } from '../../utils/courseProgress';
+import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle, Radio } from 'lucide-react';
+import { initiateQRSyncSession, pollQRSyncSession, completeQRExchange, applySyncPayload, getAllStudyNotes } from '../../utils/courseProgress';
 
 export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const [copied, setCopied] = useState(false);
@@ -10,6 +10,8 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const [errorMessage, setErrorMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('qr'); // 'qr' | 'camera' | 'paste'
   const [syncUrl, setSyncUrl] = useState('');
+  const [pairId, setPairId] = useState('');
+  const [isWaitingForPhone, setIsWaitingForPhone] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
 
@@ -17,21 +19,48 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const animFrameIdRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
+  // Inicializar QR y Polling al abrir
   useEffect(() => {
     if (isOpen) {
-      const url = generateSyncUrl() || window.location.href;
-      setSyncUrl(url);
       setCopied(false);
       setErrorMessage(null);
       setManualCode('');
       setCameraError(null);
+      setIsWaitingForPhone(true);
+
+      initiateQRSyncSession().then((session) => {
+        if (session) {
+          setSyncUrl(session.syncUrl);
+          setPairId(session.pairId);
+
+          // Iniciar polling en el PC para recibir datos del móvil en cuanto escanee
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = setInterval(async () => {
+            const pollRes = await pollQRSyncSession(session.pairId);
+            if (pollRes && pollRes.status === 'ready' && pollRes.success) {
+              clearInterval(pollIntervalRef.current);
+              if (onSyncSuccess) {
+                onSyncSuccess('✅ ¡Sincronizado con éxito! Se han fusionado tus notas y lecciones.');
+              }
+              onClose();
+            }
+          }, 1500);
+        }
+      });
     } else {
       stopCamera();
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     }
+
+    return () => {
+      stopCamera();
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
   }, [isOpen]);
 
-  // Detener la cámara al desmontar o cambiar de pestaña
+  // Manejo de Cámara al cambiar pestañas
   useEffect(() => {
     if (activeTab !== 'camera') {
       stopCamera();
@@ -61,12 +90,11 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Tu navegador no permite acceso a la cámara o requiere HTTPS.');
+        throw new Error('Tu navegador no permite acceso a la cámara.');
       }
 
-      // Intentar primero con cámara trasera (si es móvil) o webcam (si es PC)
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
       }).catch(async () => {
         return await navigator.mediaDevices.getUserMedia({ video: true });
       });
@@ -81,13 +109,12 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
         scanQRCode();
       }
     } catch (err) {
-      console.warn('Error accediendo a la cámara:', err);
       setCameraError(err.message || 'No se pudo acceder a la cámara o el permiso fue denegado.');
       setCameraActive(false);
     }
   };
 
-  const scanQRCode = () => {
+  const scanQRCode = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -109,19 +136,28 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
         });
 
         if (code && code.data) {
-          let payload = code.data;
-          if (payload.includes('#sync=')) {
-            payload = payload.split('#sync=')[1];
-          }
+          const raw = code.data;
+          stopCamera();
 
-          const res = applySyncPayload(payload);
-          if (res.success) {
-            stopCamera();
-            if (onSyncSuccess) {
-              onSyncSuccess('✅ ' + res.message);
+          // Caso 1: Código de emparejamiento #pair=CPXXXX
+          if (raw.includes('#pair=')) {
+            const pId = raw.split('#pair=')[1];
+            const exRes = await completeQRExchange(pId);
+            if (exRes.success) {
+              if (onSyncSuccess) onSyncSuccess('✅ ' + exRes.message);
+              onClose();
+              return;
             }
-            onClose();
-            return;
+          }
+          // Caso 2: Código directo #sync=...
+          else if (raw.includes('#sync=')) {
+            const payload = raw.split('#sync=')[1];
+            const appRes = applySyncPayload(payload);
+            if (appRes.success) {
+              if (onSyncSuccess) onSyncSuccess('✅ ' + appRes.message);
+              onClose();
+              return;
+            }
           }
         }
       }
@@ -130,8 +166,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
     animFrameIdRef.current = requestAnimationFrame(scanQRCode);
   };
 
-  if (!isOpen) return null;
-
   const handleCopyLink = () => {
     if (!syncUrl) return;
     navigator.clipboard.writeText(syncUrl);
@@ -139,25 +173,46 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handleManualSync = () => {
+  const handleManualSync = async () => {
     if (!manualCode.trim()) {
-      setErrorMessage('Por favor, pega el enlace o código de sincronización.');
+      setErrorMessage('Por favor, introduce el código o enlace.');
       return;
     }
 
-    let payload = manualCode.trim();
-    if (payload.includes('#sync=')) {
-      payload = payload.split('#sync=')[1];
-    }
-
-    const res = applySyncPayload(payload);
-    if (res.success) {
-      if (onSyncSuccess) {
-        onSyncSuccess('✅ ' + res.message);
+    let raw = manualCode.trim();
+    if (raw.includes('#pair=')) {
+      const pId = raw.split('#pair=')[1];
+      const res = await completeQRExchange(pId);
+      if (res.success) {
+        if (onSyncSuccess) onSyncSuccess('✅ ' + res.message);
+        onClose();
+      } else {
+        setErrorMessage(res.message || 'Código no válido');
       }
-      onClose();
+    } else if (raw.includes('#sync=')) {
+      const payload = raw.split('#sync=')[1];
+      const res = applySyncPayload(payload);
+      if (res.success) {
+        if (onSyncSuccess) onSyncSuccess('✅ ' + res.message);
+        onClose();
+      } else {
+        setErrorMessage(res.message || 'Código no válido');
+      }
     } else {
-      setErrorMessage(res.message || 'El código no es válido.');
+      // Intentar como pairId directo
+      const res = await completeQRExchange(raw);
+      if (res.success) {
+        if (onSyncSuccess) onSyncSuccess('✅ ' + res.message);
+        onClose();
+      } else {
+        const res2 = applySyncPayload(raw);
+        if (res2.success) {
+          if (onSyncSuccess) onSyncSuccess('✅ ' + res2.message);
+          onClose();
+        } else {
+          setErrorMessage('Código no reconocido.');
+        }
+      }
     }
   };
 
@@ -183,11 +238,11 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               <h3 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                 <span>Sincronizar Dispositivos</span>
                 <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full uppercase">
-                  Privado
+                  Bidireccional
                 </span>
               </h3>
               <p className="text-xs text-zinc-400">
-                Transfiere notas y progreso entre tu PC y tu iPhone en ambos sentidos
+                Transfiere y fusiona notas entre PC y Móvil con la cámara del teléfono
               </p>
             </div>
           </div>
@@ -206,7 +261,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
 
         {/* Selector de 3 Pestañas */}
         <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5 gap-1">
-          {/* Pestaña 1: Mostrar QR */}
           <button
             onClick={() => setActiveTab('qr')}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -219,7 +273,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             <span>1. Mostrar QR</span>
           </button>
 
-          {/* Pestaña 2: Escanear con Cámara */}
           <button
             onClick={() => setActiveTab('camera')}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -232,7 +285,6 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             <span>2. Escanear QR</span>
           </button>
 
-          {/* Pestaña 3: Pegar Enlace */}
           <button
             onClick={() => setActiveTab('paste')}
             className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -252,28 +304,34 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           {/* ================= 1. PESTAÑA: MOSTRAR QR ================= */}
           {activeTab === 'qr' && (
             <div className="flex flex-col items-center text-center space-y-4">
-              <div className="p-4 bg-white rounded-3xl shadow-[0_0_30px_rgba(0,229,255,0.25)] border-4 border-cyan-400/40 inline-flex items-center justify-center">
+              <div className="relative p-4 bg-white rounded-3xl shadow-[0_0_30px_rgba(0,229,255,0.25)] border-4 border-cyan-400/40 inline-flex items-center justify-center">
                 {syncUrl ? (
                   <QRCodeSVG
                     value={syncUrl}
-                    size={200}
+                    size={190}
                     level="M"
                     includeMargin={false}
                   />
                 ) : (
-                  <div className="w-[200px] h-[200px] flex items-center justify-center text-xs text-zinc-400">
+                  <div className="w-[190px] h-[190px] flex items-center justify-center text-xs text-zinc-400">
                     Generando QR...
                   </div>
                 )}
               </div>
 
+              {/* Indicador de Escucha en Vivo */}
+              <div className="flex items-center gap-2 text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span>Esperando escaneo con la cámara del móvil...</span>
+              </div>
+
               <div className="space-y-1.5 max-w-sm">
                 <h4 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
                   <Smartphone className="w-4 h-4 text-cyan-400" />
-                  <span>Para pasar datos al otro dispositivo</span>
+                  <span>Apunta con la cámara de tu iPhone / Móvil</span>
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Apunta con la cámara de tu iPhone, o dale a <strong>"Escanear QR"</strong> en el otro dispositivo para transferir tus <strong className="text-cyan-300">{totalNotes} notas</strong> y avance de inmediato.
+                  Abre la cámara de tu teléfono y enfoca este código QR. Al tocar el enlace, <strong>los datos de ambos dispositivos se sincronizarán y combinarán automáticamente en los dos sentidos</strong>.
                 </p>
               </div>
 
@@ -296,7 +354,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
-          {/* ================= 2. PESTAÑA: ESCANEAR CON CÁMARA / WEBCAM ================= */}
+          {/* ================= 2. PESTAÑA: ESCANEAR CON CÁMARA ================= */}
           {activeTab === 'camera' && (
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative w-full aspect-video max-w-sm bg-black rounded-2xl overflow-hidden border-2 border-cyan-500/40 flex items-center justify-center shadow-lg">
@@ -308,19 +366,17 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                 />
                 <canvas ref={canvasRef} className="hidden" />
 
-                {/* Guía visual de escaneo y láser animado */}
                 {cameraActive && (
                   <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
                     <div className="w-44 h-44 border-2 border-dashed border-cyan-400/90 rounded-2xl relative">
                       <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee] animate-pulse" />
                     </div>
                     <span className="text-[11px] font-bold text-white bg-black/75 px-3 py-1 rounded-full mt-3 backdrop-blur-sm border border-zinc-700">
-                      Enfoca el código QR de tu iPhone aquí
+                      Enfoca el código QR del otro dispositivo
                     </span>
                   </div>
                 )}
 
-                {/* Error de cámara */}
                 {cameraError && (
                   <div className="absolute inset-0 bg-zinc-950 p-5 flex flex-col items-center justify-center text-center space-y-3">
                     <AlertTriangle className="w-8 h-8 text-amber-400" />
@@ -337,7 +393,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               </div>
 
               <div className="text-xs text-zinc-400 max-w-sm leading-relaxed">
-                Abre <strong>Sincronizar QR</strong> en tu iPhone (Pestaña 1) y <strong>muestra la pantalla de tu móvil delante de la webcam de tu PC</strong>. Se escaneará en 1 segundo automáticamente.
+                Abre <strong>Sincronizar QR</strong> en tu otro dispositivo y enfoca su código QR con esta cámara para transferir y fusionar datos al instante.
               </div>
             </div>
           )}
@@ -348,20 +404,20 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               <div className="bg-blue-950/40 border border-blue-500/30 p-3.5 rounded-2xl flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-zinc-300 leading-relaxed">
-                  <strong className="text-white block mb-0.5">Pegar Enlace Directo</strong>
-                  Si no deseas usar la cámara, dale a <strong className="text-cyan-300">"Copiar Enlace"</strong> en tu móvil, envíatelo por WhatsApp Web o AirDrop y pégalo aquí.
+                  <strong className="text-white block mb-0.5">Pegar Enlace o Código</strong>
+                  Pega aquí el enlace de sincronización o código PIN temporal para sincronizar los dos dispositivos.
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-bold text-zinc-300 block">
-                  Pega aquí el enlace o código copiado:
+                  Pega el enlace o código:
                 </label>
                 <textarea
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="https://www.capacero3d.com/#sync=..."
-                  rows={3}
+                  placeholder="https://www.capacero3d.com/#pair=CP1234"
+                  rows={2}
                   className="w-full bg-zinc-900 border border-zinc-800 focus:border-cyan-500 rounded-2xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors font-mono resize-none"
                 />
               </div>
@@ -382,11 +438,11 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
-          {/* Garantía de Fusión Inteligente */}
+          {/* Garantía de Fusión Inteligente y Privacidad */}
           <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-[11px] text-zinc-400">
             <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span>
-              <strong>Fusión Segura:</strong> Las notas de ambos dispositivos se combinan sin borrar nada.
+              <strong>Fusión Sin Pérdida:</strong> Ambos dispositivos comparan y combinan sus notas sin duplicados.
             </span>
           </div>
         </div>
