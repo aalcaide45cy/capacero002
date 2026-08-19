@@ -8,8 +8,8 @@
 import { saveSession, saveEvent } from './analyticsStorage';
 
 // --- CONFIGURACIÓN DE GOOGLE SHEETS ---
-const GOOGLE_SHEETS_ENABLED = true;
-const SHEETS_DB_URL = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
+export const GOOGLE_SHEETS_ENABLED = true;
+export const SHEETS_DB_URL = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
 
 // Identificadores únicos y persistentes
 export const getUserId = () => {

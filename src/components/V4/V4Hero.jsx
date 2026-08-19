@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Download, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail } from 'lucide-react';
+import { Play, Download, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone, Bell } from 'lucide-react';
 import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
 
 function formatCounter(num) {
@@ -48,6 +48,8 @@ export default function V4Hero({
   onSelectVideo,
   onOpenTab,
   onOpenCollaboration,
+  onOpenInstall,
+  onOpenNotification,
   isSearching = false,
   children
 }) {
@@ -126,20 +128,45 @@ export default function V4Hero({
             </a>
           </div>
 
-          {/* Botón Destacado: COLABORACIONES */}
-          <button
-            onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
-            className="relative flex items-center justify-center h-12 px-8 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-[15px] sm:text-[17px] rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.6)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95 flex-shrink-0 subtle-pulse"
-            title="Contactar para Colaboraciones"
-          >
-            <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-              <Mail className="w-5 h-5 text-cyan-200" />
-              COLABORACIONES
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
-          </button>
+          {/* Grupo de Acciones: Instalar App, Avisos Push y Colaboraciones */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-2">
+            
+            {/* Botón: Instalar App PWA */}
+            <button
+              onClick={(e) => { e.preventDefault(); onOpenInstall && onOpenInstall(); }}
+              className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
+              title="Instalar App Capa Cero 3D en pantalla de inicio"
+            >
+              <Smartphone className="w-4 h-4 text-cyan-400" />
+              <span>Instalar App</span>
+            </button>
 
-          {/* Buscador animado (Justo debajo de Colaboraciones) */}
+            {/* Botón: Notificaciones Push */}
+            <button
+              onClick={(e) => { e.preventDefault(); onOpenNotification && onOpenNotification(); }}
+              className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
+              title="Activar notificaciones de nuevos vídeos y directos"
+            >
+              <Bell className="w-4 h-4 text-cyan-400" />
+              <span>Avisos</span>
+            </button>
+
+            {/* Botón Destacado: COLABORACIONES */}
+            <button
+              onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
+              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.6)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95"
+              title="Contactar para Colaboraciones"
+            >
+              <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <Mail className="w-4 h-4 text-cyan-200" />
+                COLABORACIONES
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
+            </button>
+
+          </div>
+
+          {/* Buscador animado (Justo debajo de Acciones) */}
           <div className="w-full mt-2">
             {children}
           </div>

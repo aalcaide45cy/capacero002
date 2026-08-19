@@ -1,0 +1,49 @@
+{
+  "name": "Capa Cero 3D - Academia y Tutoriales",
+  "short_name": "Capa Cero 3D",
+  "description": "Academia y tutoriales de impresión 3D, Bambu Studio y Fusion 360",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "lang": "es-ES",
+  "categories": ["education", "utilities", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cursos Estructurados",
+      "short_name": "Cursos",
+      "description": "Accede a las rutas de aprendizaje de Bambu Studio y Fusion 360",
+      "url": "/?filter=courses",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Videoteca de Tutoriales",
+      "short_name": "Tutoriales",
+      "description": "Explora trucos rápidos y soluciones a fallos de impresión",
+      "url": "/?filter=newest",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

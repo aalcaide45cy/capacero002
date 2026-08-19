@@ -8,6 +8,8 @@ import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
 import V4CircuitBackground from './V4CircuitBackground';
+import V4InstallModal from './V4InstallModal';
+import V4NotificationModal from './V4NotificationModal';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
@@ -20,6 +22,8 @@ export default function V4Hub() {
   const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
 
   // Iniciar sesión de analítica completa en el montaje
@@ -113,6 +117,8 @@ export default function V4Hub() {
           window.scrollTo({ top: 450, behavior: 'smooth' });
         }}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
+        onOpenInstall={() => setIsInstallModalOpen(true)}
+        onOpenNotification={() => setIsNotificationModalOpen(true)}
       >
         <V4SearchBar
           searchQuery={searchQuery}
@@ -166,6 +172,18 @@ export default function V4Hub() {
       {isCollaborationOpen && (
         <CollaborationModal onClose={() => setIsCollaborationOpen(false)} />
       )}
+
+      {/* PWA Installation Modal (iOS Guide + Android Native) */}
+      <V4InstallModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+      />
+
+      {/* Push Notification Opt-in Modal */}
+      <V4NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+      />
 
     </div>
   );
