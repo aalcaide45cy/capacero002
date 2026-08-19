@@ -69,11 +69,11 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             if (pollRes && pollRes.status === 'ready' && pollRes.success) {
               clearInterval(pollIntervalRef.current);
               if (onSyncSuccess) {
-                onSyncSuccess('✅ ¡Sincronizado con éxito! Se han fusionado tus notas y lecciones.');
+                onSyncSuccess('✅ ¡Sincronización establecida!');
               }
               onClose();
             }
-          }, 1500);
+          }, 1200);
         }
       });
 
@@ -345,22 +345,22 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           </button>
         </div>
 
-        {/* Banner de Bóveda Activa si ya está emparejado */}
+        {/* Banner de Sincronización Activa si ya está emparejado */}
         {currentVaultId && (
           <div className="px-5 py-2.5 bg-emerald-950/40 border-b border-emerald-500/20 flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-emerald-400 font-medium">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong className="text-white">Bóveda Cloud:</strong> {currentVaultId}
+                <strong className="text-white">Sincronización activa</strong> ({currentVaultId})
               </span>
             </div>
             <button
               onClick={handleForceSyncNow}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer"
-              title="Sincronizar ahora con la nube"
+              title="Sincronizar ahora"
             >
               <RefreshCw className="w-3 h-3" />
-              <span>Sincronizar Ya</span>
+              <span>Sincronizar ahora</span>
             </button>
           </div>
         )}
@@ -543,7 +543,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                     <div>
                       <strong className="text-xs text-white block">Desvincular este dispositivo</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        Desconecta este equipo de la Bóveda Cloud ({currentVaultId}). Tus notas y cursos locales se mantendrán intactos.
+                        Desconecta este equipo ({currentVaultId}). Tus notas y cursos locales se mantendrán intactos.
                       </p>
                     </div>
                   </div>
@@ -552,7 +552,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                     className="w-full flex items-center justify-center gap-1.5 bg-amber-950/60 hover:bg-amber-900 text-amber-200 border border-amber-500/40 text-xs font-bold py-2 rounded-xl transition-all cursor-pointer"
                   >
                     <Unlink className="w-3.5 h-3.5" />
-                    <span>Desvincular de la Bóveda</span>
+                    <span>Desvincular sincronización</span>
                   </button>
                 </div>
               )}

@@ -596,7 +596,7 @@ export async function deleteCloudVault(customVaultId = null) {
   return { success: true };
 }
 
-// Iniciar sesión de enlace (Crea la Bóveda en la nube y devuelve el QR)
+// Iniciar sesión de enlace (El PC crea el código QR y espera al móvil)
 export async function initiateQRSyncSession() {
   let vaultId = getVaultId();
   if (!vaultId) {
@@ -611,7 +611,8 @@ export async function initiateQRSyncSession() {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        type: 'vault_push',
+        type: 'qr_sync_init',
+        pairId: vaultId,
         vaultId: vaultId,
         payload: payload
       })
@@ -630,14 +631,16 @@ export async function initiateQRSyncSession() {
 export async function pollQRSyncSession(pairId) {
   if (!pairId) return { status: 'waiting' };
   try {
-    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=vault_pull&vaultId=${encodeURIComponent(pairId)}`);
+    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=qr_sync_poll&pairId=${encodeURIComponent(pairId)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.status === 'success' && data.payload) {
-        const applyRes = applySyncPayload(data.payload);
-        setLastSyncTime(new Date().toISOString());
-        dispatchSyncStatus('synced');
-        return { status: 'ready', success: true, message: applyRes.message };
+      if (data.status === 'ready' && data.payload) {
+        applySyncPayload(data.payload);
+        const now = new Date().toISOString();
+        setLastSyncTime(now);
+        dispatchSyncStatus('synced', { lastSync: now });
+        syncVaultPush(true);
+        return { status: 'ready', success: true, message: '¡Sincronización establecida!' };
       }
     }
   } catch (e) {}
@@ -646,7 +649,7 @@ export async function pollQRSyncSession(pairId) {
 
 // El iPhone procesa el escaneo del QR (#pair=CP-XXXX-XXXX)
 export async function completeQRExchange(pairId) {
-  if (!pairId) return { success: false, message: 'Código de emparejamiento no válido' };
+  if (!pairId) return { success: false, message: 'Código no válido' };
   
   const normalizedVaultId = String(pairId).trim().toUpperCase();
   setVaultId(normalizedVaultId);
@@ -654,28 +657,37 @@ export async function completeQRExchange(pairId) {
   const phonePayload = getLocalSyncPayload();
 
   try {
-    // 1. Enviar payload de este dispositivo a la bóveda común
-    await fetch(APPS_SCRIPT_ENDPOINT, {
+    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        type: 'vault_push',
+        type: 'qr_sync_exchange',
+        pairId: normalizedVaultId,
         vaultId: normalizedVaultId,
         payload: phonePayload
       })
     });
 
-    // 2. Traer y fusionar el estado completo de la bóveda
-    await syncVaultPull();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sourcePayload) {
+        applySyncPayload(data.sourcePayload);
+      }
+      const now = new Date().toISOString();
+      setLastSyncTime(now);
+      dispatchSyncStatus('synced', { lastSync: now });
+      syncVaultPush(true);
 
-    return {
-      success: true,
-      message: '¡Dispositivos vinculados a tu Bóveda Cloud! Tus notas se mantendrán sincronizadas en segundo plano.'
-    };
+      return {
+        success: true,
+        message: '¡Sincronización establecida!'
+      };
+    }
   } catch (e) {
     console.error('Error completando intercambio QR:', e);
-    return { success: false, message: 'No se pudo conectar con la Bóveda en la nube.' };
   }
+
+  return { success: false, message: 'No se pudo completar la sincronización.' };
 }
 
 // ================= 7. BORRADO LOCAL EXCLUSIVO DE ESTE DISPOSITIVO =================
