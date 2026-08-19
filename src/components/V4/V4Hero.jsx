@@ -143,7 +143,7 @@ export default function V4Hero({
             </a>
           </div>
 
-          {/* Grupo de Acciones: Instalar App, Avisos Push y Colaboraciones */}
+          {/* Grupo de Acciones: Instalar App (Solo si no está instalada) y Colaboraciones */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-2">
             
             {/* Botón: Instalar App PWA (Oculto automáticamente si ya está instalada / abierta como App) */}
@@ -157,16 +157,6 @@ export default function V4Hero({
                 <span>Instalar App</span>
               </button>
             )}
-
-            {/* Botón: Notificaciones Push */}
-            <button
-              onClick={(e) => { e.preventDefault(); onOpenNotification && onOpenNotification(); }}
-              className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
-              title="Activar notificaciones de nuevos vídeos y directos"
-            >
-              <Bell className="w-4 h-4 text-cyan-400" />
-              <span>Avisos</span>
-            </button>
 
             {/* Botón Destacado: COLABORACIONES */}
             <button

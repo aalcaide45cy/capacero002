@@ -31,19 +31,18 @@ export default function V4Hub() {
     initAnalyticsSession();
   }, []);
 
-  // En la primera apertura de la app (o PWA instalada), invitar automáticamente a activar notificaciones
+  // Si las notificaciones no están concedidas todavía, invitar automáticamente a activarlas
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const isStandalone = 
         window.matchMedia('(display-mode: standalone)').matches || 
         window.navigator.standalone === true;
-      const hasPrompted = localStorage.getItem('capacero_auto_prompted_push');
       
-      if (!hasPrompted && Notification.permission === 'default') {
+      // Si el permiso no está otorgado, mostrar la ventana de activación
+      if (Notification.permission !== 'granted') {
         const timer = setTimeout(() => {
           setIsNotificationModalOpen(true);
-          localStorage.setItem('capacero_auto_prompted_push', 'true');
-        }, isStandalone ? 800 : 2500);
+        }, isStandalone ? 700 : 2000);
         return () => clearTimeout(timer);
       }
     }

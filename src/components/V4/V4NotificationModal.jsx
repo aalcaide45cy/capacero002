@@ -97,12 +97,10 @@ export default function V4NotificationModal({ isOpen, onClose }) {
             </div>
 
             <button
-              onClick={handleUnsubscribe}
-              disabled={isLoading}
-              className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-rose-300 border border-zinc-800 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
+              onClick={onClose}
+              className="w-full py-3 bg-gradient-to-r from-blue-700 to-cyan-500 text-white font-extrabold rounded-xl shadow-[0_0_20px_rgba(0,229,255,0.4)] active:scale-95 transition-all text-center text-xs"
             >
-              <BellOff className="w-4 h-4" />
-              <span>Desactivar en este dispositivo</span>
+              Listo
             </button>
           </div>
         ) : (
