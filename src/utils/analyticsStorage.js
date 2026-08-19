@@ -733,6 +733,7 @@ export const fetchPushStats = async () => {
             mobiles: data.mobiles || 0,
             pcs: data.pcs || 0,
             expired: data.expired || 0,
+            countries: data.countries || [],
             devices: data.devices || [],
             history: data.history || []
         };
@@ -744,6 +745,7 @@ export const fetchPushStats = async () => {
             mobiles: 0,
             pcs: 0,
             expired: 0,
+            countries: [],
             devices: [],
             history: []
         };

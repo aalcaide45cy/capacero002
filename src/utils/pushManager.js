@@ -2,7 +2,7 @@
  * Capa Cero 3D - Web Push & PWA Manager (100% Self-Hosted / Zero 3rd Parties)
  */
 
-import { SHEETS_DB_URL } from './analytics';
+import { SHEETS_DB_URL, getGeoLocation } from './analytics';
 
 // Clave Pública VAPID oficial de Capa Cero 3D
 export const VAPID_PUBLIC_KEY = 'BEOU0E1RrejUcC2jauuW_M3QWaVXstMPuGqxoBNLC3zud9NFAKece21xxQC6evzt9EsX4N5z_mHfUrThlZHci-s';
@@ -131,6 +131,13 @@ export async function subscribeToPushNotifications() {
     const subJson = subscription.toJSON();
     const { os, device, browser } = getDeviceContext();
 
+    // Detección silenciosa por IP y zona horaria (0 permisos de ubicación al usuario)
+    let geo = { country: 'España', countryCode: 'ES', flag: '🇪🇸', region: 'Madrid', city: 'Madrid' };
+    try {
+      geo = await getGeoLocation();
+    } catch (e) {}
+    const timezone = (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Europe/Madrid';
+
     // 4. Enviar suscripción a Google Sheets (100% privado y propio)
     const payload = {
       type: 'push_subscription',
@@ -138,6 +145,12 @@ export async function subscribeToPushNotifications() {
       endpoint: subJson.endpoint || '',
       p256dh: subJson.keys?.p256dh || '',
       auth: subJson.keys?.auth || '',
+      country: geo.country || 'España',
+      countryCode: geo.countryCode || 'ES',
+      flag: geo.flag || '🇪🇸',
+      region: geo.region || geo.city || '',
+      city: geo.city || '',
+      timezone: timezone,
       device: device,
       os: os,
       browser: browser,

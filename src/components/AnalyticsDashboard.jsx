@@ -1239,6 +1239,33 @@ export default function AnalyticsDashboard() {
                             )}
                         </div>
 
+                        {/* Países y Geolocalización de los Suscriptores */}
+                        <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl">
+                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
+                                <Globe className="w-5 h-5 text-cyan-400" />
+                                Origen Geográfico de los Suscriptores Push
+                            </h3>
+                            <p className="text-xs text-zinc-400 mb-4">
+                                Detección silenciosa e instantánea por IP y zona horaria (sin solicitar permisos de GPS ni datos intrusivos).
+                            </p>
+
+                            {!pushStats.countries || pushStats.countries.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-zinc-500">
+                                    No hay datos geográficos disponibles todavía.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                                    {pushStats.countries.map((c, idx) => (
+                                        <div key={idx} className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 flex flex-col items-center justify-center text-center">
+                                            <span className="text-2xl mb-1">{c.flag || '🌐'}</span>
+                                            <span className="text-xs font-bold text-white truncate max-w-full">{c.name}</span>
+                                            <span className="text-sm font-extrabold text-cyan-400 mt-0.5">{c.count} {c.count === 1 ? 'dispositivo' : 'dispositivos'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         {/* Dispositivos Registrados */}
                         <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl">
                             <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2 mb-1">
@@ -1259,6 +1286,7 @@ export default function AnalyticsDashboard() {
                                         <thead>
                                             <tr className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px] tracking-wider">
                                                 <th className="py-3 px-3">Fecha Alta</th>
+                                                <th className="py-3 px-3">Ubicación</th>
                                                 <th className="py-3 px-3">Dispositivo</th>
                                                 <th className="py-3 px-3">Sistema Operativo</th>
                                                 <th className="py-3 px-3">Navegador</th>
@@ -1270,6 +1298,11 @@ export default function AnalyticsDashboard() {
                                             {pushStats.devices.map((d, idx) => (
                                                 <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
                                                     <td className="py-3 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">{d.timestamp}</td>
+                                                    <td className="py-3 px-3 font-semibold text-white whitespace-nowrap">
+                                                        <span className="mr-1.5">{d.flag || '🌐'}</span>
+                                                        <span>{d.country || 'España'}</span>
+                                                        {d.region && <span className="text-[11px] text-zinc-500 ml-1">({d.region})</span>}
+                                                    </td>
                                                     <td className="py-3 px-3 font-bold text-white">{d.device}</td>
                                                     <td className="py-3 px-3 text-zinc-300">{d.os}</td>
                                                     <td className="py-3 px-3 text-zinc-300">{d.browser}</td>
