@@ -29,6 +29,9 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     };
 
     updateLocalSyncState();
+    if (isOpen && getVaultId()) {
+      syncVaultPull();
+    }
 
     const handleSyncStatus = (e) => {
       if (e.detail) {

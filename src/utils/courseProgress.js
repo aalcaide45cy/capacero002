@@ -239,8 +239,8 @@ export function addVideoNote(videoId, timestampInSeconds, noteText, courseName =
 
   try {
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list } }));
-    syncVaultPush();
+    window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list, all } }));
+    syncVaultPush(true);
     return newNote;
   } catch (e) {
     console.warn('Error guardando apunte:', e);
@@ -249,14 +249,35 @@ export function addVideoNote(videoId, timestampInSeconds, noteText, courseName =
 }
 
 export function deleteVideoNote(videoId, noteId) {
-  if (!videoId || !noteId || typeof window === 'undefined' || !window.localStorage) return;
+  if (!noteId || typeof window === 'undefined' || !window.localStorage) return;
   const all = getAllStudyNotes();
-  if (Array.isArray(all[videoId])) {
+  let changed = false;
+
+  // 1. Buscar en clave específica si se proporciona
+  if (videoId && Array.isArray(all[videoId])) {
+    const beforeLen = all[videoId].length;
     all[videoId] = all[videoId].filter(n => n.id !== noteId);
+    if (all[videoId].length !== beforeLen) changed = true;
+    if (all[videoId].length === 0) delete all[videoId];
+  }
+
+  // 2. Buscar en todas las claves por seguridad
+  if (!changed) {
+    Object.keys(all).forEach((vKey) => {
+      if (Array.isArray(all[vKey])) {
+        const bLen = all[vKey].length;
+        all[vKey] = all[vKey].filter(n => n.id !== noteId);
+        if (all[vKey].length !== bLen) changed = true;
+        if (all[vKey].length === 0) delete all[vKey];
+      }
+    });
+  }
+
+  if (changed) {
     try {
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
-      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: all[videoId] } }));
-      syncVaultPush();
+      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all } }));
+      syncVaultPush(true);
     } catch (e) {}
   }
 }
@@ -357,26 +378,56 @@ export function generateSyncUrl() {
 }
 
 export function updateVideoNote(videoId, noteId, newText) {
-  if (!videoId || !noteId || !newText || !newText.trim() || typeof window === 'undefined' || !window.localStorage) return null;
+  if (!noteId || !newText || !newText.trim() || typeof window === 'undefined' || !window.localStorage) return null;
   const all = getAllStudyNotes();
-  if (Array.isArray(all[videoId])) {
-    const list = all[videoId].map((n) => {
+  let found = false;
+  let updatedNote = null;
+
+  // 1. Intentar en clave específica si se proporciona
+  if (videoId && Array.isArray(all[videoId])) {
+    all[videoId] = all[videoId].map((n) => {
       if (n.id === noteId) {
-        return {
+        found = true;
+        updatedNote = {
           ...n,
           text: newText.trim(),
           updatedAt: new Date().toISOString()
         };
+        return updatedNote;
       }
       return n;
     });
-    all[videoId] = list;
+  }
+
+  // 2. Si no se encontró por videoId, buscar en todas las claves
+  if (!found) {
+    Object.keys(all).forEach((vKey) => {
+      if (Array.isArray(all[vKey])) {
+        all[vKey] = all[vKey].map((n) => {
+          if (n.id === noteId) {
+            found = true;
+            updatedNote = {
+              ...n,
+              text: newText.trim(),
+              updatedAt: new Date().toISOString()
+            };
+            return updatedNote;
+          }
+          return n;
+        });
+      }
+    });
+  }
+
+  if (found) {
     try {
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
-      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list } }));
+      window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all } }));
       syncVaultPush(true);
-      return list.find(n => n.id === noteId);
-    } catch (e) {}
+      return updatedNote;
+    } catch (e) {
+      console.warn('Error guardando apunte editado:', e);
+    }
   }
   return null;
 }
