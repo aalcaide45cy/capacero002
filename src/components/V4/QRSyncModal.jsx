@@ -1,8 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import jsQR from 'jsqr';
-import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle, Trash2, AlertCircle } from 'lucide-react';
-import { initiateQRSyncSession, pollQRSyncSession, completeQRExchange, applySyncPayload, getAllStudyNotes, getAllCoursesProgress, clearAllLocalDeviceData } from '../../utils/courseProgress';
+import { X, QrCode, Copy, Check, Smartphone, Camera, Link2, ShieldCheck, Sparkles, ArrowRight, Layers, Lock, RefreshCw, AlertTriangle, Trash2, AlertCircle, Unlink, CheckCircle2 } from 'lucide-react';
+import { 
+  initiateQRSyncSession, 
+  pollQRSyncSession, 
+  completeQRExchange, 
+  applySyncPayload, 
+  getAllStudyNotes, 
+  getAllCoursesProgress, 
+  clearAllLocalDeviceData,
+  getVaultId,
+  clearVaultId,
+  deleteCloudVault,
+  syncVaultPull,
+  getLastSyncTime
+} from '../../utils/courseProgress';
 
 export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
   const [copied, setCopied] = useState(false);
@@ -227,6 +240,14 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
     }
   };
 
+  const handleUnlinkDevice = () => {
+    clearVaultId();
+    if (onSyncSuccess) {
+      onSyncSuccess('🔌 Dispositivo desvinculado de la Bóveda. Tus notas locales se conservan.');
+    }
+    onClose();
+  };
+
   const handleDeleteAllLocal = () => {
     const res = clearAllLocalDeviceData();
     if (res.success) {
@@ -237,6 +258,24 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
     }
   };
 
+  const handleDeleteLocalAndCloud = async () => {
+    await deleteCloudVault();
+    clearAllLocalDeviceData();
+    if (onSyncSuccess) {
+      onSyncSuccess('🗑️ Bóveda Cloud y datos locales eliminados por completo.');
+    }
+    onClose();
+  };
+
+  const handleForceSyncNow = async () => {
+    const res = await syncVaultPull();
+    if (onSyncSuccess) {
+      onSyncSuccess(res.success ? '✅ ¡Notas actualizadas y sincronizadas desde la nube!' : '⚠️ ' + (res.error || 'No se pudo conectar'));
+    }
+    onClose();
+  };
+
+  const currentVaultId = getVaultId();
   const allNotes = getAllStudyNotes();
   let totalNotes = 0;
   Object.values(allNotes).forEach((arr) => {
@@ -300,11 +339,31 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
               onClose();
             }}
             className="p-2 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
-            aria-label="Cerrar modal"
+            aria-label="Cerrar modal de sincronización"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Banner de Bóveda Activa si ya está emparejado */}
+        {currentVaultId && (
+          <div className="px-5 py-2.5 bg-emerald-950/40 border-b border-emerald-500/20 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-emerald-400 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong className="text-white">Bóveda Cloud:</strong> {currentVaultId}
+              </span>
+            </div>
+            <button
+              onClick={handleForceSyncNow}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer"
+              title="Sincronizar ahora con la nube"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Sincronizar Ya</span>
+            </button>
+          </div>
+        )}
 
         {/* Botones de Pestañas en Grid 2x2 (móvil) / 4 columnas (PC) - ¡Cero Scroll! */}
         <div className="px-5 pt-4 pb-2 bg-zinc-950/90 border-b border-zinc-900">
@@ -473,60 +532,82 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
-          {/* ================= PESTAÑA: ELIMINAR DATOS ================= */}
+          {/* ================= PESTAÑA: ELIMINAR / DESVINCULAR ================= */}
           {activeTab === 'delete' && (
             <div className="space-y-4 text-left">
-              <div className="bg-rose-950/30 border border-rose-500/30 p-4 rounded-2xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-zinc-300 leading-relaxed">
-                  <strong className="text-white block mb-0.5">Eliminar datos solo en este dispositivo</strong>
-                  Esta opción restablecerá a cero tus notas de estudio y cursos completados <strong className="text-rose-300">únicamente en la memoria de este navegador</strong>.
-                  <br className="my-1" />
-                  Los datos que tengas en otros dispositivos o que hayas sincronizado previamente <strong>no se verán afectados</strong>.
-                </div>
-              </div>
-
-              {/* Resumen de datos que se eliminarán */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-2xl">
-                  <span className="text-xs text-zinc-400 block font-medium">Notas a eliminar</span>
-                  <strong className="text-base text-rose-400 font-black">{totalNotes}</strong>
-                </div>
-                <div className="bg-zinc-900/60 border border-zinc-800 p-3.5 rounded-2xl">
-                  <span className="text-xs text-zinc-400 block font-medium">Cursos iniciados</span>
-                  <strong className="text-base text-rose-400 font-black">{totalCourses}</strong>
-                </div>
-              </div>
-
-              {!isConfirmingDelete ? (
-                <button
-                  onClick={() => setIsConfirmingDelete(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-rose-950/60 hover:bg-rose-900 text-rose-200 hover:text-white border border-rose-500/50 hover:border-rose-400 text-xs sm:text-sm font-bold px-5 py-3 rounded-xl transition-all active:scale-95 cursor-pointer shadow-sm mt-2"
-                >
-                  <Trash2 className="w-4 h-4 text-rose-400" />
-                  <span>Eliminar datos de este dispositivo</span>
-                </button>
-              ) : (
-                <div className="p-4 bg-rose-950/80 border-2 border-rose-500 rounded-2xl space-y-3 animate-fade-in text-center">
-                  <p className="text-xs text-white font-bold leading-snug">
-                    ⚠️ ¿Estás seguro? Esta acción borrará de forma permanente tus notas y avance en este navegador.
-                  </p>
-                  <div className="flex gap-2 justify-center">
-                    <button
-                      onClick={() => setIsConfirmingDelete(false)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleDeleteAllLocal}
-                      className="px-4 py-2 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer shadow-lg active:scale-95"
-                    >
-                      Sí, Eliminar Definitivamente
-                    </button>
+              {/* Opción 1: Desvincular si está emparejado */}
+              {currentVaultId && (
+                <div className="bg-zinc-900/80 border border-zinc-800 p-4 rounded-2xl space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <Unlink className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-xs text-white block">Desvincular este dispositivo</strong>
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        Desconecta este equipo de la Bóveda Cloud ({currentVaultId}). Tus notas y cursos locales se mantendrán intactos.
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    onClick={handleUnlinkDevice}
+                    className="w-full flex items-center justify-center gap-1.5 bg-amber-950/60 hover:bg-amber-900 text-amber-200 border border-amber-500/40 text-xs font-bold py-2 rounded-xl transition-all cursor-pointer"
+                  >
+                    <Unlink className="w-3.5 h-3.5" />
+                    <span>Desvincular de la Bóveda</span>
+                  </button>
                 </div>
               )}
+
+              {/* Opción 2: Eliminar datos locales */}
+              <div className="bg-rose-950/20 border border-rose-500/30 p-4 rounded-2xl space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-xs text-white block">Eliminar datos locales de este navegador</strong>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Restablece a cero tus notas ({totalNotes}) y cursos ({totalCourses}) exclusivamente en este navegador.
+                    </p>
+                  </div>
+                </div>
+
+                {!isConfirmingDelete ? (
+                  <button
+                    onClick={() => setIsConfirmingDelete(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-rose-950/60 hover:bg-rose-900 text-rose-200 hover:text-white border border-rose-500/50 hover:border-rose-400 text-xs font-bold py-2.5 rounded-xl transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Eliminar datos locales</span>
+                  </button>
+                ) : (
+                  <div className="p-3.5 bg-rose-950/90 border-2 border-rose-500 rounded-xl space-y-3 animate-fade-in text-center">
+                    <p className="text-xs text-white font-bold leading-snug">
+                      ⚠️ ¿Confirmas eliminar tus notas locales?
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <button
+                        onClick={() => setIsConfirmingDelete(false)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleDeleteAllLocal}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition-all cursor-pointer shadow-md"
+                      >
+                        Solo en este PC
+                      </button>
+                      {currentVaultId && (
+                        <button
+                          onClick={handleDeleteLocalAndCloud}
+                          className="px-3 py-1.5 rounded-lg text-xs font-black text-rose-200 bg-rose-900/90 hover:bg-rose-800 border border-rose-400/50 transition-all cursor-pointer"
+                          title="Borrar en este equipo y también en la nube"
+                        >
+                          En PC y Nube
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

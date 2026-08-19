@@ -5,6 +5,62 @@
 const PROGRESS_STORAGE_KEY = 'CAPACERO_COURSE_PROGRESS_V1';
 const TIMESTAMPS_STORAGE_KEY = 'CAPACERO_VIDEO_TIMESTAMPS_V1';
 const NOTES_STORAGE_KEY = 'CAPACERO_STUDY_NOTES_V1';
+const VAULT_STORAGE_KEY = 'CAPACERO_VAULT_KEY_V1';
+const LAST_SYNC_STORAGE_KEY = 'CAPACERO_LAST_SYNC_TIME_V1';
+
+// ================= 0. GESTIÓN DE BÓVEDA Y ESTADO DE SINCRONIZACIÓN ACTIVA =================
+export function getVaultId() {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  return localStorage.getItem(VAULT_STORAGE_KEY) || null;
+}
+
+export function setVaultId(id) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  if (id) {
+    localStorage.setItem(VAULT_STORAGE_KEY, String(id).trim().toUpperCase());
+  } else {
+    localStorage.removeItem(VAULT_STORAGE_KEY);
+  }
+  dispatchSyncStatus(id ? 'synced' : 'unlinked');
+}
+
+export function clearVaultId() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  localStorage.removeItem(VAULT_STORAGE_KEY);
+  localStorage.removeItem(LAST_SYNC_STORAGE_KEY);
+  dispatchSyncStatus('unlinked');
+}
+
+export function getLastSyncTime() {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  return localStorage.getItem(LAST_SYNC_STORAGE_KEY) || null;
+}
+
+export function setLastSyncTime(isoStr) {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  localStorage.setItem(LAST_SYNC_STORAGE_KEY, isoStr || new Date().toISOString());
+}
+
+export function generateNewVaultId() {
+  const p1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const p2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `CP-${p1}-${p2}`;
+}
+
+export function dispatchSyncStatus(status, detail = {}) {
+  if (typeof window === 'undefined') return;
+  const vaultId = getVaultId();
+  const lastSync = getLastSyncTime();
+  window.dispatchEvent(new CustomEvent('capacero-sync-status', {
+    detail: {
+      status, // 'synced' | 'syncing' | 'unlinked' | 'offline' | 'error'
+      vaultId,
+      lastSync,
+      isLinked: Boolean(vaultId),
+      ...detail
+    }
+  }));
+}
 
 // Función para normalizar claves de cursos (ej: 'Bambu Studio' -> 'bambu-studio')
 export function normalizeCourseSlug(name) {
@@ -82,6 +138,7 @@ export function saveCourseProgress(courseName, video, currentPlaybackTime = null
   try {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(all));
     window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { slug, progress: all[slug] } }));
+    syncVaultPush();
   } catch (e) {
     console.warn('Error guardando progreso en localStorage:', e);
   }
@@ -100,13 +157,14 @@ export function resetCourseProgress(courseName) {
     try {
       localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(all));
       window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { slug, progress: null } }));
+      syncVaultPush();
     } catch (e) {
       console.warn('Error reseteando progreso:', e);
     }
   }
 }
 
-// ================= 2. TIEMPOS EXACTOS DE REANUDACIÓN DE VÍDEO (-5s) =================
+// ================= 2. TIEMPOS Y REANUDACIÓN DE VÍDEOS =================
 
 export function getAllVideoTimestamps() {
   if (typeof window === 'undefined' || !window.localStorage) return {};
@@ -121,24 +179,26 @@ export function getAllVideoTimestamps() {
 export function getVideoPlaybackTime(videoId) {
   if (!videoId) return 0;
   const all = getAllVideoTimestamps();
-  const item = all[videoId];
-  return typeof item === 'object' ? item.seconds || 0 : (typeof item === 'number' ? item : 0);
+  return all[videoId]?.timestamp || 0;
 }
 
 export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
   if (!videoId || typeof window === 'undefined' || !window.localStorage) return;
   const all = getAllVideoTimestamps();
   all[videoId] = {
-    seconds: Math.floor(seconds),
+    videoId,
+    timestamp: Math.max(0, Math.floor(seconds || 0)),
     courseName,
-    updatedAt: new Date().toISOString()
+    lastUpdated: new Date().toISOString()
   };
+
   try {
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));
+    window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { videoId, timestamp: seconds } }));
   } catch (e) {}
 }
 
-// ================= 3. APUNTES Y MARCADORES CON TIMESTAMP =================
+// ================= 3. APUNTES Y NOTAS DE ESTUDIO EN VÍDEOS =================
 
 export function getAllStudyNotes() {
   if (typeof window === 'undefined' || !window.localStorage) return {};
@@ -180,6 +240,7 @@ export function addVideoNote(videoId, timestampInSeconds, noteText, courseName =
   try {
     localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
     window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: list } }));
+    syncVaultPush();
     return newNote;
   } catch (e) {
     console.warn('Error guardando apunte:', e);
@@ -195,6 +256,7 @@ export function deleteVideoNote(videoId, noteId) {
     try {
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(all));
       window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { videoId, notes: all[videoId] } }));
+      syncVaultPush();
     } catch (e) {}
   }
 }
@@ -384,8 +446,10 @@ export function applySyncPayload(encodedPayload) {
   }
 }
 
-// ================= 6. ENLACE EN LA NUBE ASISTIDO POR GOOGLE APPS SCRIPT (RAM CACHE) =================
+// ================= 6. SINCRONIZACIÓN ACTIVA Y CONTINUA (BÓVEDA EN LA NUBE) =================
 const APPS_SCRIPT_ENDPOINT = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
+
+let pushDebounceTimer = null;
 
 // Obtener payload local codificado
 export function getLocalSyncPayload() {
@@ -402,19 +466,153 @@ export function getLocalSyncPayload() {
   }));
 }
 
-// Iniciar sesión de enlace temporal (El PC crea el enlace y muestra el QR)
+/**
+ * Envío en segundo plano de cambios a la Bóveda en la nube (Debounced o Inmediato)
+ */
+export function syncVaultPush(immediate = false) {
+  const vaultId = getVaultId();
+  if (!vaultId) {
+    dispatchSyncStatus('unlinked');
+    return Promise.resolve({ success: false, reason: 'unlinked' });
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    dispatchSyncStatus('offline');
+    return Promise.resolve({ success: false, reason: 'offline' });
+  }
+
+  if (pushDebounceTimer) {
+    clearTimeout(pushDebounceTimer);
+    pushDebounceTimer = null;
+  }
+
+  const executePush = async () => {
+    dispatchSyncStatus('syncing');
+    const payload = getLocalSyncPayload();
+
+    try {
+      const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          type: 'vault_push',
+          vaultId: vaultId,
+          payload: payload
+        })
+      });
+
+      if (res.ok) {
+        const now = new Date().toISOString();
+        setLastSyncTime(now);
+        dispatchSyncStatus('synced', { lastSync: now });
+        return { success: true, timestamp: now };
+      } else {
+        dispatchSyncStatus('error', { error: 'Error al contactar con la nube' });
+        return { success: false };
+      }
+    } catch (err) {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      dispatchSyncStatus(isOffline ? 'offline' : 'error', { error: err.message });
+      return { success: false, error: err.message };
+    }
+  };
+
+  if (immediate) {
+    return executePush();
+  }
+
+  return new Promise((resolve) => {
+    pushDebounceTimer = setTimeout(async () => {
+      const r = await executePush();
+      resolve(r);
+    }, 500);
+  });
+}
+
+/**
+ * Descarga y fusión silenciosa de cambios desde la Bóveda en la nube
+ */
+export async function syncVaultPull() {
+  const vaultId = getVaultId();
+  if (!vaultId) {
+    dispatchSyncStatus('unlinked');
+    return { success: false, reason: 'unlinked' };
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    dispatchSyncStatus('offline');
+    return { success: false, reason: 'offline' };
+  }
+
+  dispatchSyncStatus('syncing');
+
+  try {
+    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=vault_pull&vaultId=${encodeURIComponent(vaultId)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === 'success' && data.payload) {
+        applySyncPayload(data.payload);
+        const now = new Date().toISOString();
+        setLastSyncTime(now);
+        dispatchSyncStatus('synced', { lastSync: now });
+        return { success: true, message: 'Notas sincronizadas con éxito.' };
+      } else if (data.status === 'not_found') {
+        dispatchSyncStatus('unlinked');
+        return { success: false, reason: 'not_found' };
+      }
+    }
+  } catch (err) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    dispatchSyncStatus(isOffline ? 'offline' : 'error', { error: err.message });
+    return { success: false, error: err.message };
+  }
+
+  dispatchSyncStatus('synced');
+  return { success: true };
+}
+
+/**
+ * Elimina la bóveda en la nube y desvincula el dispositivo
+ */
+export async function deleteCloudVault(customVaultId = null) {
+  const vaultId = customVaultId || getVaultId();
+  if (!vaultId) {
+    clearVaultId();
+    return { success: true };
+  }
+
+  try {
+    await fetch(APPS_SCRIPT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        type: 'vault_delete',
+        vaultId: vaultId
+      })
+    });
+  } catch (e) {}
+
+  clearVaultId();
+  return { success: true };
+}
+
+// Iniciar sesión de enlace (Crea la Bóveda en la nube y devuelve el QR)
 export async function initiateQRSyncSession() {
-  const pairId = 'CP' + Math.floor(1000 + Math.random() * 9000);
+  let vaultId = getVaultId();
+  if (!vaultId) {
+    vaultId = generateNewVaultId();
+    setVaultId(vaultId);
+  }
+
   const payload = getLocalSyncPayload();
 
   try {
     fetch(APPS_SCRIPT_ENDPOINT, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        type: 'qr_sync_init',
-        pairId: pairId,
+        type: 'vault_push',
+        vaultId: vaultId,
         payload: payload
       })
     }).catch(() => {});
@@ -422,8 +620,9 @@ export async function initiateQRSyncSession() {
 
   const baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}` : 'https://www.capacero3d.com/';
   return {
-    pairId,
-    syncUrl: `${baseUrl}#pair=${pairId}`
+    pairId: vaultId,
+    vaultId: vaultId,
+    syncUrl: `${baseUrl}#pair=${vaultId}`
   };
 }
 
@@ -431,11 +630,13 @@ export async function initiateQRSyncSession() {
 export async function pollQRSyncSession(pairId) {
   if (!pairId) return { status: 'waiting' };
   try {
-    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=qr_sync_poll&pairId=${encodeURIComponent(pairId)}`);
+    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=vault_pull&vaultId=${encodeURIComponent(pairId)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.status === 'ready' && data.payload) {
+      if (data.status === 'success' && data.payload) {
         const applyRes = applySyncPayload(data.payload);
+        setLastSyncTime(new Date().toISOString());
+        dispatchSyncStatus('synced');
         return { status: 'ready', success: true, message: applyRes.message };
       }
     }
@@ -443,37 +644,38 @@ export async function pollQRSyncSession(pairId) {
   return { status: 'waiting' };
 }
 
-// El iPhone procesa el escaneo del QR del PC (#pair=CPXXXX)
+// El iPhone procesa el escaneo del QR (#pair=CP-XXXX-XXXX)
 export async function completeQRExchange(pairId) {
-  if (!pairId) return { success: false, message: 'ID de emparejamiento no válido' };
+  if (!pairId) return { success: false, message: 'Código de emparejamiento no válido' };
+  
+  const normalizedVaultId = String(pairId).trim().toUpperCase();
+  setVaultId(normalizedVaultId);
+
   const phonePayload = getLocalSyncPayload();
 
   try {
-    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+    // 1. Enviar payload de este dispositivo a la bóveda común
+    await fetch(APPS_SCRIPT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
-        type: 'qr_sync_exchange',
-        pairId: pairId,
+        type: 'vault_push',
+        vaultId: normalizedVaultId,
         payload: phonePayload
       })
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.sourcePayload) {
-        applySyncPayload(data.sourcePayload);
-        return {
-          success: true,
-          message: '¡Dispositivos sincronizados y combinados en ambos sentidos con éxito!'
-        };
-      }
-    }
+    // 2. Traer y fusionar el estado completo de la bóveda
+    await syncVaultPull();
+
+    return {
+      success: true,
+      message: '¡Dispositivos vinculados a tu Bóveda Cloud! Tus notas se mantendrán sincronizadas en segundo plano.'
+    };
   } catch (e) {
     console.error('Error completando intercambio QR:', e);
+    return { success: false, message: 'No se pudo conectar con la Bóveda en la nube.' };
   }
-
-  return { success: false, message: 'No se pudo completar el intercambio.' };
 }
 
 // ================= 7. BORRADO LOCAL EXCLUSIVO DE ESTE DISPOSITIVO =================

@@ -1,21 +1,60 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, BookOpen, Clock, Trash2, Play, Sparkles, GraduationCap, ArrowRight } from 'lucide-react';
-import { getAllStudyNotes, deleteVideoNote } from '../../utils/courseProgress';
+import { Search, X, BookOpen, Clock, Trash2, Play, Sparkles, GraduationCap, ArrowRight, RefreshCw, QrCode, Cloud, CloudOff, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { getAllStudyNotes, deleteVideoNote, getVaultId, getLastSyncTime, syncVaultPull, syncVaultPush } from '../../utils/courseProgress';
 
-export default function NotesSearchModal({ isOpen, onClose, onSelectNote, allVideos = [] }) {
+export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpenQRSync, allVideos = [] }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notesTick, setNotesTick] = useState(0);
+  const [syncState, setSyncState] = useState({
+    vaultId: null,
+    status: 'unlinked', // 'synced' | 'syncing' | 'unlinked' | 'offline' | 'error'
+    lastSync: null
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Escuchar actualizaciones de notas en tiempo real
+  // Escuchar estado de sincronización y notas en tiempo real
   useEffect(() => {
+    const updateLocalSyncState = () => {
+      const vId = getVaultId();
+      const last = getLastSyncTime();
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      setSyncState({
+        vaultId: vId,
+        status: !isOnline ? 'offline' : (vId ? 'synced' : 'unlinked'),
+        lastSync: last
+      });
+    };
+
+    updateLocalSyncState();
+
+    const handleSyncStatus = (e) => {
+      if (e.detail) {
+        setSyncState({
+          vaultId: e.detail.vaultId || getVaultId(),
+          status: e.detail.status,
+          lastSync: e.detail.lastSync || getLastSyncTime()
+        });
+      }
+    };
+
     const handleNotesUpdate = () => {
       setNotesTick((prev) => prev + 1);
     };
+
+    window.addEventListener('capacero-sync-status', handleSyncStatus);
     window.addEventListener('capacero-notes-updated', handleNotesUpdate);
+
     return () => {
+      window.removeEventListener('capacero-sync-status', handleSyncStatus);
       window.removeEventListener('capacero-notes-updated', handleNotesUpdate);
     };
-  }, []);
+  }, [isOpen]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await syncVaultPull();
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
   // Extraer todos los apuntes guardados en localStorage
   const allNotesList = useMemo(() => {
@@ -122,6 +161,69 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, allVid
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Banner de Estado de Sincronización Activa / Feedback */}
+        <div className="px-5 py-2.5 bg-zinc-900/60 border-b border-zinc-900 flex flex-wrap items-center justify-between gap-3 text-xs">
+          {syncState.status === 'synced' && syncState.vaultId && (
+            <div className="flex items-center gap-2 text-emerald-400 font-medium">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong className="text-white">Bóveda Cloud:</strong> {syncState.vaultId} (Sincronizado)
+              </span>
+            </div>
+          )}
+
+          {syncState.status === 'syncing' && (
+            <div className="flex items-center gap-2 text-cyan-300 font-medium animate-pulse">
+              <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin shrink-0" />
+              <span>Sincronizando notas con la nube...</span>
+            </div>
+          )}
+
+          {syncState.status === 'unlinked' && (
+            <div className="flex items-center gap-2 text-amber-300 font-medium">
+              <Cloud className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong className="text-white">Modo Local:</strong> Notas guardadas solo en este equipo.
+              </span>
+            </div>
+          )}
+
+          {(syncState.status === 'offline' || syncState.status === 'error') && (
+            <div className="flex items-center gap-2 text-rose-300 font-medium">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>
+                <strong className="text-white">Sin Conexión Cloud:</strong> Tus notas siguen 100% a salvo en local.
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            {syncState.vaultId ? (
+              <button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-50"
+                title="Comprobar y descargar notas recientes de tu otro dispositivo"
+              >
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
+                <span>{isRefreshing ? 'Actualizando...' : 'Actualizar'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onClose();
+                  if (onOpenQRSync) onOpenQRSync();
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-500/40 text-[11px] font-bold transition-all cursor-pointer"
+                title="Vincular con tu móvil mediante código QR"
+              >
+                <QrCode className="w-3 h-3 text-cyan-400" />
+                <span>Vincular con QR</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Input Buscador de Notas */}

@@ -13,8 +13,8 @@ import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
-import { applySyncPayload, completeQRExchange } from '../../utils/courseProgress';
-import { Sparkles } from 'lucide-react';
+import { applySyncPayload, completeQRExchange, syncVaultPull, getVaultId } from '../../utils/courseProgress';
+import { Sparkles, X } from 'lucide-react';
 
 export default function V4Hub() {
   // Inicialización síncrona instantánea: 0ms de espera para Googlebot y visitantes
@@ -28,17 +28,32 @@ export default function V4Hub() {
   const [isSticky, setIsSticky] = useState(false);
   const [syncToastMessage, setSyncToastMessage] = useState(null);
 
-  // Detección automática al escanear QR con la cámara del móvil (URL con #pair= o #sync=)
+  // Sincronización continua en segundo plano y detección de hash (#pair= o #sync=)
   useEffect(() => {
+    // 1. Si el dispositivo ya está vinculado a una Bóveda, descargar cambios en el inicio
+    if (getVaultId()) {
+      syncVaultPull();
+    }
+
+    // 2. Al volver a la pestaña (focus / visible), comprobar si hay notas nuevas del móvil
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible' && getVaultId()) {
+        syncVaultPull();
+      }
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    // 3. Detección automática al abrir enlace QR (#pair=CP-XXXX o #sync=...)
     const handleCheckSyncHash = async () => {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash;
       if (!hash || hash === '#' || hash === '') return;
       
-      // Caso 1: Emparejamiento por Nube (#pair=CPXXXX)
+      // Caso 1: Emparejamiento por Bóveda Cloud (#pair=CPXXXX)
       if (hash.startsWith('#pair=')) {
         const pairId = hash.replace('#pair=', '').trim();
-        // Limpiar inmediatamente el hash de la barra de direcciones
         try {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         } catch (e) {}
@@ -51,14 +66,13 @@ export default function V4Hub() {
           } else {
             setSyncToastMessage(null);
           }
-          setTimeout(() => setSyncToastMessage(null), 4000);
+          setTimeout(() => setSyncToastMessage(null), 4500);
         }
       }
       
       // Caso 2: Carga directa por URL (#sync=...)
       else if (hash.startsWith('#sync=')) {
         const payload = hash.replace('#sync=', '').trim();
-        // Limpiar inmediatamente el hash de la barra de direcciones
         try {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         } catch (e) {}
@@ -67,7 +81,7 @@ export default function V4Hub() {
           const res = applySyncPayload(payload);
           if (res && res.success) {
             setSyncToastMessage('🎉 ¡Dispositivos sincronizados con éxito! Se han fusionado tus notas.');
-            setTimeout(() => setSyncToastMessage(null), 4000);
+            setTimeout(() => setSyncToastMessage(null), 4500);
           }
         }
       }
@@ -75,7 +89,12 @@ export default function V4Hub() {
 
     handleCheckSyncHash();
     window.addEventListener('hashchange', handleCheckSyncHash);
-    return () => window.removeEventListener('hashchange', handleCheckSyncHash);
+
+    return () => {
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('hashchange', handleCheckSyncHash);
+    };
   }, []);
 
   // Iniciar sesión de analítica completa en el montaje

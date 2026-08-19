@@ -13,8 +13,7 @@ import {
   addVideoNote, 
   deleteVideoNote, 
   formatSecondsToTime,
-  exportProgressBackup,
-  importProgressBackup
+  getVaultId
 } from '../../utils/courseProgress';
 
 // Función para normalizar la clave de curso
@@ -39,7 +38,11 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
   const [noteInputText, setNoteInputText] = useState('');
   const [notesTick, setNotesTick] = useState(0);
-  const [backupNotice, setBackupNotice] = useState(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState(() => {
+    const vId = getVaultId();
+    const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    return !isOnline ? 'offline' : (vId ? 'synced' : 'unlinked');
+  });
 
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
@@ -48,21 +51,28 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
   const countdownTimerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const playbackTrackerRef = useRef(null);
-  const fileInputModalRef = useRef(null);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
     onSelectVideoRef.current = onSelectVideo;
   }, [onSelectVideo]);
 
-  // Escuchar actualizaciones de notas en tiempo real
+  // Escuchar actualizaciones de notas y sincronización en tiempo real
   useEffect(() => {
     const handleNotesUpdate = () => {
       setNotesTick((prev) => prev + 1);
     };
+    const handleSyncStatus = (e) => {
+      if (e.detail) {
+        setCloudSyncStatus(e.detail.status);
+      }
+    };
+
     window.addEventListener('capacero-notes-updated', handleNotesUpdate);
+    window.addEventListener('capacero-sync-status', handleSyncStatus);
     return () => {
       window.removeEventListener('capacero-notes-updated', handleNotesUpdate);
+      window.removeEventListener('capacero-sync-status', handleSyncStatus);
     };
   }, []);
 
@@ -593,11 +603,41 @@ export default function V4VideoModal({ video, allVideos = [], onSelectVideo, onC
 
           {/* ================= SECCIÓN DE APUNTES Y MARCADORES CON TIMESTAMP ================= */}
           <div className="bg-zinc-900/70 border border-zinc-800/90 rounded-2xl p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <Bookmark className="w-4 h-4 text-cyan-400" />
-              <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                Mis Apuntes y Marcadores de esta Lección
-              </h4>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-4 h-4 text-cyan-400" />
+                <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                  Mis Apuntes y Marcadores de esta Lección
+                </h4>
+              </div>
+
+              {/* Indicador de Sincronización en la Nube */}
+              <div className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border">
+                {cloudSyncStatus === 'synced' && (
+                  <span className="text-emerald-400 bg-emerald-950/80 border-emerald-500/30 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <span>Nube Sincronizada</span>
+                  </span>
+                )}
+                {cloudSyncStatus === 'syncing' && (
+                  <span className="text-cyan-300 bg-cyan-950/80 border-cyan-500/30 flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span>Sincronizando...</span>
+                  </span>
+                )}
+                {cloudSyncStatus === 'unlinked' && (
+                  <span className="text-zinc-400 bg-zinc-900 border-zinc-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                    <span>Solo Local</span>
+                  </span>
+                )}
+                {(cloudSyncStatus === 'offline' || cloudSyncStatus === 'error') && (
+                  <span className="text-rose-400 bg-rose-950/80 border-rose-500/30 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    <span>Local (Sin red)</span>
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Mensaje de ayuda explicativo y amigable */}

@@ -867,6 +867,7 @@ export default function V4VideoGrid({
         isOpen={isNotesModalOpen}
         onClose={() => setIsNotesModalOpen(false)}
         onSelectNote={handleSelectNoteFromModal}
+        onOpenQRSync={() => setIsQRSyncModalOpen(true)}
         allVideos={videos}
       />
 
