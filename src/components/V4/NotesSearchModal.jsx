@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, X, BookOpen, Clock, Trash2, Play, Sparkles, GraduationCap, ArrowRight, RefreshCw, QrCode, Cloud, CloudOff, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { getAllStudyNotes, deleteVideoNote, getVaultId, getLastSyncTime, syncVaultPull, syncVaultPush } from '../../utils/courseProgress';
+import { Search, X, BookOpen, Clock, Trash2, Play, Sparkles, GraduationCap, ArrowRight, RefreshCw, QrCode, Cloud, CloudOff, CheckCircle2, AlertTriangle, AlertCircle, ShieldCheck, Edit3, Check } from 'lucide-react';
+import { getAllStudyNotes, deleteVideoNote, updateVideoNote, getVaultId, getLastSyncTime, syncVaultPull, syncVaultPush } from '../../utils/courseProgress';
 
 export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpenQRSync, allVideos = [] }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notesTick, setNotesTick] = useState(0);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editingText, setEditingText] = useState('');
+  const [noteToDelete, setNoteToDelete] = useState(null);
   const [syncState, setSyncState] = useState({
     vaultId: null,
     status: 'unlinked', // 'synced' | 'syncing' | 'unlinked' | 'offline' | 'error'
@@ -91,12 +94,36 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
     });
   }, [allNotesList, searchQuery]);
 
-  const [confirmingDeleteNoteId, setConfirmingDeleteNoteId] = useState(null);
+  const handleStartEdit = (e, note) => {
+    e.stopPropagation();
+    setEditingNoteId(note.id);
+    setEditingText(note.text);
+  };
 
-  const handleDelete = (e, videoId, noteId) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    deleteVideoNote(videoId, noteId);
-    setConfirmingDeleteNoteId(null);
+  const handleSaveEdit = (e, note) => {
+    e.stopPropagation();
+    if (!editingText.trim()) return;
+    updateVideoNote(note.videoId, note.id, editingText);
+    setEditingNoteId(null);
+    setEditingText('');
+    setNotesTick((prev) => prev + 1);
+  };
+
+  const handleCancelEdit = (e) => {
+    e.stopPropagation();
+    setEditingNoteId(null);
+    setEditingText('');
+  };
+
+  const handlePromptDelete = (e, note) => {
+    e.stopPropagation();
+    setNoteToDelete(note);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!noteToDelete) return;
+    deleteVideoNote(noteToDelete.videoId, noteToDelete.id);
+    setNoteToDelete(null);
     setNotesTick((prev) => prev + 1);
   };
 
@@ -274,10 +301,41 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                   </span>
                 </div>
 
-                {/* Texto del apunte */}
-                <p className="text-xs sm:text-sm text-zinc-100 font-medium leading-relaxed bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80">
-                  "{note.text}"
-                </p>
+                {/* Texto del apunte o Editor en vivo */}
+                {editingNoteId === note.id ? (
+                  <div className="space-y-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <textarea
+                      value={editingText}
+                      onChange={(e) => setEditingText(e.target.value)}
+                      rows={3}
+                      className="w-full bg-zinc-950 border-2 border-cyan-500 rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none resize-none leading-relaxed"
+                      placeholder="Escribe el contenido del apunte..."
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleSaveEdit(e, note)}
+                        disabled={!editingText.trim()}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Guardar</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm text-zinc-100 font-medium leading-relaxed bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80">
+                    "{note.text}"
+                  </p>
+                )}
 
                 {/* Pie de tarjeta de nota */}
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
@@ -285,40 +343,28 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                     {note.createdAt ? new Date(note.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
 
-                  {confirmingDeleteNoteId === note.id ? (
-                    <div className="flex items-center gap-1.5 animate-fade-in" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[11px] text-rose-300 font-bold">¿Borrar apunte?</span>
+                  {editingNoteId !== note.id && (
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={(e) => handleDelete(e, note.videoId, note.id)}
-                        className="px-2 py-0.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black cursor-pointer shadow-sm active:scale-95"
+                        onClick={(e) => handleStartEdit(e, note)}
+                        className="text-zinc-400 hover:text-cyan-300 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
+                        title="Editar este apunte"
                       >
-                        Sí
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-medium">Editar</span>
                       </button>
+
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmingDeleteNoteId(null);
-                        }}
-                        className="px-2 py-0.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold cursor-pointer"
+                        onClick={(e) => handlePromptDelete(e, note)}
+                        className="text-zinc-400 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
+                        title="Eliminar este apunte"
                       >
-                        No
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-medium">Eliminar</span>
                       </button>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmingDeleteNoteId(note.id);
-                      }}
-                      className="text-zinc-500 hover:text-rose-400 transition-colors p-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
-                      title="Eliminar este apunte"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">Eliminar</span>
-                    </button>
                   )}
                 </div>
               </div>
@@ -337,6 +383,62 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
             </div>
           )}
         </div>
+
+        {/* Modal Grande de Confirmación para Eliminar Apunte */}
+        {noteToDelete && (
+          <div 
+            className="absolute inset-0 z-60 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-zinc-900 border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-left">
+              <div className="flex items-start gap-3.5">
+                <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white">¿Eliminar este apunte?</h4>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Esta acción no se puede deshacer y se sincronizará con tus otros dispositivos.
+                  </p>
+                </div>
+              </div>
+
+              {/* Previsualización del apunte */}
+              <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-zinc-300 truncate max-w-[200px]">
+                    {noteToDelete.videoTitle || 'Tutorial'}
+                  </span>
+                  <span className="text-cyan-400 font-mono font-bold">
+                    {noteToDelete.timeFormatted || '00:00'}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-200 italic line-clamp-3">
+                  "{noteToDelete.text}"
+                </p>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setNoteToDelete(null)}
+                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950 transition-all cursor-pointer active:scale-95"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Sí, Eliminar Apunte</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
