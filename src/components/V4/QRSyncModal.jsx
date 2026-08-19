@@ -248,19 +248,19 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
 
   if (!isOpen) return null;
 
-  // Definición de pestañas según dispositivo
+  // Definición de pestañas según dispositivo (concisas, sin números largos)
   const tabsList = isMobile
     ? [
-        { id: 'camera', label: '1. Escanear QR', icon: Camera, color: 'text-emerald-400' },
-        { id: 'paste', label: '2. Pegar Enlace', icon: Link2, color: 'text-blue-400' },
-        { id: 'qr', label: '3. Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
-        { id: 'delete', label: '4. Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
+        { id: 'camera', label: 'Escanear QR', icon: Camera, color: 'text-emerald-400' },
+        { id: 'paste', label: 'Pegar Enlace', icon: Link2, color: 'text-blue-400' },
+        { id: 'qr', label: 'Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
+        { id: 'delete', label: 'Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
       ]
     : [
-        { id: 'qr', label: '1. Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
-        { id: 'camera', label: '2. Escanear QR', icon: Camera, color: 'text-emerald-400' },
-        { id: 'paste', label: '3. Pegar Enlace', icon: Link2, color: 'text-blue-400' },
-        { id: 'delete', label: '4. Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
+        { id: 'qr', label: 'Mostrar QR', icon: QrCode, color: 'text-cyan-400' },
+        { id: 'camera', label: 'Escanear QR', icon: Camera, color: 'text-emerald-400' },
+        { id: 'paste', label: 'Pegar Enlace', icon: Link2, color: 'text-blue-400' },
+        { id: 'delete', label: 'Eliminar Datos', icon: Trash2, color: 'text-rose-400' },
       ];
 
   return (
@@ -272,7 +272,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
       }}
     >
       <div 
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col relative text-left max-h-[90vh] cursor-default"
+        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg sm:max-w-xl overflow-hidden shadow-2xl flex flex-col relative text-left max-h-[90vh] cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -306,29 +306,31 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
           </button>
         </div>
 
-        {/* Selector de Pestañas Adaptativo */}
-        <div className="flex border-b border-zinc-900 bg-zinc-900/40 p-1.5 gap-1 overflow-x-auto no-scrollbar">
-          {tabsList.map((t) => {
-            const Icon = t.icon;
-            const isSelected = activeTab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => {
-                  setActiveTab(t.id);
-                  setIsConfirmingDelete(false);
-                }}
-                className={`flex-1 min-w-fit px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                  isSelected
-                    ? 'bg-zinc-800 text-white shadow-sm border border-zinc-700'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${t.color}`} />
-                <span>{t.label}</span>
-              </button>
-            );
-          })}
+        {/* Botones de Pestañas en Grid 2x2 (móvil) / 4 columnas (PC) - ¡Cero Scroll! */}
+        <div className="px-5 pt-4 pb-2 bg-zinc-950/90 border-b border-zinc-900">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl">
+            {tabsList.map((t) => {
+              const Icon = t.icon;
+              const isSelected = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTab(t.id);
+                    setIsConfirmingDelete(false);
+                  }}
+                  className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none text-center ${
+                    isSelected
+                      ? 'bg-zinc-800 text-white shadow-md border border-cyan-400/40 text-cyan-200 scale-[1.02]'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? t.color : 'text-zinc-400'}`} />
+                  <span className="truncate">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Contenido según pestaña */}
