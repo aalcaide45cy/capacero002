@@ -60,8 +60,13 @@ async function main() {
     console.log(`📂 Source Sheet: ${SHEETS_CONFIG.spreadsheetUrl}`);
 
     try {
-        const response = await fetch(SHEETS_CONFIG.spreadsheetUrl);
-        if (!response.ok) throw new Error('Failed to fetch spreadsheet');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout max for Vercel builds
+
+        const response = await fetch(SHEETS_CONFIG.spreadsheetUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}: Failed to fetch spreadsheet`);
 
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -363,8 +368,14 @@ ${allProducts.map(p => `          <li><a href="/producto/${p.id}">${p.name}</a>$
         console.log('\n🎉 ALL DONE! System is ready for production.\n');
 
     } catch (error) {
-        console.error('🔥 Fatal Error:', error);
-        process.exit(1);
+        console.warn('⚠️ Google Sheets no respondió a tiempo durante la compilación en Vercel:', error.message);
+        if (fs.existsSync(OUTPUT_FILE)) {
+            console.log('✅ Utilizando la base de datos estática existente (src/data/products.json).');
+            process.exit(0);
+        } else {
+            console.error('🔥 Error Fatal: No existe el archivo estático de respaldo.', error);
+            process.exit(1);
+        }
     }
 }
 

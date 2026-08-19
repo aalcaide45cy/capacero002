@@ -16,7 +16,12 @@ async function main() {
     console.log('🚀 Iniciando descarga de Cursos desde Google Sheets...');
 
     try {
-        const response = await fetch(CURSOS_URL);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout max
+
+        const response = await fetch(CURSOS_URL, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
         if (!response.ok) throw new Error('Fallo al descargar el Excel de cursos');
 
         const arrayBuffer = await response.arrayBuffer();
@@ -80,8 +85,14 @@ async function main() {
         console.log(`✨ Generados ${allCursos.length} cursos dinámicos en src/data/cursos.json\n`);
 
     } catch (error) {
-        console.error('🔥 Error Fatal en los Cursos:', error);
-        process.exit(1);
+        console.warn('⚠️ Google Sheets no respondió a tiempo para cursos (usando respaldo):', error.message);
+        if (fs.existsSync(OUTPUT_FILE)) {
+            console.log('✅ Utilizando la base de datos estática existente (src/data/cursos.json).');
+            process.exit(0);
+        } else {
+            console.error('🔥 Error Fatal en los Cursos:', error);
+            process.exit(1);
+        }
     }
 }
 
