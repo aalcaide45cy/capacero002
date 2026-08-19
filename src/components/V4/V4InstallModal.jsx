@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Smartphone, Check, Sparkles, Share, PlusSquare, ArrowRight, ShieldCheck } from 'lucide-react';
 
+import { subscribeToPushNotifications } from '../../utils/pushManager';
+
 export default function V4InstallModal({ isOpen, onClose }) {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
@@ -17,7 +19,7 @@ export default function V4InstallModal({ isOpen, onClose }) {
     const iOSDevice = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     setIsIOS(iOSDevice);
 
-    // Escuchar el evento nativo de instalación en Android / Chrome
+    // Escuchar el evento nativo de instalación en Android / Chrome / Edge
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -31,14 +33,22 @@ export default function V4InstallModal({ isOpen, onClose }) {
   }, []);
 
   const handleNativeInstall = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Fallback si el navegador no soporta beforeinstallprompt
+      subscribeToPushNotifications();
+      return;
+    }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
       setInstalledSuccessfully(true);
+      // Solicitar permiso nativo de notificaciones del sistema
+      setTimeout(() => {
+        subscribeToPushNotifications();
+      }, 500);
       setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 2500);
     }
     setDeferredPrompt(null);
   };

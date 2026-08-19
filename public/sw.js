@@ -81,43 +81,52 @@ self.addEventListener('fetch', (event) => {
 // =========================================================================
 // 🔔 4. RECEPTOR NATIVO DE NOTIFICACIONES PUSH (VAPID)
 // =========================================================================
+const GOOGLE_SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec';
+
 self.addEventListener('push', (event) => {
-  let data = {
-    title: 'Capa Cero 3D',
-    body: '¡Nuevo tutorial o actualización disponible en la academia!',
-    url: '/',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    image: null
-  };
+  let getDataPromise;
 
   if (event.data) {
     try {
       const payload = event.data.json();
-      data = { ...data, ...payload };
+      getDataPromise = Promise.resolve(payload);
     } catch (e) {
       try {
-        data.body = event.data.text();
-      } catch (err) {}
+        getDataPromise = Promise.resolve({ body: event.data.text() });
+      } catch (err) {
+        getDataPromise = Promise.resolve({});
+      }
     }
+  } else {
+    // Si el push se envió como ping VAPID directo sin cifrado, consultar última notificación de Google Sheets
+    getDataPromise = fetch(GOOGLE_SHEETS_WEBHOOK + '?action=latest_notification')
+      .then((res) => res.json())
+      .catch(() => ({
+        title: 'Capa Cero 3D',
+        body: '¡Nuevo tutorial o actualización disponible en la academia!',
+        url: 'https://www.capacero3d.com'
+      }));
   }
 
-  const notificationOptions = {
-    body: data.body,
-    icon: data.icon || '/icon-192.png',
-    badge: data.badge || '/icon-192.png',
-    image: data.image || undefined,
-    data: {
-      url: data.url || '/'
-    },
-    tag: 'capacero-notification-' + Date.now(),
-    renotify: true,
-    requireInteraction: true,
-    vibrate: [200, 100, 200, 100, 200, 100, 300] // Patrón de vibración rítmico
-  };
-
   event.waitUntil(
-    self.registration.showNotification(data.title, notificationOptions)
+    getDataPromise.then((data) => {
+      const finalTitle = data.title || 'Capa Cero 3D';
+      const notificationOptions = {
+        body: data.body || '¡Nuevo tutorial o actualización disponible en la academia!',
+        icon: data.icon || '/icon-192.png',
+        badge: data.badge || '/icon-192.png',
+        image: data.image || undefined,
+        data: {
+          url: data.url || 'https://www.capacero3d.com'
+        },
+        tag: 'capacero-notification-' + (data.timestamp || Date.now()),
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [200, 100, 200, 100, 200, 100, 300]
+      };
+
+      return self.registration.showNotification(finalTitle, notificationOptions);
+    })
   );
 });
 

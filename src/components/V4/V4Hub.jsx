@@ -9,10 +9,10 @@ import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
 import V4CircuitBackground from './V4CircuitBackground';
 import V4InstallModal from './V4InstallModal';
-import V4NotificationModal from './V4NotificationModal';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
+import { subscribeToPushNotifications } from '../../utils/pushManager';
 
 export default function V4Hub() {
   // Inicialización síncrona instantánea: 0ms de espera para Googlebot y visitantes
@@ -23,7 +23,6 @@ export default function V4Hub() {
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
 
   // Iniciar sesión de analítica completa en el montaje
@@ -31,18 +30,17 @@ export default function V4Hub() {
     initAnalyticsSession();
   }, []);
 
-  // Si las notificaciones no están concedidas todavía, invitar automáticamente a activarlas
+  // Si la app está instalada (PWA en Windows/Android/iOS) y aún no tiene permiso de avisos, lanzar el diálogo nativo del sistema
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const isStandalone = 
         window.matchMedia('(display-mode: standalone)').matches || 
         window.navigator.standalone === true;
       
-      // Si el permiso no está otorgado, mostrar la ventana de activación
-      if (Notification.permission !== 'granted') {
+      if (isStandalone && Notification.permission === 'default') {
         const timer = setTimeout(() => {
-          setIsNotificationModalOpen(true);
-        }, isStandalone ? 700 : 2000);
+          subscribeToPushNotifications();
+        }, 800);
         return () => clearTimeout(timer);
       }
     }
@@ -194,12 +192,6 @@ export default function V4Hub() {
       <V4InstallModal
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
-      />
-
-      {/* Push Notification Opt-in Modal */}
-      <V4NotificationModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
       />
 
     </div>
