@@ -108,7 +108,7 @@ self.addEventListener('push', (event) => {
     })
       .then((res) => res.json())
       .catch((err) => ({
-        title: 'Capa Cero 3D',
+        title: '🚀 ¡Nuevo aviso en Capa Cero 3D!',
         body: '¡Nuevo tutorial o actualización disponible en la academia!',
         url: 'https://www.capacero3d.com'
       }));
@@ -116,9 +116,9 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(
     getDataPromise.then((data) => {
-      const finalTitle = data.title || 'Capa Cero 3D';
+      const finalTitle = (data && data.title && data.title.trim()) || '🚀 ¡Nuevo aviso en Capa Cero 3D!';
       const notificationOptions = {
-        body: data.body || '¡Nuevo tutorial o actualización disponible en la academia!',
+        body: (data && data.body && data.body.trim()) || '¡Entra para ver el nuevo contenido de impresión 3D!',
         icon: data.icon || '/icon-192.png',
         badge: data.badge || '/icon-192.png',
         image: data.image || undefined,
