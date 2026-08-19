@@ -43,8 +43,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
   const [noteInputText, setNoteInputText] = useState('');
   const [notesTick, setNotesTick] = useState(0);
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editingNoteText, setEditingNoteText] = useState('');
+  const [noteToEdit, setNoteToEdit] = useState(null);
   const [noteToDelete, setNoteToDelete] = useState(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState(() => {
     const vId = getVaultId();
