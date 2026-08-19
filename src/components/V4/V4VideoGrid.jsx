@@ -444,7 +444,7 @@ export default function V4VideoGrid({
               {/* BARRA DE NAVEGACIÓN SUPERIOR SUPER DESTACADA E INTUITIVA */}
               <div className="flex flex-col gap-4">
                 
-                {/* Barra Superior: [Volver al Catálogo + Breadcrumb] a la izquierda | [Backup Progreso + Restaurar Progreso] a la derecha */}
+                {/* Barra Superior: [Volver al Catálogo + Breadcrumb] */}
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950/90 border border-zinc-800 p-3.5 sm:p-4 rounded-2xl">
                   {/* Grupo Izquierda: Botón Volver + Breadcrumb juntos */}
                   <div className="flex flex-wrap items-center gap-2.5">
@@ -467,35 +467,6 @@ export default function V4VideoGrid({
                       <span className="text-cyan-300 font-extrabold">{activeCourse.name}</span>
                     </div>
                   </div>
-
-                  {/* Grupo Derecha: Botones Backup y Restaurar Progreso */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleExportBackup}
-                      className="flex items-center gap-1.5 bg-cyan-950/70 hover:bg-cyan-900 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                      title="Guardar copia de seguridad de tu progreso y apuntes en un archivo JSON"
-                    >
-                      <Download className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Backup Progreso</span>
-                    </button>
-
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 hover:border-zinc-600 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-                      title="Restaurar tu progreso y notas desde un archivo JSON"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Restaurar Progreso</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Nota Explicativa y Sincera de Privacidad y Backup */}
-                <div className="bg-zinc-950 border border-zinc-800/90 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3 text-left shadow-lg">
-                  <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-zinc-300/90 leading-relaxed">
-                    <strong className="text-white font-bold">Tu privacidad y tu aprendizaje:</strong> Capa Cero es una web 100% estática y privada. No guardamos tus datos en ningún servidor externo ni te pedimos registros. Tus lecciones vistas, notas y minuto exacto se guardan solo en la memoria de este navegador. Usa <strong className="text-cyan-300">Backup Progreso</strong> para descargar tu archivo de respaldo por si vas a cambiar de equipo, y <strong className="text-blue-300">Restaurar Progreso</strong> para retomar tus cursos exactamente donde los dejaste.
-                  </p>
                 </div>
 
                 {/* Banner de Bienvenida y Progreso al Curso */}
@@ -800,39 +771,6 @@ export default function V4VideoGrid({
                     </div>
                   );
                 })}
-              </div>
-
-              {/* ================= BARRA DE COPIA DE SEGURIDAD Y RESTAURACIÓN JSON ================= */}
-              <div className="mt-8 pt-6 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-950/60 border border-zinc-800 p-4 sm:p-5 rounded-2xl">
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-cyan-500/40 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h5 className="text-xs sm:text-sm font-bold text-white">Tu Progreso y Apuntes están 100% en tu poder</h5>
-                    <p className="text-[11px] sm:text-xs text-zinc-400">Web 100% estática y privada sin registros. Tu avance se guarda solo en este navegador. Descarga o carga tu archivo de respaldo cuando quieras.</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <button
-                    onClick={handleExportBackup}
-                    className="flex items-center gap-1.5 bg-cyan-950/70 hover:bg-cyan-900 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
-                    title="Descargar copia de seguridad en archivo .json"
-                  >
-                    <Download className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Backup Progreso</span>
-                  </button>
-
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700 hover:border-cyan-500/50 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
-                    title="Restaurar progreso y notas desde un archivo .json"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Restaurar Progreso</span>
-                  </button>
-                </div>
               </div>
 
             </div>
