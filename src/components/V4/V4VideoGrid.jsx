@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import NotesSearchModal from './NotesSearchModal';
 import { 
@@ -50,9 +51,16 @@ export default function V4VideoGrid({
   const [progressTick, setProgressTick] = useState(0);
   const [backupMessage, setBackupMessage] = useState(null);
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  const [showSwipeHandMode, setShowSwipeHandMode] = useState(true);
-  const [showSwipeHandCat, setShowSwipeHandCat] = useState(true);
+  const [showHint, setShowHint] = useState(true);
   const fileInputRef = useRef(null);
+
+  // Desvanecer la animación de la manita flotante después de 4.5 segundos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHint(false);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Escuchar eventos de actualización de progreso en tiempo real
   useEffect(() => {
@@ -271,21 +279,43 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Selector de Modos con Scroll Horizontal y Manita Animada en Móvil */}
-      <div className="relative mb-8">
-        {showSwipeHandMode && (
-          <div 
-            onClick={() => setShowSwipeHandMode(false)}
-            className="sm:hidden absolute right-1 -top-3.5 z-20 pointer-events-none flex items-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.7)] border border-cyan-300/60 backdrop-blur-md"
-          >
-            <span className="text-xs transform -scale-x-100 inline-block animate-horizontal-slide">👉</span>
-            <span className="uppercase tracking-wider text-[9px]">Desliza</span>
-          </div>
-        )}
+      {/* Selector de Modos con Scroll Horizontal y Manita Flotante Animada */}
+      <div className="relative mb-8 group">
+        {/* Manita Flotante Animada Original (Desplazamiento horizontal + desvanecimiento) */}
+        <AnimatePresence>
+          {showHint && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
+            >
+              <motion.div
+                initial={{ x: 0 }}
+                animate={{
+                  x: [0, 50, -50, 0],
+                  scale: [1, 0.9, 0.9, 0.9, 1],
+                }}
+                transition={{
+                  duration: 2.8,
+                  ease: "easeInOut",
+                  times: [0, 0.2, 0.5, 0.8, 1],
+                  delay: 0.3
+                }}
+                className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/60 shadow-[0_0_25px_rgba(0,229,255,0.5)]"
+              >
+                <ArrowLeft className="w-5 h-5 text-cyan-400 animate-pulse" />
+                <Hand className="w-7 h-7 text-[#2575c4] drop-shadow-2xl fill-black/20" />
+                <ArrowRight className="w-5 h-5 text-cyan-400 animate-pulse" />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div 
-          onScroll={() => setShowSwipeHandMode(false)}
-          onTouchStart={() => setShowSwipeHandMode(false)}
+          onScroll={() => setShowHint(false)}
+          onTouchStart={() => setShowHint(false)}
           className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
         >
           {/* Botón 1: Más Nuevos */}
@@ -754,21 +784,42 @@ export default function V4VideoGrid({
       ) : (
         /* ================= VISTA ESTÁNDAR DE VIDEOTECA (MÁS NUEVOS / MÁS POPULARES) ================= */
         <div>
-          {/* Categorías Temáticas con manita flotante en móvil */}
-          <div className="relative mb-6">
-            {showSwipeHandCat && (
-              <div 
-                onClick={() => setShowSwipeHandCat(false)}
-                className="sm:hidden absolute right-1 -top-3 z-20 pointer-events-none flex items-center gap-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.7)] border border-cyan-300/60 backdrop-blur-md"
-              >
-                <span className="text-xs transform -scale-x-100 inline-block animate-horizontal-slide">👉</span>
-                <span className="uppercase tracking-wider text-[9px]">Desliza</span>
-              </div>
-            )}
+          {/* Categorías Temáticas con manita flotante */}
+          <div className="relative mb-6 group">
+            <AnimatePresence>
+              {showHint && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
+                >
+                  <motion.div
+                    initial={{ x: 0 }}
+                    animate={{
+                      x: [0, 50, -50, 0],
+                      scale: [1, 0.9, 0.9, 0.9, 1],
+                    }}
+                    transition={{
+                      duration: 2.8,
+                      ease: "easeInOut",
+                      times: [0, 0.2, 0.5, 0.8, 1],
+                      delay: 0.3
+                    }}
+                    className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/60 shadow-[0_0_25px_rgba(0,229,255,0.5)]"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-cyan-400 animate-pulse" />
+                    <Hand className="w-7 h-7 text-[#2575c4] drop-shadow-2xl fill-black/20" />
+                    <ArrowRight className="w-5 h-5 text-cyan-400 animate-pulse" />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div 
-              onScroll={() => setShowSwipeHandCat(false)}
-              onTouchStart={() => setShowSwipeHandCat(false)}
+              onScroll={() => setShowHint(false)}
+              onTouchStart={() => setShowHint(false)}
               className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-zinc-800/60 scroll-smooth"
             >
               <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mr-1 hidden sm:inline-block shrink-0">
