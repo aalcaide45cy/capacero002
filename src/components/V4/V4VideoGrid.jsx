@@ -293,47 +293,61 @@ export default function V4VideoGrid({
         </div>
       )}
 
-      {/* Header Controls (Centrado perfecto del contador de vídeos en móvil) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
-              {activeSortFilter === 'courses' 
-                ? (activeCourse ? `Curso: ${activeCourse.name}` : 'Academia de Cursos Estructurados') 
-                : 'Videoteca de Tutoriales y Trucos'}
-            </h2>
-            <span className="text-xs font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-500/40 px-3 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-sm">
-              {activeSortFilter === 'courses'
-                ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
-                : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1.5">
+      {/* Header Controls (Completamente centrado en PC y Móvil) */}
+      <div className="flex flex-col items-center text-center justify-center gap-1.5 mb-6">
+        <div className="flex flex-wrap items-center justify-center gap-2.5">
+          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+            {activeSortFilter === 'courses' 
+              ? (activeCourse ? `Curso: ${activeCourse.name}` : 'Academia de Cursos Estructurados') 
+              : 'Videoteca de Tutoriales y Trucos'}
+          </h2>
+          <span className="text-xs font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-500/40 px-3 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-sm">
             {activeSortFilter === 'courses'
-              ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
-              : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
-          </p>
+              ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
+              : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
+          </span>
+        </div>
+        <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto">
+          {activeSortFilter === 'courses'
+            ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
+            : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
+        </p>
 
-          {/* Botón Central Destacado: Sincronizar QR */}
-          <div className="flex justify-center mt-5 mb-2">
-            <button
-              onClick={() => setIsQRSyncModalOpen(true)}
-              className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-zinc-900 to-cyan-950/90 hover:from-blue-900/90 hover:via-zinc-800 hover:to-cyan-900/90 border border-cyan-400/50 hover:border-cyan-300 text-white shadow-[0_0_20px_rgba(0,229,255,0.18)] hover:shadow-[0_0_30px_rgba(0,229,255,0.4)] transition-all duration-200 active:scale-95 cursor-pointer"
-              title="Sincroniza notas y progreso entre tus dispositivos"
-            >
-              <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 group-hover:scale-110 transition-transform">
-                <QrCode className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <span className="text-sm font-black text-white block tracking-tight group-hover:text-cyan-200 transition-colors">
-                  Sincronizar QR
-                </span>
-                <span className="text-[11px] font-medium text-cyan-300/80 block">
-                  Sincroniza notas y progreso
-                </span>
-              </div>
-            </button>
-          </div>
+        {/* Botones Centrales Destacados: Sincronizar QR y Busca en tus notas */}
+        <div className="flex flex-col items-center justify-center gap-2.5 mt-5 mb-2 w-full">
+          {/* Botón 1: Sincronizar QR */}
+          <button
+            onClick={() => setIsQRSyncModalOpen(true)}
+            className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-zinc-900 to-cyan-950/90 hover:from-blue-900/90 hover:via-zinc-800 hover:to-cyan-900/90 border border-cyan-400/50 hover:border-cyan-300 text-white shadow-[0_0_20px_rgba(0,229,255,0.18)] hover:shadow-[0_0_30px_rgba(0,229,255,0.4)] transition-all duration-200 active:scale-95 cursor-pointer"
+            title="Sincroniza notas y progreso entre tus dispositivos"
+          >
+            <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 group-hover:scale-110 transition-transform">
+              <QrCode className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <span className="text-sm font-black text-white block tracking-tight group-hover:text-cyan-200 transition-colors">
+                Sincronizar QR
+              </span>
+              <span className="text-[11px] font-medium text-cyan-300/80 block">
+                Sincroniza notas y progreso
+              </span>
+            </div>
+          </button>
+
+          {/* Botón 2: Busca en tus notas */}
+          <button
+            onClick={() => setIsNotesModalOpen(true)}
+            className="group inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/90 hover:border-cyan-400/60 shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
+            title="Buscar entre todas tus notas de estudio"
+          >
+            <Search className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <span>Busca en tus notas</span>
+            {totalNotesCount > 0 && (
+              <span className="text-[10px] font-extrabold bg-cyan-500 text-black px-1.5 py-0.5 rounded-full leading-none ml-0.5">
+                {totalNotesCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -374,7 +388,7 @@ export default function V4VideoGrid({
         <div 
           onScroll={() => setShowHint(false)}
           onTouchStart={() => setShowHint(false)}
-          className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
+          className="flex items-center sm:justify-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
         >
           {/* Botón 1: Más Nuevos */}
           <button
@@ -416,21 +430,6 @@ export default function V4VideoGrid({
             <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none ml-0.5">
               {coursesList.length}
             </span>
-          </button>
-
-          {/* Botón 4: Busca en tus Notas (Modal Lupa) */}
-          <button
-            onClick={() => setIsNotesModalOpen(true)}
-            className="h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-blue-950/80 to-zinc-900 hover:from-blue-900 hover:to-cyan-900 text-cyan-200 hover:text-white border border-cyan-500/40 hover:border-cyan-400 transition-all duration-200 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 shadow-md"
-            title="Buscar entre todas tus notas de estudio"
-          >
-            <Search className="w-4 h-4 text-cyan-400" />
-            <span>Busca en tus notas</span>
-            {totalNotesCount > 0 && (
-              <span className="text-[10px] font-extrabold bg-cyan-500 text-black px-1.5 py-0.5 rounded-full leading-none ml-0.5">
-                {totalNotesCount}
-              </span>
-            )}
           </button>
         </div>
       </div>
