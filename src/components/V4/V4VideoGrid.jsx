@@ -377,7 +377,7 @@ export default function V4VideoGrid({
       {/* Buscador Prominente Central (Estilo Mockup) */}
       <div className="max-w-2xl mx-auto mb-6 w-full relative">
         <div className="relative flex items-center">
-          <Search className="w-5 h-5 text-cyan-400/80 absolute left-4.5 pointer-events-none" />
+          <Search className="w-4.5 h-4.5 text-cyan-400 absolute left-4 pointer-events-none z-10" />
           <input
             type="text"
             value={searchQuery}
@@ -398,7 +398,7 @@ export default function V4VideoGrid({
       </div>
 
       {/* Selector de Modos (Más Nuevos / Más Populares / Cursos) */}
-      <div ref={filtersContainerRef} className="flex items-center justify-start sm:justify-center gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center justify-start sm:justify-center gap-2 mb-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
         <div className="inline-flex p-1 rounded-2xl bg-zinc-950/90 border border-zinc-800/90 shadow-inner">
           {/* Botón 1: Más Nuevos */}
           <button
@@ -444,11 +444,45 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Píldoras Temáticas de Categorías (Visible cuando no estamos dentro del detalle de un curso) */}
+      {/* Píldoras Temáticas de Categorías con Manita Flotante y Sin Barra de Scroll Visible */}
       {activeSortFilter !== 'courses' && (
-        <div className="relative mb-8 group">
+        <div ref={filtersContainerRef} className="relative mb-8 group">
+          {/* Manita Flotante Animada (Desplazamiento horizontal + desvanecimiento en móvil) */}
+          <AnimatePresence>
+            {showHint && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
+              >
+                <motion.div
+                  initial={{ x: 0 }}
+                  animate={{
+                    x: [0, 50, -50, 0],
+                    scale: [1, 0.9, 0.9, 0.9, 1],
+                  }}
+                  transition={{
+                    duration: 2.8,
+                    ease: "easeInOut",
+                    times: [0, 0.2, 0.5, 0.8, 1],
+                    delay: 0.3
+                  }}
+                  className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/60 shadow-[0_0_25px_rgba(0,229,255,0.5)]"
+                >
+                  <ArrowLeft className="w-5 h-5 text-cyan-400 animate-pulse" />
+                  <Hand className="w-7 h-7 text-[#2575c4] drop-shadow-2xl fill-black/20" />
+                  <ArrowRight className="w-5 h-5 text-cyan-400 animate-pulse" />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div 
-            className="flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 no-scrollbar scroll-smooth"
+            onScroll={() => setShowHint(false)}
+            onTouchStart={() => setShowHint(false)}
+            className="flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
           >
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
