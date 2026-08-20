@@ -95,11 +95,42 @@ export default function V4VideoGrid({
   const hasTriggeredHintRef = useRef(false);
   const fileInputRef = useRef(null);
 
-  const scrollCategories = (direction) => {
-    if (categoryScrollRef.current) {
-      const amount = direction === 'left' ? -260 : 260;
-      categoryScrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+  // Arrastre con ratón (Drag-to-Scroll) suave tipo móvil en PC
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftStartRef = useRef(0);
+  const hasMovedRef = useRef(false);
+
+  const handleMouseDown = (e) => {
+    if (!categoryScrollRef.current) return;
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    startXRef.current = e.pageX - categoryScrollRef.current.offsetLeft;
+    scrollLeftStartRef.current = categoryScrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDraggingRef.current || !categoryScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - categoryScrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.6; // Multiplicador de fluidez de arrastre
+    if (Math.abs(walk) > 5) {
+      hasMovedRef.current = true;
+      setShowHint(false);
     }
+    categoryScrollRef.current.scrollLeft = scrollLeftStartRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleCategoryClick = (cat) => {
+    if (hasMovedRef.current) {
+      // Fue un gesto de arrastre, no activar el clic del botón
+      return;
+    }
+    onSelectCategory(cat);
   };
 
   // Activar la animación de la manita flotante cuando el usuario hace scroll y entra en la zona de botones
@@ -452,9 +483,9 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Píldoras Temáticas de Categorías con Desplazamiento Izquierda/Derecha y Sin Barra de Scroll */}
+      {/* Píldoras Temáticas de Categorías con Arrastre con Ratón (Drag-to-Scroll) y Rueda Inclinable */}
       {activeSortFilter !== 'courses' && (
-        <div ref={filtersContainerRef} className="relative mb-8 group max-w-5xl mx-auto px-1">
+        <div ref={filtersContainerRef} className="relative mb-8 group max-w-5xl mx-auto">
           {/* Manita Flotante Animada (Desplazamiento horizontal + desvanecimiento en móvil) */}
           <AnimatePresence>
             {showHint && (
@@ -487,37 +518,26 @@ export default function V4VideoGrid({
             )}
           </AnimatePresence>
 
-          {/* Flecha Izquierda para PC */}
-          <button
-            type="button"
-            onClick={() => scrollCategories('left')}
-            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-zinc-950/90 hover:bg-cyan-950 border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-300 items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer"
-            aria-label="Desplazar categorías a la izquierda"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-
-          {/* Flecha Derecha para PC */}
-          <button
-            type="button"
-            onClick={() => scrollCategories('right')}
-            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-zinc-950/90 hover:bg-cyan-950 border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-300 items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer"
-            aria-label="Desplazar categorías a la derecha"
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
-
-          {/* Contenedor desplazable de botones */}
+          {/* Contenedor desplazable con arrastre de ratón (Drag) y soporte de rueda inclinable/trackpad */}
           <div 
             ref={categoryScrollRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
             onScroll={() => setShowHint(false)}
             onTouchStart={() => setShowHint(false)}
             onWheel={(e) => {
-              if (e.deltaY !== 0) {
-                e.currentTarget.scrollLeft += e.deltaY;
+              if (!categoryScrollRef.current) return;
+              if (Math.abs(e.deltaX) > 0) {
+                // Rueda inclinable / trackpad horizontal
+                categoryScrollRef.current.scrollLeft += e.deltaX;
+              } else if (Math.abs(e.deltaY) > 0) {
+                // Rueda estándar vertical convertida en desplazamiento horizontal
+                categoryScrollRef.current.scrollLeft += e.deltaY;
               }
             }}
-            className="flex items-center justify-start gap-2.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
+            className="flex items-center justify-start gap-2.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth select-none cursor-grab active:cursor-grabbing"
           >
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
@@ -526,8 +546,8 @@ export default function V4VideoGrid({
               return (
                 <button
                   key={cat}
-                  onClick={() => onSelectCategory(cat)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border ${
+                  onClick={() => handleCategoryClick(cat)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border select-none ${
                     isActive
                       ? 'bg-blue-950/90 border-cyan-400 text-cyan-200 shadow-md shadow-cyan-950 scale-[1.02]'
                       : 'bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-white border-zinc-800/80 hover:border-zinc-700'
