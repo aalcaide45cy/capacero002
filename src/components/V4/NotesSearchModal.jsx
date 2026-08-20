@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, X, BookOpen, Clock, Trash2, Play, Sparkles, GraduationCap, ArrowRight, RefreshCw, QrCode, Cloud, CloudOff, CheckCircle2, AlertTriangle, AlertCircle, ShieldCheck, Edit3, Check } from 'lucide-react';
 import { getAllStudyNotes, deleteVideoNote, updateVideoNote, getVaultId, getLastSyncTime, syncVaultPull, syncVaultPush } from '../../utils/courseProgress';
 
@@ -9,6 +9,7 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
   const [editingText, setEditingText] = useState('');
   const [editingTime, setEditingTime] = useState('00:00');
   const [noteToDelete, setNoteToDelete] = useState(null);
+  const searchInputRef = useRef(null);
   const [syncState, setSyncState] = useState({
     vaultId: null,
     status: 'unlinked', // 'synced' | 'syncing' | 'unlinked' | 'offline' | 'error'
@@ -141,6 +142,13 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
 
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') onClose();
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+            searchInputRef.current.select();
+          }
+        }
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => {
@@ -171,35 +179,35 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fade-in cursor-pointer"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fade-in cursor-pointer"
       onClick={onClose}
     >
       <div 
-        className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh] relative text-left cursor-default"
+        className="bg-zinc-950 border-2 border-cyan-500/30 rounded-3xl w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,229,255,0.15)] flex flex-col max-h-[90vh] relative text-left cursor-default"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header del Modal */}
-        <div className="p-5 sm:p-6 border-b border-zinc-900 bg-zinc-950/80 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-cyan-950/60 border border-cyan-500/30 text-cyan-400">
+        <div className="p-5 sm:p-6 border-b border-zinc-900 bg-zinc-950 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
-                <span>Mis Apuntes y Notas</span>
-                <span className="text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2.5 py-0.5 rounded-full">
+              <h3 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2.5">
+                <span>Mis apuntes y notas</span>
+                <span className="text-xs font-black bg-cyan-950 text-cyan-300 border border-cyan-500/40 px-2.5 py-0.5 rounded-full">
                   {allNotesList.length}
                 </span>
               </h3>
-              <p className="text-xs text-zinc-400">
-                Busca en tus apuntes y salta directamente al segundo exacto del vídeo.
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Busca en tus apuntes y salta al segundo exacto del vídeo.
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-zinc-900/90 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer"
             aria-label="Cerrar buscador de notas"
           >
             <X className="w-5 h-5" />
@@ -207,12 +215,12 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
         </div>
 
         {/* Banner de Estado de Sincronización Activa */}
-        <div className="px-5 py-2.5 bg-zinc-900/60 border-b border-zinc-900 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="px-5 py-2.5 bg-zinc-900/40 border-b border-zinc-900 flex flex-wrap items-center justify-between gap-2 text-xs">
           {syncState.status === 'synced' && syncState.vaultId && (
             <div className="flex items-center gap-2 text-emerald-400 font-medium">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong className="text-white">Sincronización activa:</strong> Notas al día en todos tus dispositivos.
+                <strong className="text-white">Sincronización activa</strong> • Notas al día en todos tus dispositivos.
               </span>
             </div>
           )}
@@ -256,62 +264,60 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
           )}
         </div>
 
-        {/* Input Buscador de Notas */}
-        <div className="p-4 sm:p-5 border-b border-zinc-900 bg-zinc-900/40">
-          <div className="relative">
-            <Search className="w-5 h-5 text-cyan-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Input Buscador de Notas con Atajo Ctrl + K */}
+        <div className="p-4 sm:p-5 border-b border-zinc-900 bg-zinc-950">
+          <div className="relative flex items-center">
+            <Search className="w-4.5 h-4.5 text-cyan-400/80 absolute left-4 pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Escribe para buscar entre tus notas o títulos de lección..."
-              className="w-full bg-zinc-900 border border-zinc-800 focus:border-cyan-500 rounded-2xl py-3 pl-12 pr-10 text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+              placeholder="Buscar en tus notas o en títulos de lección..."
+              className="w-full bg-zinc-900/90 border border-zinc-800 focus:border-cyan-400 rounded-2xl py-3 pl-11 pr-20 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
               autoFocus
             />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <div className="absolute right-3 flex items-center gap-1.5">
+              {searchQuery ? (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <span className="hidden sm:inline-block text-[10px] font-mono font-bold text-zinc-500 bg-zinc-950 border border-zinc-800 px-2 py-0.5 rounded-md">
+                  Ctrl + K
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Lista de Resultados de Notas */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-3 custom-scrollbar overscroll-contain">
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5 custom-scrollbar overscroll-contain">
           {filteredNotes.length > 0 ? (
             filteredNotes.map((note) => (
               <div
                 key={note.id}
-                onClick={() => handleSelectNoteItem(note)}
-                className="group p-4 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 rounded-2xl transition-all duration-200 cursor-pointer relative flex flex-col gap-2.5 shadow-sm"
+                className="p-4 sm:p-5 bg-zinc-900/40 hover:bg-zinc-900/70 border border-zinc-800/90 hover:border-cyan-500/40 rounded-2xl transition-all duration-200 flex flex-col gap-3 shadow-sm"
               >
-                {/* Fila superior: Curso + Título + Timestamp */}
+                {/* Fila superior: Título del vídeo + Badge de Tiempo */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {note.courseName && (
-                      <span className="text-[10px] font-extrabold bg-blue-950 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                        {note.courseName}
-                      </span>
-                    )}
-                    <span className="text-xs font-bold text-zinc-300 group-hover:text-cyan-300 transition-colors line-clamp-1">
-                      {note.videoTitle || 'Tutorial de Capa Cero'}
-                    </span>
-                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white leading-snug line-clamp-1 flex-1">
+                    {note.videoTitle || 'Tutorial de Capa Cero 3D'}
+                  </h4>
 
-                  <span className="inline-flex items-center gap-1.5 bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 px-2.5 py-1 rounded-xl text-xs font-mono font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                  <span className="inline-flex items-center gap-1.5 bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold shrink-0">
                     <Clock className="w-3 h-3 text-cyan-400" />
                     <span>{note.timeFormatted || '00:00'}</span>
-                    <Play className="w-3 h-3 text-cyan-400 fill-cyan-400 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </span>
                 </div>
 
-                {/* Texto del apunte o Editor en vivo con ajuste de tiempo */}
+                {/* Texto del apunte o Editor en vivo */}
                 {editingNoteId === note.id ? (
                   <div className="space-y-2.5 pt-1" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-zinc-950/80 border border-zinc-800">
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-zinc-950/90 border border-zinc-800">
                       <div className="flex items-center gap-2">
                         <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1.5 shrink-0">
                           <Clock className="w-3.5 h-3.5 text-cyan-400" />
@@ -358,37 +364,51 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs sm:text-sm text-zinc-100 font-medium leading-relaxed bg-zinc-950/60 p-3 rounded-xl border border-zinc-800/80">
-                    "{note.text}"
-                  </p>
+                  <div className="bg-zinc-950/80 rounded-xl p-3.5 border border-zinc-800/80 flex items-start gap-2.5">
+                    <span className="text-cyan-400 font-serif text-lg leading-none select-none">“</span>
+                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed flex-1">
+                      {note.text}
+                    </p>
+                    <span className="text-cyan-400 font-serif text-lg leading-none select-none">”</span>
+                  </div>
                 )}
 
-                {/* Pie de tarjeta de nota */}
-                <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
-                  <span>
+                {/* Pie de tarjeta de nota con acciones */}
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-[11px] text-zinc-500 font-medium">
                     {note.createdAt ? new Date(note.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                   </span>
 
                   {editingNoteId !== note.id && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={(e) => handleStartEdit(e, note)}
-                        className="text-zinc-400 hover:text-cyan-300 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
+                        className="text-zinc-400 hover:text-cyan-300 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
                         title="Editar este apunte"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-medium">Editar</span>
+                        <span>Editar</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={(e) => handlePromptDelete(e, note)}
-                        className="text-zinc-400 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800/80 flex items-center gap-1 cursor-pointer"
+                        className="text-zinc-400 hover:text-rose-400 transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800 flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
                         title="Eliminar este apunte"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-medium">Eliminar</span>
+                        <span>Eliminar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectNoteItem(note)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 hover:text-white border border-cyan-500/50 text-xs font-bold transition-all cursor-pointer active:scale-95 shadow-sm ml-1"
+                        title="Ir al vídeo en este minuto"
+                      >
+                        <Play className="w-3 h-3 fill-cyan-300" />
+                        <span>Ir al video</span>
                       </button>
                     </div>
                   )}
@@ -408,6 +428,23 @@ export default function NotesSearchModal({ isOpen, onClose, onSelectNote, onOpen
               </p>
             </div>
           )}
+        </div>
+
+        {/* Footer del Modal (Estilo Mockup) */}
+        <div className="p-3.5 sm:p-4 border-t border-zinc-900 bg-zinc-950 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-zinc-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <span>
+              {filteredNotes.length} {filteredNotes.length === 1 ? 'nota encontrada' : 'notas encontradas'}
+            </span>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors cursor-pointer"
+          >
+            Cerrar
+          </button>
         </div>
 
         {/* Modal Grande de Confirmación para Eliminar Apunte */}
