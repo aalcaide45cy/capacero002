@@ -610,12 +610,21 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
             </div>
           )}
 
-          {/* Garantía de Fusión Inteligente y Privacidad */}
-          <div className="flex items-center gap-2 pt-2 border-t border-zinc-900 text-[11px] text-zinc-400">
-            <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span>
-              <strong>Fusión Segura:</strong> Ambos dispositivos comparan y combinan sus notas sin duplicados.
-            </span>
+          {/* Garantía de Fusión Inteligente, Privacidad y Cifrado 512-bits */}
+          <div className="pt-3 border-t border-zinc-800/80 space-y-2 text-left bg-zinc-950/40 p-3 rounded-2xl border border-zinc-800/50">
+            <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold">
+              <Lock className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Fusión Segura & Cifrado de 512 bits</span>
+            </div>
+            
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              <strong className="text-zinc-300">¿Qué datos se guardan?</strong> Únicamente tus apuntes de estudio y el progreso de las lecciones reproducidas. Esta herramienta está diseñada para el aprendizaje, por lo que <strong className="text-zinc-300">no debes escribir contraseñas ni datos sensibles</strong>.
+            </p>
+            
+            <p className="text-[11px] text-zinc-500 leading-relaxed flex items-start gap-1.5 pt-0.5 border-t border-zinc-900">
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+              <span>La sincronización viaja cifrada de punto a punto (TLS/HTTPS) y protegida con una llave criptográfica única de 512 bits de alta entropía.</span>
+            </p>
           </div>
         </div>
       </div>
