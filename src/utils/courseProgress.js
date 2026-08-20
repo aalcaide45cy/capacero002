@@ -42,9 +42,18 @@ export function setLastSyncTime(isoStr) {
 }
 
 export function generateNewVaultId() {
-  const p1 = Math.random().toString(36).substring(2, 6).toUpperCase();
-  const p2 = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `CP-${p1}-${p2}`;
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    const bytes = new Uint8Array(64); // 64 bytes * 8 = 512 bits
+    window.crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return `CP-${hex}`;
+  }
+  // Fallback seguro si crypto no estuviese disponible
+  let hex = '';
+  for (let i = 0; i < 128; i++) {
+    hex += Math.floor(Math.random() * 16).toString(16).toUpperCase();
+  }
+  return `CP-${hex}`;
 }
 
 export function dispatchSyncStatus(status, detail = {}) {

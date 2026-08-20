@@ -542,7 +542,7 @@ export default function QRSyncModal({ isOpen, onClose, onSyncSuccess }) {
                     <div>
                       <strong className="text-xs text-white block">Desvincular este dispositivo</strong>
                       <p className="text-[11px] text-zinc-400 leading-relaxed">
-                        Desconecta este equipo ({currentVaultId}). Tus notas y cursos locales se mantendrán intactos.
+                        Desconecta este equipo de la sincronización en la nube. Tus notas y cursos locales se mantendrán intactos.
                       </p>
                     </div>
                   </div>
