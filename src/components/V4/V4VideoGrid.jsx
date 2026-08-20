@@ -91,8 +91,16 @@ export default function V4VideoGrid({
   const [isQRSyncModalOpen, setIsQRSyncModalOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const filtersContainerRef = useRef(null);
+  const categoryScrollRef = useRef(null);
   const hasTriggeredHintRef = useRef(false);
   const fileInputRef = useRef(null);
+
+  const scrollCategories = (direction) => {
+    if (categoryScrollRef.current) {
+      const amount = direction === 'left' ? -260 : 260;
+      categoryScrollRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   // Activar la animación de la manita flotante cuando el usuario hace scroll y entra en la zona de botones
   useEffect(() => {
@@ -444,9 +452,9 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Píldoras Temáticas de Categorías con Manita Flotante y Sin Barra de Scroll Visible */}
+      {/* Píldoras Temáticas de Categorías con Desplazamiento Izquierda/Derecha y Sin Barra de Scroll */}
       {activeSortFilter !== 'courses' && (
-        <div ref={filtersContainerRef} className="relative mb-8 group">
+        <div ref={filtersContainerRef} className="relative mb-8 group max-w-5xl mx-auto px-1">
           {/* Manita Flotante Animada (Desplazamiento horizontal + desvanecimiento en móvil) */}
           <AnimatePresence>
             {showHint && (
@@ -479,10 +487,37 @@ export default function V4VideoGrid({
             )}
           </AnimatePresence>
 
+          {/* Flecha Izquierda para PC */}
+          <button
+            type="button"
+            onClick={() => scrollCategories('left')}
+            className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-zinc-950/90 hover:bg-cyan-950 border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-300 items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer"
+            aria-label="Desplazar categorías a la izquierda"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+
+          {/* Flecha Derecha para PC */}
+          <button
+            type="button"
+            onClick={() => scrollCategories('right')}
+            className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-zinc-950/90 hover:bg-cyan-950 border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-300 items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer"
+            aria-label="Desplazar categorías a la derecha"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </button>
+
+          {/* Contenedor desplazable de botones */}
           <div 
+            ref={categoryScrollRef}
             onScroll={() => setShowHint(false)}
             onTouchStart={() => setShowHint(false)}
-            className="flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
+            className="flex items-center justify-start gap-2.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
           >
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
@@ -492,7 +527,7 @@ export default function V4VideoGrid({
                 <button
                   key={cat}
                   onClick={() => onSelectCategory(cat)}
-                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border ${
                     isActive
                       ? 'bg-blue-950/90 border-cyan-400 text-cyan-200 shadow-md shadow-cyan-950 scale-[1.02]'
                       : 'bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-white border-zinc-800/80 hover:border-zinc-700'
