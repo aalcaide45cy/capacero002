@@ -95,7 +95,7 @@ export default function V4VideoGrid({
   const hasTriggeredHintRef = useRef(false);
   const fileInputRef = useRef(null);
 
-  // Arrastre con ratón (Drag-to-Scroll) suave tipo móvil en PC
+  // Arrastre con ratón (Drag-to-Scroll) 1:1 completamente fluido y sin saltos
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const scrollLeftStartRef = useRef(0);
@@ -103,27 +103,43 @@ export default function V4VideoGrid({
 
   const handleMouseDown = (e) => {
     if (!categoryScrollRef.current) return;
+    // Solo botón izquierdo del ratón
+    if (e.button !== 0) return;
     isDraggingRef.current = true;
     hasMovedRef.current = false;
-    startXRef.current = e.pageX - categoryScrollRef.current.offsetLeft;
+    startXRef.current = e.pageX;
     scrollLeftStartRef.current = categoryScrollRef.current.scrollLeft;
   };
 
-  const handleMouseMove = (e) => {
-    if (!isDraggingRef.current || !categoryScrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - categoryScrollRef.current.offsetLeft;
-    const walk = (x - startXRef.current) * 1.6; // Multiplicador de fluidez de arrastre
-    if (Math.abs(walk) > 5) {
-      hasMovedRef.current = true;
-      setShowHint(false);
-    }
-    categoryScrollRef.current.scrollLeft = scrollLeftStartRef.current - walk;
-  };
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!isDraggingRef.current || !categoryScrollRef.current) return;
+      const walk = e.pageX - startXRef.current;
+      if (Math.abs(walk) > 3) {
+        hasMovedRef.current = true;
+        setShowHint(false);
+      }
+      categoryScrollRef.current.scrollLeft = scrollLeftStartRef.current - walk;
+    };
 
-  const handleMouseUpOrLeave = () => {
-    isDraggingRef.current = false;
-  };
+    const handleGlobalMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        // Pequeño retardo para evitar que el onClick se dispare al soltar el ratón tras arrastrar
+        setTimeout(() => {
+          hasMovedRef.current = false;
+        }, 60);
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, []);
 
   const handleCategoryClick = (cat) => {
     if (hasMovedRef.current) {
@@ -494,7 +510,7 @@ export default function V4VideoGrid({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5 }}
-                className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
+                className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center"
               >
                 <motion.div
                   initial={{ x: 0 }}
@@ -518,26 +534,20 @@ export default function V4VideoGrid({
             )}
           </AnimatePresence>
 
-          {/* Contenedor desplazable con arrastre de ratón (Drag) y soporte de rueda inclinable/trackpad */}
+          {/* Contenedor desplazable con arrastre de ratón (Drag) y soporte exclusivo de rueda inclinable / trackpad horizontal */}
           <div 
             ref={categoryScrollRef}
             onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUpOrLeave}
-            onMouseLeave={handleMouseUpOrLeave}
             onScroll={() => setShowHint(false)}
             onTouchStart={() => setShowHint(false)}
             onWheel={(e) => {
               if (!categoryScrollRef.current) return;
               if (Math.abs(e.deltaX) > 0) {
-                // Rueda inclinable / trackpad horizontal
+                // Solo rueda inclinable o desplazamiento horizontal de trackpad
                 categoryScrollRef.current.scrollLeft += e.deltaX;
-              } else if (Math.abs(e.deltaY) > 0) {
-                // Rueda estándar vertical convertida en desplazamiento horizontal
-                categoryScrollRef.current.scrollLeft += e.deltaY;
               }
             }}
-            className="flex items-center justify-start gap-2.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth select-none cursor-grab active:cursor-grabbing"
+            className="flex items-center justify-start gap-2.5 overflow-x-auto px-4 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden select-none cursor-grab active:cursor-grabbing"
           >
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
