@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock, QrCode } from 'lucide-react';
+import { 
+  Search, X, Layers, Sparkles, Flame, GraduationCap, ArrowLeft, ArrowRight, 
+  Hand, Play, BookOpen, ChevronRight, Eye, Heart, Compass, CheckCircle2, 
+  RotateCcw, Check, Download, Upload, ShieldCheck, Calendar, Clock, QrCode,
+  Crosshair, Box, Palette, Zap, LayoutGrid, Cuboid, FileText
+} from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import NotesSearchModal from './NotesSearchModal';
 import BackupModal from './BackupModal';
@@ -38,6 +43,33 @@ function extractCourseName(video) {
   }
 
   return null;
+}
+
+// Devuelve el icono y color temático para cada categoría
+function getCategoryBadgeMeta(category) {
+  const norm = (category || '').toLowerCase().trim();
+  if (norm.includes('bambu')) {
+    return { icon: Box, colorClass: 'text-emerald-400' };
+  }
+  if (norm.includes('calibraci') || norm.includes('perfil')) {
+    return { icon: Crosshair, colorClass: 'text-blue-400' };
+  }
+  if (norm.includes('fusion') || norm.includes('360')) {
+    return { icon: Layers, colorClass: 'text-orange-400' };
+  }
+  if (norm.includes('laser') || norm.includes('láser') || norm.includes('grabado')) {
+    return { icon: Sparkles, colorClass: 'text-fuchsia-400' };
+  }
+  if (norm.includes('modelado')) {
+    return { icon: Cuboid, colorClass: 'text-cyan-400' };
+  }
+  if (norm.includes('multicolor') || norm.includes('ams')) {
+    return { icon: Palette, colorClass: 'text-rose-400' };
+  }
+  if (norm.includes('truco')) {
+    return { icon: Zap, colorClass: 'text-amber-400' };
+  }
+  return { icon: LayoutGrid, colorClass: 'text-cyan-400' };
 }
 
 export default function V4VideoGrid({
@@ -293,8 +325,36 @@ export default function V4VideoGrid({
         </div>
       )}
 
-      {/* Header Controls (Completamente centrado y con tipografía destacada en PC y Móvil) */}
-      <div className="flex flex-col items-center text-center justify-center gap-2 mb-7">
+      {/* Barra Superior de Herramientas (Top Right): Sincronizar dispositivo y Mis notas */}
+      <div className="flex items-center justify-end gap-2.5 mb-5 sm:mb-2">
+        {/* Botón 1: Sincronizar Dispositivo */}
+        <button
+          onClick={() => setIsQRSyncModalOpen(true)}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 text-xs font-bold text-zinc-300 hover:text-white transition-all duration-200 cursor-pointer shadow-sm active:scale-95 group"
+          title="Sincroniza notas y cursos entre tus dispositivos con QR"
+        >
+          <QrCode className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+          <span>Sincronizar dispositivo</span>
+        </button>
+
+        {/* Botón 2: Mis Notas */}
+        <button
+          onClick={() => setIsNotesModalOpen(true)}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 text-xs font-bold text-zinc-300 hover:text-white transition-all duration-200 cursor-pointer shadow-sm active:scale-95 group"
+          title="Ver y buscar entre tus apuntes guardados"
+        >
+          <FileText className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
+          <span>Mis notas</span>
+          {totalNotesCount > 0 && (
+            <span className="text-[10px] font-black bg-cyan-500 text-black px-1.5 py-0.5 rounded-full leading-none ml-0.5">
+              {totalNotesCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Header Central: Título y Subtítulo */}
+      <div className="flex flex-col items-center text-center justify-center gap-2 mb-6">
         <div className="flex flex-wrap items-center justify-center gap-3">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
             {activeSortFilter === 'courses' 
@@ -307,132 +367,111 @@ export default function V4VideoGrid({
               : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
           </span>
         </div>
-        <p className="text-sm sm:text-base md:text-lg text-zinc-300 max-w-3xl mx-auto font-normal leading-relaxed mt-1">
+        <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto font-normal leading-relaxed">
           {activeSortFilter === 'courses'
             ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
-            : 'Encuentra soluciones específicas, configuraciones optimizadas y respuestas a dudas frecuentes.'}
+            : 'Tutoriales, configuraciones y soluciones sobre impresión 3D.'}
         </p>
+      </div>
 
-        {/* Botones Centrales Destacados: Sincronizar QR y Busca en tus notas */}
-        <div className="flex flex-col items-center justify-center gap-2.5 mt-5 mb-2 w-full">
-          {/* Botón 1: Sincronizar QR */}
-          <button
-            onClick={() => setIsQRSyncModalOpen(true)}
-            className="group relative inline-flex items-center gap-3 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-blue-950/90 via-zinc-900 to-cyan-950/90 hover:from-blue-900/90 hover:via-zinc-800 hover:to-cyan-900/90 border border-cyan-400/50 hover:border-cyan-300 text-white shadow-[0_0_20px_rgba(0,229,255,0.18)] hover:shadow-[0_0_30px_rgba(0,229,255,0.4)] transition-all duration-200 active:scale-95 cursor-pointer"
-            title="Sincroniza notas y progreso entre tus dispositivos"
-          >
-            <div className="p-2 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 group-hover:scale-110 transition-transform">
-              <QrCode className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <span className="text-sm font-black text-white block tracking-tight group-hover:text-cyan-200 transition-colors">
-                Sincronizar QR
-              </span>
-              <span className="text-[11px] font-medium text-cyan-300/80 block">
-                Sincroniza notas y progreso
-              </span>
-            </div>
-          </button>
-
-          {/* Botón 2: Busca en tus notas */}
-          <button
-            onClick={() => setIsNotesModalOpen(true)}
-            className="group inline-flex items-center justify-center gap-2.5 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/90 hover:border-cyan-400/60 shadow-sm transition-all duration-200 cursor-pointer active:scale-95"
-            title="Buscar entre todas tus notas de estudio"
-          >
-            <Search className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-            <span>Busca en tus notas</span>
-            {totalNotesCount > 0 && (
-              <span className="text-[10px] font-extrabold bg-cyan-500 text-black px-1.5 py-0.5 rounded-full leading-none ml-0.5">
-                {totalNotesCount}
-              </span>
-            )}
-          </button>
+      {/* Buscador Prominente Central (Estilo Mockup) */}
+      <div className="max-w-2xl mx-auto mb-6 w-full relative">
+        <div className="relative flex items-center">
+          <Search className="w-5 h-5 text-cyan-400/80 absolute left-4.5 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Buscar tutoriales, problemas, configuraciones..."
+            className="w-full bg-zinc-950/90 border-2 border-cyan-500/30 hover:border-cyan-400/60 focus:border-cyan-400 rounded-full pl-12 pr-10 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 shadow-[0_0_20px_rgba(0,229,255,0.08)] focus:shadow-[0_0_25px_rgba(0,229,255,0.25)] focus:outline-none transition-all duration-200"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-3.5 p-1 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              aria-label="Limpiar búsqueda"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Selector de Modos con Scroll Horizontal y Manita Flotante Animada */}
-      <div ref={filtersContainerRef} className="relative mb-8 group">
-        {/* Manita Flotante Animada Original (Desplazamiento horizontal + desvanecimiento) */}
-        <AnimatePresence>
-          {showHint && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
-            >
-              <motion.div
-                initial={{ x: 0 }}
-                animate={{
-                  x: [0, 50, -50, 0],
-                  scale: [1, 0.9, 0.9, 0.9, 1],
-                }}
-                transition={{
-                  duration: 2.8,
-                  ease: "easeInOut",
-                  times: [0, 0.2, 0.5, 0.8, 1],
-                  delay: 0.3
-                }}
-                className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/60 shadow-[0_0_25px_rgba(0,229,255,0.5)]"
-              >
-                <ArrowLeft className="w-5 h-5 text-cyan-400 animate-pulse" />
-                <Hand className="w-7 h-7 text-[#2575c4] drop-shadow-2xl fill-black/20" />
-                <ArrowRight className="w-5 h-5 text-cyan-400 animate-pulse" />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <div 
-          onScroll={() => setShowHint(false)}
-          onTouchStart={() => setShowHint(false)}
-          className="flex items-center sm:justify-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1"
-        >
+      {/* Selector de Modos (Más Nuevos / Más Populares / Cursos) */}
+      <div ref={filtersContainerRef} className="flex items-center justify-start sm:justify-center gap-2 mb-5 overflow-x-auto no-scrollbar pb-1">
+        <div className="inline-flex p-1 rounded-2xl bg-zinc-950/90 border border-zinc-800/90 shadow-inner">
           {/* Botón 1: Más Nuevos */}
           <button
             onClick={() => handleSwitchFilter('newest')}
-            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
               activeSortFilter === 'newest'
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
             }`}
           >
-            <Sparkles className={`w-4 h-4 ${activeSortFilter === 'newest' ? 'text-white' : 'text-cyan-400'}`} />
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Más Nuevos</span>
           </button>
 
           {/* Botón 2: Más Populares */}
           <button
             onClick={() => handleSwitchFilter('popular')}
-            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
               activeSortFilter === 'popular'
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
             }`}
           >
-            <Flame className={`w-4 h-4 ${activeSortFilter === 'popular' ? 'text-white' : 'text-amber-400'}`} />
-            <span>Más Populares</span>
+            <Flame className="w-3.5 h-3.5" />
+            <span>Más populares</span>
           </button>
 
           {/* Botón 3: Cursos */}
           <button
             onClick={() => handleSwitchFilter('courses')}
-            className={`h-11 px-4 sm:px-5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer active:scale-95 border box-border whitespace-nowrap shrink-0 ${
+            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
               activeSortFilter === 'courses'
-                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/30 border-cyan-300/50 scale-[1.02]'
-                : 'bg-zinc-900/90 text-zinc-300 hover:text-white hover:bg-zinc-800 border-zinc-800/90 hover:border-cyan-500/40'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
             }`}
           >
-            <GraduationCap className={`w-4 h-4 ${activeSortFilter === 'courses' ? 'text-white' : 'text-emerald-400'}`} />
-            <span>🎓 Cursos</span>
-            <span className="text-[10px] font-extrabold bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none ml-0.5">
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Cursos</span>
+            <span className="text-[10px] font-black bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/40 leading-none">
               {coursesList.length}
             </span>
           </button>
         </div>
       </div>
+
+      {/* Píldoras Temáticas de Categorías (Visible cuando no estamos dentro del detalle de un curso) */}
+      {activeSortFilter !== 'courses' && (
+        <div className="relative mb-8 group">
+          <div 
+            className="flex items-center justify-start sm:justify-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 no-scrollbar scroll-smooth"
+          >
+            {categories.map((cat) => {
+              const isActive = activeCategory === cat;
+              const { icon: CategoryIcon, colorClass } = getCategoryBadgeMeta(cat);
+
+              return (
+                <button
+                  key={cat}
+                  onClick={() => onSelectCategory(cat)}
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 border ${
+                    isActive
+                      ? 'bg-blue-950/90 border-cyan-400 text-cyan-200 shadow-md shadow-cyan-950 scale-[1.02]'
+                      : 'bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 hover:text-white border-zinc-800/80 hover:border-zinc-700'
+                  }`}
+                >
+                  {CategoryIcon && <CategoryIcon className={`w-3.5 h-3.5 ${colorClass}`} />}
+                  <span>{cat}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ================= VISTA DE CURSOS (MODO: 'courses') ================= */}
       {activeSortFilter === 'courses' ? (
@@ -779,66 +818,6 @@ export default function V4VideoGrid({
       ) : (
         /* ================= VISTA ESTÁNDAR DE VIDEOTECA (MÁS NUEVOS / MÁS POPULARES) ================= */
         <div>
-          {/* Categorías Temáticas con manita flotante */}
-          <div className="relative mb-6 group">
-            <AnimatePresence>
-              {showHint && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center sm:hidden"
-                >
-                  <motion.div
-                    initial={{ x: 0 }}
-                    animate={{
-                      x: [0, 50, -50, 0],
-                      scale: [1, 0.9, 0.9, 0.9, 1],
-                    }}
-                    transition={{
-                      duration: 2.8,
-                      ease: "easeInOut",
-                      times: [0, 0.2, 0.5, 0.8, 1],
-                      delay: 0.3
-                    }}
-                    className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/60 shadow-[0_0_25px_rgba(0,229,255,0.5)]"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-cyan-400 animate-pulse" />
-                    <Hand className="w-7 h-7 text-[#2575c4] drop-shadow-2xl fill-black/20" />
-                    <ArrowRight className="w-5 h-5 text-cyan-400 animate-pulse" />
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div 
-              onScroll={() => setShowHint(false)}
-              onTouchStart={() => setShowHint(false)}
-              className="flex items-center gap-2 overflow-x-auto pb-4 no-scrollbar border-b border-zinc-800/60 scroll-smooth"
-            >
-              <span className="text-xs text-zinc-400 font-semibold uppercase tracking-wider mr-1 hidden sm:inline-block shrink-0">
-                Temas:
-              </span>
-              {categories.map((cat) => {
-                const isActive = activeCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => onSelectCategory(cat)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 ${
-                      isActive
-                        ? 'bg-blue-950/90 border border-cyan-400/60 text-cyan-200 shadow-sm scale-[1.02]'
-                        : 'bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800/80'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Grid de vídeos estándar */}
           {filteredVideos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
