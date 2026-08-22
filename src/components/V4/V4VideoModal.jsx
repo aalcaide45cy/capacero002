@@ -3,7 +3,7 @@ import {
   X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, 
   Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw, 
   Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar, Edit3, AlertCircle,
-  ChevronLeft, Share2, Layers, Zap, ThumbsUp, Activity, BarChart2
+  ChevronLeft, Share2, Layers, Zap, ThumbsUp
 } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 import { 
@@ -40,22 +40,6 @@ function formatPublishedDate(dateStr) {
   } catch (e) {
     return 'Reciente';
   }
-}
-
-// Cálculo inteligente de nivel según campo directo, capítulo o categoría
-function calculateLevel(video) {
-  if (!video) return 'Intermedio';
-  if (video.nivel || video.Nivel) {
-    return String(video.nivel || video.Nivel).trim();
-  }
-  const cat = (video.category || '').toLowerCase();
-  const title = (video.title || '').toLowerCase();
-  const ch = video.chapterNumber;
-  if (ch !== null && ch <= 3) return 'Iniciación';
-  if (ch !== null && ch > 10) return 'Avanzado';
-  if (cat.includes('calibracion') || cat.includes('perfil') || cat.includes('avanzado') || title.includes('secreto') || title.includes('avanzad')) return 'Avanzado';
-  if (cat.includes('basico') || cat.includes('intro') || cat.includes('empezar') || title.includes('primeros pasos') || title.includes('empezar')) return 'Iniciación';
-  return 'Intermedio';
 }
 
 export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo: propNextVideo, allVideos = [] }) {
@@ -503,7 +487,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     : circleCircumference;
 
   const durationDisplay = videoDuration ? formatSecondsToTime(videoDuration) : '3:41';
-  const levelDisplay = calculateLevel(video);
   const softwareDisplay = video.category ? video.category.replace(/^curso\s*:?\s*/i, '') : 'Bambu Studio';
   const publishedDisplay = formatPublishedDate(video.publishedAt);
   const likesDisplay = video.likes || 812;
@@ -735,10 +718,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   )}
                 </div>
 
-                {/* ================= METADATA BAR (LIMPIA, SIN SCROLLBAR HORIZONTAL Y SIN BOTÓN GUARDAR) ================= */}
+                {/* ================= METADATA BAR (LIMPIA, SIN SCROLLBAR HORIZONTAL Y SIN BOTÓN GUARDAR NI NIVEL) ================= */}
                 <div className="mx-3 sm:mx-4 md:mx-0 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-md">
                   
-                  {/* Left Metadata: Duración | Nivel | Software | Publicado */}
+                  {/* Left Metadata: Duración | Software | Publicado */}
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-5">
                     
                     {/* Duración */}
@@ -750,22 +733,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                         </span>
                         <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
                           Duración
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Separador */}
-                    <div className="hidden sm:block h-6 w-px bg-zinc-800" />
-
-                    {/* Nivel */}
-                    <div className="flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-emerald-400 leading-none">
-                          {levelDisplay}
-                        </span>
-                        <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
-                          Nivel
                         </span>
                       </div>
                     </div>
