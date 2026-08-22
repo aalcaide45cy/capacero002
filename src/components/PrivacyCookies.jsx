@@ -13,11 +13,11 @@ export default function PrivacyCookies() {
                 
                 <section>
                     <h2 className="text-2xl font-bold text-white mb-4 border-b border-zinc-800 pb-2">2. Finalidad del Tratamiento de Datos</h2>
-                    <p className="text-gray-400">Los datos que nos proporcionas libremente a través de nuestros formularios (nombre, correo electrónico, país, etc.) se guardan y protegen con la única finalidad de:</p>
+                    <p className="text-gray-400">Los datos que nos proporcionas libremente a través de nuestros formularios (nombre, correo electrónico, mensaje, etc.) se guardan y protegen con la única finalidad de:</p>
                     <ul className="list-disc pl-6 mt-4 space-y-3 text-gray-400">
-                        <li>Garantizar el acceso a la plataforma y tramitación de compras.</li>
-                        <li>Enviar comunicaciones relevantes, descuentos de lanzamiento y novedades estrictamente ligadas al ecosistema de la Impresión 3D.</li>
-                        <li>Proporcionar soporte técnico y resolver tus dudas de alumno.</li>
+                        <li>Garantizar el acceso y funcionamiento óptimo de las herramientas y utilidades de la plataforma.</li>
+                        <li>Atender solicitudes de soporte, dudas técnicas de la comunidad y propuestas de colaboración comercial.</li>
+                        <li>Enviar comunicaciones técnicas, nuevos recursos y novedades estrictamente ligadas al ecosistema de la Impresión 3D si así lo has solicitado.</li>
                     </ul>
                 </section>
 

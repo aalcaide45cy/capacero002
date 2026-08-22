@@ -1,7 +1,7 @@
 {
-  "name": "Capa Cero 3D - Academia y Tutoriales",
+  "name": "Capa Cero 3D - Videoteca y Tutoriales",
   "short_name": "Capa Cero 3D",
-  "description": "Academia y tutoriales de impresión 3D, Bambu Studio y Fusion 360",
+  "description": "Videoteca oficial y tutoriales de impresión 3D, Bambu Studio y Fusion 360",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
@@ -32,17 +32,17 @@
   ],
   "shortcuts": [
     {
-      "name": "Cursos Estructurados",
-      "short_name": "Cursos",
-      "description": "Accede a las rutas de aprendizaje de Bambu Studio y Fusion 360",
-      "url": "/?filter=courses",
+      "name": "Videoteca de Tutoriales",
+      "short_name": "Tutoriales",
+      "description": "Explora trucos rápidos y tutoriales de Bambu Studio",
+      "url": "/",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Videoteca de Tutoriales",
-      "short_name": "Tutoriales",
-      "description": "Explora trucos rápidos y soluciones a fallos de impresión",
-      "url": "/?filter=newest",
+      "name": "Calculadora de Impresión 3D",
+      "short_name": "Calculadora",
+      "description": "Calcula el coste exacto de filamento, luz y máquina",
+      "url": "/calculadora",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
