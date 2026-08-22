@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { 
   X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, 
   Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw, 
-  Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar, Edit3, AlertCircle
+  Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar, Edit3, AlertCircle,
+  ChevronLeft, MoreHorizontal, ChevronDown, ChevronUp, Share2, Layers, Zap
 } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 import { 
@@ -32,11 +33,11 @@ function extractCourseKey(category) {
 export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo: propNextVideo, allVideos = [] }) {
   if (!video) return null;
 
-  const [activeTab, setActiveTab] = useState('notes'); // 'notes' | 'resources'
-  const [copied, setCopied] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const [hasSubscribed, setHasSubscribed] = useState(false);
+  const [activeTab, setActiveTab] = useState('lesson'); // 'lesson' | 'notes'
+  const [showSubReminder, setShowSubReminder] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(null); // 5, 4, 3, 2, 1, 0 o null
+  const [showShareToast, setShowShareToast] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   
   // Estados para reanudación de tiempo y notas
   const [resumeNotice, setResumeNotice] = useState(null);
@@ -180,7 +181,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     setNoteInputText('');
     
     if (initialStartSecond > 0) {
-      setResumeNotice(`Reanudando desde el minuto ${formatSecondsToTime(initialStartSecond)} (-5s de cortesía)`);
+      setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
       const timer = setTimeout(() => setResumeNotice(null), 5000);
       return () => clearTimeout(timer);
     } else {
@@ -222,7 +223,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     if (countdownSeconds === null) return;
 
     if (countdownSeconds === 0) {
-      // Tiempo cumplido: saltar al siguiente vídeo
       const target = nextVideoRef.current;
       const onSelect = onSelectVideoRef.current;
       setCountdownSeconds(null);
@@ -299,7 +299,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           ytPlayerRef.current = new window.YT.Player(playerId, {
             events: {
               onReady: () => {
-                // Iniciar rastreador de segundos periódicos
                 if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
                 playbackTrackerRef.current = setInterval(() => {
                   if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
@@ -368,7 +367,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     : null;
 
   const handleDownloadClick = (dl) => {
-    setDownloadedCount((prev) => prev + 1);
     setShowSubReminder(true);
     trackDownload(dl, video);
     window.open(dl.url, '_blank');
@@ -439,6 +437,21 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     setNotesTick((prev) => prev + 1);
   };
 
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: video.title,
+        text: `Aprende con Capa Cero 3D: ${video.title}`,
+        url: video.youtubeUrl || window.location.href
+      }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(video.youtubeUrl || window.location.href);
+      setShowShareToast(true);
+      setTimeout(() => setShowShareToast(false), 2500);
+    }
+    setShowMoreMenu(false);
+  };
+
   // SVG Ring calculation: Radius 32, Circumference = 2 * PI * 32 = 201.06
   const circleRadius = 32;
   const circleCircumference = 2 * Math.PI * circleRadius;
@@ -448,646 +461,857 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 lg:p-6 overflow-y-auto">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"
+          className="fixed inset-0 bg-black/90 md:bg-black/85 backdrop-blur-md transition-opacity"
           onClick={onClose}
         />
 
-      {/* Modal Container */}
-      <div className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-10 my-auto flex flex-col text-left">
-        
-        {/* Top Bar with Close */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-zinc-800/80 bg-zinc-900/60">
-          <div className="flex items-center gap-2 flex-wrap">
-            {video.category && (
-              <span className="text-xs font-semibold text-zinc-400 bg-zinc-800/80 px-2.5 py-1 rounded-md border border-zinc-700/50">
-                {video.category}
-              </span>
-            )}
-            {isCourseLesson && totalCourseLessons > 0 && (
-              <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40 flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Lección {currentLessonIndex} de {totalCourseLessons}</span>
-              </span>
-            )}
-            {video.chapterNumber !== null && !isCourseLesson && (
-              <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40">
-                Capítulo #{video.chapterNumber}
-              </span>
-            )}
-            {video.isScheduled && (
-              <span className="text-xs font-black text-cyan-200 bg-blue-950/90 px-2.5 py-1 rounded-md border border-cyan-400/50 flex items-center gap-1 shadow-sm">
-                <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{video.scheduledDateFormatted || 'Estreno Programado'}</span>
-              </span>
-            )}
-            <span className="text-xs text-zinc-500 font-medium hidden sm:inline-block">
-              Canal Oficial Capa Cero 3D
-            </span>
+        {/* Modal Container: Fullscreen on mobile, centered card on desktop */}
+        <div className="relative w-full h-full md:h-auto md:max-h-[92vh] md:max-w-5xl lg:max-w-6xl bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
+          
+          {/* ================= TOP HEADER BAR ================= */}
+          <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 border-b border-zinc-800/80 bg-zinc-950 md:bg-zinc-900/60 shrink-0">
+            
+            {/* Left: Back / Channel Brand */}
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                onClick={onClose}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+                aria-label="Cerrar reproductor"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                <img 
+                  src="/logo-emblem.webp" 
+                  alt="Capa Cero Logo" 
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg object-contain"
+                  onError={(e) => { e.target.src = '/logo-capa-cero-small.png'; }}
+                />
+                <span className="font-black text-sm sm:text-base text-white tracking-tight">
+                  CapaCero3D
+                </span>
+              </div>
+            </div>
+
+            {/* Badges (Visible on larger screens) */}
+            <div className="hidden lg:flex items-center gap-2">
+              {video.category && (
+                <span className="text-xs font-semibold text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800">
+                  {video.category}
+                </span>
+              )}
+              {isCourseLesson && totalCourseLessons > 0 && (
+                <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-lg border border-cyan-500/40 flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Lección {currentLessonIndex} de {totalCourseLessons}</span>
+                </span>
+              )}
+            </div>
+
+            {/* Right: Actions (Bookmark, More / Close) */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={() => setActiveTab(prev => prev === 'notes' ? 'lesson' : 'notes')}
+                className={`p-2 rounded-xl border transition-all cursor-pointer relative ${
+                  activeTab === 'notes' 
+                    ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-300' 
+                    : 'bg-zinc-900 md:bg-zinc-800/90 border-zinc-800 text-zinc-400 hover:text-white'
+                }`}
+                title="Ver apuntes y notas"
+                aria-label="Apuntes"
+              >
+                <Bookmark className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                {currentVideoNotes.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-400 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+                    {currentVideoNotes.length}
+                  </span>
+                )}
+              </button>
+
+              <div className="relative">
+                <button
+                  onClick={() => setShowMoreMenu(prev => !prev)}
+                  className="p-2 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all cursor-pointer"
+                  title="Más opciones"
+                  aria-label="Más opciones"
+                >
+                  <MoreHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showMoreMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-700/80 rounded-2xl p-1.5 shadow-2xl z-50 animate-fade-in text-xs">
+                    <a
+                      href={video.youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors"
+                      onClick={() => setShowMoreMenu(false)}
+                    >
+                      <Youtube className="w-4 h-4 text-red-500" />
+                      <span>Ver en YouTube</span>
+                    </a>
+                    <button
+                      onClick={handleShare}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors text-left"
+                    >
+                      <Share2 className="w-4 h-4 text-cyan-400" />
+                      <span>Compartir lección</span>
+                    </button>
+                    <a
+                      href={subscribeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors"
+                      onClick={() => setShowMoreMenu(false)}
+                    >
+                      <Heart className="w-4 h-4 text-pink-400" />
+                      <span>Suscribirme</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={onClose}
+                className="hidden md:flex p-2 rounded-xl bg-zinc-800/90 border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer ml-1"
+                aria-label="Cerrar modal"
+              >
+                <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer"
-            aria-label="Cerrar modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Video Player & Countdown Overlay */}
-        <div className="relative aspect-video w-full bg-black">
-          {embedUrl ? (
-            <>
-              {/* key={video.youtubeId} garantiza el desmontaje limpio */}
-              <iframe
-                key={`${video.youtubeId}-${initialStartSecond}`}
-                id={`yt-iframe-${video.youtubeId}`}
-                src={embedUrl}
-                title={video.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-
-              {/* Aviso flotante de reanudación exacta (-5s) */}
-              {resumeNotice && (
-                <div className="absolute top-4 left-4 z-20 bg-blue-950/90 text-cyan-200 border border-cyan-400/60 text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xl flex items-center gap-2 animate-fade-in backdrop-blur-sm">
-                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{resumeNotice}</span>
-                </div>
-              )}
-
-              {/* ================= OVERLAY ANIMADO CON ANILLO DE 5 SEGUNDOS ================= */}
-              {countdownSeconds !== null && nextVideo && (
-                <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 animate-fade-in">
-                  
-                  {/* Anillo de cuenta regresiva SVG */}
-                  <div className="relative w-24 h-24 flex items-center justify-center mb-4">
-                    <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r={circleRadius}
-                        className="stroke-zinc-800"
-                        strokeWidth="6"
-                        fill="transparent"
-                      />
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r={circleRadius}
-                        className="stroke-cyan-400 transition-all duration-1000 ease-linear"
-                        strokeWidth="6"
-                        strokeDasharray={circleCircumference}
-                        strokeDashoffset={circleOffset}
-                        strokeLinecap="round"
-                        fill="transparent"
-                      />
-                    </svg>
-                    
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-black text-white leading-none">
-                        {countdownSeconds}
-                      </span>
-                      <span className="text-[9px] font-bold text-cyan-300 uppercase tracking-wider mt-0.5">
-                        seg
-                      </span>
-                    </div>
-                  </div>
-
-                  <h4 className="text-base sm:text-lg font-black text-white mb-1 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <span>{isCourseLesson ? '¡Lección Completada!' : '¡Vídeo Completado!'}</span>
-                  </h4>
-                  
-                  <p className="text-xs sm:text-sm text-zinc-300 font-medium max-w-md line-clamp-1 mb-5">
-                    Siguiente: <strong className="text-cyan-300">{nextVideo.title}</strong>
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleImmediateSkip}
-                      className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
-                    >
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>Saltar Ahora</span>
-                    </button>
-
-                    <button
-                      onClick={handleCancelCountdown}
-                      className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                      <span>Cancelar</span>
-                    </button>
-                  </div>
-
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-              <Youtube className="w-16 h-16 text-[#2575c4] mb-3" />
-              <h3 className="text-base font-bold text-white mb-2">{video.title}</h3>
-              <a
-                href={video.youtubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg shadow-blue-500/30"
-              >
-                <span>Ver directamente en YouTube</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+          {/* Share Toast */}
+          {showShareToast && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 bg-cyan-950 text-cyan-200 border border-cyan-400/60 text-xs font-bold px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 animate-fade-in">
+              <Check className="w-4 h-4 text-cyan-400" />
+              <span>¡Enlace copiado al portapapeles!</span>
             </div>
           )}
-        </div>
 
-        {/* Enlace Permanente a YouTube para Comentarios y Likes */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-2.5 bg-zinc-900/90 border-b border-zinc-800/80">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-medium text-zinc-300">
-              {initialStartSecond > 0 ? `Reanudación activa (${formatSecondsToTime(currentLiveSeconds)})` : 'Reproducción continua activada'}
-            </span>
-          </div>
-
-          <a
-            href={video.youtubeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackSocialClick && trackSocialClick('YouTube Video Direct Comment Link', video.title)}
-            className="inline-flex items-center gap-2 text-xs font-bold text-cyan-300 hover:text-white bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 hover:border-cyan-400 px-3.5 py-1.5 rounded-lg transition-all shadow-sm active:scale-95 group cursor-pointer"
-            title="Abrir en YouTube para dejar un comentario, duda o dar Me Gusta"
+          {/* ================= MAIN SCROLLABLE CONTENT BODY ================= */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col scroll-smooth"
           >
-            <span className="text-sm group-hover:scale-110 transition-transform">💬</span>
-            <span>Ver comentarios o dejar una duda en YouTube</span>
-            <ExternalLink className="w-3.5 h-3.5 text-cyan-400 group-hover:text-white transition-colors" />
-          </a>
-        </div>
+            
+            {/* MOBILE ONLY: Lesson Title Header (Clean and bold at top) */}
+            <div className="md:hidden px-4 pt-3.5 pb-2">
+              <h2 className="text-base sm:text-lg font-black text-white leading-snug tracking-tight">
+                {video.title}
+              </h2>
+            </div>
 
-        {/* Body Content */}
-        <div 
-          ref={scrollContainerRef}
-          className="p-4 sm:p-6 sm:pb-8 flex flex-col gap-5 max-h-[50vh] overflow-y-auto scroll-smooth"
-        >
-          
-          {/* Title */}
-          <div>
-            <h2 className="text-lg sm:text-2xl font-black text-white leading-tight">
-              {video.title}
-            </h2>
+            {/* ================= DESKTOP & MOBILE GRID ================= */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:gap-6 p-0 md:p-6 flex-1">
+              
+              {/* LEFT COLUMN: Player & Lesson Core Info */}
+              <div className="md:col-span-7 lg:col-span-7 flex flex-col gap-4">
+                
+                {/* Video Player Box */}
+                <div className="relative aspect-video w-full bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
+                  {embedUrl ? (
+                    <>
+                      <iframe
+                        key={`${video.youtubeId}-${initialStartSecond}`}
+                        id={`yt-iframe-${video.youtubeId}`}
+                        src={embedUrl}
+                        title={video.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+
+                      {/* Floating Resume Notification */}
+                      {resumeNotice && (
+                        <div className="absolute top-3 left-3 z-20 bg-blue-950/90 text-cyan-200 border border-cyan-400/60 text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-1.5 animate-fade-in backdrop-blur-sm">
+                          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>{resumeNotice}</span>
+                        </div>
+                      )}
+
+                      {/* 5s Countdown Ring Overlay */}
+                      {countdownSeconds !== null && nextVideo && (
+                        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 animate-fade-in">
+                          <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-3 sm:mb-4">
+                            <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r={circleRadius}
+                                className="stroke-zinc-800"
+                                strokeWidth="6"
+                                fill="transparent"
+                              />
+                              <circle
+                                cx="40"
+                                cy="40"
+                                r={circleRadius}
+                                className="stroke-cyan-400 transition-all duration-1000 ease-linear"
+                                strokeWidth="6"
+                                strokeDasharray={circleCircumference}
+                                strokeDashoffset={circleOffset}
+                                strokeLinecap="round"
+                                fill="transparent"
+                              />
+                            </svg>
+                            
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className="text-xl sm:text-2xl font-black text-white leading-none">
+                                {countdownSeconds}
+                              </span>
+                              <span className="text-[8px] sm:text-[9px] font-bold text-cyan-300 uppercase tracking-wider mt-0.5">
+                                seg
+                              </span>
+                            </div>
+                          </div>
+
+                          <h4 className="text-sm sm:text-base font-black text-white mb-1 flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                            <span>{isCourseLesson ? '¡Lección Completada!' : '¡Tutorial Completado!'}</span>
+                          </h4>
+                          
+                          <p className="text-xs text-zinc-300 font-medium max-w-md line-clamp-1 mb-4">
+                            Siguiente: <strong className="text-cyan-300">{nextVideo.title}</strong>
+                          </p>
+
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={handleImmediateSkip}
+                              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                            >
+                              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
+                              <span>Saltar Ahora</span>
+                            </button>
+
+                            <button
+                              onClick={handleCancelCountdown}
+                              className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Cancelar</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                      <Youtube className="w-14 h-14 text-cyan-500 mb-2" />
+                      <h3 className="text-sm font-bold text-white mb-2">{video.title}</h3>
+                      <a
+                        href={video.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-lg"
+                      >
+                        <span>Ver en YouTube</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* DESKTOP ONLY: Lesson Title & Metabar */}
+                <div className="hidden md:flex flex-col gap-2">
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    {video.category && (
+                      <span className="font-semibold text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-800">
+                        {video.category}
+                      </span>
+                    )}
+                    {isCourseLesson && (
+                      <span className="font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40">
+                        Lección {currentLessonIndex} de {totalCourseLessons}
+                      </span>
+                    )}
+                    {video.views && (
+                      <span className="text-zinc-500 font-medium">
+                        {video.views} visualizaciones
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl lg:text-2xl font-black text-white leading-tight">
+                    {video.title}
+                  </h2>
+                </div>
+
+                {/* DESKTOP ONLY: Consejo Clave & Description Box on Left */}
+                <div className="hidden md:flex flex-col gap-4">
+                  {/* Consejo Clave */}
+                  {video.hasTip && (
+                    <div className="bg-gradient-to-br from-cyan-950/40 via-zinc-900/60 to-blue-950/40 border border-cyan-500/40 rounded-2xl p-4 flex items-start gap-3.5 shadow-lg shadow-cyan-950/20">
+                      <div className="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 mt-0.5">
+                        <Lightbulb className="w-5 h-5 text-cyan-400" />
+                      </div>
+                      <div className="text-xs sm:text-sm text-cyan-100/90 leading-relaxed">
+                        <strong className="text-cyan-400 font-bold block mb-1 text-sm">
+                          Consejo clave de Capa Cero
+                        </strong>
+                        <p className="text-zinc-200">
+                          {video.consejoClave}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Description Box */}
+                  {video.hasDescription && (
+                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal">
+                      {video.description}
+                    </div>
+                  )}
+
+                  {/* Downloads if present */}
+                  {Boolean(video.hasDownloads && Array.isArray(video.downloads) && video.downloads.length > 0) && (
+                    <div className="border border-cyan-500/30 bg-cyan-950/20 rounded-2xl p-4">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Download className="w-4 h-4 text-cyan-400" />
+                          <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                            Archivos y Recursos Descargables
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-semibold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/40">
+                          {video.downloads.length} {video.downloads.length === 1 ? 'Archivo' : 'Archivos'}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {video.downloads.map((dl, idx) => (
+                          <button
+                            key={dl.id || idx}
+                            onClick={() => handleDownloadClick(dl)}
+                            className="flex items-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-200 hover:text-white border border-cyan-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>{dl.label}</span>
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Community & YouTube comments */}
+                  <a
+                    href={video.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackSocialClick && trackSocialClick('YouTube Video Direct Comment Link', video.title)}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-cyan-500/40 transition-all text-xs font-bold text-zinc-300 hover:text-white group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base group-hover:scale-110 transition-transform">💬</span>
+                      <span>¿Tienes dudas? Deja un comentario o dale Like en YouTube</span>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+                  </a>
+                </div>
+
+              </div>
+
+              {/* RIGHT COLUMN: Mobile Tabs / Desktop Navigation & Notes */}
+              <div className="md:col-span-5 lg:col-span-5 flex flex-col gap-4">
+                
+                {/* TAB SWITCHER HEADER (Segmented Bar) */}
+                <div className="flex items-center border-b border-zinc-800 bg-zinc-950 px-4 md:px-0 pt-2 md:pt-0">
+                  <button
+                    onClick={() => setActiveTab('lesson')}
+                    className={`flex-1 py-3 px-2 text-center text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer ${
+                      activeTab === 'lesson'
+                        ? 'border-cyan-400 text-cyan-400'
+                        : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    <span>Lección</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('notes')}
+                    className={`flex-1 py-3 px-2 text-center text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition-all cursor-pointer relative ${
+                      activeTab === 'notes'
+                        ? 'border-cyan-400 text-cyan-400'
+                        : 'border-transparent text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span>Apuntes</span>
+                    {currentVideoNotes.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                        {currentVideoNotes.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {/* TAB CONTENT: LECCIÓN */}
+                {activeTab === 'lesson' && (
+                  <div className="flex flex-col gap-3.5 px-4 md:px-0 pb-6 animate-fade-in">
+                    
+                    {/* MOBILE ONLY: Description Card */}
+                    {video.hasDescription && (
+                      <div className="md:hidden bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal">
+                        {video.description}
+                      </div>
+                    )}
+
+                    {/* MOBILE ONLY: Consejo Clave */}
+                    {video.hasTip && (
+                      <div className="md:hidden bg-gradient-to-br from-cyan-950/40 via-zinc-900/60 to-blue-950/40 border border-cyan-500/40 rounded-2xl p-4 flex items-start gap-3.5 shadow-lg shadow-cyan-950/20">
+                        <div className="w-9 h-9 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 mt-0.5">
+                          <Lightbulb className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <div className="text-xs sm:text-sm text-cyan-100/90 leading-relaxed">
+                          <strong className="text-cyan-400 font-bold block mb-1 text-sm">
+                            Consejo clave de Capa Cero
+                          </strong>
+                          <p className="text-zinc-200">
+                            {video.consejoClave}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* MOBILE ONLY: Downloads if present */}
+                    {Boolean(video.hasDownloads && Array.isArray(video.downloads) && video.downloads.length > 0) && (
+                      <div className="md:hidden border border-cyan-500/30 bg-cyan-950/20 rounded-2xl p-4">
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <Download className="w-4 h-4 text-cyan-400" />
+                            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                              Descargas de la lección
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-semibold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/40">
+                            {video.downloads.length} {video.downloads.length === 1 ? 'Archivo' : 'Archivos'}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {video.downloads.map((dl, idx) => (
+                            <button
+                              key={dl.id || idx}
+                              onClick={() => handleDownloadClick(dl)}
+                              className="flex items-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-200 hover:text-white border border-cyan-500/40 text-xs font-semibold px-3 py-2 rounded-xl transition-all active:scale-95 cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>{dl.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CONTINUAR VIENDO / SIGUIENTE VÍDEO (Hero Card) */}
+                    {nextVideo && onSelectVideo && (
+                      <div className="border border-zinc-800/90 bg-zinc-900/70 rounded-2xl p-4 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Play className="w-4 h-4 text-cyan-400 fill-cyan-400" />
+                            <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                              Continuar viendo
+                            </h4>
+                          </div>
+                          {isCourseLesson && (
+                            <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
+                              Siguiente Lección
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Next video card */}
+                        <div 
+                          onClick={() => handleSelectSuggestedVideo(nextVideo)}
+                          className="group/next flex items-center gap-3.5 bg-zinc-950/90 hover:bg-zinc-950 border border-zinc-800/80 hover:border-cyan-500/50 p-2.5 sm:p-3 rounded-2xl cursor-pointer transition-all duration-300 shadow-md active:scale-[0.99]"
+                        >
+                          <div className="relative w-28 sm:w-36 aspect-video rounded-xl overflow-hidden shrink-0 bg-black">
+                            <img
+                              src={nextVideo.thumbnail}
+                              alt={nextVideo.title}
+                              className="w-full h-full object-cover group-hover/next:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/40 group-hover/next:bg-black/20 flex items-center justify-center transition-colors">
+                              <div className="w-7 h-7 rounded-full bg-blue-600/95 text-white flex items-center justify-center shadow-lg group-hover/next:scale-110 transition-transform">
+                                <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
+                              </div>
+                            </div>
+                            {nextVideo.chapterNumber !== null && (
+                              <span className="absolute bottom-1 left-1 text-[9px] font-extrabold bg-black/80 text-cyan-300 px-1.5 py-0.2 rounded">
+                                #{nextVideo.chapterNumber}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider block mb-0.5 truncate">
+                              {nextVideo.category}
+                            </span>
+                            <h5 className="text-xs sm:text-sm font-bold text-white group-hover/next:text-cyan-300 transition-colors line-clamp-2 leading-tight">
+                              {nextVideo.title}
+                            </h5>
+                            <span className="text-[11px] text-zinc-400 block mt-1">
+                              {nextVideo.views ? `${nextVideo.views} visualizaciones` : 'Tutorial oficial'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Related secondary videos */}
+                        {relatedVideos.length > 0 && (
+                          <div className="pt-2 border-t border-zinc-800/80 flex flex-col gap-1.5">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                              Otros tutoriales relacionados:
+                            </span>
+                            <div className="space-y-1.5">
+                              {relatedVideos.map((rv) => (
+                                <div
+                                  key={rv.id}
+                                  onClick={() => handleSelectSuggestedVideo(rv)}
+                                  className="flex items-center gap-2.5 p-2 rounded-xl bg-zinc-950/60 hover:bg-zinc-950 border border-zinc-800/60 hover:border-zinc-700 cursor-pointer transition-all group/rel"
+                                >
+                                  <div className="relative w-14 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
+                                    <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/rel:bg-black/10">
+                                      <Play className="w-2.5 h-2.5 fill-white text-white" />
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium text-zinc-300 group-hover/rel:text-cyan-300 line-clamp-1 transition-colors flex-1">
+                                    {rv.title}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* CTA BUTTON: Abrir Apuntes */}
+                    <button
+                      onClick={() => setActiveTab('notes')}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                      <BookOpen className="w-4.5 h-4.5" />
+                      <span>Abrir apuntes</span>
+                    </button>
+
+                  </div>
+                )}
+
+                {/* TAB CONTENT: APUNTES */}
+                {activeTab === 'notes' && (
+                  <div className="flex flex-col gap-3.5 px-4 md:px-0 pb-6 animate-fade-in">
+                    
+                    {/* Header & Sync Status */}
+                    <div className="bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Bookmark className="w-4 h-4 text-cyan-400" />
+                          <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
+                            Tus Apuntes de esta Lección
+                          </h4>
+                        </div>
+
+                        {/* Indicador de Sincronización */}
+                        <div className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border">
+                          {cloudSyncStatus === 'synced' && (
+                            <span className="text-emerald-400 bg-emerald-950/80 border-emerald-500/30 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span>Nube Sincronizada</span>
+                            </span>
+                          )}
+                          {cloudSyncStatus === 'syncing' && (
+                            <span className="text-cyan-300 bg-cyan-950/80 border-cyan-500/30 flex items-center gap-1 animate-pulse">
+                              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                              <span>Sincronizando...</span>
+                            </span>
+                          )}
+                          {cloudSyncStatus === 'unlinked' && (
+                            <span className="text-zinc-400 bg-zinc-900 border-zinc-700 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                              <span>Solo Local</span>
+                            </span>
+                          )}
+                          {(cloudSyncStatus === 'offline' || cloudSyncStatus === 'error') && (
+                            <span className="text-rose-400 bg-rose-950/80 border-rose-500/30 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                              <span>Local</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Helper Note */}
+                      <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        Anota trucos o parámetros clave mientras ves el vídeo. Al hacer clic en el minuto, el reproductor saltará directo a ese instante.
+                      </p>
+
+                      {/* Formulario de entrada */}
+                      <form onSubmit={handleCreateNote} className="flex flex-col sm:flex-row items-stretch gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={noteInputText}
+                          onChange={(e) => setNoteInputText(e.target.value)}
+                          placeholder={`Escribe apunte en min ${formatSecondsToTime(currentLiveSeconds)}...`}
+                          className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-cyan-400 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!noteInputText.trim()}
+                          className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Marcar [{formatSecondsToTime(currentLiveSeconds)}]</span>
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Notes List */}
+                    {currentVideoNotes.length > 0 ? (
+                      <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+                        {currentVideoNotes.map((note) => (
+                          <div
+                            key={note.id}
+                            className="flex items-center justify-between gap-3 p-3 bg-zinc-900/60 border border-zinc-800/80 hover:border-cyan-500/40 rounded-2xl transition-colors group/note"
+                          >
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => handleSeekToTimestamp(note.timestamp)}
+                                className="inline-flex items-center gap-1 text-[11px] font-black text-cyan-300 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0 shadow-sm"
+                                title="Hacer clic para saltar a este momento del vídeo"
+                              >
+                                <Play className="w-2.5 h-2.5 fill-cyan-300" />
+                                <span>{note.timeFormatted}</span>
+                              </button>
+
+                              <p className="text-xs text-zinc-200 font-medium leading-relaxed break-words flex-1">
+                                {note.text}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => handleStartEdit(e, note)}
+                                className="text-zinc-400 hover:text-cyan-300 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                                title="Editar apunte"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handlePromptDelete(e, note)}
+                                className="text-zinc-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                                title="Eliminar apunte"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-zinc-900/40 border border-zinc-800/60 rounded-2xl p-6 text-center space-y-2">
+                        <BookOpen className="w-8 h-8 text-zinc-600 mx-auto" />
+                        <p className="text-xs text-zinc-400 font-medium">
+                          Aún no tienes notas en esta lección.
+                        </p>
+                        <p className="text-[11px] text-zinc-500">
+                          Escribe en el campo superior durante la reproducción para guardar apuntes sincronizados.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Back to Lesson CTA */}
+                    <button
+                      onClick={() => setActiveTab('lesson')}
+                      className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>Volver al resumen de la lección</span>
+                    </button>
+
+                  </div>
+                )}
+
+              </div>
+
+            </div>
+
           </div>
 
-          {/* ================= SECCIÓN DE APUNTES Y MARCADORES CON TIMESTAMP ================= */}
-          <div className="bg-zinc-900/70 border border-zinc-800/90 rounded-2xl p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          {/* ================= MOBILE BOTTOM PEEK BAR ("Tus apuntes") ================= */}
+          <div 
+            onClick={() => setActiveTab(prev => prev === 'notes' ? 'lesson' : 'notes')}
+            className="md:hidden flex items-center justify-between px-5 py-3 border-t border-zinc-800/80 bg-zinc-950/95 cursor-pointer hover:bg-zinc-900 transition-colors shrink-0"
+          >
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-white">
+                Tus apuntes {currentVideoNotes.length > 0 && `(${currentVideoNotes.length})`}
+              </span>
+            </div>
+            {activeTab === 'notes' ? (
+              <ChevronDown className="w-4 h-4 text-zinc-400" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-zinc-400" />
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* ================= MODAL EDITAR APUNTE (Z-[100]) ================= */}
+      {noteToEdit && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-zinc-900 border-2 border-cyan-500/50 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scale-up text-left">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 shrink-0">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white">Editar Apunte</h4>
+                  <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[260px]">
+                    {noteToEdit.videoTitle || video.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelEditModal}
+                className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Selector de Minuto */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-zinc-950 border border-zinc-800">
               <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-cyan-400" />
-                <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                  Mis Apuntes y Marcadores de esta Lección
-                </h4>
-              </div>
-
-              {/* Indicador de Sincronización en la Nube */}
-              <div className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border">
-                {cloudSyncStatus === 'synced' && (
-                  <span className="text-emerald-400 bg-emerald-950/80 border-emerald-500/30 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <span>Nube Sincronizada</span>
-                  </span>
-                )}
-                {cloudSyncStatus === 'syncing' && (
-                  <span className="text-cyan-300 bg-cyan-950/80 border-cyan-500/30 flex items-center gap-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                    <span>Sincronizando...</span>
-                  </span>
-                )}
-                {cloudSyncStatus === 'unlinked' && (
-                  <span className="text-zinc-400 bg-zinc-900 border-zinc-700 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                    <span>Solo Local</span>
-                  </span>
-                )}
-                {(cloudSyncStatus === 'offline' || cloudSyncStatus === 'error') && (
-                  <span className="text-rose-400 bg-rose-950/80 border-rose-500/30 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    <span>Local (Sin red)</span>
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Mensaje de ayuda explicativo y amigable */}
-            <div className="bg-cyan-950/30 border border-cyan-500/20 rounded-xl p-2.5 sm:p-3 mb-3.5 flex items-start gap-2.5">
-              <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-              <p className="text-[11px] sm:text-xs text-cyan-100/90 leading-relaxed">
-                <strong>¿Has visto un truco o ajuste importante?</strong> Guarda el momento exacto mientras ves el vídeo añadiendo una nota rápida. Así podrás repasarlo cuando quieras o hacer clic en el minuto para saltar directo a esa parte.
-              </p>
-            </div>
-
-            {/* Formulario para añadir apunte en el minuto actual */}
-            <form onSubmit={handleCreateNote} className="flex flex-col sm:flex-row items-stretch gap-2.5 mb-3.5">
-              <div className="relative flex-1">
+                <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Minuto:</span>
+                </span>
                 <input
                   type="text"
-                  value={noteInputText}
-                  onChange={(e) => setNoteInputText(e.target.value)}
-                  placeholder={`Escribe un apunte o truco en el minuto ${formatSecondsToTime(currentLiveSeconds)}...`}
-                  className="w-full bg-zinc-950 border border-zinc-800 focus:border-cyan-400 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none transition-colors"
+                  value={noteToEdit.timeFormatted}
+                  onChange={(e) => setNoteToEdit({ ...noteToEdit, timeFormatted: e.target.value })}
+                  placeholder="MM:SS"
+                  className="bg-zinc-900 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-mono font-bold w-20 text-center focus:outline-none"
                 />
               </div>
 
               <button
-                type="submit"
-                disabled={!noteInputText.trim()}
-                className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-extrabold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                type="button"
+                onClick={() => setNoteToEdit({ ...noteToEdit, timeFormatted: formatSecondsToTime(currentLiveSeconds) })}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-xs font-bold text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
               >
-                <Plus className="w-4 h-4" />
-                <span>Marcar [{formatSecondsToTime(currentLiveSeconds)}]</span>
+                <FastForward className="w-3.5 h-3.5" />
+                <span>Usar minuto actual ({formatSecondsToTime(currentLiveSeconds)})</span>
               </button>
-            </form>
-
-            {/* Lista de notas guardadas para este vídeo */}
-            {currentVideoNotes.length > 0 ? (
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {currentVideoNotes.map((note) => (
-                  <div
-                    key={note.id}
-                    className="flex items-center justify-between gap-3 p-3 bg-zinc-950/80 border border-zinc-800 hover:border-cyan-500/40 rounded-xl transition-colors group/note"
-                  >
-                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                      {/* Botón de timestamp para saltar directo a ese segundo */}
-                      <button
-                        type="button"
-                        onClick={() => handleSeekToTimestamp(note.timestamp)}
-                        className="inline-flex items-center gap-1 text-[11px] font-black text-cyan-300 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 px-2.5 py-1 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0 shadow-sm"
-                        title="Hacer clic para saltar a este momento del vídeo"
-                      >
-                        <Play className="w-2.5 h-2.5 fill-cyan-300" />
-                        <span>{note.timeFormatted}</span>
-                      </button>
-
-                      <p className="text-xs sm:text-sm text-zinc-200 font-medium leading-relaxed break-words flex-1">
-                        {note.text}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => handleStartEdit(e, note)}
-                        className="text-zinc-400 hover:text-cyan-300 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
-                        title="Editar apunte y minuto"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => handlePromptDelete(e, note)}
-                        className="text-zinc-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
-                        title="Eliminar apunte"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[11px] text-zinc-500 italic">
-                Aún no tienes notas guardadas en este vídeo. Pulsa "Marcar" durante la reproducción para guardar trucos con su minuto exacto.
-              </p>
-            )}
-          </div>
-
-          {/* Description (ONLY if present) */}
-          {video.hasDescription && (
-            <div className="text-xs sm:text-sm text-zinc-300 font-normal leading-relaxed bg-zinc-900/40 p-4 rounded-xl border border-zinc-800/60">
-              {video.description}
-            </div>
-          )}
-
-          {/* Consejo Clave Box (ONLY if present) */}
-          {video.hasTip && (
-            <div className="bg-blue-950/40 border border-cyan-500/30 rounded-xl p-4 flex items-start gap-3">
-              <Lightbulb className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm text-cyan-100/90 leading-relaxed">
-                <strong className="text-cyan-300 font-bold block mb-0.5">
-                  Consejo Clave de Capa Cero:
-                </strong>
-                {video.consejoClave}
-              </div>
-            </div>
-          )}
-
-          {/* Downloads Section (SOLO APARECE SI TIENE ENLACES REALES EN GOOGLE SHEETS) */}
-          {Boolean(video.hasDownloads && Array.isArray(video.downloads) && video.downloads.length > 0) && (
-            <div className="border border-cyan-500/30 bg-cyan-950/20 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-cyan-400" />
-                  <h4 className="text-sm font-bold text-white">Archivos y Recursos Descargables</h4>
-                </div>
-                <span className="text-[11px] font-semibold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/40">
-                  {video.downloads.length} {video.downloads.length === 1 ? 'Archivo' : 'Archivos'}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-2.5">
-                {video.downloads.map((dl, idx) => (
-                  <button
-                    key={dl.id || idx}
-                    onClick={() => handleDownloadClick(dl)}
-                    className="flex items-center gap-2 bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-200 hover:text-white border border-cyan-500/40 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl transition-all active:scale-95 cursor-pointer"
-                  >
-                    <Download className="w-4 h-4 text-cyan-400" />
-                    <span>{dl.label}</span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-                  </button>
-                ))}
-              </div>
-
-              {showSubReminder && (
-                <div className="mt-3.5 pt-3 border-t border-cyan-500/20 text-xs text-cyan-200/90 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>¡Descarga abierta! Si te ha servido, no olvides suscribirte al canal.</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ================= ENCADENADO DE VÍDEOS: SIGUIENTE VÍDEO SUGERIDO ================= */}
-          {nextVideo && onSelectVideo && (
-            <div className="border border-zinc-800 bg-zinc-900/60 rounded-2xl p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2">
-                  {isCourseLesson ? (
-                    <BookOpen className="w-4 h-4 text-cyan-400" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                  )}
-                  <h4 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">
-                    {isCourseLesson ? 'Siguiente Lección del Curso' : 'Siguiente Tutorial Recomendado'}
-                  </h4>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/30">
-                  Continuar Viendo
-                </span>
-              </div>
-
-              {/* Tarjeta Principal del Siguiente Vídeo */}
-              <div 
-                onClick={() => handleSelectSuggestedVideo(nextVideo)}
-                className="group/next flex flex-col sm:flex-row items-center gap-4 bg-zinc-950/80 hover:bg-zinc-950 border border-zinc-800 hover:border-cyan-500/50 p-3 rounded-xl cursor-pointer transition-all duration-300 shadow-md"
-              >
-                <div className="relative w-full sm:w-40 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-                  <img
-                    src={nextVideo.thumbnail}
-                    alt={nextVideo.title}
-                    className="w-full h-full object-cover group-hover/next:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 group-hover/next:bg-black/20 flex items-center justify-center transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg group-hover/next:scale-110 transition-transform">
-                      <Play className="w-4 h-4 fill-white translate-x-0.5" />
-                    </div>
-                  </div>
-                  {nextVideo.chapterNumber !== null && (
-                    <span className="absolute bottom-1.5 left-1.5 text-[10px] font-extrabold bg-black/80 text-cyan-300 px-1.5 py-0.5 rounded">
-                      #{nextVideo.chapterNumber}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex-1 flex flex-col justify-between w-full">
-                  <div>
-                    <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wide block mb-1">
-                      {nextVideo.category}
-                    </span>
-                    <h5 className="text-xs sm:text-sm font-bold text-white group-hover/next:text-cyan-300 transition-colors line-clamp-2">
-                      {nextVideo.title}
-                    </h5>
-                  </div>
-
-                  <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-[11px] text-zinc-400">
-                      {nextVideo.views ? `${nextVideo.views} visualizaciones` : 'Tutorial oficial'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300 group-hover/next:translate-x-1 transition-transform">
-                      <span>Reproducir ahora</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Vídeos Relacionados Secundarios */}
-              {relatedVideos.length > 0 && (
-                <div className="mt-3.5 pt-3 border-t border-zinc-800/80">
-                  <span className="text-[11px] font-semibold text-zinc-400 block mb-2">
-                    Otros tutoriales relacionados:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {relatedVideos.map((rv) => (
-                      <div
-                        key={rv.id}
-                        onClick={() => handleSelectSuggestedVideo(rv)}
-                        className="flex items-center gap-2.5 p-2 rounded-lg bg-zinc-950/60 hover:bg-zinc-950 border border-zinc-800/60 hover:border-zinc-700 cursor-pointer transition-all group/rel"
-                      >
-                        <div className="relative w-16 aspect-video rounded overflow-hidden shrink-0 bg-black">
-                          <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/rel:bg-black/10">
-                            <Play className="w-3 h-3 fill-white text-white" />
-                          </div>
-                        </div>
-                        <span className="text-xs font-medium text-zinc-300 group-hover/rel:text-cyan-300 line-clamp-1 transition-colors">
-                          {rv.title}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Conversion Subscribe Banner */}
-          <div className="bg-gradient-to-r from-blue-950/50 via-zinc-900 to-cyan-950/50 border border-cyan-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-lg">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600/20 border border-cyan-500/40 flex items-center justify-center shrink-0">
-                <Heart className="w-5 h-5 text-cyan-400 fill-cyan-400/30" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white">¿Te ha ayudado este vídeo?</h4>
-                <p className="text-xs text-zinc-400">Suscríbete a Capa Cero para no perderte el próximo truco.</p>
-              </div>
             </div>
 
-            <a
-              href={subscribeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackSubscribe(`Modal Vídeo: ${video.title}`, video)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95 shrink-0 border border-cyan-400/30 cursor-pointer"
-            >
-              <Youtube className="w-4 h-4 text-white" />
-              <span>Suscribirme al Canal</span>
-            </a>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-
-    {/* Modal Grande de Edición de Apunte (Capa Superior Viewport Z-[100]) */}
-    {noteToEdit && (
-      <div 
-        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="bg-zinc-900 border-2 border-cyan-500/50 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-scale-up text-left">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-2xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 shrink-0">
-                <Edit3 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-base font-black text-white">Editar Apunte</h4>
-                <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[280px]">
-                  {noteToEdit.videoTitle || video.title}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleCancelEditModal}
-              className="p-1.5 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Selector de Minuto y Botón de Segundo Actual */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-zinc-950 border border-zinc-800">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 shrink-0">
-                <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Minuto:</span>
-              </span>
-              <input
-                type="text"
-                value={noteToEdit.timeFormatted}
-                onChange={(e) => setNoteToEdit({ ...noteToEdit, timeFormatted: e.target.value })}
-                placeholder="MM:SS"
-                className="bg-zinc-900 border border-zinc-700 focus:border-cyan-400 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-mono font-bold w-24 text-center focus:outline-none"
+            {/* Textarea */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-400">Texto del apunte:</label>
+              <textarea
+                value={noteToEdit.text}
+                onChange={(e) => setNoteToEdit({ ...noteToEdit, text: e.target.value })}
+                rows={4}
+                className="w-full bg-zinc-950 border-2 border-zinc-800 focus:border-cyan-400 rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none resize-none leading-relaxed"
+                placeholder="Escribe el contenido del apunte..."
+                autoFocus
               />
             </div>
 
-            <button
-              type="button"
-              onClick={() => setNoteToEdit({ ...noteToEdit, timeFormatted: formatSecondsToTime(currentLiveSeconds) })}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-xs font-bold text-cyan-300 transition-all cursor-pointer active:scale-95 shadow-sm"
-              title="Poner el segundo exacto que se está reproduciendo ahora"
-            >
-              <FastForward className="w-3.5 h-3.5" />
-              <span>Usar minuto actual ({formatSecondsToTime(currentLiveSeconds)})</span>
-            </button>
-          </div>
-
-          {/* Textarea de la Nota */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-zinc-400">Texto del apunte:</label>
-            <textarea
-              value={noteToEdit.text}
-              onChange={(e) => setNoteToEdit({ ...noteToEdit, text: e.target.value })}
-              rows={4}
-              className="w-full bg-zinc-950 border-2 border-zinc-800 focus:border-cyan-400 rounded-2xl p-3.5 text-xs sm:text-sm text-white focus:outline-none resize-none leading-relaxed"
-              placeholder="Escribe el contenido del apunte..."
-              autoFocus
-            />
-          </div>
-
-          {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={handleCancelEditModal}
-              className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveEditModal}
-              disabled={!noteToEdit.text.trim()}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 shadow-lg shadow-cyan-950 transition-all cursor-pointer active:scale-95"
-            >
-              <Check className="w-3.5 h-3.5" />
-              <span>Guardar Cambios</span>
-            </button>
+            {/* Botones de acción */}
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleCancelEditModal}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditModal}
+                disabled={!noteToEdit.text.trim()}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 shadow-lg shadow-cyan-950 transition-all cursor-pointer active:scale-95"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Guardar Cambios</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* Modal Grande de Confirmación para Eliminar Apunte (Capa Superior Viewport Z-[100]) */}
-    {noteToDelete && (
-      <div 
-        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="bg-zinc-900 border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-left">
-          <div className="flex items-start gap-3.5">
-            <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 shrink-0">
-              <AlertCircle className="w-6 h-6" />
+      {/* ================= MODAL ELIMINAR APUNTE (Z-[100]) ================= */}
+      {noteToDelete && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in cursor-default"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-zinc-900 border-2 border-rose-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up text-left">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 shrink-0">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-black text-white">¿Eliminar este apunte?</h4>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Esta acción no se puede deshacer y se sincronizará con tus otros dispositivos.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-black text-white">¿Eliminar este apunte?</h4>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Esta acción no se puede deshacer y se sincronizará con tus otros dispositivos.
+
+            {/* Previsualización del apunte */}
+            <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-zinc-300 truncate max-w-[200px]">
+                  {noteToDelete.videoTitle || video.title}
+                </span>
+                <span className="text-cyan-400 font-mono font-bold">
+                  {noteToDelete.timeFormatted || '00:00'}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-200 italic line-clamp-3">
+                "{noteToDelete.text}"
               </p>
             </div>
-          </div>
 
-          {/* Previsualización del apunte */}
-          <div className="p-3 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="font-bold text-zinc-300 truncate max-w-[200px]">
-                {noteToDelete.videoTitle || video.title}
-              </span>
-              <span className="text-cyan-400 font-mono font-bold">
-                {noteToDelete.timeFormatted || '00:00'}
-              </span>
+            {/* Botones de acción */}
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setNoteToDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950 transition-all cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Sí, Eliminar Apunte</span>
+              </button>
             </div>
-            <p className="text-xs text-zinc-200 italic line-clamp-3">
-              "{noteToDelete.text}"
-            </p>
-          </div>
-
-          {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => setNoteToDelete(null)}
-              className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 transition-colors cursor-pointer text-center"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirmDelete}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-500 shadow-lg shadow-rose-950 transition-all cursor-pointer active:scale-95"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Sí, Eliminar Apunte</span>
-            </button>
           </div>
         </div>
-      </div>
-    )}
-  </>
+      )}
+    </>
   );
 }
