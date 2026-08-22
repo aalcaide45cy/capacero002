@@ -237,7 +237,6 @@ export default function V4Hub() {
         }}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
         onOpenInstall={() => setIsInstallModalOpen(true)}
-        onOpenNotification={() => setIsNotificationModalOpen(true)}
       >
         <V4SearchBar
           searchQuery={searchQuery}
@@ -257,6 +256,14 @@ export default function V4Hub() {
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
             onSelectVideo={(v) => setSelectedVideoModal(v)}
+          />
+        )}
+
+        {activeTab === 'doctor' && (
+          <V4Doctor3D
+            videos={videos}
+            onSelectVideo={(v) => setSelectedVideoModal(v)}
+            onSearchWithQuery={handleSearchWithQuery}
           />
         )}
 

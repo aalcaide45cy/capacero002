@@ -569,15 +569,6 @@ export const trackSocialClick = (platform) => {
     }
 };
 
-// 8. Clics de compatibilidad con V2 / Afiliados
-export const trackProductClick = (product) => trackCardClick(product);
-export const trackAffiliateClick = (product) => {
-    saveEvent({
-        sessionId: getSessionId(),
-        type: 'affiliate_click',
-        details: { name: product.name, id: product.id, price: product.price }
-    });
-};
 export const trackFilterSelect = (filter) => {
     saveEvent({ sessionId: getSessionId(), type: 'filter_select', details: { filter } });
 };

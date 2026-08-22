@@ -1,8 +1,6 @@
 # Robots.txt para Capa Cero 3D (www.capacero3d.com)
 User-agent: *
 Allow: /
-Disallow: /v2-back
-Disallow: /v2-back/
 Disallow: /estadisticas
 Disallow: /editor
 

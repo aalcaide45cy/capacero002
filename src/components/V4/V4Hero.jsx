@@ -49,7 +49,6 @@ export default function V4Hero({
   onOpenTab,
   onOpenCollaboration,
   onOpenInstall,
-  onOpenNotification,
   isSearching = false,
   children
 }) {
