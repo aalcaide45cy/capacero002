@@ -1,4 +1,41 @@
 {
+    "redirects": [
+        {
+            "source": "/cursos",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/cursos/:path*",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/v2-back",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/v2-back/:path*",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/producto/:path*",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/v4",
+            "destination": "/",
+            "permanent": true
+        },
+        {
+            "source": "/v4/:path*",
+            "destination": "/",
+            "permanent": true
+        }
+    ],
     "rewrites": [
         {
             "source": "/(.*)",

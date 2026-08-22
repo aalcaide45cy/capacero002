@@ -86,7 +86,12 @@ function App() {
         );
     }
 
-    // 6. RUTA PRINCIPAL POR DEFECTO (/) Y (/v4): Videoteca y Hub Oficial Capa Cero
+    // 6. Limpieza automática de URL en el navegador para rutas eliminadas (/cursos, /v2-back, /producto/*, etc.)
+    if (currentPath !== '/' && currentPath !== '') {
+        window.history.replaceState({}, '', '/');
+    }
+
+    // 7. RUTA PRINCIPAL (/)
     return <V4Hub />;
 }
 
