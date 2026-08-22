@@ -42,15 +42,19 @@ function formatPublishedDate(dateStr) {
   }
 }
 
-// Cálculo inteligente de nivel según capítulo o categoría
+// Cálculo inteligente de nivel según campo directo, capítulo o categoría
 function calculateLevel(video) {
   if (!video) return 'Intermedio';
+  if (video.nivel || video.Nivel) {
+    return String(video.nivel || video.Nivel).trim();
+  }
   const cat = (video.category || '').toLowerCase();
+  const title = (video.title || '').toLowerCase();
   const ch = video.chapterNumber;
   if (ch !== null && ch <= 3) return 'Iniciación';
   if (ch !== null && ch > 10) return 'Avanzado';
-  if (cat.includes('calibracion') || cat.includes('perfil') || cat.includes('avanzado')) return 'Avanzado';
-  if (cat.includes('basico') || cat.includes('intro') || cat.includes('empezar')) return 'Principiante';
+  if (cat.includes('calibracion') || cat.includes('perfil') || cat.includes('avanzado') || title.includes('secreto') || title.includes('avanzad')) return 'Avanzado';
+  if (cat.includes('basico') || cat.includes('intro') || cat.includes('empezar') || title.includes('primeros pasos') || title.includes('empezar')) return 'Iniciación';
   return 'Intermedio';
 }
 
@@ -60,7 +64,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const [activeTab, setActiveTab] = useState('lesson'); // 'lesson' | 'notes'
   const [countdownSeconds, setCountdownSeconds] = useState(null); // 5, 4, 3, 2, 1, 0 o null
   const [showShareToast, setShowShareToast] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [videoDuration, setVideoDuration] = useState(null);
   
   // Estados para reanudación de tiempo y notas
@@ -168,12 +171,12 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       next = sortedByPopularity[0];
     }
 
-    // 4. Vídeos relacionados adicionales
+    // 4. Vídeos relacionados adicionales (ampliado a 6 lecciones relevantes)
     const remaining = otherVideos.filter(v => !next || v.id !== next.id);
     const sameCatRemaining = remaining.filter(v => (v.category || '').toLowerCase().trim() === (video.category || '').toLowerCase().trim());
-    const related = sameCatRemaining.length >= 2 
-      ? sameCatRemaining.slice(0, 2) 
-      : [...sameCatRemaining, ...remaining.filter(v => !sameCatRemaining.includes(v))].slice(0, 2);
+    const related = sameCatRemaining.length >= 6 
+      ? sameCatRemaining.slice(0, 6) 
+      : [...sameCatRemaining, ...remaining.filter(v => !sameCatRemaining.includes(v))].slice(0, 6);
 
     return {
       nextVideo: next,
@@ -514,8 +517,8 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           onClick={onClose}
         />
 
-        {/* Modal Container */}
-        <div className="relative w-full h-full md:h-auto md:max-h-[92vh] md:max-w-5xl lg:max-w-6xl bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
+        {/* Modal Container: Widescreen Cinematic for Desktop */}
+        <div className="relative w-full h-full md:h-auto md:max-h-[95vh] md:max-w-6xl lg:max-w-7xl xl:max-w-[1440px] bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
           
           {/* ================= TOP HEADER BAR ================= */}
           <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 border-b border-zinc-800/80 bg-zinc-950 md:bg-zinc-900/60 shrink-0">
@@ -623,10 +626,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           >
             
             {/* ================= DESKTOP & MOBILE GRID ================= */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:gap-6 p-0 md:p-6 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:gap-6 lg:gap-8 p-0 md:p-6 flex-1">
               
               {/* LEFT COLUMN: Player, Metadata Bar & Lesson Core Info */}
-              <div className="md:col-span-7 lg:col-span-7 flex flex-col gap-4">
+              <div className="md:col-span-7 lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
                 {/* Video Player Box */}
                 <div className="relative aspect-video w-full bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
@@ -732,15 +735,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   )}
                 </div>
 
-                {/* ================= METADATA BAR (EXACTAMENTE COMO LA IMAGEN 2) ================= */}
-                <div className="mx-3 sm:mx-4 md:mx-0 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-2 overflow-x-auto shadow-md">
+                {/* ================= METADATA BAR (LIMPIA, SIN SCROLLBAR HORIZONTAL Y SIN BOTÓN GUARDAR) ================= */}
+                <div className="mx-3 sm:mx-4 md:mx-0 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-md">
                   
                   {/* Left Metadata: Duración | Nivel | Software | Publicado */}
-                  <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-5">
                     
                     {/* Duración */}
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-zinc-400" />
+                      <Clock className="w-4 h-4 text-zinc-400 shrink-0" />
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-white leading-none">
                           {durationDisplay}
@@ -752,11 +755,11 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     </div>
 
                     {/* Separador */}
-                    <div className="h-6 w-px bg-zinc-800" />
+                    <div className="hidden sm:block h-6 w-px bg-zinc-800" />
 
                     {/* Nivel */}
                     <div className="flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-emerald-400" />
+                      <BarChart2 className="w-4 h-4 text-emerald-400 shrink-0" />
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-emerald-400 leading-none">
                           {levelDisplay}
@@ -768,13 +771,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     </div>
 
                     {/* Separador */}
-                    <div className="h-6 w-px bg-zinc-800" />
+                    <div className="hidden sm:block h-6 w-px bg-zinc-800" />
 
                     {/* Software */}
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-zinc-400" />
+                      <Layers className="w-4 h-4 text-zinc-400 shrink-0" />
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-white leading-none truncate max-w-[90px] sm:max-w-[120px]">
+                        <span className="text-xs font-black text-white leading-none truncate max-w-[130px]">
                           {softwareDisplay}
                         </span>
                         <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
@@ -784,11 +787,11 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     </div>
 
                     {/* Separador */}
-                    <div className="h-6 w-px bg-zinc-800" />
+                    <div className="hidden sm:block h-6 w-px bg-zinc-800" />
 
                     {/* Publicado */}
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-zinc-400" />
+                      <Calendar className="w-4 h-4 text-zinc-400 shrink-0" />
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-white leading-none">
                           {publishedDisplay}
@@ -801,32 +804,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
                   </div>
 
-                  {/* Right Metadata: Likes | Guardar */}
-                  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 pl-2 border-l border-zinc-800">
-                    
-                    {/* Likes */}
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
-                      <ThumbsUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400" />
-                      <span>{likesDisplay}</span>
-                    </div>
-
-                    {/* Separador */}
-                    <div className="h-6 w-px bg-zinc-800" />
-
-                    {/* Guardar / Bookmark */}
-                    <button
-                      onClick={handleToggleSave}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isSaved || currentVideoNotes.length > 0
-                          ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-300'
-                          : 'bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700'
-                      }`}
-                      title="Guardar lección en apuntes"
-                    >
-                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-cyan-300 text-cyan-300' : ''}`} />
-                      <span>{isSaved ? 'Guardado' : 'Guardar'}</span>
-                    </button>
-
+                  {/* Right: Likes */}
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 ml-auto sm:ml-0 pl-2 sm:pl-3 sm:border-l border-zinc-800">
+                    <ThumbsUp className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <span>{likesDisplay}</span>
                   </div>
 
                 </div>
@@ -914,7 +895,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               </div>
 
               {/* RIGHT COLUMN: Mobile Tabs / Desktop Navigation & Notes */}
-              <div className="md:col-span-5 lg:col-span-5 flex flex-col gap-4">
+              <div className="md:col-span-5 lg:col-span-5 xl:col-span-5 flex flex-col gap-4">
                 
                 {/* TAB SWITCHER HEADER (Segmented Bar) */}
                 <div className="flex items-center border-b border-zinc-800 bg-zinc-950 px-4 md:px-0 pt-2 md:pt-0">
@@ -1059,28 +1040,35 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                           </div>
                         </div>
 
-                        {/* Related secondary videos */}
+                        {/* Related secondary videos (Grid de hasta 6 vídeos) */}
                         {relatedVideos.length > 0 && (
-                          <div className="pt-2 border-t border-zinc-800/80 flex flex-col gap-1.5">
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                              Otros tutoriales relacionados:
+                          <div className="pt-2 border-t border-zinc-800/80 flex flex-col gap-2">
+                            <span className="text-[10px] sm:text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                              Otros tutoriales relacionados ({relatedVideos.length}):
                             </span>
-                            <div className="space-y-1.5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-0.5">
                               {relatedVideos.map((rv) => (
                                 <div
                                   key={rv.id}
                                   onClick={() => handleSelectSuggestedVideo(rv)}
-                                  className="flex items-center gap-2.5 p-2 rounded-xl bg-zinc-950/60 hover:bg-zinc-950 border border-zinc-800/60 hover:border-zinc-700 cursor-pointer transition-all group/rel"
+                                  className="flex items-center gap-2.5 p-2 rounded-xl bg-zinc-950/70 hover:bg-zinc-950 border border-zinc-800/70 hover:border-cyan-500/50 cursor-pointer transition-all group/rel"
                                 >
-                                  <div className="relative w-14 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-                                    <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover" />
+                                  <div className="relative w-16 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
+                                    <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover group-hover/rel:scale-105 transition-transform duration-300" />
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/rel:bg-black/10">
-                                      <Play className="w-2.5 h-2.5 fill-white text-white" />
+                                      <Play className="w-3 h-3 fill-white text-white" />
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium text-zinc-300 group-hover/rel:text-cyan-300 line-clamp-1 transition-colors flex-1">
-                                    {rv.title}
-                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-medium text-zinc-300 group-hover/rel:text-cyan-300 line-clamp-2 transition-colors leading-tight">
+                                      {rv.title}
+                                    </span>
+                                    {rv.category && (
+                                      <span className="text-[10px] text-zinc-500 truncate block mt-0.5">
+                                        {rv.category}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
