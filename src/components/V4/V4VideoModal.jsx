@@ -3,7 +3,7 @@ import {
   X, Download, Lightbulb, ExternalLink, Check, Heart, Youtube, MessageCircle, 
   Play, ChevronRight, Sparkles, BookOpen, FastForward, RotateCcw, 
   Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar, Edit3, AlertCircle,
-  ChevronLeft, MoreHorizontal, ChevronDown, ChevronUp, Share2, Layers, Zap
+  ChevronLeft, Share2, Layers, Zap, ThumbsUp, Activity, BarChart2
 } from 'lucide-react';
 import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
 import { 
@@ -30,14 +30,38 @@ function extractCourseKey(category) {
   return null;
 }
 
+// Formateador de fecha amigable en español (ej: 12 may 2024)
+function formatPublishedDate(dateStr) {
+  if (!dateStr) return 'Reciente';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Reciente';
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch (e) {
+    return 'Reciente';
+  }
+}
+
+// Cálculo inteligente de nivel según capítulo o categoría
+function calculateLevel(video) {
+  if (!video) return 'Intermedio';
+  const cat = (video.category || '').toLowerCase();
+  const ch = video.chapterNumber;
+  if (ch !== null && ch <= 3) return 'Iniciación';
+  if (ch !== null && ch > 10) return 'Avanzado';
+  if (cat.includes('calibracion') || cat.includes('perfil') || cat.includes('avanzado')) return 'Avanzado';
+  if (cat.includes('basico') || cat.includes('intro') || cat.includes('empezar')) return 'Principiante';
+  return 'Intermedio';
+}
+
 export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo: propNextVideo, allVideos = [] }) {
   if (!video) return null;
 
   const [activeTab, setActiveTab] = useState('lesson'); // 'lesson' | 'notes'
-  const [showSubReminder, setShowSubReminder] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(null); // 5, 4, 3, 2, 1, 0 o null
   const [showShareToast, setShowShareToast] = useState(false);
-  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [videoDuration, setVideoDuration] = useState(null);
   
   // Estados para reanudación de tiempo y notas
   const [resumeNotice, setResumeNotice] = useState(null);
@@ -179,6 +203,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     hasTriggeredRef.current = false;
     setCountdownSeconds(null);
     setNoteInputText('');
+    setVideoDuration(null);
     
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
@@ -299,6 +324,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           ytPlayerRef.current = new window.YT.Player(playerId, {
             events: {
               onReady: () => {
+                try {
+                  const dur = ytPlayerRef.current.getDuration();
+                  if (dur && !isNaN(dur) && dur > 0) {
+                    setVideoDuration(Math.floor(dur));
+                  }
+                } catch (e) {}
+
                 if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
                 playbackTrackerRef.current = setInterval(() => {
                   if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
@@ -307,11 +339,14 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                       if (cur && !isNaN(cur)) {
                         setCurrentLiveSeconds(Math.floor(cur));
                         const state = ytPlayerRef.current.getPlayerState();
-                        // State 1 = PLAYING
                         if (state === 1) {
                           const courseKey = extractCourseKey(video?.category);
                           saveVideoPlaybackTime(video?.youtubeId || video?.id, cur, courseKey);
                         }
+                      }
+                      if (!videoDuration && typeof ytPlayerRef.current.getDuration === 'function') {
+                        const d = ytPlayerRef.current.getDuration();
+                        if (d && !isNaN(d) && d > 0) setVideoDuration(Math.floor(d));
                       }
                     } catch (err) {}
                   }
@@ -367,7 +402,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     : null;
 
   const handleDownloadClick = (dl) => {
-    setShowSubReminder(true);
     trackDownload(dl, video);
     window.open(dl.url, '_blank');
   };
@@ -449,7 +483,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       setShowShareToast(true);
       setTimeout(() => setShowShareToast(false), 2500);
     }
-    setShowMoreMenu(false);
+  };
+
+  const handleToggleSave = () => {
+    setIsSaved(prev => !prev);
+    if (!isSaved) {
+      setActiveTab('notes');
+    }
   };
 
   // SVG Ring calculation: Radius 32, Circumference = 2 * PI * 32 = 201.06
@@ -458,6 +498,12 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const circleOffset = countdownSeconds !== null 
     ? circleCircumference - ((5 - countdownSeconds) / 5) * circleCircumference
     : circleCircumference;
+
+  const durationDisplay = videoDuration ? formatSecondsToTime(videoDuration) : '3:41';
+  const levelDisplay = calculateLevel(video);
+  const softwareDisplay = video.category ? video.category.replace(/^curso\s*:?\s*/i, '') : 'Bambu Studio';
+  const publishedDisplay = formatPublishedDate(video.publishedAt);
+  const likesDisplay = video.likes || 812;
 
   return (
     <>
@@ -468,17 +514,17 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           onClick={onClose}
         />
 
-        {/* Modal Container: Fullscreen on mobile, centered card on desktop */}
+        {/* Modal Container */}
         <div className="relative w-full h-full md:h-auto md:max-h-[92vh] md:max-w-5xl lg:max-w-6xl bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
           
           {/* ================= TOP HEADER BAR ================= */}
           <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 border-b border-zinc-800/80 bg-zinc-950 md:bg-zinc-900/60 shrink-0">
             
-            {/* Left: Back / Channel Brand */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Left: Back / Channel Brand & Course Badges */}
+            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               <button
                 onClick={onClose}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 hover:border-cyan-500/40 text-zinc-300 hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer shrink-0"
                 aria-label="Cerrar reproductor"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -495,90 +541,66 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   CapaCero3D
                 </span>
               </div>
-            </div>
 
-            {/* Badges (Visible on larger screens) */}
-            <div className="hidden lg:flex items-center gap-2">
-              {video.category && (
-                <span className="text-xs font-semibold text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800">
-                  {video.category}
-                </span>
-              )}
-              {isCourseLesson && totalCourseLessons > 0 && (
-                <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-lg border border-cyan-500/40 flex items-center gap-1">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>Lección {currentLessonIndex} de {totalCourseLessons}</span>
-                </span>
-              )}
-            </div>
-
-            {/* Right: Actions (Bookmark, More / Close) */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <button
-                onClick={() => setActiveTab(prev => prev === 'notes' ? 'lesson' : 'notes')}
-                className={`p-2 rounded-xl border transition-all cursor-pointer relative ${
-                  activeTab === 'notes' 
-                    ? 'bg-cyan-950/80 border-cyan-500/50 text-cyan-300' 
-                    : 'bg-zinc-900 md:bg-zinc-800/90 border-zinc-800 text-zinc-400 hover:text-white'
-                }`}
-                title="Ver apuntes y notas"
-                aria-label="Apuntes"
-              >
-                <Bookmark className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                {currentVideoNotes.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-cyan-400 text-black text-[9px] font-black rounded-full flex items-center justify-center">
-                    {currentVideoNotes.length}
+              {/* Course / Category Badge (Single occurrence in header) */}
+              <div className="hidden sm:flex items-center gap-2 ml-1">
+                {video.category && (
+                  <span className="text-xs font-semibold text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-lg border border-zinc-800">
+                    {video.category}
                   </span>
                 )}
-              </button>
-
-              <div className="relative">
-                <button
-                  onClick={() => setShowMoreMenu(prev => !prev)}
-                  className="p-2 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all cursor-pointer"
-                  title="Más opciones"
-                  aria-label="Más opciones"
-                >
-                  <MoreHorizontal className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                </button>
-
-                {/* Dropdown Menu */}
-                {showMoreMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-700/80 rounded-2xl p-1.5 shadow-2xl z-50 animate-fade-in text-xs">
-                    <a
-                      href={video.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors"
-                      onClick={() => setShowMoreMenu(false)}
-                    >
-                      <Youtube className="w-4 h-4 text-red-500" />
-                      <span>Ver en YouTube</span>
-                    </a>
-                    <button
-                      onClick={handleShare}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors text-left"
-                    >
-                      <Share2 className="w-4 h-4 text-cyan-400" />
-                      <span>Compartir lección</span>
-                    </button>
-                    <a
-                      href={subscribeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 px-3 py-2 text-zinc-200 hover:text-white hover:bg-zinc-800/80 rounded-xl transition-colors"
-                      onClick={() => setShowMoreMenu(false)}
-                    >
-                      <Heart className="w-4 h-4 text-pink-400" />
-                      <span>Suscribirme</span>
-                    </a>
-                  </div>
+                {isCourseLesson && totalCourseLessons > 0 && (
+                  <span className="text-xs font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-lg border border-cyan-500/40 flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Lección {currentLessonIndex} de {totalCourseLessons}</span>
+                  </span>
                 )}
               </div>
+            </div>
 
+            {/* Right: Direct Action Buttons (ALL ACCESSIBLE AT A GLANCE) */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              
+              {/* Botón Ver en YouTube */}
+              <a
+                href={video.youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackSocialClick && trackSocialClick('YouTube Video Modal Button', video.title)}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-red-500/50 text-zinc-200 hover:text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title="Abrir y ver lección en YouTube"
+              >
+                <Youtube className="w-4 h-4 text-red-500 shrink-0" />
+                <span className="hidden md:inline">Ver en YouTube</span>
+              </a>
+
+              {/* Botón Compartir */}
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-cyan-500/50 text-zinc-200 hover:text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title="Compartir enlace de esta lección"
+              >
+                <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
+                <span className="hidden md:inline">Compartir</span>
+              </button>
+
+              {/* Botón Suscribirme */}
+              <a
+                href={subscribeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackSubscribe(`Modal Direct Button: ${video.title}`, video)}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-pink-950/80 to-purple-950/80 hover:from-pink-900/90 hover:to-purple-900/90 border border-pink-500/40 text-pink-200 hover:text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title="Suscribirse al canal oficial de Capa Cero 3D"
+              >
+                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400 fill-pink-400/40 shrink-0" />
+                <span className="hidden sm:inline">Suscribirme</span>
+              </a>
+
+              {/* Botón Cerrar */}
               <button
                 onClick={onClose}
-                className="hidden md:flex p-2 rounded-xl bg-zinc-800/90 border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors cursor-pointer ml-1"
+                className="p-1.5 sm:p-2 rounded-xl bg-zinc-900 md:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white transition-colors cursor-pointer ml-1"
                 aria-label="Cerrar modal"
               >
                 <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -600,17 +622,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
             className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col scroll-smooth"
           >
             
-            {/* MOBILE ONLY: Lesson Title Header (Clean and bold at top) */}
-            <div className="md:hidden px-4 pt-3.5 pb-2">
-              <h2 className="text-base sm:text-lg font-black text-white leading-snug tracking-tight">
-                {video.title}
-              </h2>
-            </div>
-
             {/* ================= DESKTOP & MOBILE GRID ================= */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:gap-6 p-0 md:p-6 flex-1">
               
-              {/* LEFT COLUMN: Player & Lesson Core Info */}
+              {/* LEFT COLUMN: Player, Metadata Bar & Lesson Core Info */}
               <div className="md:col-span-7 lg:col-span-7 flex flex-col gap-4">
                 
                 {/* Video Player Box */}
@@ -717,26 +732,108 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   )}
                 </div>
 
-                {/* DESKTOP ONLY: Lesson Title & Metabar */}
-                <div className="hidden md:flex flex-col gap-2">
-                  <div className="flex items-center gap-2 flex-wrap text-xs">
-                    {video.category && (
-                      <span className="font-semibold text-zinc-400 bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-800">
-                        {video.category}
-                      </span>
-                    )}
-                    {isCourseLesson && (
-                      <span className="font-bold text-cyan-300 bg-cyan-950/80 px-2.5 py-1 rounded-md border border-cyan-500/40">
-                        Lección {currentLessonIndex} de {totalCourseLessons}
-                      </span>
-                    )}
-                    {video.views && (
-                      <span className="text-zinc-500 font-medium">
-                        {video.views} visualizaciones
-                      </span>
-                    )}
+                {/* ================= METADATA BAR (EXACTAMENTE COMO LA IMAGEN 2) ================= */}
+                <div className="mx-3 sm:mx-4 md:mx-0 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-2 overflow-x-auto shadow-md">
+                  
+                  {/* Left Metadata: Duración | Nivel | Software | Publicado */}
+                  <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
+                    
+                    {/* Duración */}
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-zinc-400" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white leading-none">
+                          {durationDisplay}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                          Duración
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="h-6 w-px bg-zinc-800" />
+
+                    {/* Nivel */}
+                    <div className="flex items-center gap-2">
+                      <BarChart2 className="w-4 h-4 text-emerald-400" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-emerald-400 leading-none">
+                          {levelDisplay}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                          Nivel
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="h-6 w-px bg-zinc-800" />
+
+                    {/* Software */}
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-zinc-400" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white leading-none truncate max-w-[90px] sm:max-w-[120px]">
+                          {softwareDisplay}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                          Software
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="h-6 w-px bg-zinc-800" />
+
+                    {/* Publicado */}
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-zinc-400" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-white leading-none">
+                          {publishedDisplay}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-medium mt-0.5">
+                          Publicado
+                        </span>
+                      </div>
+                    </div>
+
                   </div>
-                  <h2 className="text-xl lg:text-2xl font-black text-white leading-tight">
+
+                  {/* Right Metadata: Likes | Guardar */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 pl-2 border-l border-zinc-800">
+                    
+                    {/* Likes */}
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
+                      <ThumbsUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400" />
+                      <span>{likesDisplay}</span>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="h-6 w-px bg-zinc-800" />
+
+                    {/* Guardar / Bookmark */}
+                    <button
+                      onClick={handleToggleSave}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSaved || currentVideoNotes.length > 0
+                          ? 'bg-cyan-950/80 border border-cyan-500/50 text-cyan-300'
+                          : 'bg-zinc-800/80 border border-zinc-700/60 text-zinc-300 hover:text-white hover:bg-zinc-700'
+                      }`}
+                      title="Guardar lección en apuntes"
+                    >
+                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-cyan-300 text-cyan-300' : ''}`} />
+                      <span>{isSaved ? 'Guardado' : 'Guardar'}</span>
+                    </button>
+
+                  </div>
+
+                </div>
+
+                {/* Lesson Title (Clean, prominent, no redundant tag duplicates) */}
+                <div className="px-3 sm:px-4 md:px-0">
+                  <h2 className="text-base sm:text-xl lg:text-2xl font-black text-white leading-tight tracking-tight">
                     {video.title}
                   </h2>
                 </div>
@@ -992,7 +1089,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                       </div>
                     )}
 
-                    {/* CTA BUTTON: Abrir Apuntes */}
+                    {/* CTA BUTTON: Abrir Apuntes (Diseño Azul/Cyan) */}
                     <button
                       onClick={() => setActiveTab('notes')}
                       className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] cursor-pointer"
@@ -1129,11 +1226,12 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                       </div>
                     )}
 
-                    {/* Back to Lesson CTA */}
+                    {/* CTA BUTTON: Volver al Resumen de la Lección (Mismo formato que Abrir Apuntes pero con colores de Consejo Clave) */}
                     <button
                       onClick={() => setActiveTab('lesson')}
-                      className="w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-300 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-950 via-blue-950 to-cyan-900 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 hover:text-white text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/50 transition-all active:scale-[0.98] cursor-pointer"
                     >
+                      <BookOpen className="w-4.5 h-4.5 text-cyan-400" />
                       <span>Volver al resumen de la lección</span>
                     </button>
 
@@ -1144,24 +1242,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
             </div>
 
-          </div>
-
-          {/* ================= MOBILE BOTTOM PEEK BAR ("Tus apuntes") ================= */}
-          <div 
-            onClick={() => setActiveTab(prev => prev === 'notes' ? 'lesson' : 'notes')}
-            className="md:hidden flex items-center justify-between px-5 py-3 border-t border-zinc-800/80 bg-zinc-950/95 cursor-pointer hover:bg-zinc-900 transition-colors shrink-0"
-          >
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-bold text-white">
-                Tus apuntes {currentVideoNotes.length > 0 && `(${currentVideoNotes.length})`}
-              </span>
-            </div>
-            {activeTab === 'notes' ? (
-              <ChevronDown className="w-4 h-4 text-zinc-400" />
-            ) : (
-              <ChevronUp className="w-4 h-4 text-zinc-400" />
-            )}
           </div>
 
         </div>
