@@ -771,10 +771,26 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
                   </div>
 
-                  {/* Right: Likes */}
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 ml-auto sm:ml-0 pl-2 sm:pl-3 sm:border-l border-zinc-800">
-                    <ThumbsUp className="w-4 h-4 text-zinc-400 shrink-0" />
-                    <span>{likesDisplay}</span>
+                  {/* Right: Likes & Ver en YouTube Button */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 ml-auto sm:ml-0 pl-2 sm:pl-3 sm:border-l border-zinc-800">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300">
+                      <ThumbsUp className="w-4 h-4 text-zinc-400 shrink-0" />
+                      <span>{likesDisplay}</span>
+                    </div>
+
+                    {/* Botón Ver en YouTube en barra de metadatos (visible en PC y tablets) */}
+                    <a
+                      href={video.youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackSocialClick && trackSocialClick('YouTube Metadata Bar Button', video.title)}
+                      className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-500/50 hover:border-red-400 text-red-200 hover:text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md shadow-red-950/30 shrink-0"
+                      title="Abrir este vídeo directamente en YouTube"
+                    >
+                      <Youtube className="w-4 h-4 text-red-400 shrink-0" />
+                      <span>Ver en YouTube</span>
+                      <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
+                    </a>
                   </div>
 
                 </div>

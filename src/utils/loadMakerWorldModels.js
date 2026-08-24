@@ -54,13 +54,25 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   }
   carouselInterval = Math.max(carouselInterval, 2500); // Mínimo seguro de 2.5s para evitar parpadeos rápidos
 
-  // Recoger hasta 10 imágenes (image1 a image10)
+  // Recoger hasta 10 imágenes (image1 a image10) descartando avatares y banderas
   const images = [];
   for (let i = 1; i <= 10; i++) {
     const key = `image${i}`;
     const imgUrl = String(raw[key] || raw[`Image${i}`] || raw[`imagen${i}`] || '').trim();
-    if (imgUrl && imgUrl !== '-' && !imgUrl.toLowerCase().includes('vacio') && !imgUrl.toLowerCase().includes('vacío')) {
-      images.push(imgUrl);
+    if (
+      imgUrl && 
+      imgUrl !== '-' && 
+      !imgUrl.toLowerCase().includes('vacio') && 
+      !imgUrl.toLowerCase().includes('vacío') &&
+      !imgUrl.toLowerCase().includes('/public/') &&
+      !imgUrl.toLowerCase().includes('/user/') &&
+      !imgUrl.toLowerCase().includes('avatar') &&
+      !imgUrl.toLowerCase().includes('us.png') &&
+      !imgUrl.toLowerCase().includes('eu.png')
+    ) {
+      if (!images.includes(imgUrl)) {
+        images.push(imgUrl);
+      }
     }
   }
 

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, ExternalLink, Download, ChevronLeft, ChevronRight, 
-  Tag, Layers, Box, ZoomIn, Eye 
+  Tag, Layers, Box 
 } from 'lucide-react';
 
 export default function V4MakerWorldModal({ model, onClose }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
 
   if (!model) return null;
@@ -16,12 +15,12 @@ export default function V4MakerWorldModal({ model, onClose }) {
     : ['/logo-capa-cero.webp'];
 
   const hasMultipleImages = images.length > 1;
-  // Intervalo seguro: mínimo 2500ms (2.5s)
+  // Intervalo seguro calibrado: mínimo 2500ms (2.5s)
   const intervalMs = Math.max(model.carouselInterval || 3500, 2500);
 
-  // Pase automático de fotos dentro del modal con pausa al interactuar
+  // Pase continuo suave de fotos sin pausas molestas
   useEffect(() => {
-    if (!hasMultipleImages || isPaused || intervalMs <= 0) {
+    if (!hasMultipleImages || intervalMs <= 0) {
       if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
@@ -33,7 +32,7 @@ export default function V4MakerWorldModal({ model, onClose }) {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [hasMultipleImages, isPaused, intervalMs, images.length]);
+  }, [hasMultipleImages, intervalMs, images.length]);
 
   // Atajos de teclado (Escape para cerrar, flechas para fotos)
   useEffect(() => {
@@ -74,7 +73,7 @@ export default function V4MakerWorldModal({ model, onClose }) {
       {/* Backdrop Click */}
       <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
 
-      {/* Modal Container: Pantalla Completa en PC (96vw / 95vh) y Responsive en Móvil */}
+      {/* Modal Container: Pantalla Completa en PC (96vw / 95vh) */}
       <div 
         className="relative w-full h-full md:h-[95vh] md:max-h-[95vh] md:w-[96vw] lg:w-[96vw] max-w-none bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left"
         onClick={(e) => e.stopPropagation()}
@@ -116,7 +115,7 @@ export default function V4MakerWorldModal({ model, onClose }) {
               className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 border border-cyan-400/30 cursor-pointer"
             >
               <Download className="w-4 h-4 text-cyan-100 shrink-0" />
-              <span>{model.buttonText || 'Ver en MakerWorld'}</span>
+              <span>{model.buttonText || 'IR A DISEÑO'}</span>
               <ExternalLink className="w-3.5 h-3.5 opacity-80 shrink-0" />
             </a>
 
@@ -134,13 +133,8 @@ export default function V4MakerWorldModal({ model, onClose }) {
         <div className="flex-1 overflow-y-auto md:overflow-hidden grid grid-cols-1 md:grid-cols-12 bg-zinc-950">
           
           {/* COLUMNA IZQUIERDA (Desktop: 7 columnas): VISOR DE IMÁGENES GIGANTE CON CARRUSEL */}
-          <div 
-            className="md:col-span-7 lg:col-span-7 xl:col-span-8 bg-black flex flex-col justify-between border-b md:border-b-0 md:border-r border-zinc-800/80 relative select-none"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-          >
+          <div className="md:col-span-7 lg:col-span-7 xl:col-span-8 bg-black flex flex-col justify-between border-b md:border-b-0 md:border-r border-zinc-800/80 relative select-none">
+            
             {/* Viewport Principal de la Imagen */}
             <div className="relative w-full flex-1 min-h-[300px] sm:min-h-[420px] md:min-h-0 flex items-center justify-center p-4 sm:p-6 bg-black overflow-hidden">
               <img
@@ -205,21 +199,22 @@ export default function V4MakerWorldModal({ model, onClose }) {
             )}
           </div>
 
-          {/* COLUMNA DERECHA (Desktop: 5 columnas): INFORMACIÓN, DESCRIPCIÓN Y DESCARGA */}
-          <div className="md:col-span-5 lg:col-span-5 xl:col-span-4 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto bg-zinc-950 text-left space-y-6">
+          {/* COLUMNA DERECHA (Desktop: 5 columnas): DESCRIPCIÓN CON MÁXIMO APROVECHAMIENTO VERTICAL */}
+          <div className="md:col-span-5 lg:col-span-5 xl:col-span-4 p-6 sm:p-7 flex flex-col h-full bg-zinc-950 text-left overflow-hidden">
             
-            <div className="space-y-4">
+            {/* Cabecera / Título / Etiquetas */}
+            <div className="shrink-0 space-y-3 mb-3.5">
               <div className="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-950/50 border border-cyan-500/30 px-3 py-1 rounded-lg uppercase tracking-wider">
                 <Box className="w-4 h-4" />
                 <span>Modelo 3D Oficial para Imprimir</span>
               </div>
 
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight">
                 {model.name}
               </h1>
 
-              {/* Información de archivo y perfil */}
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-zinc-400">
+              {/* Información de formato y perfil */}
+              <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs text-zinc-400">
                 <span className="bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-lg">
                   📦 Formato: <strong>Archivos 3MF / STL</strong>
                 </span>
@@ -227,29 +222,29 @@ export default function V4MakerWorldModal({ model, onClose }) {
                   🖨️ Perfil: <strong>Bambu Lab Optimizado</strong>
                 </span>
               </div>
-
-              {/* Descripción formateada con scroll */}
-              {model.description && (
-                <div className="bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-5 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal whitespace-pre-line break-words max-h-[38vh] md:max-h-[44vh] overflow-y-auto shadow-inner">
-                  {model.description}
-                </div>
-              )}
             </div>
 
+            {/* Caja de Descripción con Flex-1: Se expande de forma óptima hasta la línea inferior */}
+            {model.description && (
+              <div className="flex-1 overflow-y-auto bg-zinc-900/80 border border-zinc-800/90 rounded-2xl p-4 sm:p-5 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal whitespace-pre-line break-words shadow-inner mb-3.5 min-h-[140px]">
+                {model.description}
+              </div>
+            )}
+
             {/* CTA Final de Descarga en MakerWorld */}
-            <div className="pt-4 border-t border-zinc-800/80 space-y-3">
+            <div className="shrink-0 pt-3.5 border-t border-zinc-800/80 space-y-2">
               <a
                 href={model.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:to-cyan-400 text-white text-sm sm:text-base font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-500/25 transition-all active:scale-[0.98] border border-cyan-300/40 cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-400 hover:from-blue-500 hover:to-cyan-400 text-white text-sm sm:text-base font-black px-8 py-3.5 rounded-2xl shadow-xl shadow-blue-500/25 transition-all active:scale-[0.98] border border-cyan-300/40 cursor-pointer"
               >
                 <Download className="w-5 h-5 text-white shrink-0" />
-                <span>{model.buttonText || 'Descargar en MakerWorld'}</span>
+                <span>{model.buttonText || 'IR A DISEÑO'}</span>
                 <ExternalLink className="w-4 h-4 text-cyan-100 opacity-90 shrink-0" />
               </a>
 
-              <p className="text-[11px] text-zinc-500 text-center">
+              <p className="text-[10.5px] text-zinc-500 text-center">
                 Descarga segura con perfiles de impresión certificados desde la plataforma oficial de Bambu Lab.
               </p>
             </div>
