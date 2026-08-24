@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, ChevronLeft, ChevronRight, Download, Sparkles, Tag, Layers } from 'lucide-react';
 
 export default function V4MakerWorldCard({ model }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
 
   if (!model) return null;
 
@@ -11,6 +13,23 @@ export default function V4MakerWorldCard({ model }) {
     : ['/logo-capa-cero.webp'];
 
   const hasMultipleImages = images.length > 1;
+  const intervalMs = model.carouselInterval || 3500;
+
+  // Pase automático de fotos (Carousel Slideshow)
+  useEffect(() => {
+    if (!hasMultipleImages || isPaused || intervalMs <= 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    }, intervalMs);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [hasMultipleImages, isPaused, intervalMs, images.length]);
 
   const handlePrevImage = (e) => {
     e.preventDefault();
@@ -31,7 +50,13 @@ export default function V4MakerWorldCard({ model }) {
   };
 
   return (
-    <div className="group bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/90 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col h-full text-left">
+    <div 
+      className="group bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/90 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col h-full text-left"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
+    >
       
       {/* Visual / Image Area (Carousel) */}
       <div className="relative aspect-video w-full bg-zinc-950 overflow-hidden select-none">

@@ -2,8 +2,8 @@ import Papa from 'papaparse';
 
 export const MAKERWORLD_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1321598922";
 
-const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V1';
-const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V1';
+const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V2';
+const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V2';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 /**
@@ -24,6 +24,21 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   const rawShowPrice = String(raw.showPrice || raw.show_price || raw.ShowPrice || '').trim().toLowerCase();
   const showPrice = rawShowPrice === 'true' || rawShowPrice === 'si' || rawShowPrice === 'sí' || rawShowPrice === '1';
   const price = String(raw.price || raw.Price || 'Gratis').trim();
+
+  // Columna carouselInterval (milisegundos o segundos entre cada pase de fotos)
+  const rawInterval = String(
+    raw.carouselInterval || raw.carousel_interval || raw.CarouselInterval || 
+    raw.interval || raw.Interval || raw.Intervalo || raw.intervalo || ''
+  ).trim();
+  
+  let carouselInterval = 3500; // 3.5 segundos por defecto
+  if (rawInterval) {
+    const parsedNum = parseFloat(rawInterval.replace(/[^0-9.]/g, ''));
+    if (!isNaN(parsedNum) && parsedNum > 0) {
+      // Si el usuario escribe 3 o 4 (segundos), convertir a milisegundos (3000ms, 4000ms)
+      carouselInterval = parsedNum < 50 ? Math.round(parsedNum * 1000) : Math.round(parsedNum);
+    }
+  }
 
   // Recoger hasta 10 imágenes (image1 a image10)
   const images = [];
@@ -46,6 +61,7 @@ export function normalizeMakerWorldRow(raw, index = 0) {
     name,
     images,
     primaryImage: images[0],
+    carouselInterval,
     price: price || 'Gratis',
     showPrice,
     link: link || 'https://makerworld.com/en/@capa_cero',
