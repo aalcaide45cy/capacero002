@@ -2,9 +2,14 @@ import Papa from 'papaparse';
 
 export const MAKERWORLD_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1321598922";
 
-const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V2';
-const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V2';
+const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V3';
+const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V3';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
+
+// Caché en Memoria RAM de ultra-alta velocidad (0 ms de latencia)
+let inMemoryModelsCache = null;
+let inMemoryModelsTime = 0;
+let activeInFlightPromise = null;
 
 /**
  * Normaliza una fila del Google Sheet de MakerWorld
@@ -35,7 +40,6 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   if (rawInterval) {
     const parsedNum = parseFloat(rawInterval.replace(/[^0-9.]/g, ''));
     if (!isNaN(parsedNum) && parsedNum > 0) {
-      // Si el usuario escribe 3 o 4 (segundos), convertir a milisegundos (3000ms, 4000ms)
       carouselInterval = parsedNum < 50 ? Math.round(parsedNum * 1000) : Math.round(parsedNum);
     }
   }
@@ -72,12 +76,22 @@ export function normalizeMakerWorldRow(raw, index = 0) {
 }
 
 /**
- * Carga modelos desde Google Sheets con estrategia de Caché SWR
+ * Carga modelos desde Google Sheets con estrategia de Caché SWR de Ultra Rendimiento (RAM L1 + LocalStorage L2)
  */
 export async function loadMakerWorldModels(forceRefresh = false) {
   const now = Date.now();
 
-  // 1. Comprobar caché local válido
+  // 1. NIVEL 1: Caché en Memoria RAM Instantáneo (0ms)
+  if (!forceRefresh && inMemoryModelsCache && (now - inMemoryModelsTime < CACHE_TTL_MS)) {
+    return inMemoryModelsCache;
+  }
+
+  // 2. NIVEL 2: Desduplicación de peticiones concurrentes en vuelo
+  if (activeInFlightPromise && !forceRefresh) {
+    return activeInFlightPromise;
+  }
+
+  // 3. NIVEL 3: LocalStorage L2 Instantáneo (1ms)
   if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
     try {
       const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
@@ -87,6 +101,8 @@ export async function loadMakerWorldModels(forceRefresh = false) {
       if (cachedData && cachedTime && (now - cachedTime < CACHE_TTL_MS)) {
         const parsed = JSON.parse(cachedData);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          inMemoryModelsCache = parsed;
+          inMemoryModelsTime = cachedTime;
           return parsed;
         }
       }
@@ -95,55 +111,67 @@ export async function loadMakerWorldModels(forceRefresh = false) {
     }
   }
 
-  // 2. Descargar CSV desde Google Sheets
-  try {
-    const response = await fetch(MAKERWORLD_SHEET_CSV_URL);
-    if (!response.ok) {
-      console.warn(`Error al conectar con hoja MakerWorld (${response.status})`);
-      return [];
-    }
+  // 4. NIVEL 4: Descarga optimizada desde Google Sheets CSV
+  activeInFlightPromise = (async () => {
+    try {
+      const response = await fetch(MAKERWORLD_SHEET_CSV_URL);
+      if (!response.ok) {
+        console.warn(`Error al conectar con hoja MakerWorld (${response.status})`);
+        return inMemoryModelsCache || [];
+      }
 
-    const csvText = await response.text();
-    if (!csvText || !csvText.trim()) return [];
+      const csvText = await response.text();
+      if (!csvText || !csvText.trim()) return inMemoryModelsCache || [];
 
-    return new Promise((resolve) => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          try {
-            if (results.data && Array.isArray(results.data) && results.data.length > 0) {
-              const formatted = results.data
-                .filter(row => row && typeof row === 'object')
-                .map((row, idx) => normalizeMakerWorldRow(row, idx))
-                .filter(Boolean);
+      return new Promise((resolve) => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              if (results.data && Array.isArray(results.data) && results.data.length > 0) {
+                const formatted = results.data
+                  .filter(row => row && typeof row === 'object')
+                  .map((row, idx) => normalizeMakerWorldRow(row, idx))
+                  .filter(Boolean);
 
-              // Ordenar por columna order ascendente
-              formatted.sort((a, b) => (a.order || 0) - (b.order || 0));
+                formatted.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-              if (formatted.length > 0 && typeof window !== 'undefined' && window.localStorage) {
-                try {
-                  localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
-                  localStorage.setItem(CACHE_KEY_TIME, Date.now().toString());
-                } catch (err) {}
+                if (formatted.length > 0) {
+                  inMemoryModelsCache = formatted;
+                  inMemoryModelsTime = Date.now();
+
+                  if (typeof window !== 'undefined' && window.localStorage) {
+                    try {
+                      localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
+                      localStorage.setItem(CACHE_KEY_TIME, inMemoryModelsTime.toString());
+                    } catch (err) {}
+                  }
+                }
+                resolve(formatted);
+              } else {
+                resolve(inMemoryModelsCache || []);
               }
-              resolve(formatted);
-            } else {
-              resolve([]);
+            } catch (err) {
+              console.error('Error parseando modelos MakerWorld:', err);
+              resolve(inMemoryModelsCache || []);
+            } finally {
+              activeInFlightPromise = null;
             }
-          } catch (err) {
-            console.error('Error parseando modelos MakerWorld:', err);
-            resolve([]);
+          },
+          error: (err) => {
+            console.warn('Error en PapaParse MakerWorld:', err);
+            activeInFlightPromise = null;
+            resolve(inMemoryModelsCache || []);
           }
-        },
-        error: (err) => {
-          console.warn('Error en PapaParse MakerWorld:', err);
-          resolve([]);
-        }
+        });
       });
-    });
-  } catch (err) {
-    console.warn('Fallo cargando modelos MakerWorld desde Google Sheets:', err);
-    return [];
-  }
+    } catch (err) {
+      console.warn('Fallo cargando modelos MakerWorld desde Google Sheets:', err);
+      activeInFlightPromise = null;
+      return inMemoryModelsCache || [];
+    }
+  })();
+
+  return activeInFlightPromise;
 }

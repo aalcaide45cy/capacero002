@@ -48,7 +48,7 @@ export default function V4MakerWorldCard({ model, onSelect }) {
           </span>
         </div>
 
-        {/* Top Badges: Tag + Price/Gratis */}
+        {/* Top Badges: Tag (y Precio solo si showPrice es TRUE) */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 z-10">
           {model.tag && (
             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-cyan-300 bg-cyan-950/90 border border-cyan-500/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-md flex items-center gap-1 truncate max-w-[140px]">
@@ -57,14 +57,9 @@ export default function V4MakerWorldCard({ model, onSelect }) {
             </span>
           )}
 
-          {model.showPrice ? (
+          {model.showPrice && model.price && model.price !== '0' && model.price !== 'Gratis' && (
             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-amber-300 bg-amber-950/90 border border-amber-500/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-md ml-auto">
               {model.price}
-            </span>
-          ) : (
-            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 border border-emerald-500/50 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-md ml-auto flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-400" />
-              <span>{model.price || 'Gratis'}</span>
             </span>
           )}
         </div>
