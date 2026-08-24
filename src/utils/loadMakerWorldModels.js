@@ -1,12 +1,13 @@
 import Papa from 'papaparse';
+import fallbackModels from '../data/models_makerworld.json';
 
 export const MAKERWORLD_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1321598922";
 
-const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V3';
-const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V3';
+const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V4';
+const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V4';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
-// Caché en Memoria RAM de ultra-alta velocidad (0 ms de latencia)
+// Caché en Memoria RAM L1 de ultra-alta velocidad (0 ms de latencia)
 let inMemoryModelsCache = null;
 let inMemoryModelsTime = 0;
 let activeInFlightPromise = null;
@@ -24,15 +25,15 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   const link = String(raw.link || raw.Link || raw.url || raw.URL || 'https://makerworld.com/en/@capa_cero').trim();
   const description = String(raw.description || raw.Description || raw.descripcion || '').trim();
   const tag = String(raw.tag || raw.Tag || raw.categoria || raw.category || 'Modelo 3D').trim();
-  const buttonText = String(raw.buttonText || raw.ButtonText || raw.boton || 'Descargar en MakerWorld').trim();
+  const buttonText = String(raw.buttonText || raw.ButtonText || raw.boton || 'IR A DISEÑO').trim();
   
   const rawShowPrice = String(raw.showPrice || raw.show_price || raw.ShowPrice || '').trim().toLowerCase();
   const showPrice = rawShowPrice === 'true' || rawShowPrice === 'si' || rawShowPrice === 'sí' || rawShowPrice === '1';
-  const price = String(raw.price || raw.Price || 'Gratis').trim();
+  const price = String(raw.price || raw.Price || '0').trim();
 
   // Columna carouselInterval (milisegundos o segundos entre cada pase de fotos)
   const rawInterval = String(
-    raw.carouselInterval || raw.carousel_interval || raw.CarouselInterval || 
+    raw['carouselInterval '] || raw.carouselInterval || raw.carousel_interval || raw.CarouselInterval || 
     raw.interval || raw.Interval || raw.Intervalo || raw.intervalo || ''
   ).trim();
   
@@ -66,13 +67,46 @@ export function normalizeMakerWorldRow(raw, index = 0) {
     images,
     primaryImage: images[0],
     carouselInterval,
-    price: price || 'Gratis',
+    price: price || '0',
     showPrice,
     link: link || 'https://makerworld.com/en/@capa_cero',
     description,
-    tag: tag || 'MakerWorld',
-    buttonText: buttonText || 'Descargar en MakerWorld'
+    tag: tag || '✨ NUEVO',
+    buttonText: buttonText || 'IR A DISEÑO'
   };
+}
+
+/**
+ * Obtención síncrona instantánea (0 ms) para carga inmediata sin skeleton ni parpadeos
+ */
+export function getInitialMakerWorldModels() {
+  if (inMemoryModelsCache && inMemoryModelsCache.length > 0) {
+    return inMemoryModelsCache;
+  }
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY_DATA);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          inMemoryModelsCache = parsed;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (Array.isArray(fallbackModels) && fallbackModels.length > 0) {
+    const formatted = fallbackModels
+      .map((row, idx) => normalizeMakerWorldRow(row, idx))
+      .filter(Boolean);
+    formatted.sort((a, b) => (a.order || 0) - (b.order || 0));
+    inMemoryModelsCache = formatted;
+    return formatted;
+  }
+
+  return [];
 }
 
 /**
@@ -117,11 +151,11 @@ export async function loadMakerWorldModels(forceRefresh = false) {
       const response = await fetch(MAKERWORLD_SHEET_CSV_URL);
       if (!response.ok) {
         console.warn(`Error al conectar con hoja MakerWorld (${response.status})`);
-        return inMemoryModelsCache || [];
+        return inMemoryModelsCache || getInitialMakerWorldModels();
       }
 
       const csvText = await response.text();
-      if (!csvText || !csvText.trim()) return inMemoryModelsCache || [];
+      if (!csvText || !csvText.trim()) return inMemoryModelsCache || getInitialMakerWorldModels();
 
       return new Promise((resolve) => {
         Papa.parse(csvText, {
@@ -150,11 +184,11 @@ export async function loadMakerWorldModels(forceRefresh = false) {
                 }
                 resolve(formatted);
               } else {
-                resolve(inMemoryModelsCache || []);
+                resolve(inMemoryModelsCache || getInitialMakerWorldModels());
               }
             } catch (err) {
               console.error('Error parseando modelos MakerWorld:', err);
-              resolve(inMemoryModelsCache || []);
+              resolve(inMemoryModelsCache || getInitialMakerWorldModels());
             } finally {
               activeInFlightPromise = null;
             }
@@ -162,14 +196,14 @@ export async function loadMakerWorldModels(forceRefresh = false) {
           error: (err) => {
             console.warn('Error en PapaParse MakerWorld:', err);
             activeInFlightPromise = null;
-            resolve(inMemoryModelsCache || []);
+            resolve(inMemoryModelsCache || getInitialMakerWorldModels());
           }
         });
       });
     } catch (err) {
       console.warn('Fallo cargando modelos MakerWorld desde Google Sheets:', err);
       activeInFlightPromise = null;
-      return inMemoryModelsCache || [];
+      return inMemoryModelsCache || getInitialMakerWorldModels();
     }
   })();
 

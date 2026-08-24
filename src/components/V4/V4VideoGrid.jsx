@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
 import V4MakerWorldGrid from './V4MakerWorldGrid';
+import { getInitialMakerWorldModels } from '../../utils/loadMakerWorldModels';
 import NotesSearchModal from './NotesSearchModal';
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
@@ -423,7 +424,7 @@ export default function V4VideoGrid({
             {activeSortFilter === 'courses'
               ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
               : activeSortFilter === 'makerworld'
-              ? 'Modelos Gratis'
+              ? `${getInitialMakerWorldModels().length} modelos`
               : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
           </span>
         </div>
@@ -444,7 +445,13 @@ export default function V4VideoGrid({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar tutoriales, problemas, configuraciones..."
+            placeholder={
+              activeSortFilter === 'makerworld'
+                ? "Buscar modelos 3D, piezas, organizadores, accesorios..."
+                : activeSortFilter === 'courses'
+                ? "Buscar en temarios y lecciones de cursos..."
+                : "Buscar tutoriales, problemas, configuraciones..."
+            }
             className="w-full bg-zinc-950/90 border-2 border-cyan-500/30 hover:border-cyan-400/60 focus:border-cyan-400 rounded-full pl-12 pr-10 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 shadow-[0_0_20px_rgba(0,229,255,0.08)] focus:shadow-[0_0_25px_rgba(0,229,255,0.25)] focus:outline-none transition-all duration-200"
           />
           {searchQuery && (
@@ -516,7 +523,7 @@ export default function V4VideoGrid({
             <Box className="w-3.5 h-3.5 text-cyan-400" />
             <span>Modelos Gratis</span>
             <span className="text-[10px] font-black bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-500/40 leading-none">
-              3D
+              {getInitialMakerWorldModels().length || '3D'}
             </span>
           </button>
         </div>

@@ -2,21 +2,22 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Sparkles, Search, ExternalLink, Download, Layers, Tag, RefreshCw } from 'lucide-react';
 import V4MakerWorldCard from './V4MakerWorldCard';
 import V4MakerWorldModal from './V4MakerWorldModal';
-import { loadMakerWorldModels } from '../../utils/loadMakerWorldModels';
+import { loadMakerWorldModels, getInitialMakerWorldModels } from '../../utils/loadMakerWorldModels';
 
 export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
-  const [models, setModels] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Inicialización síncrona instantánea a 0 ms
+  const [models, setModels] = useState(() => getInitialMakerWorldModels());
+  const [isLoading, setIsLoading] = useState(() => getInitialMakerWorldModels().length === 0);
   const [selectedTag, setSelectedTag] = useState('Todos');
   const [selectedModelModal, setSelectedModelModal] = useState(null);
 
+  // Sincronización en segundo plano con Google Sheets (SWR)
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
     loadMakerWorldModels()
       .then((data) => {
-        if (isMounted) {
-          setModels(Array.isArray(data) ? data : []);
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setModels(data);
           setIsLoading(false);
         }
       })
@@ -38,17 +39,21 @@ export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
     return ['Todos', ...Array.from(set)];
   }, [models]);
 
-  // Filtrado por búsqueda y tag
+  // Filtrado por búsqueda en tiempo real y tag seleccionado
   const filteredModels = useMemo(() => {
     const q = (searchQuery || '').toLowerCase().trim();
+    const queryTokens = q ? q.split(/\s+/).filter(Boolean) : [];
+
     return models.filter((m) => {
-      const matchesSearch = !q || 
-        m.name?.toLowerCase().includes(q) || 
-        m.description?.toLowerCase().includes(q) ||
-        m.tag?.toLowerCase().includes(q);
-      
+      // 1. Filtro de etiqueta/tag
       const matchesTag = selectedTag === 'Todos' || m.tag?.toLowerCase() === selectedTag.toLowerCase();
-      return matchesSearch && matchesTag;
+      if (!matchesTag) return false;
+
+      // 2. Filtro de búsqueda por texto (título, descripción, etiqueta y botón)
+      if (queryTokens.length === 0) return true;
+
+      const targetString = `${m.name || ''} ${m.description || ''} ${m.tag || ''} ${m.buttonText || ''}`.toLowerCase();
+      return queryTokens.every(token => targetString.includes(token));
     });
   }, [models, searchQuery, selectedTag]);
 
@@ -136,11 +141,11 @@ export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
           </div>
           <div>
             <h4 className="text-lg font-black text-white mb-1">
-              {searchQuery ? 'No se encontraron modelos con esa búsqueda' : 'Nuevos modelos próximamente'}
+              {searchQuery ? `No se encontraron modelos para "${searchQuery}"` : 'Nuevos modelos próximamente'}
             </h4>
             <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-md mx-auto">
               {searchQuery 
-                ? 'Prueba a buscar con otras palabras o limpia los filtros de búsqueda.'
+                ? 'Prueba a buscar con otras palabras o limpia la caja de búsqueda superior.'
                 : 'Estamos añadiendo nuevos modelos 3D a la colección. Puedes consultar todos los diseños disponibles directamente en nuestro perfil oficial de MakerWorld.'}
             </p>
           </div>

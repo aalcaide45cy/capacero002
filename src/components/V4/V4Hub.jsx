@@ -9,6 +9,7 @@ import V4CircuitBackground from './V4CircuitBackground';
 import V4InstallModal from './V4InstallModal';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
+import { loadMakerWorldModels } from '../../utils/loadMakerWorldModels';
 import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
 import { applySyncPayload, completeQRExchange, syncVaultPull, getVaultId } from '../../utils/courseProgress';
@@ -155,7 +156,7 @@ export default function V4Hub() {
     }
   }, []);
 
-  // Sincronización en segundo plano con caché diario (SWR)
+  // Sincronización en segundo plano con caché diario (SWR) tanto de Vídeos como de Modelos MakerWorld
   useEffect(() => {
     let isMounted = true;
     loadV4Videos().then((freshData) => {
@@ -163,6 +164,10 @@ export default function V4Hub() {
         setVideos(freshData);
       }
     }).catch(() => {});
+
+    // Pre-carga inmediata de modelos en memoria RAM para navegación instantánea a 0ms
+    loadMakerWorldModels().catch(() => {});
+
     return () => { isMounted = false; };
   }, []);
 
