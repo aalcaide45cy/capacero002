@@ -54,8 +54,17 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   }
   carouselInterval = Math.max(carouselInterval, 2500); // Mínimo seguro de 2.5s para evitar parpadeos rápidos
 
-  // Recoger hasta 10 imágenes (image1 a image10) descartando avatares y banderas
+  // Recoger hasta 10 imágenes (image1 a image10) descartando avatares, banderas y duplicados por hash/archivo
   const images = [];
+  const seenFilenames = new Set();
+
+  function getCleanFilename(url) {
+    if (!url || typeof url !== 'string') return '';
+    const clean = url.split('?')[0].split('#')[0];
+    const parts = clean.split('/');
+    return parts[parts.length - 1].toLowerCase();
+  }
+
   for (let i = 1; i <= 10; i++) {
     const key = `image${i}`;
     const imgUrl = String(raw[key] || raw[`Image${i}`] || raw[`imagen${i}`] || '').trim();
@@ -70,7 +79,9 @@ export function normalizeMakerWorldRow(raw, index = 0) {
       !imgUrl.toLowerCase().includes('us.png') &&
       !imgUrl.toLowerCase().includes('eu.png')
     ) {
-      if (!images.includes(imgUrl)) {
+      const filename = getCleanFilename(imgUrl);
+      if (filename && !seenFilenames.has(filename)) {
+        seenFilenames.add(filename);
         images.push(imgUrl);
       }
     }
