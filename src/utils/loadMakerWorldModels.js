@@ -18,23 +18,28 @@ let activeInFlightPromise = null;
 export function normalizeMakerWorldRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
-  const name = String(raw.name || raw.Name || raw.nombre || raw.Titulo || raw.titulo || '').trim();
+  // Normalización exhaustiva de claves a minúsculas sin espacios
+  const clean = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (k) clean[k.trim().toLowerCase()] = v;
+  }
+
+  const name = String(clean.name || clean.nombre || clean.titulo || clean.title || '').trim();
   if (!name) return null;
 
-  const order = raw.order !== undefined && raw.order !== '' ? parseInt(raw.order, 10) : (index + 1);
-  const link = String(raw.link || raw.Link || raw.url || raw.URL || 'https://makerworld.com/en/@capa_cero').trim();
-  const description = String(raw.description || raw.Description || raw.descripcion || '').trim();
-  const tag = String(raw.tag || raw.Tag || raw.categoria || raw.category || 'Modelo 3D').trim();
-  const buttonText = String(raw.buttonText || raw.ButtonText || raw.boton || 'IR A DISEÑO').trim();
+  const order = clean.order !== undefined && clean.order !== '' ? parseInt(clean.order, 10) : (index + 1);
+  const link = String(clean.link || clean.url || clean.enlace || 'https://makerworld.com/en/@capa_cero').trim();
+  const description = String(clean.description || clean.descripcion || '').trim();
+  const tag = String(clean.tag || clean.categoria || clean.category || '✨ NUEVO').trim();
+  const buttonText = String(clean.buttontext || clean.boton || clean.button_text || 'IR A DISEÑO').trim();
   
-  const rawShowPrice = String(raw.showPrice || raw.show_price || raw.ShowPrice || '').trim().toLowerCase();
+  const rawShowPrice = String(clean.showprice || clean.show_price || '').trim().toLowerCase();
   const showPrice = rawShowPrice === 'true' || rawShowPrice === 'si' || rawShowPrice === 'sí' || rawShowPrice === '1';
-  const price = String(raw.price || raw.Price || '0').trim();
+  const price = String(clean.price || clean.precio || '0').trim();
 
   // Columna carouselInterval (milisegundos, segundos o decisegundos)
   const rawInterval = String(
-    raw['carouselInterval '] || raw.carouselInterval || raw.carousel_interval || raw.CarouselInterval || 
-    raw.interval || raw.Interval || raw.Intervalo || raw.intervalo || ''
+    clean.carouselinterval || clean.carousel_interval || clean.interval || clean.intervalo || ''
   ).trim();
   
   let carouselInterval = 3500; // 3.5 segundos por defecto
@@ -60,14 +65,13 @@ export function normalizeMakerWorldRow(raw, index = 0) {
 
   function getCleanFilename(url) {
     if (!url || typeof url !== 'string') return '';
-    const clean = url.split('?')[0].split('#')[0];
-    const parts = clean.split('/');
+    const cleanU = url.split('?')[0].split('#')[0];
+    const parts = cleanU.split('/');
     return parts[parts.length - 1].toLowerCase();
   }
 
   for (let i = 1; i <= 10; i++) {
-    const key = `image${i}`;
-    const imgUrl = String(raw[key] || raw[`Image${i}`] || raw[`imagen${i}`] || '').trim();
+    const imgUrl = String(clean[`image${i}`] || clean[`imagen${i}`] || '').trim();
     if (
       imgUrl && 
       imgUrl !== '-' && 
@@ -192,7 +196,8 @@ export async function loadMakerWorldModels(forceRefresh = false) {
       return new Promise((resolve) => {
         Papa.parse(csvText, {
           header: true,
-          skipEmptyLines: true,
+          skipEmptyLines: 'greedy',
+          transformHeader: (h) => (h ? h.trim() : ''),
           complete: (results) => {
             try {
               if (results.data && Array.isArray(results.data) && results.data.length > 0) {
