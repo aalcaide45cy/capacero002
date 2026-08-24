@@ -31,7 +31,7 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   const showPrice = rawShowPrice === 'true' || rawShowPrice === 'si' || rawShowPrice === 'sí' || rawShowPrice === '1';
   const price = String(raw.price || raw.Price || '0').trim();
 
-  // Columna carouselInterval (milisegundos o segundos entre cada pase de fotos)
+  // Columna carouselInterval (milisegundos, segundos o decisegundos)
   const rawInterval = String(
     raw['carouselInterval '] || raw.carouselInterval || raw.carousel_interval || raw.CarouselInterval || 
     raw.interval || raw.Interval || raw.Intervalo || raw.intervalo || ''
@@ -41,9 +41,18 @@ export function normalizeMakerWorldRow(raw, index = 0) {
   if (rawInterval) {
     const parsedNum = parseFloat(rawInterval.replace(/[^0-9.]/g, ''));
     if (!isNaN(parsedNum) && parsedNum > 0) {
-      carouselInterval = parsedNum < 50 ? Math.round(parsedNum * 1000) : Math.round(parsedNum);
+      if (parsedNum <= 30) {
+        // e.g. 3 o 4 (segundos) -> 3000ms, 4000ms
+        carouselInterval = Math.round(parsedNum * 1000);
+      } else if (parsedNum < 1000) {
+        // e.g. 300 o 350 (decisegundos) -> 3000ms, 3500ms
+        carouselInterval = Math.round(parsedNum * 10);
+      } else {
+        carouselInterval = Math.round(parsedNum);
+      }
     }
   }
+  carouselInterval = Math.max(carouselInterval, 2500); // Mínimo seguro de 2.5s para evitar parpadeos rápidos
 
   // Recoger hasta 10 imágenes (image1 a image10)
   const images = [];

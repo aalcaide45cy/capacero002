@@ -493,15 +493,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 lg:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-3 lg:p-4 overflow-y-auto">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/90 md:bg-black/85 backdrop-blur-md transition-opacity"
           onClick={onClose}
         />
 
-        {/* Modal Container: Widescreen Cinematic for Desktop */}
-        <div className="relative w-full h-full md:h-auto md:max-h-[95vh] md:max-w-6xl lg:max-w-7xl xl:max-w-[1440px] bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
+        {/* Modal Container: Pantalla Completa Cinematográfica en PC (97vw / 96vh) */}
+        <div className="relative w-full h-full md:h-[96vh] md:max-h-[96vh] md:w-[97vw] lg:w-[97vw] max-w-none bg-zinc-950 border-0 md:border md:border-zinc-800/90 rounded-none md:rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col text-left">
           
           {/* ================= TOP HEADER BAR ================= */}
           <div className="flex items-center justify-between px-3.5 sm:px-5 py-3 border-b border-zinc-800/80 bg-zinc-950 md:bg-zinc-900/60 shrink-0">
