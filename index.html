@@ -7,6 +7,9 @@
   <!-- Preconnect y DNS-Prefetch para recursos críticos -->
   <link rel="preconnect" href="https://img.youtube.com" crossorigin />
   <link rel="dns-prefetch" href="https://img.youtube.com" />
+  
+  <!-- Preload de Imagen Crítica LCP (Hero) para descubrimiento a 0ms -->
+  <link rel="preload" as="image" href="/logo-capa-cero.webp" type="image/webp" fetchpriority="high" />
 
   <!-- Google Analytics (GA4) Diferido en Idle para First Contentful Paint ultrarrápido -->
   <script>

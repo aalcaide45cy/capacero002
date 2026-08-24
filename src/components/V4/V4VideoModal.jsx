@@ -996,6 +996,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                             <img
                               src={nextVideo.thumbnail}
                               alt={nextVideo.title}
+                              loading="lazy"
+                              decoding="async"
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
                               className="w-full h-full object-cover group-hover/next:scale-105 transition-transform duration-300"
                             />
                             <div className="absolute inset-0 bg-black/40 group-hover/next:bg-black/20 flex items-center justify-center transition-colors">
@@ -1037,7 +1041,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                                   className="flex items-center gap-2.5 p-2 rounded-xl bg-zinc-950/70 hover:bg-zinc-950 border border-zinc-800/70 hover:border-cyan-500/50 cursor-pointer transition-all group/rel"
                                 >
                                   <div className="relative w-16 aspect-video rounded-lg overflow-hidden shrink-0 bg-black">
-                                    <img src={rv.thumbnail} alt={rv.title} className="w-full h-full object-cover group-hover/rel:scale-105 transition-transform duration-300" />
+                                    <img 
+                                      src={rv.thumbnail} 
+                                      alt={rv.title} 
+                                      loading="lazy"
+                                      decoding="async"
+                                      referrerPolicy="no-referrer"
+                                      crossOrigin="anonymous"
+                                      className="w-full h-full object-cover group-hover/rel:scale-105 transition-transform duration-300" 
+                                    />
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/rel:bg-black/10">
                                       <Play className="w-3 h-3 fill-white text-white" />
                                     </div>

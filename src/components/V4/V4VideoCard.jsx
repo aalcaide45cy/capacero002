@@ -79,6 +79,8 @@ export default function V4VideoCard({ video, onSelect }) {
           height="270"
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
           className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
             video.isScheduled ? 'brightness-75 grayscale-[20%]' : ''
           }`}
