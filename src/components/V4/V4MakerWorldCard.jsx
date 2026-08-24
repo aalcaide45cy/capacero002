@@ -1,68 +1,31 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, ChevronLeft, ChevronRight, Download, Sparkles, Tag, Layers } from 'lucide-react';
+import React from 'react';
+import { Eye, Sparkles, Tag, ZoomIn, Layers, Box } from 'lucide-react';
 
-export default function V4MakerWorldCard({ model }) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const timerRef = useRef(null);
-
+export default function V4MakerWorldCard({ model, onSelect }) {
   if (!model) return null;
 
   const images = Array.isArray(model.images) && model.images.length > 0 
     ? model.images 
     : ['/logo-capa-cero.webp'];
 
+  const primaryImage = model.primaryImage || images[0];
   const hasMultipleImages = images.length > 1;
-  const intervalMs = model.carouselInterval || 3500;
 
-  // Pase automático de fotos (Carousel Slideshow)
-  useEffect(() => {
-    if (!hasMultipleImages || isPaused || intervalMs <= 0) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-
-    timerRef.current = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-    }, intervalMs);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [hasMultipleImages, isPaused, intervalMs, images.length]);
-
-  const handlePrevImage = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
-  };
-
-  const handleNextImage = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
-  };
-
-  const handleDotClick = (e, idx) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex(idx);
+  const handleCardClick = () => {
+    if (onSelect) onSelect(model);
   };
 
   return (
     <div 
-      className="group bg-zinc-950 hover:bg-zinc-900 border border-zinc-800/90 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col h-full text-left"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => setIsPaused(false)}
+      onClick={handleCardClick}
+      className="group bg-zinc-950 hover:bg-zinc-900/90 border border-zinc-800/90 hover:border-cyan-500/60 rounded-2xl overflow-hidden shadow-xl hover:shadow-cyan-950/30 transition-all duration-300 flex flex-col h-full text-left cursor-pointer"
     >
       
-      {/* Visual / Image Area (Carousel) */}
+      {/* Visual / Image Area (Foto fija con Lupita al pasar el ratón) */}
       <div className="relative aspect-video w-full bg-zinc-950 overflow-hidden select-none">
         <img
-          src={images[currentImageIndex]}
-          alt={`${model.name} - Imagen ${currentImageIndex + 1}`}
+          src={primaryImage}
+          alt={model.name}
           loading="lazy"
           decoding="async"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -74,6 +37,16 @@ export default function V4MakerWorldCard({ model }) {
 
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent pointer-events-none" />
+
+        {/* Lupita centrada al hacer Hover */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1.5 backdrop-blur-[2px] pointer-events-none">
+          <div className="w-11 h-11 rounded-full bg-cyan-500/90 text-white flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.6)] transform scale-75 group-hover:scale-100 transition-transform duration-300">
+            <ZoomIn className="w-5 h-5" />
+          </div>
+          <span className="text-[11px] font-extrabold text-cyan-200 tracking-wide uppercase">
+            Ver en grande
+          </span>
+        </div>
 
         {/* Top Badges: Tag + Price/Gratis */}
         <div className="absolute top-3 inset-x-3 flex items-center justify-between gap-2 z-10">
@@ -96,43 +69,12 @@ export default function V4MakerWorldCard({ model }) {
           )}
         </div>
 
-        {/* Carousel Navigation Arrows */}
+        {/* Indicador discreto de múltiples fotos si hay más de 1 */}
         {hasMultipleImages && (
-          <>
-            <button
-              type="button"
-              onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 cursor-pointer z-20 border border-zinc-700/60 shadow-lg active:scale-95"
-              aria-label="Imagen anterior"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center transition-all opacity-80 sm:opacity-0 group-hover:opacity-100 cursor-pointer z-20 border border-zinc-700/60 shadow-lg active:scale-95"
-              aria-label="Imagen siguiente"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            {/* Indicator Dots */}
-            <div className="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1.5 z-10 pointer-events-auto">
-              {images.map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={(e) => handleDotClick(e, idx)}
-                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                    idx === currentImageIndex 
-                      ? 'w-5 bg-cyan-400 shadow-[0_0_8px_rgba(0,229,255,0.8)]' 
-                      : 'w-1.5 bg-white/50 hover:bg-white'
-                  }`}
-                  aria-label={`Ver foto ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </>
+          <div className="absolute bottom-2.5 right-2.5 bg-black/80 border border-zinc-700/80 px-2 py-0.5 rounded-md text-[10px] font-bold text-zinc-300 backdrop-blur-sm flex items-center gap-1 z-10">
+            <Layers className="w-3 h-3 text-cyan-400" />
+            <span>{images.length} fotos</span>
+          </div>
         )}
       </div>
 
@@ -144,24 +86,25 @@ export default function V4MakerWorldCard({ model }) {
           </h3>
 
           {model.description && (
-            <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed whitespace-pre-line break-words mb-2 font-normal">
+            <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed whitespace-pre-line break-words mb-2 font-normal">
               {model.description}
             </p>
           )}
         </div>
 
-        {/* CTA Button Link */}
+        {/* CTA Button "Ver" */}
         <div className="pt-3 border-t border-zinc-800/80">
-          <a
-            href={model.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-xl shadow-md shadow-blue-950/40 hover:shadow-cyan-500/25 transition-all active:scale-[0.98] border border-cyan-300/30"
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-zinc-900 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-500 text-zinc-200 hover:text-white text-xs sm:text-sm font-extrabold px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-[0.98] border border-zinc-700/70 hover:border-cyan-400/50 cursor-pointer"
           >
-            <Download className="w-4 h-4 text-cyan-100 shrink-0" />
-            <span className="truncate">{model.buttonText || 'Descargar en MakerWorld'}</span>
-            <ExternalLink className="w-3.5 h-3.5 text-cyan-200 opacity-70 shrink-0" />
-          </a>
+            <Eye className="w-4 h-4 text-cyan-400 group-hover:text-white transition-colors shrink-0" />
+            <span>Ver Modelo</span>
+          </button>
         </div>
       </div>
 

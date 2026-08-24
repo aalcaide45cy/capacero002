@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Sparkles, Search, ExternalLink, Download, Layers, Tag, RefreshCw } from 'lucide-react';
 import V4MakerWorldCard from './V4MakerWorldCard';
+import V4MakerWorldModal from './V4MakerWorldModal';
 import { loadMakerWorldModels } from '../../utils/loadMakerWorldModels';
 
 export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
   const [models, setModels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState('Todos');
+  const [selectedModelModal, setSelectedModelModal] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,7 +121,11 @@ export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
       ) : filteredModels.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredModels.map((model) => (
-            <V4MakerWorldCard key={model.id} model={model} />
+            <V4MakerWorldCard 
+              key={model.id} 
+              model={model} 
+              onSelect={(m) => setSelectedModelModal(m)} 
+            />
           ))}
         </div>
       ) : (
@@ -152,6 +158,14 @@ export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
             </a>
           </div>
         </div>
+      )}
+
+      {/* Modal en Grande de Modelo 3D con Carrusel Automático */}
+      {selectedModelModal && (
+        <V4MakerWorldModal
+          model={selectedModelModal}
+          onClose={() => setSelectedModelModal(null)}
+        />
       )}
 
     </div>
