@@ -1,5 +1,5 @@
 import React from 'react';
-import { Youtube, Instagram, Calculator, FileText, Home, Mail } from 'lucide-react';
+import { Youtube, Instagram, FileText, Home, Mail } from 'lucide-react';
 import { trackSocialClick } from '../utils/analytics';
 
 // TikTok icon SVG component (Lucide doesn't have TikTok)

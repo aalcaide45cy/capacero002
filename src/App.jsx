@@ -5,7 +5,6 @@ import V4Hub from './components/V4/V4Hub';
 // Evita descargar y evaluar librerías pesadas en la home principal.
 const Header = lazy(() => import('./components/Header'));
 const PrivacyCookies = lazy(() => import('./components/PrivacyCookies'));
-const Calculator = lazy(() => import('./components/Calculator'));
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
 
@@ -47,32 +46,7 @@ function App() {
         );
     }
 
-    // 4. Intercepción de ruta para la Calculadora 3D
-    if (currentPath === '/calculadora' || currentPath === '/calculadora/') {
-        return (
-            <Suspense fallback={<RouteLoadingFallback />}>
-                <div className="min-h-screen bg-black">
-                    <Header isSticky={false} compactLogo={false} isCalculatorPage={true} />
-                    <div style={{ paddingTop: '20px' }}>
-                        <Calculator />
-                    </div>
-                    <footer className="mt-20 border-t border-zinc-900 bg-black py-10 px-6 text-center">
-                        <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
-                            <img src="/logo-capa-cero-small.png" alt="Capa Cero Logo" className="w-12 h-12 opacity-50 grayscale hidden md:block" />
-                            <p className="text-xs text-zinc-500 leading-relaxed">
-                                Capa Cero 3D · Videoteca Oficial, Tutoriales de Bambu Studio, Perfiles 3MF y Herramientas para Makers.
-                            </p>
-                            <p className="text-xs text-zinc-600 mt-1">
-                                © {new Date().getFullYear()} Capa Cero 3D. Todos los derechos reservados.
-                            </p>
-                        </div>
-                    </footer>
-                </div>
-            </Suspense>
-        );
-    }
-
-    // 5. Intercepción de ruta para Privacidad y Legal
+    // 4. Intercepción de ruta para Privacidad y Legal
     if (currentPath === '/politica-privacidad' || currentPath === '/politica-privacidad/') {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
@@ -86,12 +60,12 @@ function App() {
         );
     }
 
-    // 6. Limpieza automática de URL en el navegador para rutas eliminadas (/cursos, /v2-back, /producto/*, etc.)
+    // 5. Limpieza automática de URL en el navegador para rutas eliminadas (/calculadora, /cursos, /v2-back, etc.)
     if (currentPath !== '/' && currentPath !== '') {
         window.history.replaceState({}, '', '/');
     }
 
-    // 7. RUTA PRINCIPAL (/)
+    // 6. RUTA PRINCIPAL (/)
     return <V4Hub />;
 }
 

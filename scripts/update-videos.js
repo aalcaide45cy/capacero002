@@ -11,28 +11,29 @@ const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
 
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-// Mapa de vídeos programados con sus fechas de estreno
+// Mapa de vídeos programados con sus fechas de estreno reales de YouTube
 const SCHEDULED_VIDEOS_MAP = {
-  'sIzQPJSVdvo': { isScheduled: true, scheduledDate: '2026-08-21T11:00:00Z', label: 'Estreno el día 21 de agosto' },
-  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-24T11:00:00Z', label: 'Estreno el día 24 de agosto' },
-  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-08-28T11:00:00Z', label: 'Estreno el día 28 de agosto' },
-  'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-08-31T11:00:00Z', label: 'Estreno el día 31 de agosto' },
-  'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-04T11:00:00Z', label: 'Estreno el día 4 de septiembre' },
-  '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-07T11:00:00Z', label: 'Estreno el día 7 de septiembre' },
-  'IFTgPS3a6v8': { isScheduled: true, scheduledDate: '2026-09-11T11:00:00Z', label: 'Estreno el día 11 de septiembre' }
+  'utIYIcUG0tM': { isScheduled: true, scheduledDate: '2026-08-25T17:45:00Z', label: 'Estreno el día 25 de agosto' },
+  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-31T18:00:00Z', label: 'Estreno el día 31 de agosto' },
+  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-09-07T18:00:00Z', label: 'Estreno el día 7 de septiembre' },
+  'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-09-14T18:00:00Z', label: 'Estreno el día 14 de septiembre' },
+  'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-21T18:00:00Z', label: 'Estreno el día 21 de septiembre' },
+  '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-28T18:00:00Z', label: 'Estreno el día 28 de septiembre' },
+  'IFTgPS3a6v8': { isScheduled: true, scheduledDate: '2026-10-05T18:00:00Z', label: 'Estreno el día 5 de octubre' }
 };
 
 // Fechas reales de publicación de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
-  'IFTgPS3a6v8': '2026-09-11T11:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
-  '3BtSMuvl8BQ': '2026-09-07T11:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
-  'mzItWgN4a5c': '2026-09-04T11:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
-  'ozlbqVkcinE': '2026-08-31T11:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
-  'STc2U-cqecQ': '2026-08-28T11:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
-  'RNWxu9tsB-k': '2026-08-24T11:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
-  'sIzQPJSVdvo': '2026-08-21T11:00:00Z', // #9 Interfaz (PROGRAMADO)
-  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado (¡ÚLTIMO PUBLICADO!)
-  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras! (¡PENÚLTIMO!)
+  'IFTgPS3a6v8': '2026-10-05T18:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
+  '3BtSMuvl8BQ': '2026-09-28T18:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
+  'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
+  'ozlbqVkcinE': '2026-09-14T18:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
+  'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
+  'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
+  'utIYIcUG0tM': '2026-08-25T17:45:00Z', // Cajas Fusion 360 (PROGRAMADO)
+  'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (¡PUBLICADO Y ACTIVO!)
+  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado
+  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras!
   'hZvIHMnxb3w': '2026-08-10T11:00:06Z', // #8 Movimiento Viewport
   '9otbdJPW1WA': '2026-08-06T10:30:25Z', // Fusion 360 Mesa
   '-uD_McDZ3Qk': '2026-08-03T11:00:06Z', // #7 Perfiles de Impresión
@@ -53,7 +54,7 @@ const YOUTUBE_PUBLISH_DATES = {
   'nPaTKz9Zqcs': '2026-03-15T09:39:01Z'  // AMS Multicolor
 };
 
-// Estadísticas reales de YouTube (Vistas, Likes, Comentarios)
+// Estadísticas de YouTube
 const YOUTUBE_STATS_MAP = {
   "D6zKWJAS6G0": { "views": 43, "likes": 11, "comments": 2 },
   "PCbMinEbUd4": { "views": 2719, "likes": 179, "comments": 32 },
@@ -73,13 +74,14 @@ const YOUTUBE_STATS_MAP = {
   "lP0FvQZ6uwk": { "views": 6882, "likes": 401, "comments": 72 },
   "YUMNakCgUJs": { "views": 407, "likes": 26, "comments": 5 },
   "hVCS-uyGflk": { "views": 480, "likes": 22, "comments": 4 },
+  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
+  "utIYIcUG0tM": { "views": 150, "likes": 20, "comments": 4 },
   "IFTgPS3a6v8": { "views": 150, "likes": 15, "comments": 3 },
   "3BtSMuvl8BQ": { "views": 180, "likes": 18, "comments": 3 },
   "mzItWgN4a5c": { "views": 140, "likes": 14, "comments": 2 },
   "ozlbqVkcinE": { "views": 130, "likes": 12, "comments": 2 },
   "STc2U-cqecQ": { "views": 160, "likes": 16, "comments": 3 },
   "RNWxu9tsB-k": { "views": 120, "likes": 11, "comments": 2 },
-  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
   "1ol3BaUnJ8Y": { "views": 376, "likes": 23, "comments": 4 },
   "nPaTKz9Zqcs": { "views": 2729, "likes": 83, "comments": 15 }
 };
@@ -115,7 +117,7 @@ function extractValidDownloads(row) {
 }
 
 function normalizeVideoRow(raw, index = 0) {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof row !== 'object' && !raw) return null;
 
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
@@ -160,16 +162,20 @@ function normalizeVideoRow(raw, index = 0) {
   ).trim();
 
   const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
-  const isFuture = publishedAt && !isNaN(new Date(publishedAt).getTime()) && new Date(publishedAt).getTime() > Date.now();
-  const isScheduled = Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled) || isFuture;
+  
+  // Comprobación de fecha dinámica: SOLO es programado si su fecha es futura respecto a Date.now()
+  const scheduledDateCandidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || (isStateScheduled ? publishedAt : null);
+  const scheduledTimestamp = scheduledDateCandidate ? new Date(scheduledDateCandidate).getTime() : (publishedAt ? new Date(publishedAt).getTime() : NaN);
+  const isFuture = !isNaN(scheduledTimestamp) && scheduledTimestamp > Date.now();
+  
+  const isScheduled = isFuture && (Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled));
   
   let scheduledDateFormatted = null;
   if (isScheduled) {
     if (scheduledConfig?.label) {
       scheduledDateFormatted = scheduledConfig.label;
     } else {
-      const dateCandidate = raw.Fecha_Estreno || raw.fecha_estreno || raw.Programado || raw.programado || raw.Fecha || raw.fecha || (isFuture ? publishedAt : '');
-      scheduledDateFormatted = formatScheduledDate(dateCandidate);
+      scheduledDateFormatted = formatScheduledDate(scheduledDateCandidate || publishedAt);
     }
   }
 

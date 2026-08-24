@@ -807,7 +807,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
                   {/* Description Box */}
                   {video.hasDescription && (
-                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal">
+                    <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal whitespace-pre-line break-words">
                       {video.description}
                     </div>
                   )}
@@ -902,7 +902,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     
                     {/* MOBILE ONLY: Description Card */}
                     {video.hasDescription && (
-                      <div className="md:hidden bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal">
+                      <div className="md:hidden bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal whitespace-pre-line break-words">
                         {video.description}
                       </div>
                     )}

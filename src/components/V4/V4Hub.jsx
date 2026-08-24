@@ -3,8 +3,6 @@ import V4Hero from './V4Hero';
 import V4SearchBar from './V4SearchBar';
 import V4VideoGrid from './V4VideoGrid';
 import V4VideoModal from './V4VideoModal';
-import V4Doctor3D from './V4Doctor3D';
-import V4Downloads from './V4Downloads';
 import V4StickySubscribe from './V4StickySubscribe';
 import V4Footer from './V4Footer';
 import V4CircuitBackground from './V4CircuitBackground';
@@ -21,7 +19,6 @@ export default function V4Hub() {
   const [videos, setVideos] = useState(() => getInitialV4Videos());
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('videos'); // 'videos' | 'doctor' | 'downloads'
   const [selectedVideoModal, setSelectedVideoModal] = useState(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
@@ -100,11 +97,10 @@ export default function V4Hub() {
   // Iniciar sesión de analítica completa en el montaje
   useEffect(() => {
     initAnalyticsSession();
+    setActiveSection('Videoteca Principal');
   }, []);
 
   // Si la app está instalada (PWA en Windows/Android/iOS):
-  // 1. Si no tiene permiso ('default'), lanza el diálogo nativo del sistema.
-  // 2. Si ya lo tenía concedido ('granted'), renueva y sincroniza la suscripción silenciosamente.
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       const isStandalone = 
@@ -112,10 +108,8 @@ export default function V4Hub() {
         window.navigator.standalone === true;
       
       if (isStandalone) {
-        // Intentar inmediatamente
         subscribeToPushNotifications();
 
-        // Y en el primer toque del usuario (requisito de iOS WebKit para user activation)
         const handleFirstInteraction = () => {
           subscribeToPushNotifications();
         };
@@ -130,13 +124,6 @@ export default function V4Hub() {
       }
     }
   }, []);
-
-  // Actualizar la sección activa según la pestaña actual
-  useEffect(() => {
-    if (activeTab === 'videos') setActiveSection('Videoteca Grid');
-    else if (activeTab === 'doctor') setActiveSection('Doctor 3D');
-    else if (activeTab === 'downloads') setActiveSection('Descargas');
-  }, [activeTab]);
 
   // Scroll listener optimizado con requestAnimationFrame
   useEffect(() => {
@@ -185,20 +172,10 @@ export default function V4Hub() {
     return videos.find((v) => !v.isScheduled) || videos[0];
   }, [videos]);
 
-  const handleSearchWithQuery = (query) => {
-    setActiveTab('videos');
-    setActiveCategory('Todos');
-    setSearchQuery(query);
-    window.scrollTo({ top: 500, behavior: 'smooth' });
-  };
-
   const isSearching = Boolean(searchQuery && searchQuery.trim().length > 0);
 
   const handleSearchChange = (val) => {
     setSearchQuery(val);
-    if (val && val.trim().length > 0 && activeTab !== 'videos') {
-      setActiveTab('videos');
-    }
   };
 
   return (
@@ -231,10 +208,6 @@ export default function V4Hub() {
         featuredVideo={featuredVideo}
         isSearching={isSearching}
         onSelectVideo={(v) => setSelectedVideoModal(v)}
-        onOpenTab={(tab) => {
-          setActiveTab(tab);
-          window.scrollTo({ top: 450, behavior: 'smooth' });
-        }}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
         onOpenInstall={() => setIsInstallModalOpen(true)}
       >
@@ -246,33 +219,16 @@ export default function V4Hub() {
         />
       </V4Hero>
 
-      {/* Main Content Area based on Tab */}
+      {/* Main Content Area */}
       <main className="flex-1">
-        {activeTab === 'videos' && (
-          <V4VideoGrid
-            videos={videos}
-            activeCategory={activeCategory}
-            onSelectCategory={setActiveCategory}
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            onSelectVideo={(v) => setSelectedVideoModal(v)}
-          />
-        )}
-
-        {activeTab === 'doctor' && (
-          <V4Doctor3D
-            videos={videos}
-            onSelectVideo={(v) => setSelectedVideoModal(v)}
-            onSearchWithQuery={handleSearchWithQuery}
-          />
-        )}
-
-        {activeTab === 'downloads' && (
-          <V4Downloads
-            videos={videos}
-            onSelectVideo={(v) => setSelectedVideoModal(v)}
-          />
-        )}
+        <V4VideoGrid
+          videos={videos}
+          activeCategory={activeCategory}
+          onSelectCategory={setActiveCategory}
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onSelectVideo={(v) => setSelectedVideoModal(v)}
+        />
       </main>
 
       {/* Sticky Subscribe Bar on scroll */}

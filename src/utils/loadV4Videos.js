@@ -3,32 +3,33 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V11';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V11';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V12';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V12';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
-// Mapa de vídeos programados con sus fechas de estreno
+// Mapa de vídeos programados con sus fechas de estreno reales de YouTube
 export const SCHEDULED_VIDEOS_MAP = {
-  'sIzQPJSVdvo': { isScheduled: true, scheduledDate: '2026-08-21T11:00:00Z', label: 'Estreno el día 21 de agosto' },
-  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-24T11:00:00Z', label: 'Estreno el día 24 de agosto' },
-  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-08-28T11:00:00Z', label: 'Estreno el día 28 de agosto' },
-  'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-08-31T11:00:00Z', label: 'Estreno el día 31 de agosto' },
-  'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-04T11:00:00Z', label: 'Estreno el día 4 de septiembre' },
-  '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-07T11:00:00Z', label: 'Estreno el día 7 de septiembre' },
-  'IFTgPS3a6v8': { isScheduled: true, scheduledDate: '2026-09-11T11:00:00Z', label: 'Estreno el día 11 de septiembre' }
+  'utIYIcUG0tM': { isScheduled: true, scheduledDate: '2026-08-25T17:45:00Z', label: 'Estreno el día 25 de agosto' },
+  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-31T18:00:00Z', label: 'Estreno el día 31 de agosto' },
+  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-09-07T18:00:00Z', label: 'Estreno el día 7 de septiembre' },
+  'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-09-14T18:00:00Z', label: 'Estreno el día 14 de septiembre' },
+  'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-21T18:00:00Z', label: 'Estreno el día 21 de septiembre' },
+  '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-28T18:00:00Z', label: 'Estreno el día 28 de septiembre' },
+  'IFTgPS3a6v8': { isScheduled: true, scheduledDate: '2026-10-05T18:00:00Z', label: 'Estreno el día 5 de octubre' }
 };
 
 // Fechas de publicación reales de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
-  'IFTgPS3a6v8': '2026-09-11T11:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
-  '3BtSMuvl8BQ': '2026-09-07T11:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
-  'mzItWgN4a5c': '2026-09-04T11:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
-  'ozlbqVkcinE': '2026-08-31T11:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
-  'STc2U-cqecQ': '2026-08-28T11:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
-  'RNWxu9tsB-k': '2026-08-24T11:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
-  'sIzQPJSVdvo': '2026-08-21T11:00:00Z', // #9 Interfaz (PROGRAMADO)
-  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado (¡ÚLTIMO PUBLICADO!)
-  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras! (¡PENÚLTIMO!)
+  'IFTgPS3a6v8': '2026-10-05T18:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
+  '3BtSMuvl8BQ': '2026-09-28T18:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
+  'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
+  'ozlbqVkcinE': '2026-09-14T18:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
+  'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
+  'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
+  'utIYIcUG0tM': '2026-08-25T17:45:00Z', // Cajas Fusion 360 (PROGRAMADO)
+  'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (¡PUBLICADO Y ACTIVO!)
+  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado
+  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras!
   'hZvIHMnxb3w': '2026-08-10T11:00:06Z', // #8 Movimiento Viewport
   '9otbdJPW1WA': '2026-08-06T10:30:25Z', // Fusion 360 Mesa
   '-uD_McDZ3Qk': '2026-08-03T11:00:06Z', // #7 Perfiles de Impresión
@@ -69,39 +70,17 @@ const YOUTUBE_STATS_MAP = {
   "lP0FvQZ6uwk": { "views": 6882, "likes": 401, "comments": 72 },
   "YUMNakCgUJs": { "views": 407, "likes": 26, "comments": 5 },
   "hVCS-uyGflk": { "views": 480, "likes": 22, "comments": 4 },
+  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
+  "utIYIcUG0tM": { "views": 150, "likes": 20, "comments": 4 },
   "IFTgPS3a6v8": { "views": 150, "likes": 15, "comments": 3 },
   "3BtSMuvl8BQ": { "views": 180, "likes": 18, "comments": 3 },
   "mzItWgN4a5c": { "views": 140, "likes": 14, "comments": 2 },
   "ozlbqVkcinE": { "views": 130, "likes": 12, "comments": 2 },
   "STc2U-cqecQ": { "views": 160, "likes": 16, "comments": 3 },
   "RNWxu9tsB-k": { "views": 120, "likes": 11, "comments": 2 },
-  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
   "1ol3BaUnJ8Y": { "views": 376, "likes": 23, "comments": 4 },
   "nPaTKz9Zqcs": { "views": 2729, "likes": 83, "comments": 15 }
 };
-
-/**
- * Convierte cualquier URL de Google Sheets a su enlace directo CSV público
- */
-export function formatGoogleSheetUrl(rawUrl) {
-  if (!rawUrl) return '';
-  const clean = String(rawUrl).trim();
-  if (!clean) return '';
-
-  if (clean.includes('output=csv') || clean.includes('format=csv')) {
-    return clean;
-  }
-
-  const sheetIdMatch = clean.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/i);
-  if (sheetIdMatch && sheetIdMatch[1]) {
-    const sheetId = sheetIdMatch[1];
-    const gidMatch = clean.match(/[#&?]gid=([0-9]+)/i);
-    const gidParam = gidMatch ? `&gid=${gidMatch[1]}` : '';
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gidParam}`;
-  }
-
-  return clean;
-}
 
 /**
  * Extrae el ID del vídeo de YouTube desde cualquier formato de URL o texto.
@@ -159,10 +138,6 @@ export function extractValidDownloads(row) {
 export function normalizeVideoRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;
 
-  if (raw.youtubeId && raw.title && raw.category && raw.publishedAt && raw.views !== undefined) {
-    return raw;
-  }
-
   const title = String(raw.Titulo || raw.titulo || raw.Title || raw.title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.youtubeUrl || raw.URL || '').trim();
   const videoId = raw.youtubeId || extractYouTubeId(rawUrl);
@@ -187,7 +162,7 @@ export function normalizeVideoRow(raw, index = 0) {
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (raw.chapterNumber || null);
-  const publishedAt = raw.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
+  const publishedAt = YOUTUBE_PUBLISH_DATES[videoId] || raw.publishedAt || new Date(Date.now() + (index * 1000)).toISOString();
   
   const stats = YOUTUBE_STATS_MAP[videoId] || { views: raw.views || 100, likes: raw.likes || 10, comments: raw.comments || 2 };
   const views = raw.views !== undefined ? raw.views : stats.views;
@@ -206,16 +181,20 @@ export function normalizeVideoRow(raw, index = 0) {
   ).trim();
 
   const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
-  const isFuture = publishedAt && !isNaN(new Date(publishedAt).getTime()) && new Date(publishedAt).getTime() > Date.now();
-  const isScheduled = Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled) || isFuture;
+  
+  // Comprobación de fecha dinámica: SOLO es programado si su fecha es futura respecto a Date.now()
+  const scheduledDateCandidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || (isStateScheduled ? publishedAt : null);
+  const scheduledTimestamp = scheduledDateCandidate ? new Date(scheduledDateCandidate).getTime() : (publishedAt ? new Date(publishedAt).getTime() : NaN);
+  const isFuture = !isNaN(scheduledTimestamp) && scheduledTimestamp > Date.now();
+  
+  const isScheduled = isFuture && (Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled));
   
   let scheduledDateFormatted = null;
   if (isScheduled) {
     if (scheduledConfig?.label) {
       scheduledDateFormatted = scheduledConfig.label;
     } else {
-      const dateCandidate = raw.Fecha_Estreno || raw.fecha_estreno || raw.Programado || raw.programado || raw.Fecha || raw.fecha || (isFuture ? publishedAt : '');
-      scheduledDateFormatted = formatScheduledDate(dateCandidate);
+      scheduledDateFormatted = formatScheduledDate(scheduledDateCandidate || publishedAt);
     }
   }
 
@@ -281,18 +260,6 @@ export function getInitialV4Videos() {
 export async function loadV4Videos(forceRefresh = false) {
   const now = Date.now();
 
-  // Limpiar versiones obsoletas del caché anterior
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V4');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V5');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V6');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V7');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V8');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_DATE_V8');
-    } catch (e) {}
-  }
-
   // 1. Comprobar caché local válido de los últimos 5 minutos
   if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
     try {
@@ -303,7 +270,10 @@ export async function loadV4Videos(forceRefresh = false) {
       if (cachedData && cachedTime && (now - cachedTime < CACHE_TTL_MS)) {
         const parsed = JSON.parse(cachedData);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          // Re-normalizar para verificar si algún vídeo programado ya se estrenó
+          const refreshed = parsed.map((v, idx) => normalizeVideoRow(v, idx)).filter(Boolean);
+          refreshed.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+          return refreshed;
         }
       }
     } catch (e) {

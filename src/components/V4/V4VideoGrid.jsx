@@ -7,6 +7,7 @@ import {
   Crosshair, Box, Palette, Zap, LayoutGrid, Cuboid, FileText
 } from 'lucide-react';
 import V4VideoCard from './V4VideoCard';
+import V4MakerWorldGrid from './V4MakerWorldGrid';
 import NotesSearchModal from './NotesSearchModal';
 import BackupModal from './BackupModal';
 import RestoreModal from './RestoreModal';
@@ -414,17 +415,23 @@ export default function V4VideoGrid({
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
             {activeSortFilter === 'courses' 
               ? (activeCourse ? `Curso: ${activeCourse.name}` : 'Academia de Cursos Estructurados') 
+              : activeSortFilter === 'makerworld'
+              ? 'Modelos para Imprimir (MakerWorld)'
               : 'Videoteca de Tutoriales y Trucos'}
           </h2>
           <span className="text-xs sm:text-sm font-extrabold text-cyan-300 bg-cyan-950/80 border border-cyan-500/50 px-3.5 py-1 rounded-full whitespace-nowrap inline-flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(0,229,255,0.25)]">
             {activeSortFilter === 'courses'
               ? (activeCourse ? `${activeCourse.videos.length} lecciones` : `${coursesList.length} cursos`)
+              : activeSortFilter === 'makerworld'
+              ? 'Modelos Gratis'
               : `${filteredVideos.length} ${filteredVideos.length === 1 ? 'vídeo' : 'vídeos'}`}
           </span>
         </div>
         <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto font-normal leading-relaxed">
           {activeSortFilter === 'courses'
             ? 'Rutas de aprendizaje ordenadas paso a paso para dominar herramientas desde cero hasta nivel avanzado.'
+            : activeSortFilter === 'makerworld'
+            ? 'Diseños 3D optimizados para Bambu Lab, perfiles y piezas funcionales listos para descargar.'
             : 'Tutoriales, configuraciones y soluciones sobre impresión 3D.'}
         </p>
       </div>
@@ -452,13 +459,13 @@ export default function V4VideoGrid({
         </div>
       </div>
 
-      {/* Selector de Modos (Más Nuevos / Más Populares / Cursos) */}
+      {/* Selector de Modos (Más Nuevos / Más Populares / Cursos / Modelos Gratis) */}
       <div className="flex items-center justify-start sm:justify-center gap-2 mb-5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pb-1">
         <div className="inline-flex p-1 rounded-2xl bg-zinc-950/90 border border-zinc-800/90 shadow-inner">
           {/* Botón 1: Más Nuevos */}
           <button
             onClick={() => handleSwitchFilter('newest')}
-            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
+            className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
               activeSortFilter === 'newest'
                 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -471,7 +478,7 @@ export default function V4VideoGrid({
           {/* Botón 2: Más Populares */}
           <button
             onClick={() => handleSwitchFilter('popular')}
-            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
+            className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
               activeSortFilter === 'popular'
                 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -484,7 +491,7 @@ export default function V4VideoGrid({
           {/* Botón 3: Cursos */}
           <button
             onClick={() => handleSwitchFilter('courses')}
-            className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer ${
+            className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
               activeSortFilter === 'courses'
                 ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
                 : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
@@ -496,11 +503,27 @@ export default function V4VideoGrid({
               {coursesList.length}
             </span>
           </button>
+
+          {/* Botón 4: Modelos Gratis */}
+          <button
+            onClick={() => handleSwitchFilter('makerworld')}
+            className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all duration-200 cursor-pointer whitespace-nowrap ${
+              activeSortFilter === 'makerworld'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/25'
+                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Modelos Gratis</span>
+            <span className="text-[10px] font-black bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-500/40 leading-none">
+              3D
+            </span>
+          </button>
         </div>
       </div>
 
       {/* Píldoras Temáticas de Categorías con Arrastre con Ratón (Drag-to-Scroll) y Rueda Inclinable */}
-      {activeSortFilter !== 'courses' && (
+      {activeSortFilter !== 'courses' && activeSortFilter !== 'makerworld' && (
         <div ref={filtersContainerRef} className="relative mb-8 group max-w-5xl mx-auto">
           {/* Manita Flotante Animada (Desplazamiento horizontal + desvanecimiento en móvil) */}
           <AnimatePresence>
@@ -572,8 +595,13 @@ export default function V4VideoGrid({
         </div>
       )}
 
-      {/* ================= VISTA DE CURSOS (MODO: 'courses') ================= */}
-      {activeSortFilter === 'courses' ? (
+      {/* ================= VISTAS SEGÚN MODO SELECCIONADO ================= */}
+      {activeSortFilter === 'makerworld' ? (
+        <V4MakerWorldGrid 
+          searchQuery={searchQuery} 
+          onSearchChange={onSearchChange} 
+        />
+      ) : activeSortFilter === 'courses' ? (
         <div>
           {/* Sub-vista A: DETALLE DE UN CURSO ESPECÍFICO CON SUS LECCIONES ORDENADAS */}
           {activeCourse ? (

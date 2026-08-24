@@ -3,7 +3,7 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://www.capacero3d.com/</loc>
-    <lastmod>2026-08-22</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <video:video>
@@ -11,7 +11,7 @@
       <video:title>Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15</video:title>
       <video:description>Añade texto tridimensional sobre cualquier superficie curva o plana y crea modificadores de relleno.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/IFTgPS3a6v8</video:player_loc>
-      <video:publication_date>2026-09-11T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-10-05T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>150</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -21,7 +21,7 @@
       <video:title>Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14</video:title>
       <video:description>Herramientas de pintura por capas, por relleno de cubos y por triángulos en modelos multicolor.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/3BtSMuvl8BQ</video:player_loc>
-      <video:publication_date>2026-09-07T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-09-28T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>180</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -31,7 +31,7 @@
       <video:title>Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13</video:title>
       <video:description>Ensambla piezas separadas directamente en la placa sin necesidad de abrir un programa de modelado.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/mzItWgN4a5c</video:player_loc>
-      <video:publication_date>2026-09-04T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-09-21T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>140</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -41,7 +41,7 @@
       <video:title>Grupos y Jerarquías en Bambu Studio | Guía de mallas booleanas #12</video:title>
       <video:description>Domina las operaciones de unión, resta y corte booleano de volúmenes directamente en el slicer.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/ozlbqVkcinE</video:player_loc>
-      <video:publication_date>2026-08-31T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-09-14T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>130</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -51,7 +51,7 @@
       <video:title>No Hagas Esto al Cortar en Bambustudio | Guía Completa #11</video:title>
       <video:description>Cómo cortar modelos grandes para imprimir por partes con uniones perfectas y sin holguras.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/STc2U-cqecQ</video:player_loc>
-      <video:publication_date>2026-08-28T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-09-07T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>160</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -61,17 +61,27 @@
       <video:title>Escala, rota y posiciona: controles esenciales de BambuStudio #10</video:title>
       <video:description>Atajos de teclado y trucos de posicionamiento para optimizar el espacio en la cama de impresión.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/RNWxu9tsB-k</video:player_loc>
-      <video:publication_date>2026-08-24T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-08-31T18:00:00Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>120</video:view_count>
       <video:category>Curso BambuStudio</video:category>
+    </video:video>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/utIYIcUG0tM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes</video:title>
+      <video:description>Aprende a diseñar una caja funcional y 100% paramétrica en Autodesk Fusion 360 desde cero. En este tutorial completo vemos dos metodologías profesionales de modelado (extrusión por perfiles vs. vaciad</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/utIYIcUG0tM</video:player_loc>
+      <video:publication_date>2026-08-25T17:45:00Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>150</video:view_count>
+      <video:category>Modelado 3D</video:category>
     </video:video>
     <video:video>
       <video:thumbnail_loc>https://img.youtube.com/vi/sIzQPJSVdvo/hqdefault.jpg</video:thumbnail_loc>
       <video:title>¿Perdido en la interfaz? Todo lo que necesitas saber #9</video:title>
       <video:description>Guía rápida para entender cada botón, panel lateral y menú superior sin perder el tiempo.</video:description>
       <video:player_loc allow_embed="yes">https://www.youtube.com/embed/sIzQPJSVdvo</video:player_loc>
-      <video:publication_date>2026-08-21T11:00:00Z</video:publication_date>
+      <video:publication_date>2026-08-24T18:00:06Z</video:publication_date>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>110</video:view_count>
       <video:category>Curso BambuStudio</video:category>
@@ -278,14 +288,26 @@
     </video:video>
   </url>
   <url>
-    <loc>https://www.capacero3d.com/calculadora</loc>
-    <lastmod>2026-08-22</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://www.capacero3d.com/#videos</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/#cursos</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/#modelos</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.capacero3d.com/politica-privacidad</loc>
-    <lastmod>2026-08-22</lastmod>
+    <lastmod>2026-08-24</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
