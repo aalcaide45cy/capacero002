@@ -13,7 +13,6 @@ const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsP
 
 // Mapa de vídeos programados con sus fechas de estreno reales de YouTube
 const SCHEDULED_VIDEOS_MAP = {
-  'utIYIcUG0tM': { isScheduled: true, scheduledDate: '2026-08-25T17:45:00Z', label: 'Estreno el día 25 de agosto' },
   'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-31T18:00:00Z', label: 'Estreno el día 31 de agosto' },
   'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-09-07T18:00:00Z', label: 'Estreno el día 7 de septiembre' },
   'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-09-14T18:00:00Z', label: 'Estreno el día 14 de septiembre' },
@@ -30,60 +29,60 @@ const YOUTUBE_PUBLISH_DATES = {
   'ozlbqVkcinE': '2026-09-14T18:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
   'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
   'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
-  'utIYIcUG0tM': '2026-08-25T17:45:00Z', // Cajas Fusion 360 (PROGRAMADO)
-  'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (¡PUBLICADO Y ACTIVO!)
-  'D6zKWJAS6G0': '2026-08-17T11:00:06Z', // #8.1 Laminado
-  'PCbMinEbUd4': '2026-08-13T10:45:06Z', // ¡Adiós a las costuras!
-  'hZvIHMnxb3w': '2026-08-10T11:00:06Z', // #8 Movimiento Viewport
-  '9otbdJPW1WA': '2026-08-06T10:30:25Z', // Fusion 360 Mesa
-  '-uD_McDZ3Qk': '2026-08-03T11:00:06Z', // #7 Perfiles de Impresión
-  'oDGtU6Z2VYM': '2026-07-31T10:30:33Z', // Ahorra la Mitad del Tiempo
-  '-ZIU1pywxiQ': '2026-07-27T11:00:06Z', // #6 Perfiles vs Filamentos
-  'OHLka3HAwn0': '2026-07-24T11:30:24Z', // Deja de Tirar Dinero (Gigantes/Warping)
-  'fpvQEW7-9vo': '2026-07-22T11:00:16Z', // AlgoLaser Pixi 10W
-  'DNouZLKOnpk': '2026-07-19T15:00:06Z', // #5 Boquillas High-Flow
-  'w-DRE8UtD9s': '2026-07-15T09:05:11Z', // Textos Feos / Alta Resolución
-  'zXLmMLsKLe4': '2026-07-13T11:00:06Z', // #4 Placa de Impresión
-  'kYbpS-vwqJM': '2026-07-10T09:00:06Z', // Arreglar Modelos de IA
-  'v3SFbjI8BEE': '2026-07-09T07:00:06Z', // ChatGPT con Bambu Studio
-  'cfs1ctvUC-8': '2026-07-06T11:00:06Z', // #3 Primer Entorno
-  'lP0FvQZ6uwk': '2026-07-05T04:30:06Z', // Ajustes SECRETOS
-  'YUMNakCgUJs': '2026-06-29T11:00:06Z', // #2 Ecosistema Bambu Lab
-  'hVCS-uyGflk': '2026-06-22T11:00:06Z', // #1 Instalación Bambu Studio
-  '1ol3BaUnJ8Y': '2026-05-23T01:00:06Z', // Madimaker
-  'nPaTKz9Zqcs': '2026-03-15T09:39:01Z'  // AMS Multicolor
+  'utIYIcUG0tM': '2026-08-25T17:45:06Z', // Cajas Fusion 360 (PUBLICADO)
+  'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (PUBLICADO)
+  'D6zKWJAS6G0': '2026-08-17T18:00:06Z', // #8.1 Laminado
+  'PCbMinEbUd4': '2026-08-13T17:45:06Z', // ¡Adiós a las costuras!
+  'hZvIHMnxb3w': '2026-08-10T18:00:06Z', // #8 Movimiento Viewport
+  '9otbdJPW1WA': '2026-08-06T17:30:25Z', // Fusion 360 Mesa
+  '-uD_McDZ3Qk': '2026-08-03T18:00:06Z', // #7 Perfiles de Impresión
+  'oDGtU6Z2VYM': '2026-07-31T17:30:33Z', // Ahorra la Mitad del Tiempo
+  '-ZIU1pywxiQ': '2026-07-27T18:00:06Z', // #6 Perfiles vs Filamentos
+  'OHLka3HAwn0': '2026-07-24T18:30:24Z', // Deja de Tirar Dinero (Gigantes/Warping)
+  'fpvQEW7-9vo': '2026-07-22T18:00:16Z', // AlgoLaser Pixi 10W
+  'DNouZLKOnpk': '2026-07-19T22:00:06Z', // #5 Boquillas High-Flow
+  'w-DRE8UtD9s': '2026-07-15T16:05:11Z', // Textos Feos / Alta Resolución
+  'zXLmMLsKLe4': '2026-07-13T18:00:06Z', // #4 Placa de Impresión
+  'kYbpS-vwqJM': '2026-07-10T16:00:06Z', // Arreglar Modelos de IA
+  'v3SFbjI8BEE': '2026-07-09T14:00:06Z', // ChatGPT con Bambu Studio
+  'cfs1ctvUC-8': '2026-07-06T18:00:06Z', // #3 Primer Entorno
+  'lP0FvQZ6uwk': '2026-07-05T11:30:06Z', // Ajustes SECRETOS
+  'YUMNakCgUJs': '2026-06-29T18:00:06Z', // #2 Ecosistema Bambu Lab
+  'hVCS-uyGflk': '2026-06-22T18:00:06Z', // #1 Instalación Bambu Studio
+  '1ol3BaUnJ8Y': '2026-05-23T08:00:06Z', // Madimaker
+  'nPaTKz9Zqcs': '2026-03-15T16:39:01Z'  // AMS Multicolor
 };
 
-// Estadísticas de YouTube
+// Estadísticas de YouTube reales y actualizadas en directo
 const YOUTUBE_STATS_MAP = {
-  "D6zKWJAS6G0": { "views": 43, "likes": 11, "comments": 2 },
-  "PCbMinEbUd4": { "views": 2719, "likes": 179, "comments": 32 },
-  "hZvIHMnxb3w": { "views": 215, "likes": 14, "comments": 3 },
-  "9otbdJPW1WA": { "views": 222, "likes": 25, "comments": 5 },
-  "-uD_McDZ3Qk": { "views": 352, "likes": 21, "comments": 4 },
-  "oDGtU6Z2VYM": { "views": 2012, "likes": 125, "comments": 23 },
-  "-ZIU1pywxiQ": { "views": 607, "likes": 50, "comments": 9 },
-  "OHLka3HAwn0": { "views": 2720, "likes": 190, "comments": 34 },
-  "fpvQEW7-9vo": { "views": 242, "likes": 10, "comments": 2 },
-  "DNouZLKOnpk": { "views": 383, "likes": 22, "comments": 4 },
-  "w-DRE8UtD9s": { "views": 6005, "likes": 366, "comments": 66 },
-  "zXLmMLsKLe4": { "views": 486, "likes": 32, "comments": 6 },
-  "kYbpS-vwqJM": { "views": 2309, "likes": 158, "comments": 28 },
-  "v3SFbjI8BEE": { "views": 980, "likes": 69, "comments": 12 },
-  "cfs1ctvUC-8": { "views": 388, "likes": 19, "comments": 3 },
-  "lP0FvQZ6uwk": { "views": 6882, "likes": 401, "comments": 72 },
-  "YUMNakCgUJs": { "views": 407, "likes": 26, "comments": 5 },
-  "hVCS-uyGflk": { "views": 480, "likes": 22, "comments": 4 },
-  "sIzQPJSVdvo": { "views": 110, "likes": 10, "comments": 2 },
-  "utIYIcUG0tM": { "views": 150, "likes": 20, "comments": 4 },
-  "IFTgPS3a6v8": { "views": 150, "likes": 15, "comments": 3 },
-  "3BtSMuvl8BQ": { "views": 180, "likes": 18, "comments": 3 },
-  "mzItWgN4a5c": { "views": 140, "likes": 14, "comments": 2 },
-  "ozlbqVkcinE": { "views": 130, "likes": 12, "comments": 2 },
-  "STc2U-cqecQ": { "views": 160, "likes": 16, "comments": 3 },
-  "RNWxu9tsB-k": { "views": 120, "likes": 11, "comments": 2 },
-  "1ol3BaUnJ8Y": { "views": 376, "likes": 23, "comments": 4 },
-  "nPaTKz9Zqcs": { "views": 2729, "likes": 83, "comments": 15 }
+  "lP0FvQZ6uwk": { "views": 7183, "likes": 417, "comments": 72 },
+  "utIYIcUG0tM": { "views": 6621, "likes": 168, "comments": 4 },
+  "w-DRE8UtD9s": { "views": 6186, "likes": 378, "comments": 66 },
+  "PCbMinEbUd4": { "views": 4774, "likes": 274, "comments": 32 },
+  "nPaTKz9Zqcs": { "views": 3027, "likes": 87, "comments": 15 },
+  "OHLka3HAwn0": { "views": 2892, "likes": 197, "comments": 34 },
+  "kYbpS-vwqJM": { "views": 2435, "likes": 164, "comments": 28 },
+  "oDGtU6Z2VYM": { "views": 2158, "likes": 133, "comments": 23 },
+  "v3SFbjI8BEE": { "views": 1142, "likes": 76, "comments": 12 },
+  "-ZIU1pywxiQ": { "views": 712, "likes": 55, "comments": 9 },
+  "D6zKWJAS6G0": { "views": 682, "likes": 46, "comments": 2 },
+  "hVCS-uyGflk": { "views": 568, "likes": 25, "comments": 4 },
+  "zXLmMLsKLe4": { "views": 538, "likes": 34, "comments": 6 },
+  "YUMNakCgUJs": { "views": 463, "likes": 29, "comments": 5 },
+  "cfs1ctvUC-8": { "views": 429, "likes": 21, "comments": 3 },
+  "DNouZLKOnpk": { "views": 417, "likes": 24, "comments": 4 },
+  "1ol3BaUnJ8Y": { "views": 409, "likes": 24, "comments": 4 },
+  "-uD_McDZ3Qk": { "views": 402, "likes": 23, "comments": 4 },
+  "sIzQPJSVdvo": { "views": 330, "likes": 28, "comments": 2 },
+  "9otbdJPW1WA": { "views": 305, "likes": 28, "comments": 5 },
+  "hZvIHMnxb3w": { "views": 277, "likes": 16, "comments": 3 },
+  "fpvQEW7-9vo": { "views": 262, "likes": 10, "comments": 2 },
+  "RNWxu9tsB-k": { "views": 0, "likes": 0, "comments": 0 },
+  "STc2U-cqecQ": { "views": 0, "likes": 0, "comments": 0 },
+  "ozlbqVkcinE": { "views": 0, "likes": 0, "comments": 0 },
+  "mzItWgN4a5c": { "views": 0, "likes": 0, "comments": 0 },
+  "3BtSMuvl8BQ": { "views": 0, "likes": 0, "comments": 0 },
+  "IFTgPS3a6v8": { "views": 0, "likes": 0, "comments": 0 }
 };
 
 function extractYouTubeId(url) {
@@ -116,7 +115,50 @@ function extractValidDownloads(row) {
     .filter(Boolean);
 }
 
-function normalizeVideoRow(raw, index = 0) {
+async function fetchLiveYouTubeStats(videoId) {
+  if (!videoId) return null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
+      },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    const viewMatch = html.match(/"viewCount"\s*:\s*"(\d+)"/) || html.match(/itemprop="interactionCount"\s+content="(\d+)"/);
+    const views = viewMatch ? parseInt(viewMatch[1], 10) : null;
+
+    const likeMatch = html.match(/"likeCount"\s*:\s*"(\d+)"/) || html.match(/"defaultText":\s*\{\s*"accessibility":\s*\{\s*"accessibilityData":\s*\{\s*"label":\s*"([\d.,]+)\s*me gusta"/i);
+    let likes = null;
+    if (likeMatch) {
+      const parsed = parseInt(likeMatch[1].replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(parsed)) likes = parsed;
+    }
+
+    const commentMatch = html.match(/"commentCount"\s*:\s*\{\s*"simpleText"\s*:\s*"([\d.,]+)"/) || html.match(/"totalCommentsCount"\s*:\s*"(\d+)"/);
+    let comments = null;
+    if (commentMatch) {
+      const parsed = parseInt(commentMatch[1].replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(parsed)) comments = parsed;
+    }
+
+    const dateMatch = html.match(/"publishDate"\s*:\s*"([^"]+)"/) || html.match(/"datePublished":\s*"([^"]+)"/);
+    const publishedAt = dateMatch ? new Date(dateMatch[1]).toISOString() : null;
+
+    return { views, likes, comments, publishedAt };
+  } catch (e) {
+    return null;
+  }
+}
+
+function normalizeVideoRow(raw, index = 0, liveStats = null) {
   if (!raw || typeof row !== 'object' && !raw) return null;
 
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
@@ -143,12 +185,12 @@ function normalizeVideoRow(raw, index = 0) {
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : null;
-  const publishedAt = YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
+  const publishedAt = liveStats?.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
   
-  const stats = YOUTUBE_STATS_MAP[videoId] || { views: 100, likes: 10, comments: 2 };
-  const views = stats.views;
-  const likes = stats.likes;
-  const comments = stats.comments;
+  const stats = YOUTUBE_STATS_MAP[videoId] || { views: 0, likes: 0, comments: 0 };
+  const views = liveStats?.views !== null && liveStats?.views !== undefined ? liveStats.views : (stats.views || 0);
+  const likes = liveStats?.likes !== null && liveStats?.likes !== undefined ? liveStats.likes : (stats.likes || 0);
+  const comments = liveStats?.comments !== null && liveStats?.comments !== undefined ? liveStats.comments : (stats.comments || 0);
   
   const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
   const rawScheduled = String(
@@ -236,21 +278,31 @@ async function main() {
     Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: async (results) => {
         if (!results.data || !Array.isArray(results.data)) {
           console.error('❌ Formato de datos no válido');
           return;
         }
 
-        const validVideos = results.data
+        const rows = results.data
           .filter(row => row && typeof row === 'object')
           .filter(row => {
             const t = (row.Titulo || row.titulo || '').trim();
             const u = (row.URL_Youtube || row.url_youtube || '').trim();
             return t.length > 0 || u.length > 0;
-          })
-          .map((row, idx) => normalizeVideoRow(row, idx))
-          .filter(Boolean);
+          });
+
+        console.log(`📊 Procesando ${rows.length} vídeos y obteniendo estadísticas en tiempo real...`);
+
+        const validVideos = [];
+        for (let idx = 0; idx < rows.length; idx++) {
+          const row = rows[idx];
+          const rawUrl = String(row.URL_Youtube || row.url_youtube || row.Youtube || row.URL || '').trim();
+          const videoId = extractYouTubeId(rawUrl);
+          const liveStats = await fetchLiveYouTubeStats(videoId);
+          const normalized = normalizeVideoRow(row, idx, liveStats);
+          if (normalized) validVideos.push(normalized);
+        }
 
         // Orden cronológico estricto (más nuevo publicado primero)
         validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -258,9 +310,9 @@ async function main() {
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(validVideos, null, 2));
-        console.log(`✨ Generados ${validVideos.length} vídeos estáticos con estadísticas de YouTube en src/data/videos_v4.json`);
-        console.log(`🎬 Vídeo #1 (Hero y primero de lista): ${validVideos[0]?.title}`);
-        console.log(`🎬 Vídeo #2 (Penúltimo publicado): ${validVideos[1]?.title}\n`);
+        console.log(`✨ Generados ${validVideos.length} vídeos con estadísticas reales de YouTube en src/data/videos_v4.json`);
+        console.log(`🎬 Vídeo #1 (Hero y primero de lista): ${validVideos[0]?.title} (${validVideos[0]?.views} visualizaciones)`);
+        console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} (${validVideos[1]?.views} visualizaciones)\n`);
       },
       error: (err) => {
         console.error('🔥 Error parseando CSV de vídeos:', err);

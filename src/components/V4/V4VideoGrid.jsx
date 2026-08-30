@@ -278,8 +278,8 @@ export default function V4VideoGrid({
     const scheduled = result.filter(v => v.isScheduled);
 
     if (activeSortFilter === 'popular') {
-      published.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
-      scheduled.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+      published.sort((a, b) => ((b.views || 0) - (a.views || 0)) || ((b.likes || 0) - (a.likes || 0)));
+      scheduled.sort((a, b) => ((b.views || 0) - (a.views || 0)) || ((b.likes || 0) - (a.likes || 0)));
     } else {
       // 'newest': Más nuevos publicados primero
       published.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());

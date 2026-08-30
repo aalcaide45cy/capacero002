@@ -151,7 +151,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
     // 3. Fallback general para cualquier tutorial: pasar al siguiente más popular
     if (!next && otherVideos.length > 0) {
-      const sortedByPopularity = [...otherVideos].sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+      const sortedByPopularity = [...otherVideos].sort((a, b) => ((b.views || 0) - (a.views || 0)) || ((b.likes || 0) - (a.likes || 0)));
       next = sortedByPopularity[0];
     }
 
