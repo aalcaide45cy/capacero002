@@ -23,6 +23,7 @@ const SCHEDULED_VIDEOS_MAP = {
 
 // Fechas reales de publicación de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
+  'xf4K9wCJzdU': '2026-09-01T17:30:06Z', // Logotipos en Fusion 360 (PUBLICADO)
   'IFTgPS3a6v8': '2026-10-05T18:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
   '3BtSMuvl8BQ': '2026-09-28T18:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
   'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
@@ -55,6 +56,7 @@ const YOUTUBE_PUBLISH_DATES = {
 
 // Estadísticas de YouTube reales y actualizadas en directo
 const YOUTUBE_STATS_MAP = {
+  "xf4K9wCJzdU": { "views": 411, "likes": 10, "comments": 3 },
   "lP0FvQZ6uwk": { "views": 7183, "likes": 417, "comments": 72 },
   "utIYIcUG0tM": { "views": 6621, "likes": 168, "comments": 4 },
   "w-DRE8UtD9s": { "views": 6186, "likes": 378, "comments": 66 },
@@ -118,39 +120,80 @@ function extractValidDownloads(row) {
 async function fetchLiveYouTubeStats(videoId) {
   if (!videoId) return null;
   try {
+    const payload = {
+      videoId: videoId,
+      context: {
+        client: {
+          clientName: "WEB",
+          clientVersion: "2.20240101.00.00",
+          hl: "es",
+          gl: "ES"
+        }
+      }
+    };
+
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3500);
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Accept-Language": "es-ES,es;q=0.9,en;q=0.8"
-      },
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    // 1. Consultar endpoint Player para visualizaciones y fecha exacta
+    const pRes = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
-    clearTimeout(timeout);
 
-    if (!res.ok) return null;
-    const html = await res.text();
+    let views = null;
+    let publishedAt = null;
 
-    const viewMatch = html.match(/"viewCount"\s*:\s*"(\d+)"/) || html.match(/itemprop="interactionCount"\s+content="(\d+)"/);
-    const views = viewMatch ? parseInt(viewMatch[1], 10) : null;
+    if (pRes.ok) {
+      const pData = await pRes.json();
+      const rawViews = pData.videoDetails?.viewCount;
+      if (rawViews !== undefined && rawViews !== null) {
+        views = parseInt(rawViews, 10);
+      }
+      const rawDate = pData.microformat?.playerMicroformatRenderer?.publishDate;
+      if (rawDate) {
+        publishedAt = new Date(rawDate).toISOString();
+      }
+    }
 
-    const likeMatch = html.match(/"likeCount"\s*:\s*"(\d+)"/) || html.match(/"defaultText":\s*\{\s*"accessibility":\s*\{\s*"accessibilityData":\s*\{\s*"label":\s*"([\d.,]+)\s*me gusta"/i);
+    // 2. Consultar endpoint Next para Likes y Comentarios en vivo
+    const nRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
     let likes = null;
-    if (likeMatch) {
-      const parsed = parseInt(likeMatch[1].replace(/[^0-9]/g, ''), 10);
-      if (!isNaN(parsed)) likes = parsed;
-    }
-
-    const commentMatch = html.match(/"commentCount"\s*:\s*\{\s*"simpleText"\s*:\s*"([\d.,]+)"/) || html.match(/"totalCommentsCount"\s*:\s*"(\d+)"/);
     let comments = null;
-    if (commentMatch) {
-      const parsed = parseInt(commentMatch[1].replace(/[^0-9]/g, ''), 10);
-      if (!isNaN(parsed)) comments = parsed;
+
+    if (nRes.ok) {
+      const nData = await nRes.json();
+      const nStr = JSON.stringify(nData);
+
+      // Extraer Likes del botón con iconName "LIKE"
+      const mLike = nStr.match(/"iconName":"LIKE","title":"([\d.,]+)"/);
+      if (mLike) {
+        likes = parseInt(mLike[1].replace(/[^0-9]/g, ""), 10) || 0;
+      }
+
+      // Extraer Comentarios del panel de comentarios
+      if (nData.engagementPanels) {
+        for (const ep of nData.engagementPanels) {
+          const panel = ep.engagementPanelSectionListRenderer;
+          if (panel && panel.panelIdentifier === "engagement-panel-comments-section") {
+            const text = panel.header?.engagementPanelTitleHeaderRenderer?.contextualInfo?.runs?.[0]?.text;
+            if (text) {
+              comments = parseInt(text.replace(/[^0-9]/g, ""), 10) || 0;
+            }
+          }
+        }
+      }
     }
 
-    const dateMatch = html.match(/"publishDate"\s*:\s*"([^"]+)"/) || html.match(/"datePublished":\s*"([^"]+)"/);
-    const publishedAt = dateMatch ? new Date(dateMatch[1]).toISOString() : null;
+    clearTimeout(timeout);
 
     return { views, likes, comments, publishedAt };
   } catch (e) {

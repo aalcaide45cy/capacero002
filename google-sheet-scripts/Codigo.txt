@@ -55,7 +55,9 @@ function onOpen() {
     .addItem('🧹 Limpiar y Desduplicar Suscripciones Push', 'desduplicarYLimpiarSuscripciones')
     .addSeparator()
     .addItem('🔄 Sincronizar Vídeos (Solo Horizontales)', 'sincronizarVideosCapaCero')
-    .addItem('🗑️ Limpiar y Re-sincronizar Todo (28 Vídeos)', 'limpiarYResincronizar')
+    .addItem('🔄 Actualizar Datos del Vídeo en Fila Seleccionada', 'actualizarFilaSeleccionada')
+    .addItem('✨ Actualizar Información de Todos los Vídeos', 'actualizarTodosLosVideosHoja')
+    .addItem('🗑️ Limpiar y Re-sincronizar Todo (29 Vídeos)', 'limpiarYResincronizar')
     .addSeparator()
     .addItem('📦 Actualizar Modelos MakerWorld', 'actualizarModelosMakerWorld')
     .addSeparator()
@@ -95,7 +97,7 @@ function alPegarEnlace(e) {
     }
 
     // B. Si se pegó un enlace de YouTube
-    if (valorPegado.indexOf("youtu.be") !== -1 || valorPegado.indexOf("youtube.com") !== -1) {
+    if (sheetName !== "Modelos MakerWorld" && (valorPegado.indexOf("youtu.be") !== -1 || valorPegado.indexOf("youtube.com") !== -1)) {
       procesarPegadoYouTube(sheet, row, valorPegado);
       return;
     }
@@ -486,51 +488,126 @@ function actualizarModelosMakerWorld() {
  * ==============================================================================
  */
 function procesarPegadoYouTube(sheet, row, valorPegado) {
-  var videoId = extraerYouTubeId(valorPegado);
-  if (!videoId || VIDEOS_IGNORADOS.indexOf(videoId) !== -1) {
-    sheet.getRange(row, 1, 1, 9).clearContent();
+  try {
+    var videoId = extraerYouTubeId(valorPegado);
+    if (!videoId || VIDEOS_IGNORADOS.indexOf(videoId) !== -1) {
+      sheet.getRange(row, 1, 1, 9).clearContent();
+      return;
+    }
+    
+    // Si ya en la URL es un short evidente
+    if (valorPegado.toLowerCase().indexOf("/shorts/") !== -1) {
+      sheet.getRange(row, 1, 1, 9).clearContent();
+      return;
+    }
+    
+    var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
+    var info = obtenerInfoRealYouTube(videoId);
+    
+    // Descartar si es short (por duración <= 60s o etiquetas #shorts)
+    if (info.isShort || esShort(videoId, cleanUrl, info.title, info.durationSec)) {
+      sheet.getRange(row, 1, 1, 9).clearContent();
+      return;
+    }
+    
+    var filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
+    
+    // Título: Si está vacío, contiene http o es el placeholder genérico "Tutorial #", usar info.title
+    var esTituloGenerico = !filaActual[0] || String(filaActual[0]).indexOf("http") !== -1 || String(filaActual[0]).indexOf("Tutorial #") === 0;
+    var titulo = esTituloGenerico ? info.title : filaActual[0];
+    
+    // Categoría: Si está vacía o es Bambu Studio por defecto pero se detectó una específica, usar info.category
+    var esCategoriaGenerica = !filaActual[2] || filaActual[2] === "Bambu Studio";
+    var categoria = (!filaActual[2] || (esCategoriaGenerica && info.category !== "Bambu Studio")) ? info.category : filaActual[2];
+    
+    // Descripción: Si está vacía o contiene el texto genérico de Capa Cero o es demasiado corta, usar info.description
+    var descStr = String(filaActual[3] || "").trim();
+    var esDescGenerica = !descStr || descStr.indexOf("Tutorial oficial de Capa Cero") !== -1 || descStr.length < 50;
+    var descripcion = esDescGenerica ? info.description : (info.description || descStr);
+    
+    // Consejo Clave: Si está vacío o tiene el texto genérico de placeholder, usar info.consejoClave
+    var consejoStr = String(filaActual[4] || "").trim();
+    var esConsejoGenerico = !consejoStr || 
+      consejoStr.indexOf("Aplica este ajuste en Bambu Studio") !== -1 || 
+      consejoStr.indexOf("Revisa la vista previa") !== -1 ||
+      consejoStr.indexOf("Utiliza la herramienta de reparación de mallas") !== -1;
+    var consejo = esConsejoGenerico ? info.consejoClave : (info.consejoClave || consejoStr);
+    
+    // Enlaces de descarga
+    var descarga1 = filaActual[5];
+    if (!descarga1 || descarga1 === "https://makerworld.com/en/@capa_cero") {
+      descarga1 = (info.descargas && info.descargas.length > 0) ? info.descargas[0] : "https://makerworld.com/en/@capa_cero";
+    }
+    var descarga2 = filaActual[6] ? filaActual[6] : ((info.descargas && info.descargas.length > 1) ? info.descargas[1] : "");
+    var descarga3 = filaActual[7] ? filaActual[7] : ((info.descargas && info.descargas.length > 2) ? info.descargas[2] : "");
+    var destacado = filaActual[8] ? filaActual[8] : "NO";
+    
+    sheet.getRange(row, 1, 1, 9).setValues([[
+      titulo,
+      cleanUrl,
+      categoria,
+      descripcion,
+      consejo,
+      descarga1,
+      descarga2,
+      descarga3,
+      destacado
+    ]]);
+  } catch (err) {
+    Logger.log("Error en procesarPegadoYouTube: " + err.toString());
+  }
+}
+
+/**
+ * Actualiza el vídeo de la fila donde esté ubicado el cursor en la hoja activa
+ */
+function actualizarFilaSeleccionada() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var row = sheet.getActiveCell().getRow();
+  if (row <= 1) {
+    ss.toast("⚠️ Selecciona una fila de vídeo (fila 2 en adelante).", "Capa Cero 3D", 4);
     return;
   }
   
-  if (esShort(videoId, valorPegado, "")) {
-    sheet.getRange(row, 1, 1, 9).clearContent();
+  var fila = sheet.getRange(row, 1, 1, 9).getValues()[0];
+  var url = String(fila[1] || fila[0] || "").trim();
+  var videoId = extraerYouTubeId(url);
+  if (!videoId) {
+    SpreadsheetApp.getUi().alert("⚠️ La fila seleccionada (" + row + ") no contiene una URL válida de YouTube en la columna A o B.");
     return;
   }
   
-  var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
-  var info = obtenerInfoRealYouTube(videoId);
-  
-  if (esShort(videoId, cleanUrl, info.title)) {
-    sheet.getRange(row, 1, 1, 9).clearContent();
+  procesarPegadoYouTube(sheet, row, url);
+  ss.toast("✅ ¡Vídeo de la fila " + row + " actualizado correctamente!", "Capa Cero 3D", 4);
+}
+
+/**
+ * Recorre y actualiza todos los tutoriales de la hoja activa
+ */
+function actualizarTodosLosVideosHoja() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getActiveSheet();
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    SpreadsheetApp.getUi().alert("ℹ️ La hoja actual no contiene vídeos.");
     return;
   }
   
-  var filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
+  var data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+  var actualizados = 0;
   
-  var titulo = (filaActual[0] && filaActual[0].indexOf("http") === -1) ? filaActual[0] : info.title;
-  var categoria = filaActual[2] ? filaActual[2] : info.category;
-  var descripcion = (filaActual[3] && filaActual[3].length > 50 && filaActual[3].indexOf("Tutorial oficial de Capa Cero:") === -1) 
-    ? filaActual[3] 
-    : info.description;
-  var consejo = (filaActual[4] && filaActual[4].length > 15 && filaActual[4].indexOf("Aplica este ajuste en Bambu Studio") === -1) 
-    ? filaActual[4] 
-    : info.consejoClave;
-  var descarga1 = filaActual[5] ? filaActual[5] : "https://makerworld.com/en/@capa_cero";
-  var descarga2 = filaActual[6] ? filaActual[6] : "";
-  var descarga3 = filaActual[7] ? filaActual[7] : "";
-  var destacado = filaActual[8] ? filaActual[8] : "NO";
+  for (var i = 0; i < data.length; i++) {
+    var rowNum = i + 2;
+    var url = String(data[i][1] || data[i][0] || "").trim();
+    var videoId = extraerYouTubeId(url);
+    if (!videoId) continue;
+    
+    procesarPegadoYouTube(sheet, rowNum, url);
+    actualizados++;
+  }
   
-  sheet.getRange(row, 1, 1, 9).setValues([[
-    titulo,
-    cleanUrl,
-    categoria,
-    descripcion,
-    consejo,
-    descarga1,
-    descarga2,
-    descarga3,
-    destacado
-  ]]);
+  SpreadsheetApp.getUi().alert("✅ ¡Se han revisado y actualizado " + actualizados + " tutoriales de YouTube en la hoja!");
 }
 
 /**
@@ -1640,7 +1717,7 @@ function doGet(e) {
  * 9. DETECTOR ESTRICTO ANTI-SHORTS
  * ==============================================================================
  */
-function esShort(videoId, url, title) {
+function esShort(videoId, url, title, durationSec) {
   var urlLower = (url || "").toLowerCase();
   var titleLower = (title || "").toLowerCase();
   
@@ -1648,22 +1725,9 @@ function esShort(videoId, url, title) {
   if (urlLower.indexOf("/shorts/") !== -1) return true;
   if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1) return true;
   
-  try {
-    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-    var html = UrlFetchApp.fetch(ytUrl, { muteHttpExceptions: true }).getContentText();
-    
-    if (html.indexOf('<link rel="canonical" href="https://www.youtube.com/shorts/') !== -1) {
-      return true;
-    }
-    
-    var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
-    if (matchDur && matchDur[1]) {
-      var durSec = Math.round(parseInt(matchDur[1], 10) / 1000);
-      if (durSec > 0 && durSec <= 60) {
-        return true;
-      }
-    }
-  } catch (e) {}
+  if (durationSec && durationSec > 0) {
+    return durationSec <= 60;
+  }
   
   return false;
 }
@@ -1683,58 +1747,102 @@ function obtenerInfoRealYouTube(videoId) {
   var title = "";
   var description = "";
   var category = "Bambu Studio";
-  
+  var durationSec = 0;
+  var keywords = [];
+  var isShort = false;
+
+  // 1. Método Primario: YouTube Innertube Player API (Oficial de Google/YouTube)
+  // Devuelve JSON nativo instantáneo con título real, descripción íntegra con saltos de línea y marcas de tiempo, duración y keywords.
+  // Es 100% inmune a muros de cookies GDPR y bloqueos en servidores cloud de Apps Script.
   try {
-    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-    var res = UrlFetchApp.fetch(ytUrl, { 
-      muteHttpExceptions: true,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept-Language": "es-ES,es;q=0.9"
+    var payload = JSON.stringify({
+      videoId: videoId,
+      context: {
+        client: {
+          clientName: "WEB",
+          clientVersion: "2.20240101.00.00",
+          hl: "es",
+          gl: "ES"
+        }
       }
     });
-    
+
+    var res = UrlFetchApp.fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+      method: "post",
+      contentType: "application/json",
+      payload: payload,
+      muteHttpExceptions: true
+    });
+
     if (res.getResponseCode() === 200) {
-      var html = res.getContentText();
-      
-      var matchTitle = html.match(/"title":"(.*?)(?<!\\)"/);
-      if (matchTitle && matchTitle[1]) {
-        try {
-          title = JSON.parse('"' + matchTitle[1] + '"');
-        } catch (e) {
-          title = matchTitle[1].replace(/\\"/g, '"');
-        }
-      }
-      
-      if (!title) {
-        var matchOgTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
-        if (matchOgTitle && matchOgTitle[1]) {
-          title = matchOgTitle[1];
-        }
-      }
-      
-      var matchDesc = html.match(/"shortDescription":"(.*?)(?<!\\)"/);
-      if (matchDesc && matchDesc[1]) {
-        try {
-          description = JSON.parse('"' + matchDesc[1] + '"');
-        } catch (e) {
-          description = matchDesc[1]
-            .replace(/\\n/g, '\n')
-            .replace(/\\r/g, '')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
-        }
-      }
-      
-      if (!description) {
-        var matchOgDesc = html.match(/<meta property="og:description" content="([^"]+)"/i) || html.match(/<meta name="description" content="([^"]+)"/i);
-        if (matchOgDesc && matchOgDesc[1]) {
-          description = matchOgDesc[1];
+      var data = JSON.parse(res.getContentText());
+      var details = data.videoDetails;
+      if (details) {
+        title = details.title || "";
+        description = details.shortDescription || "";
+        durationSec = parseInt(details.lengthSeconds || "0", 10);
+        keywords = Array.isArray(details.keywords) ? details.keywords : [];
+        if (durationSec > 0 && durationSec <= 60) {
+          isShort = true;
         }
       }
     }
-  } catch (e) {}
-  
+  } catch (eInnertube) {
+    Logger.log("Aviso Innertube: " + eInnertube.toString());
+  }
+
+  // 2. Método Secundario: YouTube oEmbed Oficial (Si Innertube fallase, garantiza el título real sin bloqueos)
+  if (!title) {
+    try {
+      var oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=" + videoId + "&format=json";
+      var resOe = UrlFetchApp.fetch(oembedUrl, { muteHttpExceptions: true });
+      if (resOe.getResponseCode() === 200) {
+        var dataOe = JSON.parse(resOe.getContentText());
+        if (dataOe.title) title = dataOe.title;
+      }
+    } catch (eOe) {
+      Logger.log("Aviso oEmbed: " + eOe.toString());
+    }
+  }
+
+  // 3. Método Terciario: Scraping con cookie de consentimiento europea si aún no hay descripción
+  if (!description) {
+    try {
+      var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
+      var resHtml = UrlFetchApp.fetch(ytUrl, {
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept-Language": "es-ES,es;q=0.9",
+          "Cookie": "CONSENT=YES+cb.20210328-17-p0.es+FX+999; SOCS=CAESEwgDEgk2OTQ0NTQ5NTQaAmVzIAEaBgiA_L20Bg;"
+        }
+      });
+      if (resHtml.getResponseCode() === 200) {
+        var html = resHtml.getContentText();
+        if (!title) {
+          var mTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
+          if (mTitle && mTitle[1]) title = mTitle[1];
+        }
+        var mPlayer = html.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:var|document|<\/script>)/);
+        if (mPlayer && mPlayer[1]) {
+          try {
+            var playerObj = JSON.parse(mPlayer[1]);
+            if (playerObj.videoDetails && playerObj.videoDetails.shortDescription) {
+              description = playerObj.videoDetails.shortDescription;
+            }
+          } catch (eP) {}
+        }
+        if (!description) {
+          var mDesc = html.match(/<meta property="og:description" content="([^"]+)"/i) || html.match(/<meta name="description" content="([^"]+)"/i);
+          if (mDesc && mDesc[1]) description = mDesc[1];
+        }
+      }
+    } catch (eHtml) {
+      Logger.log("Aviso Scraping: " + eHtml.toString());
+    }
+  }
+
+  // 4. Fallback con noembed.com si todo lo anterior falló para el título
   if (!title) {
     try {
       var apiUrl = "https://noembed.com/embed?url=https://www.youtube.com/watch?v=" + videoId;
@@ -1743,40 +1851,85 @@ function obtenerInfoRealYouTube(videoId) {
         var dataApi = JSON.parse(resApi.getContentText());
         if (dataApi.title) title = dataApi.title;
       }
-    } catch (e) {}
+    } catch (eNo) {}
   }
-  
+
   if (!title) {
     title = "Tutorial #" + videoId;
   }
-  
+
   if (!description) {
     description = "Tutorial oficial de Capa Cero 3D (" + title + "). Guía paso a paso para dominar tu impresora 3D y el laminador.";
   }
-  
-  var t = (title + " " + description).toLowerCase();
-  if (t.indexOf("fusion") !== -1 || t.indexOf("360") !== -1 || t.indexOf("modelad") !== -1 || t.indexOf("cad") !== -1) {
+
+  // Detectar categoría precisa combinando título, keywords y descripción
+  var textoCompleto = (title + " " + keywords.join(" ") + " " + description).toLowerCase();
+  if (textoCompleto.indexOf("fusion") !== -1 || textoCompleto.indexOf("360") !== -1 || textoCompleto.indexOf("cad") !== -1 || textoCompleto.indexOf("autodesk") !== -1) {
     category = "Modelado 3D";
-  } else if (t.indexOf("filamento") !== -1 || t.indexOf("perfil") !== -1 || t.indexOf("costura") !== -1 || t.indexOf("calibrac") !== -1 || t.indexOf("flujo") !== -1) {
+  } else if (textoCompleto.indexOf("filamento") !== -1 || textoCompleto.indexOf("perfil") !== -1 || textoCompleto.indexOf("costura") !== -1 || textoCompleto.indexOf("calibrac") !== -1 || textoCompleto.indexOf("flujo") !== -1) {
     category = "Perfiles y Calibración";
-  } else if (t.indexOf("multicolor") !== -1 || t.indexOf("ams") !== -1 || t.indexOf("pintar") !== -1 || t.indexOf("purga") !== -1) {
+  } else if (textoCompleto.indexOf("multicolor") !== -1 || textoCompleto.indexOf("ams") !== -1 || textoCompleto.indexOf("pintar") !== -1 || textoCompleto.indexOf("purga") !== -1) {
     category = "Multicolor y AMS";
-  } else if (t.indexOf("boquilla") !== -1 || t.indexOf("hardware") !== -1 || t.indexOf("laser") !== -1 || t.indexOf("grabador") !== -1 || t.indexOf("hotend") !== -1) {
-    category = t.indexOf("laser") !== -1 ? "Grabado Láser" : "Hardware y Boquillas";
-  } else if (t.indexOf("ahorra") !== -1 || t.indexOf("tiempo") !== -1 || t.indexOf("truco") !== -1 || t.indexOf("chatgpt") !== -1 || t.indexOf("dinero") !== -1 || t.indexOf("secreto") !== -1) {
+  } else if (textoCompleto.indexOf("boquilla") !== -1 || textoCompleto.indexOf("hardware") !== -1 || textoCompleto.indexOf("laser") !== -1 || textoCompleto.indexOf("grabador") !== -1 || textoCompleto.indexOf("hotend") !== -1) {
+    category = textoCompleto.indexOf("laser") !== -1 ? "Grabado Láser" : "Hardware y Boquillas";
+  } else if (textoCompleto.indexOf("ahorra") !== -1 || textoCompleto.indexOf("tiempo") !== -1 || textoCompleto.indexOf("truco") !== -1 || textoCompleto.indexOf("chatgpt") !== -1 || textoCompleto.indexOf("dinero") !== -1 || textoCompleto.indexOf("secreto") !== -1) {
     category = "Trucos Rápidos";
+  } else if (textoCompleto.indexOf("bambu studio") !== -1 || textoCompleto.indexOf("bambustudio") !== -1 || textoCompleto.indexOf("laminador") !== -1 || textoCompleto.indexOf("slicer") !== -1) {
+    category = "Bambu Studio";
   } else {
     category = "Bambu Studio";
   }
-  
+
+  var descargas = extraerDescargasDeDescripcion(description);
   var consejoClave = generarConsejoClaveContextual(title, description, category);
-  
-  return { 
-    title: title, 
-    category: category, 
-    description: description, 
-    consejoClave: consejoClave
+
+  return {
+    videoId: videoId,
+    title: title,
+    category: category,
+    description: description,
+    consejoClave: consejoClave,
+    durationSec: durationSec,
+    isShort: isShort,
+    descargas: descargas
   };
+}
+
+/**
+ * Extrae enlaces de descarga, plantillas o modelos de la descripción
+ */
+function extraerDescargasDeDescripcion(desc) {
+  if (!desc) return [];
+  var enlaces = [];
+  var vistos = {};
+
+  // 1. Buscar enlaces a MakerWorld
+  var mwMatches = desc.match(/https:\/\/(?:www\.)?makerworld\.com\/[^\s\)\"\'<>]+/gi) || [];
+  for (var i = 0; i < mwMatches.length; i++) {
+    var u = mwMatches[i].replace(/[.,;:]+$/, "");
+    if (!vistos[u]) {
+      vistos[u] = true;
+      enlaces.push(u);
+    }
+  }
+
+  // 2. Buscar enlaces de recursos, plantillas o descargas (capacero3d, drive, etc.)
+  var lines = desc.split("\n");
+  for (var j = 0; j < lines.length; j++) {
+    var l = lines[j];
+    if (/descarga|plantilla|modelo|recurso|archivo|gu[ií]a/i.test(l)) {
+      var urlMatches = l.match(/https?:\/\/[^\s\)\"\'<>]+/gi) || [];
+      for (var k = 0; k < urlMatches.length; k++) {
+        var clean = urlMatches[k].replace(/[.,;:]+$/, "");
+        if (!clean.includes("youtube.com") && !clean.includes("youtu.be") && !vistos[clean]) {
+          vistos[clean] = true;
+          enlaces.push(clean);
+        }
+      }
+    }
+  }
+
+  return enlaces;
 }
 
 /**
@@ -1798,6 +1951,9 @@ function generarConsejoClaveContextual(title, description, category) {
     }
   }
   
+  if (texto.indexOf("logotipo") !== -1 || texto.indexOf("logo") !== -1 || texto.indexOf("trofeo") !== -1) {
+    return "Aplica chaflanes anti pie de elefante en la base y exporta en formato STEP para conseguir curvas perfectas sin pixelado.";
+  }
   if (texto.indexOf("costura") !== -1 || texto.indexOf("scarf") !== -1 || texto.indexOf("seam") !== -1) {
     return "Activa el tipo de costura en cicatriz (Scarf Seam) y ajusta el orden de paredes a interior-exterior para disimular la unión.";
   }
@@ -1871,13 +2027,14 @@ function generarConsejoClaveContextual(title, description, category) {
 
 /**
  * ==============================================================================
- * 12. SINCRONIZADOR DE CATÁLOGO OFICIAL DE YOUTUBE (28 VÍDEOS)
+ * 12. SINCRONIZADOR DE CATÁLOGO OFICIAL DE YOUTUBE (29 VÍDEOS)
  * ==============================================================================
  */
 function sincronizarVideosCapaCero() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   
   var catalogoCanal = [
+    ["Diseño de Logotipos en Fusion 360: Consejos y Trucos para Principiantes", "https://www.youtube.com/watch?v=xf4K9wCJzdU", "Modelado 3D", "Aprende a diseñar tu propio LOGOTIPO 3D o trofeo para IMPRESIÓN 3D en Autodesk Fusion 360 desde cero, aunque nunca hayas usado CAD. Tutorial paso a paso para principiantes: convertimos cualquier imagen 2D (PNG/JPG) en un modelo 3D real con relieves, peana y acabados profesionales.", "Aplica chaflanes anti pie de elefante en la base y exporta en formato STEP para conseguir curvas perfectas sin pixelado.", "https://capacero3d.com", "", "", "NO"],
     ["Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes", "https://www.youtube.com/watch?v=utIYIcUG0tM", "Modelado 3D", "Tutorial práctico para modelar cajas paramétricas con tapas ajustables, bisagras y ensambles en Fusion 360.", "Usa restricciones geométricas y chaflanes suaves en los cantos para facilitar la impresión 3D.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
     ["¡Adiós a las costuras! El truco definitivo en Bambu Studio", "https://www.youtube.com/watch?v=PCbMinEbUd4", "Perfiles y Calibración", "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.", "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
     ["Movimiento por el Viewport y Ajustes de Placas #8", "https://www.youtube.com/watch?v=hZvIHMnxb3w", "Bambu Studio", "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.", "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
@@ -1932,7 +2089,7 @@ function sincronizarVideosCapaCero() {
   SpreadsheetApp.getUi().alert(
     totalNuevos > 0 
       ? "✅ ¡Sincronizados " + totalNuevos + " tutoriales horizontales en español!" 
-      : "ℹ️ Tu hoja ya contiene exactamente los 28 tutoriales horizontales."
+      : "ℹ️ Tu hoja ya contiene exactamente los 29 tutoriales horizontales."
   );
 }
 
