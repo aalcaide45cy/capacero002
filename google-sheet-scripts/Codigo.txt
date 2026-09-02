@@ -1751,47 +1751,138 @@ function obtenerInfoRealYouTube(videoId) {
   var keywords = [];
   var isShort = false;
 
-  // 1. Método Primario: YouTube Innertube Player API (Oficial de Google/YouTube)
-  // Devuelve JSON nativo instantáneo con título real, descripción íntegra con saltos de línea y marcas de tiempo, duración y keywords.
-  // Es 100% inmune a muros de cookies GDPR y bloqueos en servidores cloud de Apps Script.
+  // MÉTODO 1 (El método histórico que extrajo la fila 29 con éxito):
+  // Scraping de YouTube Web con cookies de consentimiento europeas y User-Agent de navegador
   try {
-    var payload = JSON.stringify({
-      videoId: videoId,
-      context: {
-        client: {
-          clientName: "WEB",
-          clientVersion: "2.20240101.00.00",
-          hl: "es",
-          gl: "ES"
-        }
+    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
+    var resHtml = UrlFetchApp.fetch(ytUrl, {
+      muteHttpExceptions: true,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Accept-Language": "es-ES,es;q=0.9",
+        "Cookie": "CONSENT=YES+cb.20210328-17-p0.es+FX+999; SOCS=CAESEwgDEgk2OTQ0NTQ5NTQaAmVzIAEaBgiA_L20Bg;"
       }
     });
 
-    var res = UrlFetchApp.fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
-      method: "post",
-      contentType: "application/json",
-      payload: payload,
-      muteHttpExceptions: true
-    });
+    if (resHtml.getResponseCode() === 200) {
+      var html = resHtml.getContentText();
 
-    if (res.getResponseCode() === 200) {
-      var data = JSON.parse(res.getContentText());
-      var details = data.videoDetails;
-      if (details) {
-        title = details.title || "";
-        description = details.shortDescription || "";
-        durationSec = parseInt(details.lengthSeconds || "0", 10);
-        keywords = Array.isArray(details.keywords) ? details.keywords : [];
-        if (durationSec > 0 && durationSec <= 60) {
-          isShort = true;
+      // A. Título
+      var matchTitle = html.match(/"title":"(.*?)(?<!\\)"/);
+      if (matchTitle && matchTitle[1]) {
+        try {
+          title = JSON.parse('"' + matchTitle[1] + '"');
+        } catch (e) {
+          title = matchTitle[1].replace(/\\"/g, '"');
+        }
+      }
+      if (!title) {
+        var matchOgTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
+        if (matchOgTitle && matchOgTitle[1]) title = matchOgTitle[1];
+      }
+
+      // B. Descripción completa con regex de shortDescription (método de la fila 29)
+      var matchDesc = html.match(/"shortDescription":"(.*?)(?<!\\)"/);
+      if (matchDesc && matchDesc[1]) {
+        try {
+          description = JSON.parse('"' + matchDesc[1] + '"');
+        } catch (e) {
+          description = matchDesc[1]
+            .replace(/\\n/g, '\n')
+            .replace(/\\r/g, '')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\');
+        }
+      }
+
+      // C. Extracción por analizador de llaves sobre ytInitialPlayerResponse (inmune a saltos de línea)
+      var idxPlayer = html.indexOf("ytInitialPlayerResponse = ");
+      if (idxPlayer !== -1) {
+        var start = idxPlayer + "ytInitialPlayerResponse = ".length;
+        var count = 0;
+        var end = -1;
+        for (var p = start; p < start + 350000 && p < html.length; p++) {
+          if (html.charAt(p) === '{') count++;
+          else if (html.charAt(p) === '}') {
+            count--;
+            if (count === 0) {
+              end = p + 1;
+              break;
+            }
+          }
+        }
+        if (end !== -1) {
+          try {
+            var pObj = JSON.parse(html.slice(start, end));
+            if (pObj && pObj.videoDetails) {
+              if (!title && pObj.videoDetails.title) title = pObj.videoDetails.title;
+              if ((!description || description.length < 50) && pObj.videoDetails.shortDescription) {
+                description = pObj.videoDetails.shortDescription;
+              }
+              if (pObj.videoDetails.keywords) keywords = pObj.videoDetails.keywords;
+              if (pObj.videoDetails.lengthSeconds) durationSec = parseInt(pObj.videoDetails.lengthSeconds, 10);
+            }
+          } catch (eP) {}
+        }
+      }
+
+      // D. Duración para comprobación de Shorts
+      if (!durationSec) {
+        var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
+        if (matchDur && matchDur[1]) {
+          durationSec = Math.round(parseInt(matchDur[1], 10) / 1000);
         }
       }
     }
-  } catch (eInnertube) {
-    Logger.log("Aviso Innertube: " + eInnertube.toString());
+  } catch (eHtml) {
+    Logger.log("Aviso Scraping HTML: " + eHtml.toString());
   }
 
-  // 2. Método Secundario: YouTube oEmbed Oficial (Si Innertube fallase, garantiza el título real sin bloqueos)
+  // MÉTODO 2: API Innertube con headers completos de navegador (si aún faltase descripción o título)
+  if (!description || !title) {
+    try {
+      var payload = JSON.stringify({
+        videoId: videoId,
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20240101.00.00",
+            hl: "es",
+            gl: "ES"
+          }
+        }
+      });
+
+      var resIt = UrlFetchApp.fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+        method: "post",
+        contentType: "application/json",
+        payload: payload,
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "X-YouTube-Client-Name": "1",
+          "X-YouTube-Client-Version": "2.20240101.00.00",
+          "Origin": "https://www.youtube.com",
+          "Referer": "https://www.youtube.com/watch?v=" + videoId
+        }
+      });
+
+      if (resIt.getResponseCode() === 200) {
+        var dataIt = JSON.parse(resIt.getContentText());
+        var details = dataIt.videoDetails;
+        if (details) {
+          if (!title && details.title) title = details.title;
+          if (!description && details.shortDescription) description = details.shortDescription;
+          if (!durationSec && details.lengthSeconds) durationSec = parseInt(details.lengthSeconds, 10);
+          if ((!keywords || keywords.length === 0) && Array.isArray(details.keywords)) keywords = details.keywords;
+        }
+      }
+    } catch (eIt) {
+      Logger.log("Aviso Innertube: " + eIt.toString());
+    }
+  }
+
+  // MÉTODO 3: YouTube oEmbed Oficial (garantiza el título si no se obtuvo)
   if (!title) {
     try {
       var oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=" + videoId + "&format=json";
@@ -1800,49 +1891,10 @@ function obtenerInfoRealYouTube(videoId) {
         var dataOe = JSON.parse(resOe.getContentText());
         if (dataOe.title) title = dataOe.title;
       }
-    } catch (eOe) {
-      Logger.log("Aviso oEmbed: " + eOe.toString());
-    }
+    } catch (eOe) {}
   }
 
-  // 3. Método Terciario: Scraping con cookie de consentimiento europea si aún no hay descripción
-  if (!description) {
-    try {
-      var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-      var resHtml = UrlFetchApp.fetch(ytUrl, {
-        muteHttpExceptions: true,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-          "Accept-Language": "es-ES,es;q=0.9",
-          "Cookie": "CONSENT=YES+cb.20210328-17-p0.es+FX+999; SOCS=CAESEwgDEgk2OTQ0NTQ5NTQaAmVzIAEaBgiA_L20Bg;"
-        }
-      });
-      if (resHtml.getResponseCode() === 200) {
-        var html = resHtml.getContentText();
-        if (!title) {
-          var mTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
-          if (mTitle && mTitle[1]) title = mTitle[1];
-        }
-        var mPlayer = html.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:var|document|<\/script>)/);
-        if (mPlayer && mPlayer[1]) {
-          try {
-            var playerObj = JSON.parse(mPlayer[1]);
-            if (playerObj.videoDetails && playerObj.videoDetails.shortDescription) {
-              description = playerObj.videoDetails.shortDescription;
-            }
-          } catch (eP) {}
-        }
-        if (!description) {
-          var mDesc = html.match(/<meta property="og:description" content="([^"]+)"/i) || html.match(/<meta name="description" content="([^"]+)"/i);
-          if (mDesc && mDesc[1]) description = mDesc[1];
-        }
-      }
-    } catch (eHtml) {
-      Logger.log("Aviso Scraping: " + eHtml.toString());
-    }
-  }
-
-  // 4. Fallback con noembed.com si todo lo anterior falló para el título
+  // MÉTODO 4: noembed.com fallback para el título
   if (!title) {
     try {
       var apiUrl = "https://noembed.com/embed?url=https://www.youtube.com/watch?v=" + videoId;
@@ -1854,8 +1906,25 @@ function obtenerInfoRealYouTube(videoId) {
     } catch (eNo) {}
   }
 
+  if (durationSec > 0 && durationSec <= 60) {
+    isShort = true;
+  }
+
   if (!title) {
     title = "Tutorial #" + videoId;
+  }
+
+  // MÉTODO 5: Respaldo de seguridad con el catálogo del canal Capa Cero
+  if (!description || description.length < 50 || description.indexOf("Tutorial oficial de Capa Cero 3D (") === 0) {
+    var catalogo = obtenerCatalogoOficialCapaCero();
+    for (var c = 0; c < catalogo.length; c++) {
+      if (catalogo[c][1].indexOf(videoId) !== -1) {
+        if (!title || title.indexOf("Tutorial #") === 0) title = catalogo[c][0];
+        category = catalogo[c][2];
+        description = catalogo[c][3];
+        break;
+      }
+    }
   }
 
   if (!description) {
@@ -2030,11 +2099,19 @@ function generarConsejoClaveContextual(title, description, category) {
  * 12. SINCRONIZADOR DE CATÁLOGO OFICIAL DE YOUTUBE (29 VÍDEOS)
  * ==============================================================================
  */
-function sincronizarVideosCapaCero() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  
-  var catalogoCanal = [
-    ["Diseño de Logotipos en Fusion 360: Consejos y Trucos para Principiantes", "https://www.youtube.com/watch?v=xf4K9wCJzdU", "Modelado 3D", "Aprende a diseñar tu propio LOGOTIPO 3D o trofeo para IMPRESIÓN 3D en Autodesk Fusion 360 desde cero, aunque nunca hayas usado CAD. Tutorial paso a paso para principiantes: convertimos cualquier imagen 2D (PNG/JPG) en un modelo 3D real con relieves, peana y acabados profesionales.", "Aplica chaflanes anti pie de elefante en la base y exporta en formato STEP para conseguir curvas perfectas sin pixelado.", "https://capacero3d.com", "", "", "NO"],
+function obtenerCatalogoOficialCapaCero() {
+  return [
+    [
+      "Diseño de Logotipos en Fusion 360: Consejos y Trucos para Principiantes",
+      "https://www.youtube.com/watch?v=xf4K9wCJzdU",
+      "Modelado 3D",
+      "Aprende a diseñar tu propio LOGOTIPO 3D o trofeo para IMPRESIÓN 3D en Autodesk Fusion 360 desde cero, aunque nunca hayas usado CAD. Tutorial paso a paso para principiantes: convertimos cualquier imagen 2D (PNG/JPG) en un modelo 3D real con relieves, peana y acabados profesionales, listo para imprimir sin pie de elefante ni curvas pixeladas.\n\nEs la continuación directa del tutorial de Diseño de Cajas que tanto os gustó (https://www.youtube.com/watch?v=utIYIcUG0tM), pero aplicado a logotipos: verás cómo bloquear bocetos con el candado negro al 100%, aplicar chaflanes anti pie de elefante, por qué usar STEP en lugar de STL para curvas perfectas y cómo pintar en multicolor en Bambu Studio en 2 clics.\n\n👉 Más recursos, plantillas y guías gratis en: https://capacero3d.com\n\n🎯 ¿QUÉ APRENDERÁS EN ESTE VÍDEO?\n✔ Convertir cualquier imagen 2D en logo 3D imprimible\n✔ Bloquear bocetos con restricciones al 100% (candado negro activo)\n✔ Chaflanes técnicos anti pie de elefante para bases perfectas\n✔ Organización por componentes y cuerpos independientes\n✔ Tipografías y letras en relieve sin errores ni aristas abiertas\n✔ Exportación en STEP vs STL vs 3MF para máxima calidad en curvas\n✔ Truco Bambu Studio: Separar en piezas vs objetos para multicolor en 2 clics\n\n⏱️ CAPÍTULOS:\n00:00 - Cómo pasar de una imagen 2D a un modelo 3D en Fusion 360\n01:00 - Adaptación de medidas a la base de impresión\n01:44 - Boceto 2D y creación de la base con desfases\n03:20 - Extrusión por niveles y gestión de cuerpos\n06:01 - Truco técnico: Chaflanes para eliminar el pie de elefante\n08:00 - Creación de componentes independientes para organizar el diseño\n09:38 - Uso del polígono circunscrito (Octógono) anclado al centro\n10:37 - Desfases perimetrales y líneas auxiliares de construcción\n13:30 - Modelado de formas con restricciones de paralelismo\n15:53 - Acotación y bloqueo completo del boceto (candado activo)\n18:49 - Extrusión simétrica del escudo central\n20:00 - Dibujo de tipografías y letras con restricciones coincidentes\n24:35 - Solución de errores: Cómo reparar aristas abiertas y líneas sueltas\n28:03 - Extrusión de letras en relieve\n32:00 - Biseles y empalmes estéticos para un acabado profesional\n33:20 - STEP vs STL vs 3MF: El secreto de la máxima resolución en curvas\n34:30 - Importación óptima de archivos STEP en Bambu Studio\n38:00 - Truco en el laminador: Separar en piezas vs objetos para pintar en multicolor\n40:20 - Laminado final y consejos para imprimir sin fallos\n\n🔗 VÍDEO ANTERIOR RECOMENDADO:\nDiseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes → https://www.youtube.com/watch?v=utIYIcUG0tM\n\n💡 ¿Quieres la plantilla base de este logo para practicar? Descárgala gratis en https://capacero3d.com y apúntate a la newsletter para recibir cada truco anti-fallos semanal.\n\n🔔 Suscríbete a @capacero0 para no perderte las próximas guías de modelado 3D, trucos de laminado y optimización para impresión 3D.\n\n#Fusion360 #Impresion3D #Diseño3D",
+      "Aplica chaflanes anti pie de elefante en la base y exporta en formato STEP para conseguir curvas perfectas sin pixelado.",
+      "https://capacero3d.com",
+      "",
+      "",
+      "NO"
+    ],
     ["Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes", "https://www.youtube.com/watch?v=utIYIcUG0tM", "Modelado 3D", "Tutorial práctico para modelar cajas paramétricas con tapas ajustables, bisagras y ensambles en Fusion 360.", "Usa restricciones geométricas y chaflanes suaves en los cantos para facilitar la impresión 3D.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
     ["¡Adiós a las costuras! El truco definitivo en Bambu Studio", "https://www.youtube.com/watch?v=PCbMinEbUd4", "Perfiles y Calibración", "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.", "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
     ["Movimiento por el Viewport y Ajustes de Placas #8", "https://www.youtube.com/watch?v=hZvIHMnxb3w", "Bambu Studio", "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.", "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
@@ -2064,6 +2141,11 @@ function sincronizarVideosCapaCero() {
     ["Probando Madimaker: ¿La Mejor Alternativa para Descargar Modelos 3D?", "https://www.youtube.com/watch?v=1ol3BaUnJ8Y", "Modelado 3D", "Análisis de la plataforma y cómo preparar los archivos descargados para laminar en Bambu Studio.", "Verifica siempre la escala del archivo importado antes de mandar a la cola de impresión.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
     ["Adiós a las Limitaciones del AMS: Imprime Multicolor de Esta Forma", "https://www.youtube.com/watch?v=nPaTKz9Zqcs", "Multicolor y AMS", "Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.", "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"]
   ];
+}
+
+function sincronizarVideosCapaCero() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var catalogoCanal = obtenerCatalogoOficialCapaCero();
   
   var existingUrls = {};
   var lastRow = sheet.getLastRow();
