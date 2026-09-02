@@ -13,7 +13,6 @@ const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsP
 
 // Mapa de vídeos programados con sus fechas de estreno reales de YouTube
 const SCHEDULED_VIDEOS_MAP = {
-  'RNWxu9tsB-k': { isScheduled: true, scheduledDate: '2026-08-31T18:00:00Z', label: 'Estreno el día 31 de agosto' },
   'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-09-07T18:00:00Z', label: 'Estreno el día 7 de septiembre' },
   'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-09-14T18:00:00Z', label: 'Estreno el día 14 de septiembre' },
   'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-21T18:00:00Z', label: 'Estreno el día 21 de septiembre' },
@@ -29,7 +28,7 @@ const YOUTUBE_PUBLISH_DATES = {
   'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
   'ozlbqVkcinE': '2026-09-14T18:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
   'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
-  'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PROGRAMADO)
+  'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PUBLICADO)
   'utIYIcUG0tM': '2026-08-25T17:45:06Z', // Cajas Fusion 360 (PUBLICADO)
   'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (PUBLICADO)
   'D6zKWJAS6G0': '2026-08-17T18:00:06Z', // #8.1 Laminado
@@ -56,34 +55,34 @@ const YOUTUBE_PUBLISH_DATES = {
 
 // Estadísticas de YouTube reales y actualizadas en directo
 const YOUTUBE_STATS_MAP = {
-  "xf4K9wCJzdU": { "views": 411, "likes": 10, "comments": 3 },
-  "lP0FvQZ6uwk": { "views": 7183, "likes": 417, "comments": 72 },
-  "utIYIcUG0tM": { "views": 6621, "likes": 168, "comments": 4 },
-  "w-DRE8UtD9s": { "views": 6186, "likes": 378, "comments": 66 },
-  "PCbMinEbUd4": { "views": 4774, "likes": 274, "comments": 32 },
-  "nPaTKz9Zqcs": { "views": 3027, "likes": 87, "comments": 15 },
-  "OHLka3HAwn0": { "views": 2892, "likes": 197, "comments": 34 },
-  "kYbpS-vwqJM": { "views": 2435, "likes": 164, "comments": 28 },
-  "oDGtU6Z2VYM": { "views": 2158, "likes": 133, "comments": 23 },
-  "v3SFbjI8BEE": { "views": 1142, "likes": 76, "comments": 12 },
-  "-ZIU1pywxiQ": { "views": 712, "likes": 55, "comments": 9 },
-  "D6zKWJAS6G0": { "views": 682, "likes": 46, "comments": 2 },
-  "hVCS-uyGflk": { "views": 568, "likes": 25, "comments": 4 },
-  "zXLmMLsKLe4": { "views": 538, "likes": 34, "comments": 6 },
-  "YUMNakCgUJs": { "views": 463, "likes": 29, "comments": 5 },
-  "cfs1ctvUC-8": { "views": 429, "likes": 21, "comments": 3 },
-  "DNouZLKOnpk": { "views": 417, "likes": 24, "comments": 4 },
-  "1ol3BaUnJ8Y": { "views": 409, "likes": 24, "comments": 4 },
-  "-uD_McDZ3Qk": { "views": 402, "likes": 23, "comments": 4 },
-  "sIzQPJSVdvo": { "views": 330, "likes": 28, "comments": 2 },
-  "9otbdJPW1WA": { "views": 305, "likes": 28, "comments": 5 },
-  "hZvIHMnxb3w": { "views": 277, "likes": 16, "comments": 3 },
-  "fpvQEW7-9vo": { "views": 262, "likes": 10, "comments": 2 },
-  "RNWxu9tsB-k": { "views": 0, "likes": 0, "comments": 0 },
-  "STc2U-cqecQ": { "views": 0, "likes": 0, "comments": 0 },
-  "ozlbqVkcinE": { "views": 0, "likes": 0, "comments": 0 },
-  "mzItWgN4a5c": { "views": 0, "likes": 0, "comments": 0 },
-  "3BtSMuvl8BQ": { "views": 0, "likes": 0, "comments": 0 },
+  "xf4K9wCJzdU": { "views": 409, "likes": 10, "comments": 3 },
+  "utIYIcUG0tM": { "views": 8897, "likes": 193, "comments": 9 },
+  "lP0FvQZ6uwk": { "views": 7337, "likes": 417, "comments": 52 },
+  "w-DRE8UtD9s": { "views": 6225, "likes": 378, "comments": 17 },
+  "PCbMinEbUd4": { "views": 4989, "likes": 280, "comments": 24 },
+  "nPaTKz9Zqcs": { "views": 3113, "likes": 88, "comments": 14 },
+  "OHLka3HAwn0": { "views": 2930, "likes": 197, "comments": 19 },
+  "kYbpS-vwqJM": { "views": 2467, "likes": 165, "comments": 16 },
+  "oDGtU6Z2VYM": { "views": 2178, "likes": 133, "comments": 27 },
+  "v3SFbjI8BEE": { "views": 1188, "likes": 76, "comments": 14 },
+  "-ZIU1pywxiQ": { "views": 764, "likes": 57, "comments": 9 },
+  "D6zKWJAS6G0": { "views": 743, "likes": 47, "comments": 11 },
+  "hVCS-uyGflk": { "views": 612, "likes": 27, "comments": 6 },
+  "zXLmMLsKLe4": { "views": 560, "likes": 35, "comments": 7 },
+  "YUMNakCgUJs": { "views": 488, "likes": 30, "comments": 6 },
+  "cfs1ctvUC-8": { "views": 441, "likes": 21, "comments": 5 },
+  "DNouZLKOnpk": { "views": 427, "likes": 24, "comments": 5 },
+  "-uD_McDZ3Qk": { "views": 416, "likes": 24, "comments": 9 },
+  "1ol3BaUnJ8Y": { "views": 414, "likes": 24, "comments": 7 },
+  "sIzQPJSVdvo": { "views": 401, "likes": 28, "comments": 4 },
+  "RNWxu9tsB-k": { "views": 398, "likes": 12, "comments": 2 },
+  "9otbdJPW1WA": { "views": 334, "likes": 29, "comments": 17 },
+  "hZvIHMnxb3w": { "views": 291, "likes": 17, "comments": 5 },
+  "fpvQEW7-9vo": { "views": 267, "likes": 10, "comments": 0 },
+  "3BtSMuvl8BQ": { "views": 2, "likes": 2, "comments": 0 },
+  "ozlbqVkcinE": { "views": 0, "likes": 1, "comments": 2 },
+  "mzItWgN4a5c": { "views": 0, "likes": 2, "comments": 0 },
+  "STc2U-cqecQ": { "views": 0, "likes": 1, "comments": 0 },
   "IFTgPS3a6v8": { "views": 0, "likes": 0, "comments": 0 }
 };
 

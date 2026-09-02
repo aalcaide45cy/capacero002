@@ -514,16 +514,16 @@ function procesarPegadoYouTube(sheet, row, valorPegado) {
     
     // Título: Si está vacío, contiene http o es el placeholder genérico "Tutorial #", usar info.title
     var esTituloGenerico = !filaActual[0] || String(filaActual[0]).indexOf("http") !== -1 || String(filaActual[0]).indexOf("Tutorial #") === 0;
-    var titulo = esTituloGenerico ? info.title : filaActual[0];
+    var titulo = (esTituloGenerico || !filaActual[0]) ? info.title : (info.title || filaActual[0]);
     
     // Categoría: Si está vacía o es Bambu Studio por defecto pero se detectó una específica, usar info.category
     var esCategoriaGenerica = !filaActual[2] || filaActual[2] === "Bambu Studio";
     var categoria = (!filaActual[2] || (esCategoriaGenerica && info.category !== "Bambu Studio")) ? info.category : filaActual[2];
     
-    // Descripción: Si está vacía o contiene el texto genérico de Capa Cero o es demasiado corta, usar info.description
-    var descStr = String(filaActual[3] || "").trim();
-    var esDescGenerica = !descStr || descStr.indexOf("Tutorial oficial de Capa Cero") !== -1 || descStr.length < 50;
-    var descripcion = esDescGenerica ? info.description : (info.description || descStr);
+    // Descripción: Si la descripción actual es corta (< 150 caracteres) o genérica, o si info.description es más completa, actualizar
+    var descActual = String(filaActual[3] || "").trim();
+    var esCortaOGenerica = !descActual || descActual.length < 150 || descActual.indexOf("Tutorial oficial de Capa Cero") !== -1;
+    var descripcion = (esCortaOGenerica || (info.description && info.description.length > descActual.length)) ? info.description : descActual;
     
     // Consejo Clave: Si está vacío o tiene el texto genérico de placeholder, usar info.consejoClave
     var consejoStr = String(filaActual[4] || "").trim();
@@ -531,12 +531,12 @@ function procesarPegadoYouTube(sheet, row, valorPegado) {
       consejoStr.indexOf("Aplica este ajuste en Bambu Studio") !== -1 || 
       consejoStr.indexOf("Revisa la vista previa") !== -1 ||
       consejoStr.indexOf("Utiliza la herramienta de reparación de mallas") !== -1;
-    var consejo = esConsejoGenerico ? info.consejoClave : (info.consejoClave || consejoStr);
+    var consejo = (esConsejoGenerico || !consejoStr) ? info.consejoClave : (info.consejoClave || consejoStr);
     
     // Enlaces de descarga
     var descarga1 = filaActual[5];
-    if (!descarga1 || descarga1 === "https://makerworld.com/en/@capa_cero") {
-      descarga1 = (info.descargas && info.descargas.length > 0) ? info.descargas[0] : "https://makerworld.com/en/@capa_cero";
+    if (!descarga1 || descarga1 === "https://makerworld.com/en/@capa_cero" || (info.descargas && info.descargas.length > 0)) {
+      descarga1 = (info.descargas && info.descargas.length > 0) ? info.descargas[0] : (descarga1 || "https://makerworld.com/en/@capa_cero");
     }
     var descarga2 = filaActual[6] ? filaActual[6] : ((info.descargas && info.descargas.length > 1) ? info.descargas[1] : "");
     var descarga3 = filaActual[7] ? filaActual[7] : ((info.descargas && info.descargas.length > 2) ? info.descargas[2] : "");
@@ -2112,34 +2112,314 @@ function obtenerCatalogoOficialCapaCero() {
       "",
       "NO"
     ],
-    ["Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes", "https://www.youtube.com/watch?v=utIYIcUG0tM", "Modelado 3D", "Tutorial práctico para modelar cajas paramétricas con tapas ajustables, bisagras y ensambles en Fusion 360.", "Usa restricciones geométricas y chaflanes suaves en los cantos para facilitar la impresión 3D.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
-    ["¡Adiós a las costuras! El truco definitivo en Bambu Studio", "https://www.youtube.com/watch?v=PCbMinEbUd4", "Perfiles y Calibración", "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.", "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
-    ["Movimiento por el Viewport y Ajustes de Placas #8", "https://www.youtube.com/watch?v=hZvIHMnxb3w", "Bambu Studio", "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.", "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Fusion 360 para Principiantes: Modela tu Primera Mesa", "https://www.youtube.com/watch?v=9otbdJPW1WA", "Modelado 3D", "Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.", "Trabaja siempre con restricciones y cotas paramétricas para poder editar el diseño fácilmente.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Perfiles de Impresión: Los Ajustes Clave que Olvidas #7", "https://www.youtube.com/watch?v=-uD_McDZ3Qk", "Perfiles y Calibración", "Descubre los ajustes críticos de los perfiles de proceso en Bambu Studio para no arruinar tus piezas.", "Guarda perfiles independientes para filamentos especiales como PETG, TPU o filamentos con fibra.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Ahorra la Mitad del Tiempo en Bambu Studio: 3 Ejemplos Reales", "https://www.youtube.com/watch?v=oDGtU6Z2VYM", "Trucos Rápidos", "Reduce horas de impresión sin perder resistencia ni acabado visual optimizando rellenos y perímetros.", "Aumenta la velocidad de relleno y perímetros internos manteniendo las paredes externas a velocidad media.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Perfiles vs Filamentos en Bambu Studio: Diferencias Clave #6", "https://www.youtube.com/watch?v=-ZIU1pywxiQ", "Perfiles y Calibración", "Aprende la diferencia real entre ajustar el filamento y ajustar el perfil de impresión.", "No cambies la temperatura en el perfil de proceso; hazlo siempre en el ajuste del filamento.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Deja de Tirar Dinero: La Técnica Pro para Impresiones Gigantes", "https://www.youtube.com/watch?v=OHLka3HAwn0", "Trucos Rápidos", "Cómo imprimir piezas de gran volumen ahorrando metros de filamento y evitando fallos de warping.", "Usa borde exterior (brim) amplio y mantén la puerta cerrada en materiales técnicos.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["AlgoLaser Pixi 10W: ¿El Mejor Grabador Láser por Menos de 300€?", "https://www.youtube.com/watch?v=fpvQEW7-9vo", "Grabado Láser", "Análisis a fondo y pruebas reales de corte y grabado con el AlgoLaser Pixi 10W.", "Calibra el foco milimétricamente y usa siempre asistencia de aire (Air Assist).", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Boquillas Estándar vs High-Flow: ¿Cuál Elegir? #5", "https://www.youtube.com/watch?v=DNouZLKOnpk", "Hardware y Boquillas", "Comparativa real de caudal volumétrico y velocidades entre hotends estándar y de alto flujo.", "Las boquillas High-Flow te permiten subir el caudal volumétrico máximo hasta un 40%.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¡Deja de Imprimir Textos Feos! El Truco de Alta Resolución", "https://www.youtube.com/watch?v=w-DRE8UtD9s", "Bambu Studio", "Consigue letras y leyendas nítidas en la primera capa o superficies superiores con estos ajustes.", "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Cómo Elegir la Placa de Impresión en Bambu Studio #4", "https://www.youtube.com/watch?v=zXLmMLsKLe4", "Bambu Studio", "Diferencias entre placa PEI texturada, placa fría, placa suave y ajustes en el software.", "Selecciona siempre el tipo de placa exacto en el desplegable superior de Bambu Studio.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¡Deja de Imprimir Basura! Cómo Arreglar Modelos de IA", "https://www.youtube.com/watch?v=kYbpS-vwqJM", "Modelado 3D", "Aprende a reparar mallas rotas, caras invertidas y geometrías no-manifold procedentes de generadores de IA.", "Utiliza la herramienta de reparación de malla integrada de Bambu Studio antes de laminar.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Lo que Hace ChatGPT con Bambu Studio te Sorprenderá", "https://www.youtube.com/watch?v=v3SFbjI8BEE", "Trucos Rápidos", "Cómo usar la inteligencia artificial para resolver dudas de laminado, G-code y orientación de piezas.", "Pide a ChatGPT que calcule el coste energético y de material por gramo para tus presupuestos.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Configura tu Primer Entorno en Bambu Studio Correctamente #3", "https://www.youtube.com/watch?v=cfs1ctvUC-8", "Bambu Studio", "Paso a paso para vincular tu impresora Bambu Lab, configurar la nube y tu área de trabajo.", "Activa el modo Desarrollador/Avanzado para desbloquear todos los parámetros de control.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¿Lo Sabías? Los Ajustes SECRETOS de Bambu Studio Explicados", "https://www.youtube.com/watch?v=lP0FvQZ6uwk", "Bambu Studio", "Funciones ocultas del laminador que mejoran drásticamente la calidad superficial y la adherencia.", "Explora el ajuste de compensación dimensional si tus piezas encajables quedan demasiado justas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Ecosistema Bambu Lab: Guía Completa para Principiantes #2", "https://www.youtube.com/watch?v=YUMNakCgUJs", "Bambu Studio", "Todo sobre el funcionamiento conjunto de la máquina, Bambu Handy, MakerWorld y Bambu Studio.", "Sincroniza tus perfiles de filamento en la nube para tenerlos disponibles en cualquier ordenador.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Instalación de Bambu Studio: Guía Paso a Paso #1", "https://www.youtube.com/watch?v=hVCS-uyGflk", "Bambu Studio", "Primeros pasos desde la descarga oficial hasta la configuración inicial sin errores.", "Descarga siempre el instalador desde la web oficial de Bambu Lab o su GitHub de versiones estables.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15", "https://www.youtube.com/watch?v=IFTgPS3a6v8", "Bambu Studio", "Añade texto tridimensional sobre cualquier superficie curva o plana y crea modificadores de relleno.", "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14", "https://www.youtube.com/watch?v=3BtSMuvl8BQ", "Multicolor y AMS", "Herramientas de pintura por capas, por relleno de cubos y por triángulos en modelos multicolor.", "Usa la herramienta de relleno por ángulo para pintar caras completas en un solo clic.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13", "https://www.youtube.com/watch?v=mzItWgN4a5c", "Bambu Studio", "Ensambla piezas separadas directamente en la placa sin necesidad de abrir un programa de modelado.", "Usa conectores de espiga o cola de milano automáticos para unir piezas grandes.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Grupos y Jerarquías en Bambu Studio | Guía de mallas booleanas #12", "https://www.youtube.com/watch?v=ozlbqVkcinE", "Bambu Studio", "Domina las operaciones de unión, resta y corte booleano de volúmenes directamente en el slicer.", "Agrupa piezas del mismo material para procesar ajustes en bloque.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["No Hagas Esto al Cortar en Bambustudio | Guía Completa #11", "https://www.youtube.com/watch?v=STc2U-cqecQ", "Bambu Studio", "Cómo cortar modelos grandes para imprimir por partes con uniones perfectas y sin holguras.", "Añade conectores tipo pin con tolerancia de 0.15mm para un montaje firme.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Escala, rota y posiciona: controles esenciales de BambuStudio #10", "https://www.youtube.com/watch?v=RNWxu9tsB-k", "Bambu Studio", "Atajos de teclado y trucos de posicionamiento para optimizar el espacio en la cama de impresión.", "Orienta las caras visuales principales en vertical para evitar marcas de capas escalonadas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¿Perdido en la interfaz? Todo lo que necesitas saber #9", "https://www.youtube.com/watch?v=sIzQPJSVdvo", "Bambu Studio", "Guía rápida para entender cada botón, panel lateral y menú superior sin perder el tiempo.", "Usa la barra de búsqueda de parámetros (Ctrl+F) para encontrar cualquier ajuste al instante.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Todo lo que Necesitas Saber sobre el Laminado en Bambu Studio #8.1", "https://www.youtube.com/watch?v=D6zKWJAS6G0", "Bambu Studio", "Interpretación de la vista previa de corte: retracciones, velocidades, cambios de capas y costuras.", "Comprueba la pestaña de 'Velocidad de flujo' para asegurarte de que no supera el límite de tu boquilla.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Probando Madimaker: ¿La Mejor Alternativa para Descargar Modelos 3D?", "https://www.youtube.com/watch?v=1ol3BaUnJ8Y", "Modelado 3D", "Análisis de la plataforma y cómo preparar los archivos descargados para laminar en Bambu Studio.", "Verifica siempre la escala del archivo importado antes de mandar a la cola de impresión.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Adiós a las Limitaciones del AMS: Imprime Multicolor de Esta Forma", "https://www.youtube.com/watch?v=nPaTKz9Zqcs", "Multicolor y AMS", "Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.", "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"]
+    [
+      "Escala, rota y posiciona: aprende los controles esenciales de BambuStudio #10",
+      "https://www.youtube.com/watch?v=RNWxu9tsB-k",
+      "Bambu Studio",
+      "Dominar las herramientas de transformacion en 3D es el primer paso para dejar de mover objetos al azar en tu escena.\n\nEn esta clase practica, aprenderas a manipular primitivas como esferas y cubos con control total. Olvidate de arrastrar elementos libremente con el raton; aqui nos enfocaremos en utilizar los comandos especificos para mover, rotar y escalar tus objetos. Es una guia esencial para cualquier principiante que busque pasar de un flujo de trabajo improvisado a uno técnico y preciso.\n\nDurante la sesion, desglosamos como funcionan las coordenadas mundiales y las coordenadas de objeto. Al entender estas herramientas de transformacion, podras posicionar cada pieza exactamente donde la necesitas sin adivinar. Es el conocimiento fundamental para ganar agilidad en cualquier software de modelado 3D.\n\nSuscribete para recibir tutoriales de modelado 3D cada semana y cuentame en los comentarios si sueles trabajar con coordenadas mundiales o locales.",
+      "Orienta las caras visuales principales en vertical para evitar marcas de capas escalonadas.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes",
+      "https://www.youtube.com/watch?v=utIYIcUG0tM",
+      "Modelado 3D",
+      "Aprende a diseñar una caja funcional y 100% paramétrica en Autodesk Fusion 360 desde cero. En este tutorial completo vemos dos metodologías profesionales de modelado (extrusión por perfiles vs. vaciado con herramienta Shell), la configuración correcta de componentes independientes, la inspección por análisis de sección y el ajuste exacto de tolerancias (-0.25 mm) para que la tapa encaje a la primera en tu impresora 3D.\n\nAdemás, configuramos la tabla de parámetros de usuario (User Parameters) para que cambies las medidas de tu diseño en un clic sin romper la geometría.\n\nMás recursos y modelos 3D en: https://capacero3d.com\n\nMarcas de tiempo:\n00:00 - Introducción y objetivos del proyecto\n00:15 - Configuración inicial: Diseño híbrido y gestión de bocetos\n01:56 - Método 1: Creación del boceto base acotado y empalmes\n03:22 - Método 1: Desfase de pared y extrusión de la base\n04:15 - Método 1: Extrusión de muros exteriores\n04:53 - Método 1: Modelado de la tapa desde objeto\n06:30 - Inspección interna con Análisis de Sección\n08:00 - Ajuste crítico de tolerancias de holgura (-0.25 mm)\n09:42 - Método 2: Duplicado de bocetos en nuevo componente\n11:15 - Restricción y anclaje al origen\n12:26 - Método 2: Extrusión sólida y herramienta Vaciado (Shell)\n13:04 - Método 2: Creación rápida de la tapa y reborde\n14:38 - Diseño Paramétrico: Configuración de Parámetros de Usuario\n15:54 - Vinculación de fórmulas y cotas inteligentes\n17:00 - Prueba de escalabilidad y prevención de errores CAD\n19:01 - Conclusión y consejos de diseño\n\n🔔 Suscríbete a @capacero0 para no perderte las próximas guías de modelado 3D, trucos de laminado y optimización para impresión 3D.\n\n#Fusion360 #Impresion3D #Diseño3D #TutorialFusion360 #CapaCero #Modelado3D #CAD #Makers",
+      "Usa restricciones geométricas y chaflanes suaves en los cantos para facilitar la impresión 3D.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "SI"
+    ],
+    [
+      "Interfaz de Bambu Studio: El secreto para laminar más rápido #9",
+      "https://www.youtube.com/watch?v=sIzQPJSVdvo",
+      "Bambu Studio",
+      "Aprende a usar el software de modelado 3d desde cero. Domina el menu superior, la insercion de objetos y la visualizacion de capas.Este tutorial esta diseñado para quienes estan comenzando en el mundo del diseño 3d y necesitan entender las funciones basicas de su herramienta de trabajo. A lo largo del video, exploraremos paso a paso como funcionan los botones del menu superior de este software de modelado 3d, permitiendote navegar por la interfaz con mayor seguridad y eficiencia.Veremos como añadir objetos primitivos a tu escena utilizando un simple clic derecho y como importar modelos externos para integrarlos en tus proyectos. Ademas, analizaremos el proceso de manipulacion de esferas y aprenderas a verificar las capas de impresion 3d antes de exportar tus archivos. Esta guia practica te dara la base necesaria para avanzar en tus creaciones de diseño 3d.Suscribete para recibir tutoriales semanales de modelado 3d y comenta que herramienta o funcion te gustaria aprender a usar en el siguiente video.\nDomina la interfaz 3d esencial para acelerar tus proyectos. Aprende a gestionar primitivos y preparar tus archivos.\n\nSi estás empezando con el tutorial modelado 3d, entender la barra de herramientas superior es tu primer paso obligatorio. Este video desglosa cómo funcionan los menús principales para que dejes de perder tiempo buscando comandos y empieces a crear con fluidez desde el primer minuto.\n\nVeremos el flujo de trabajo completo: desde cómo importar objetos 3d externos hasta la inserción rápida de figuras primitivas mediante el clic derecho. También dedicamos tiempo a una parte crítica del proceso: manipular esferas y verificar las capas de impresion antes de mandar a imprimir. Esta configuración 3d es lo que separa a un principiante de alguien que entiende cómo preparar piezas reales.\n\nSuscríbete para tutoriales de diseño técnico cada semana y comenta qué otra función del programa te gustaría que analicemos pronto.\nDominar el modelado 3D requiere conocer a fondo la interfaz. Aprende a manejar los botones clave para agilizar tus diseños.\n\nSi estás empezando con software de modelado 3D, es normal sentirse perdido ante tantas opciones. Este tutorial se enfoca en desglosar las herramientas del menú superior para que dejes de adivinar qué hace cada función. Analizamos el proceso exacto para insertar objetos primitivos mediante un clic derecho y cómo traer tus propios archivos externos al entorno de trabajo.\n\nAdemás de la gestión básica, veremos cómo manipular esferas y ajustar la visualización de las capas de impresión. Esto es crucial si tu objetivo es preparar piezas listas para fabricar sin errores de geometría. Conocer estas funciones de modelado 3D te permitirá pasar más tiempo creando y menos tiempo buscando menús ocultos.\n\nSuscríbete para recibir tutoriales semanales sobre flujo de trabajo en modelado 3D y comenta qué otra herramienta técnica te gustaría ver analizada en el canal.",
+      "Usa la barra de búsqueda de parámetros (Ctrl+F) para encontrar cualquier ajuste al instante.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Laminado perfecto a la primera: Los trucos de Bambu Studio que nadie usa",
+      "https://www.youtube.com/watch?v=D6zKWJAS6G0",
+      "Bambu Studio",
+      "Aprende el proceso completo de laminado 3D para el modelo de barco Benji. Mira cómo preparar tu archivo para una impresión exitosa.Este tutorial detalla los pasos esenciales para preparar un modelo de barco 3D, conocido como Benji, utilizando software de laminado. Si buscas mejorar tus resultados en la impresión 3D, este recorrido te mostrará cómo cargar el objeto correctamente en la escena y ajustar el escalado según tus necesidades específicas. Es ideal tanto para principiantes que están empezando con su primera máquina como para quienes quieren optimizar su flujo de trabajo habitual.Durante el proceso, analizamos la configuración necesaria antes de enviar el archivo a la impresora. Verás cómo seleccionar el filamento 3D adecuado y los parámetros clave para asegurar que el laminado 3D sea preciso y eficiente. Al finalizar, entenderás la lógica detrás de la preparación de archivos, permitiéndote aplicar estas técnicas a cualquier otro proyecto de impresión 3D que tengas en mente. Dominar la configuración del laminador es la diferencia entre un prototipo fallido y una pieza bien terminada.Suscríbete para recibir tutoriales semanales sobre optimización de impresión 3D y comenta qué modelo te gustaría ver preparado en el próximo video.\nEl laminado 3D del modelo Benji requiere pasos precisos para evitar fallos. Mira cómo preparar el barco para imprimir.\n\nPreparar el modelo Benji para tu impresora es un proceso que va más allá de solo cargar un archivo. En este video, nos enfocamos en el flujo de trabajo técnico necesario para escalar el objeto correctamente dentro del slicer, asegurando que las dimensiones sean las adecuadas antes de tocar el botón de imprimir. Si alguna vez has tenido problemas con la adherencia o el acabado final, este recorrido te ayudará a entender la lógica detrás de cada ajuste.\n\nAnalizamos cómo seleccionar el filamento 3D correcto según la geometría del barco y qué parámetros de configuración son vitales para obtener una pieza sólida. Al dominar el laminado 3D, reduces drásticamente el desperdicio de material y aseguras que el proceso de imprimir el barco sea exitoso desde la primera capa. Es una guía directa para quienes buscan mejorar su precisión al configurar el slicer.\n\nSuscríbete para recibir guías semanales sobre técnicas de impresión 3D y comenta qué otra figura te gustaría ver configurada en el canal.",
+      "Comprueba la pestaña de 'Velocidad de flujo' para asegurarte de que no supera el límite de tu boquilla.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "¡Adiós a las costuras! El truco definitivo en Bambu Studio",
+      "https://www.youtube.com/watch?v=PCbMinEbUd4",
+      "Perfiles y Calibración",
+      "¡Adiós a las costuras! El truco definitivo en Bambu Studio 🔥¿Tus piezas tienen esa costura marcada que arruina el acabado? En este tutorial de Bambu Studio te enseño el truco que el 90% de la gente no conoce para disimular (casi eliminar) las costuras de tus impresiones 3D, usando el tipo de costura \"cicatriz\" y el ajuste Scarf.Verás paso a paso cómo configurar la costura desde el perfil de filamento y desde los perfiles de proceso, además de los ajustes clave de ancho de línea y orden de paredes que hacen que la marca desaparezca. Todo con el gasto real de material comparado, para que sepas exactamente a qué atenerte.📌 \n\nCAPÍTULOS:\n0:00 El truco que el 90% no conoce\n0:30 Cómo ver las costuras al laminar\n1:00 Método 1 — Perfil de filamento (costura cicatriz)\n1:50 Método 2 — Perfiles de proceso\n2:30 Ancho de línea + Scarf + orden de paredes\n3:10 Diferencia de material (27,55 g vs 34,54 g)\n\n🔧 Lo que aprenderás:\n✅ Por qué se forma la costura en tus piezas\n✅ Configurar el tipo de costura \"cicatriz\" en contorno y agujero\n✅ Anular el ajuste de costura desde los perfiles de proceso\n✅ Aumentar el ancho de línea (0,62) para mejor acabado\n✅ Activar Scarf alrededor de toda la pared\n✅ El orden de paredes ideal: interior → exterior → interior💬 ¿Conocías este truco? Déjalo en comentarios y te leo.👍 Si te ha servido, dale like y suscríbete para más tutoriales de Bambu Lab e impresión 3D sin complicaciones.🔗 Sígueme para más contenido:\n▸ TikTok: https://www.tiktok.com/@capacero\n▸ Instagram: https://www.instagram.com/capa.cero_3d/\n\n#Impresion3D #BambuStudio #BambuLab #Costuras #Tutorial3D #PETG #Impresora3D",
+      "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "SI"
+    ],
+    [
+      "El truco definitivo para organizar tus piezas en 3D (Fácil y Rápido)",
+      "https://www.youtube.com/watch?v=hZvIHMnxb3w",
+      "Bambu Studio",
+      "Aprende a manejar la placa de impresion 3d y posicionar tus piezas correctamente en el software. Mejora tu flujo de trabajo de impresion 3d.\n\nEn esta clase practica, veremos los controles basicos para movernos por el escenario de trabajo. Entenderas como rotar la placa de impresion 3d para visualizar mejor el area de construccion y donde colocar tus objetos 3d antes de enviar el archivo a la maquina. Este tutorial es ideal para quienes estan empezando a configurar impresora 3d y necesitan dominar la interfaz de usuario.\n\nAnalizaremos como gestionar la colocacion de multiples piezas para optimizar el espacio disponible. Aprenderas a insertar objetos primitivos usando el clic derecho y organizar los elementos sobre la placa de impresion 3d para obtener resultados consistentes. Dominar estos movimientos es esencial para cualquier usuario que busque perfeccionar su proceso de configurar impresora 3d de forma eficiente.\n\nSuscribete para recibir semanalmente nuevos tutoriales de software impresion 3d, y comenta si tienes dudas sobre como posicionar tus piezas.",
+      "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Fusion 360 desde cero: Crea tu primera mesa en menos de 15 minutos",
+      "https://www.youtube.com/watch?v=9otbdJPW1WA",
+      "Modelado 3D",
+      "¿Cansado de solo descargar archivos STL? Es hora de que aprendas a CREARLOS. 🚀\n\nAprender Autodesk Fusion 360 es el superpoder que todo maker necesita. En este tutorial diseñado específicamente para principiantes, eliminamos la complejidad y vamos directo al grano: modelaremos una mesa funcional desde cero para que domines el flujo de trabajo profesional en menos de 15 minutos.\n\nSi acabas de empezar en la Impresión 3D o el Diseño CAD, este vídeo es tu punto de partida ideal.\n\n🛠️ LO QUE APRENDERÁS HOY:\nA diferencia de otros tutoriales aburridos, aquí veremos el flujo real que usan los diseñadores:\n✅ Navegación fluida en el espacio 3D (sin perderte en la interfaz).\n✅ El arte del Boceto 2D y cómo convertirlo en realidad con la Extrusión.\n✅ Dominio de la Línea de Tiempo: el secreto para corregir errores en segundos.\n✅ Herramientas clave: Empalmes, Vaciado (Shell) y acotado de precisión.\n\n⚙️ ESTRUCTURA DEL TUTORIAL (Capítulos):\n00:00 Deja de descargar y empieza a DISEÑAR.\n00:06 Licencia GRATUITA: Lo que nadie te cuenta del modo personal.\n00:39 Cómo moverte en Fusion 360 como un PRO.\n00:47 El flujo de trabajo maestro: Boceto, Extrusión y Modificación.\n01:03 Dibujando tu primera base: Rectángulos y planos.\n02:14 Dando volumen: Patas y jerarquía de cuerpos.\n02:49 El truco para unir piezas sin solapamientos.\n03:44 VIAJE AL PASADO: La potencia de la línea de tiempo.\n05:03 Precisión milimétrica: Uso avanzado de cotas (Tecla 'D').\n07:16 Cortes negativos: Cómo hacer muescas y hendiduras.\n08:15 Acabado profesional: Redondeos y cantos.\n09:51 Detalles finales: Pasacables y círculos de precisión.\n10:33 Herramienta Vaciado: Creando accesorios integrados.\n\n🚀 ÚNETE A LA REVOLUCIÓN DE LA IMPRESIÓN 3D\n¿Quieres pasar de principiante a experto y dominar tu impresora desde la calibración hasta el diseño avanzado? No te pierdas el lanzamiento de nuestro curso definitivo.\n\n\n🔗 RECURSOS MENCIONADOS:\n🌐 Web Oficial Capa Cero 3D: https://capacero3d.com\n📥 Descarga Fusion 360 (Gratis Personal): https://www.autodesk.com/es/products/fusion-360/personal\n\n\n#Fusion360 #Impresion3D #Diseño3D #TutorialFusion360 #CapaCero3D #AutodeskFusion #CAD #Modelado3D #Maker",
+      "Trabaja siempre con restricciones y cotas paramétricas para poder editar el diseño fácilmente.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "El ajuste crítico de los perfiles de impresión que estás olvidando",
+      "https://www.youtube.com/watch?v=-uD_McDZ3Qk",
+      "Perfiles y Calibración",
+      "Domina la gestión de perfiles de impresión 3D ajustando la calidad y altura de capa. Aprende a configurar los parámetros del sistema.Esta clase técnica detalla el menú de procesos esencial para cualquier operador de impresoras 3D. Analizamos cómo navegar por las interfaces de software para modificar ajustes críticos del sistema, permitiéndote tener un control total sobre tus resultados finales. Es el recurso ideal para quienes buscan precisión en sus piezas.Entenderás cómo funciona la impresión capa por capa al ajustar la altura de capa desde el software. Revisamos la gestión de perfiles para que puedas optimizar la calidad de impresión según tus necesidades específicas. Con estos ajustes del sistema, lograrás un flujo de trabajo más eficiente y resultados consistentes en cada modelo que prepares.Suscríbete para recibir tutoriales semanales sobre optimización de impresión 3D y comenta qué parámetro te gustaría ajustar en tu próxima pieza.\n¿Tus impresiones 3D no tienen el acabado que esperas? Aprende a configurar la altura de capa y optimizar perfiles de impresión.\n\nEl control preciso sobre los parámetros del sistema es lo que separa una pieza mediocre de un resultado profesional. En esta lección nos enfocamos exclusivamente en el menú de procesos, donde los ajustes de software definen la viabilidad técnica de tu modelo. Revisaremos paso a paso cómo manipular las interfaces para que cada capa se deposite con exactitud milimétrica.\n\nNo se trata solo de mover controles al azar; es entender la relación directa entre la configuración de impresión y el resultado final. Analizaremos la gestión de perfiles para que puedas alternar entre configuraciones rápidamente sin perder calidad. Al dominar la altura de capa y los ajustes de sistema, obtendrás un flujo de trabajo mucho más predecible y eficiente en cada proyecto.\n\nSuscríbete para recibir tutoriales semanales sobre configuración de impresión 3D y comenta qué ajuste de software te resulta más difícil de dominar.",
+      "Guarda perfiles independientes para filamentos especiales como PETG, TPU o filamentos con fibra.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Ahorra la Mitad de Tiempo en Bambu Studio: 3 Casos Reales",
+      "https://www.youtube.com/watch?v=oDGtU6Z2VYM",
+      "Trucos Rápidos",
+      "¡Ahorra horas de impresión y reduce los cambios de placa a la mitad! En este tutorial te enseño el truco paso a paso en Bambu Studio para optimizar cualquier modelo de impresión 3D multi-pieza o diseñado para imprimir \"Sin AMS\".\n\nAprenderás a dominar la función de impresión por objeto, reordenar la jerarquía de laminado para evitar colisiones con el cabezal y eliminar torres de purga innecesarias. Lo ponemos a prueba con 3 ejemplos reales (Gengar, Capitán América y Mario Bros) en una Bambu Lab A1.\n\n🛠️ Lo que aprenderás en este vídeo:\nAjuste de separación entre piezas: Configuración del margen a 2 mm para aprovechar al máximo la superficie de la cama.\n\nCombinación inteligente de objetos: Cómo agrupar partes del mismo color por placa para agilizar el proceso.\n\nImpresión por Objeto vs. Por Capa: Cambio de secuencia global y resolución de errores de colisión reordenando la lista de objetos.\n\nReducción real: Pasamos de 8 a 4 placas y ahorramos más de 1 hora de tiempo total de impresión sin desperdiciar filamento.\n\n🎓 Aprende más sobre Impresión 3D\nSi quieres aprender más sobre impresión 3D y llevar tus laminados al siguiente nivel totalmente GRATIS, entra aquí:\n👉 capacero3d.com\n\n⏱️ Capítulos / Marcas de Tiempo:\n\n00:00 - El problema de las impresiones \"Sin AMS\" de muchas placas\n00:18 - Ejemplo 1: Optimizando el modelo de Gengar\n01:51 - Cómo activar la \"Impresión por Objeto\" y evitar colisiones\n02:38 - Resultados Gengar: Reducción de tiempo y placas\n03:08 - Ejemplo 2: Capitán América (De 7 a 3 placas)\n05:45 - Solución paso a paso a errores de jerarquía y altura\n07:23 - Resultados Capitán América\n07:53 - Ejemplo 3: Mario Bros (Piezas grandes y complejas)\n09:47 - Cómo solucionar errores en placas con piezas altas\n11:20 - Balance final de ahorro de tiempo y filamento",
+      "Aumenta la velocidad de relleno y perímetros internos manteniendo las paredes externas a velocidad media.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Perfiles vs Filamentos en Bambu Studio: ¿Cuál es la diferencia real?",
+      "https://www.youtube.com/watch?v=-ZIU1pywxiQ",
+      "Perfiles y Calibración",
+      "Aprende a gestionar perfiles de filamento en Bambu Studio para mejorar la calidad de tus impresiones 3D. Optimiza tus ajustes hoy.\n\nEste tutorial práctico está diseñado para usuarios de impresoras Bambu Lab que necesitan configurar correctamente sus materiales dentro del software. Si alguna vez has tenido dudas sobre cómo reconocer el tipo de plástico o ajustar los parámetros específicos, esta guía te mostrará el proceso paso a paso para evitar errores comunes de extrusión o adherencia.\n\nDurante el video, analizamos cómo interactúa el software con el dispositivo AMS, asegurando que los cuatro rollos de filamento cargados se reconozcan sin conflictos. Al configurar tus perfiles de filamento adecuadamente, lograrás una gestión de materiales más fluida y resultados consistentes en cada proyecto.\n\nSuscríbete para tutoriales semanales sobre configuración de Bambu Studio y comenta qué tipo de material te gustaría que analicemos en el próximo video.",
+      "No cambies la temperatura en el perfil de proceso; hazlo siempre en el ajuste del filamento.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "El truco de Bambu Studio que el 90% ignora (Adiós torres de purga)",
+      "https://www.youtube.com/watch?v=OHLka3HAwn0",
+      "Trucos Rápidos",
+      "Si sigues imprimiendo proyectos gigantes en múltiples placas y llenando tu papelera de torres de purga, estás perdiendo tiempo y dinero. Hoy te explico la técnica PRO que el 90% ignora. 👇\n\nBienvenidos a la versión extendida de la \"magia\" que reventó TikTok. En este tutorial avanzado te enseño a dominar tu laminador (Bambu Studio / Orca Slicer) para agrupar piezas de distintos colores en una sola placa con CERO purga.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\nAprenderás a usar la función de \"Impresión por Objetos\" como un verdadero profesional: te explico cómo agrupar piezas, cómo ordenar la secuencia de impresión para optimizar tiempos, y lo más importante, cómo calcular las distancias de seguridad para que el cabezal del extrusor no colisione y arruine tus impresiones.\n\nUsamos a Sonic The Hedgehog como ejemplo práctico para pasar de 7 placas a la mitad, pero esta estrategia blindará los márgenes y tiempos de cualquier proyecto gigante que tengas en tu granja de impresión.\n\n⏱️ Capítulos del Vídeo (Ve directo al grano):\n00:00 El error que te está haciendo perder dinero y filamento\n01:15 ¿Qué es la Impresión por Objetos y por qué nadie la usa bien?\n02:30 El truco: Agrupando piezas por color en el laminador\n04:20 ⚠️ ¡Cuidado con esto! Cómo evitar colisiones del cabezal\n06:10 Comparativa Real: Tiempo y filamento ahorrado (Antes vs Después)\n07:45 El ajuste final para que la placa quede perfecta\n\n🔗 Enlaces mencionados y equipo:\n\nModelo de Sonic (3DerLover): https://makerworld.com/es/models/2165661-sonic-the-hedgehog-no-ams#profileId-2348250\n\n\n⚠️ Si este vídeo te ha ahorrado filamento (y dinero), ¡déjate un buen LIKE y suscríbete para más trucos de impresión 3D avanzados y rentables!",
+      "Usa borde exterior (brim) amplio y mantén la puerta cerrada en materiales técnicos.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "AlgoLaser Pixi 10W: ¿La mejor láser por menos de 300€?",
+      "https://www.youtube.com/watch?v=fpvQEW7-9vo",
+      "Grabado Láser",
+      "¿Merece la pena la AlgoLaser Pixi de 10W o es otro juguete más? En este vídeo te cuento la verdad (Cero Filtros) y te enseño los trucos exactos para conseguir resultados de calidad industrial sin necesidad de usar programas complicados ni conectar el ordenador.\n\n👇 Consigue la AlgoLaser Pixi al mejor precio aquí: 👇\n🔗 https://algolaser.com/discount/capa10?ref=CAPA\n\nEn esta reseña a fondo resolvemos el gran problema del humo, te enseño por qué el test de encuadre es vital para no arruinar tu madera, y cómo exprimir la pantalla táctil de la Pixie para trabajar de forma 100% autónoma.\n\n⏱️ CAPÍTULOS DEL VÍDEO:\n\n00:00 - El gran error al grabar madera (Basura vs. Resultado PRO) \n00:15 - La verdad sobre la AlgoLaser Pixi: Cero Filtros \n00:45 - El elefante en la habitación: Cómo solucionar el Humo \n01:15 - El paso innegociable: El Test de Encuadre \n01:45 - Cómo usar la AlgoLaser Pixi SIN ORDENADOR (Modo Offline) \n02:15 - Grabado real a 10W (Precisión brutal) \n03:15 - Mi veredicto y dónde comprarla al mejor precio \n03:45 - El siguiente nivel: Combina tu Láser con Impresión 3D\n\n📱 SÍGUEME EN MIS REDES:\n\nInstagram: https://www.instagram.com/capa.cero_3d/\n\nTikTok: https://www.tiktok.com/@capacero",
+      "Calibra el foco milimétricamente y usa siempre asistencia de aire (Air Assist).",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "¿Más detalle o más velocidad? La verdad sobre las boquillas Bambu Lab",
+      "https://www.youtube.com/watch?v=DNouZLKOnpk",
+      "Hardware y Boquillas",
+      "Aprende a elegir las boquillas bambu lab correctas para tus impresiones. Conoce las diferencias entre tamaños y flujos en Bambu Studio.Este video detalla las opciones disponibles en el ecosistema de Bambu Studio, analizando específicamente las boquillas de 0.2, 0.4, 0.6 y 0.8 mm. Si buscas optimizar la calidad o la velocidad de tus piezas, entender cómo seleccionar el tamaño boquilla 3d adecuado es fundamental para evitar fallos comunes en tus proyectos.Revisamos las diferencias técnicas entre las boquillas estándar y las versiones de alto flujo, utilizando la documentación oficial para aclarar dudas sobre rendimiento. Esta guía es ideal para usuarios que quieren dominar su configuración de boquillas y entender qué hardware se adapta mejor a sus necesidades específicas de impresión 3d.Al finalizar, tendrás claridad sobre qué componente instalar según el nivel de detalle o rapidez que requieras. Aplicar esta configuración de boquillas correctamente te ahorrará tiempo y material en el futuro.Suscríbete para recibir guías semanales sobre optimización de impresión 3d y comenta qué otro componente de Bambu Lab te gustaría que analizara en el próximo video.\nElegir las boquillas Bambu Lab adecuadas determina si tu impresión 3d gana en velocidad o en detalle extremo.\n\nEl diámetro de la punta cambia radicalmente el resultado final de tus archivos en Bamboo Studio. Analizamos las diferencias prácticas entre las opciones de 0.2, 0.4, 0.6 y 0.8 mm para que dejes de adivinar cuál usar según el proyecto que tengas en mesa. Al entender la configuración boquilla 3d correcta, evitarás atascos innecesarios y optimizarás el tiempo total de producción.\n\nTambién comparamos las boquillas estándar frente a las versiones de alto flujo basándonos en la documentación oficial del fabricante. Identificar cuándo necesitas un mayor caudal de material es vital para mejorar la calidad impresión 3d sin sacrificar la resistencia de tus piezas. Este análisis te servirá para configurar tu máquina con precisión técnica y profesionalismo.\n\nSuscríbete para recibir guías semanales sobre optimización de hardware y comenta qué otra parte de tu impresora te genera más dudas al configurar.",
+      "Las boquillas High-Flow te permiten subir el caudal volumétrico máximo hasta un 40%.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "¡Deja de Imprimir Textos Feos! Truco de Alta Resolución",
+      "https://www.youtube.com/watch?v=w-DRE8UtD9s",
+      "Bambu Studio",
+      "¿Cansado de que los textos en tus impresiones 3D se vean mal? En este tutorial de Bambu Studio, te revelo el truco oculto para conseguir textos de alta resolución sin complicaciones.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\n\nAprenderás a configurar los modificadores y ajustes de precisión para que tus letras queden perfectas, incluso en tamaños pequeños. Este es el paso a paso que necesitas para llevar tus modelos al siguiente nivel.\n\n⏱️ CAPÍTULOS DEL VÍDEO:\n0:00 El problema de los textos en Bambu Studio\n1:30 Cómo aplicar el truco de alta resolución\n3:00 Ajustes de precisión y modificadores\n5:00 Resultado final y consejos extra\n\n#BambuStudio #Impresion3D #Tutorial3D #CapaCero3D",
+      "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Aprende a Configurar las Placas de Impresión para el Éxito en Bambu Lab",
+      "https://www.youtube.com/watch?v=zXLmMLsKLe4",
+      "Bambu Studio",
+      "Aprende a elegir las mejores Bambu Lab placas para tus impresiones. Conoce las opciones de configuración en Bambu Studio paso a paso.\n\nEste tutorial explica cómo seleccionar correctamente las placas de impresión para tu modelo específico de máquina. Analizamos las diferencias entre las superficies de construcción disponibles en la web oficial y cómo configurarlas correctamente dentro del software Bambu Studio para evitar errores de adhesión o daños en la boquilla.\n\nEl objetivo es que domines el ecosistema de impresoras 3D Bambu y sepas qué placa utilizar según el material o el tipo de pieza que necesites fabricar. Repasamos la interfaz del programa para que identifiques dónde activar cada perfil y ajustes los parámetros necesarios antes de enviar tu archivo a imprimir.\n\nSuscríbete para más guías semanales sobre optimización de impresión 3D y comenta qué otra configuración de Bambu Lab te gustaría aprender a ajustar.",
+      "Selecciona siempre el tipo de placa exacto en el desplegable superior de Bambu Studio.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "¡Deja de imprimir basura! Arreglando modelos generados por IA",
+      "https://www.youtube.com/watch?v=kYbpS-vwqJM",
+      "Modelado 3D",
+      "Aprende a arreglar tus modelos generados por IA con Blender para luego exportarlos a Bambustudio y poder imprimirlos en 3D.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\nEnlace del modelo por si lo quereis descargar e imprimir.\nhttps://makerworld.com/es/models/3010521-goku-super-saiyan-anime-art-bust#profileId-3381122",
+      "Utiliza la herramienta de reparación de malla integrada de Bambu Studio antes de laminar.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Lo que ChatGPT Hace con Bambu Studio te Sorprenderá",
+      "https://www.youtube.com/watch?v=v3SFbjI8BEE",
+      "Trucos Rápidos",
+      "Aprende a crear modelos 3D impresionantes desde cero utilizando Inteligencia Artificial. En este tutorial paso a paso, analizamos el flujo de trabajo completo para generar un busto de Goku (Super Saiyan 1), combinando el poder de los prompts en ChatGPT con la herramienta de IA integrada en MakerLab de Bambu Studio.\n\nSi buscas mejorar tus habilidades en el diseño 3D y optimizar tu flujo de trabajo, descubrirás cómo iterar instrucciones para obtener geometrías más complejas (como añadir brazos o afinar la musculatura) sin necesidad de conocimientos técnicos avanzados en modelado tradicional. Además, repasamos el funcionamiento del sistema de créditos de MakerLab, cómo evitar relieves indeseados ajustando las tonalidades, y la exportación correcta de tu archivo STL para dejarlo listo para el laminado.\n\nSuscríbete al canal para dominar la impresión 3D y no perderte los próximos tutoriales, donde profundizaremos en la importación de estas mallas a Blender para darles color.\n\n🔗 Descubre más recursos en: https://capacero3d.com\n\n⏱️ Capítulos:\n00:00 El resultado: Busto 3D de Goku creado con IA\n00:13 Iterando el prompt perfecto con ChatGPT\n00:37 MakerLab en Bambu Studio: De texto a 3D\n01:24 Exportación del modelo en formato STL\n01:38 Laminado y preparación para la impresión\n01:54 Próximos tutoriales y suscripción\n\n#Impresion3D #ChatGPT #BambuStudio #Diseño3D #MakerLab #InteligenciaArtificial #Capacero",
+      "Pide a ChatGPT que calcule el coste energético y de material por gramo para tus presupuestos.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Configura tu primer Setup en Bambu Studio correctamente #3",
+      "https://www.youtube.com/watch?v=cfs1ctvUC-8",
+      "Bambu Studio",
+      "Aprende a configurar tu impresora 3D en la pestaña Preparar de Bambu Studio. Domina los ajustes iniciales para comenzar tus proyectos.\n\nEn esta clase nos enfocamos en el flujo de trabajo esencial dentro de Bambu Studio. Si buscas configurar tu impresora 3D correctamente, este tutorial te guía paso a paso a través de la interfaz de software necesaria para preparar tus archivos de impresión antes de enviar cualquier pieza a fabricar.\n\nVeremos cómo seleccionar el modelo de máquina adecuado directamente desde el software y cómo navegar por las opciones disponibles. Al entender cómo configurar tu impresora 3D, evitarás errores comunes al preparar archivos de impresión y optimizarás la comunicación entre tu equipo y el laminador. Repasamos también las opciones de accesorios y filamentos disponibles en la web oficial de Bambu Lab para que tengas todo listo para producir con calidad.\n\nSuscríbete para recibir tutoriales semanales de impresión 3D y comenta qué otra parte de Bambu Studio te gustaría que analicemos en la próxima clase.",
+      "Activa el modo Desarrollador/Avanzado para desbloquear todos los parámetros de control.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "¿Sabías Esto? Los Ajustes SECRETOS de Bambu Studio Explicados",
+      "https://www.youtube.com/watch?v=lP0FvQZ6uwk",
+      "Bambu Studio",
+      "¿Cometes el error de laminar y enviar directamente a imprimir? En este tutorial de Bambu Studio, te revelo cómo dejar de ser un usuario básico y empezar a dominar los ajustes avanzados para obtener acabados de exposición en tus piezas de impresión 3D.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\nAprenderás a interpretar la información del laminador y configuraremos 5 ajustes clave: desde la optimización de superficies superiores y soportes fáciles de retirar, hasta trucos para ahorrar filamento y solucionar problemas comunes de flujo y cambios de color.\n\nPara este ejemplo, utilizamos el busto de Goku Super Saiyan, que puedes descargar gratis en mi perfil de MakerWorld para practicar.\n\nCapítulos del vídeo: \n00:00 El error que todos cometemos al laminar \n01:06 Mejorar la superficie superior (Patrón concéntrico) \n03:43 El secreto para soportes perfectos y fáciles de quitar \n06:08 Ahorra filamento usando el relleno de iluminación \n07:17 Por qué tu impresión cambia de color (Velocidad de capa) \n09:43 Flujo uniforme para un acabado profesional \n11:16 Conclusión y resultados\n\nRecursos mencionados: 📥 Descarga el modelo de Goku en MakerWorld: https://makerworld.com/es/models/3010521-goku-super-saiyan-anime-art-bust#profileId-3381122\n\n 🚀 Suscríbete a CapaCero3D para más trucos de Bambu Lab y diseño 3D.\n\n#BambuStudio #Impresion3D #BambuLab #Tutorial3D #3DPrinting #MakerWorld",
+      "Explora el ajuste de compensación dimensional si tus piezas encajables quedan demasiado justas.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Ecosistema Bambu Lab: Guía Completa para Principiantes #2",
+      "https://www.youtube.com/watch?v=YUMNakCgUJs",
+      "Bambu Studio",
+      "Aprende a usar la pantalla principal de Bamboo Studio paso a paso. Descubre cómo navegar por la interfaz Bamboo Studio y encontrar modelos.\n\nEste tutorial está diseñado para quienes están comenzando con el software y necesitan orientarse rápidamente. Exploramos la pantalla de inicio, donde podrás visualizar los proyectos disponibles y entender cómo acceder a una amplia biblioteca de modelos 3D en línea para tus futuras impresiones.\n\nAdemás de la navegación básica, te enseño una configuración de Bamboo Studio sencilla para personalizar tu espacio de trabajo. Si prefieres trabajar con mayor claridad visual, aprenderás a cambiar el fondo de la interfaz a un modo claro, facilitando la visualización de tus archivos.\n\nSuscríbete para recibir tutoriales semanales sobre impresión 3D y comenta qué otra función de Bamboo Studio te gustaría que explique en el próximo video.",
+      "Sincroniza tus perfiles de filamento en la nube para tenerlos disponibles en cualquier ordenador.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Instalación de Bambu Studio: Guía paso a paso #1",
+      "https://www.youtube.com/watch?v=hVCS-uyGflk",
+      "Bambu Studio",
+      "Aprende a instalar Bamboo Studio en tu ordenador Windows o Apple paso a paso. Sigue este tutorial para configurar el software de impresion 3D en minutos.Este video explica el proceso completo para descargar e instalar Bamboo Studio de forma sencilla. Si buscas comenzar a preparar tus modelos para impresión 3D, este tutorial te guía desde la búsqueda en Google hasta la finalización de la instalación en tu sistema operativo.El archivo de descarga ocupa menos de 300 megas, haciendo que el proceso sea rápido y ligero. A lo largo del video, verás que configurar Bamboo Studio es tan simple como presionar el botón de siguiente hasta completar la instalación. Este contenido es ideal para quienes necesitan instalar software Windows o instalar software Mac sin complicaciones técnicas.Suscríbete para recibir tutoriales de software semanalmente y comenta qué otro programa te gustaría aprender a configurar en el siguiente video.¿Necesitas instalar Bamboo Studio en tu PC o Mac de forma rápida? Consigue el software de impresión 3D funcionando en menos de cinco minutos con esta guía directa.Muchos usuarios pierden tiempo buscando dónde descargar el software correcto para sus proyectos. Este video muestra el camino más corto para obtener la aplicación oficial, ocupando menos de 300 megas en tu disco duro. Es un proceso ideal si buscas una instalación de Bamboo Studio sin complicaciones técnicas, apto para cualquier nivel de experiencia.Una vez que tengas el archivo en tu equipo, la configuración es un ejercicio de sencillez. Solo necesitas seguir el flujo de instalación estándar de tu sistema operativo y confirmar los pasos básicos. Al terminar, tendrás el entorno listo para preparar tus piezas con este software de impresión 3D sin haber perdido tiempo en configuraciones complejas.Suscríbete para recibir tutoriales de software semanalmente y comenta qué otro programa te gustaría aprender a configurar en el siguiente video.\nInstalar Bamboo Studio en Windows o Mac es un proceso rápido si sabes exactamente dónde hacer clic. Prepara tu software de impresión 3D siguiendo estos pasos directos.\n\nSi estás empezando con tu impresora 3D, el primer paso es obtener el software de control adecuado. Este tutorial te guía desde la búsqueda en Google hasta la descarga del archivo oficial, el cual pesa menos de 300 megas. Es una solución ligera que no saturará el almacenamiento de tu equipo, permitiéndote comenzar a preparar tus modelos 3D sin esperas innecesarias.\n\nLa configuración del programa es sumamente intuitiva, diseñada para que cualquier usuario pueda finalizar el proceso de instalación con solo unos pocos clics. Al ejecutar el instalador, simplemente sigue las instrucciones estándar de tu sistema operativo para completar la configuración. Al finalizar, tendrás el entorno listo para gestionar tus proyectos de impresión sin complicaciones técnicas ni configuraciones avanzadas que consuman tu tiempo.\n\nSuscríbete para recibir tutoriales de software de impresión 3D cada semana y deja un comentario indicando qué otro programa te gustaría aprender a configurar en el siguiente video.",
+      "Descarga siempre el instalador desde la web oficial de Bambu Lab o su GitHub de versiones estables.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15",
+      "https://www.youtube.com/watch?v=IFTgPS3a6v8",
+      "Bambu Studio",
+      "¿Necesitas editar tus modelos 3D antes de imprimir? Aprende a usar los modificadores en Bambu Studio para escalar y añadir texto.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\nMuchos usuarios desconocen cómo editar geometrías directamente dentro del laminador. En esta lección, te muestro cómo utilizar los modificadores en Bambu Studio para convertir formas básicas, como una simple esfera, en piezas personalizadas con texto incorporado.\n\nVerás el proceso paso a paso para manipular las dimensiones de cualquier objeto. Aprender a aplicar estos ajustes te permite un control total sobre tus archivos antes de enviarlos a la impresora, logrando resultados más profesionales en cada impresión.\n\nSuscríbete para recibir tutoriales semanales sobre configuración de impresión 3D. ¿Qué otra función de Bambu Studio te gustaría ver en el siguiente video?",
+      "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14",
+      "https://www.youtube.com/watch?v=3BtSMuvl8BQ",
+      "Multicolor y AMS",
+      "La herramienta de pintado en Bambu Studio es la clave para imprimir en colores tus modelos 3D favoritos sin complicaciones.\n\nMuchas veces queremos añadir más vida a nuestras impresiones pero no sabemos cómo gestionar los cambios de material. En esta lección, te muestro cómo cargar múltiples filamentos en Bambu Studio y utilizar el cubo de pintura para asignar tonalidades específicas a cada parte de tu diseño. Es un proceso directo que marca la diferencia en el resultado final.\n\nVeremos en detalle la configuración de la función de pincel circular, una opción muy práctica para aplicar colores de forma precisa sobre modelos como un Benchy. Si buscas mejorar el acabado estético de tus proyectos de impresión 3D, dominar esta herramienta de pintado te permitirá pasar de piezas monocolor a diseños mucho más llamativos y profesionales en poco tiempo.\n\nSuscríbete para recibir tutoriales de impresión 3D cada semana y cuéntame en los comentarios qué otro software te gustaría que analizáramos.",
+      "Usa la herramienta de relleno por ángulo para pintar caras completas en un solo clic.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13",
+      "https://www.youtube.com/watch?v=mzItWgN4a5c",
+      "Bambu Studio",
+      "Domina la herramienta montar en BambuStudio para apilar piezas 3D con precisión exacta. Aprende a organizar tu base de impresión de forma eficiente.\n\n¿Tienes varios modelos que quieres imprimir al mismo tiempo pero te falta espacio en la placa? Esta lección corta explica paso a paso cómo usar la función montar para ubicar objetos uno sobre otro. Veremos cómo integrar primitivos en tu proyecto y el proceso exacto para manipular la posición vertical de tus diseños 3D sin complicaciones.\n\nDurante este tutorial, practicaremos el uso de atajos esenciales como CTRL K para duplicar geometrías rápidamente y la selección múltiple con CTRL y clic izquierdo. Estas técnicas son vitales para cualquier usuario que busque optimizar el área de trabajo y mejorar el flujo de configuración antes de enviar el archivo a la impresora. Si buscas mejorar tu control sobre Bamboo Studio, dominar el apilado de piezas es el siguiente paso lógico.\n\nSuscríbete para recibir tutoriales semanales sobre Bamboo Studio y comenta qué otra herramienta técnica te gustaría aprender a usar en el próximo video.",
+      "Usa conectores de espiga o cola de milano automáticos para unir piezas grandes.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Grupos y Jerarquías en Bambu Studio | La guía completa de mallas booleanas #12",
+      "https://www.youtube.com/watch?v=ozlbqVkcinE",
+      "Bambu Studio",
+      "Domina las jerarquias 3d y las mallas booleanas para dejar de perderte entre cientos de capas en tus proyectos.\n\nSi alguna vez has sentido que tu espacio de trabajo es un desorden, esta clase te enseña a tomar el control. Vamos a trabajar con primitivos para entender la diferencia real entre objetos independientes y cómo se comportan al aplicarles operaciones de modelado. Aprenderás a gestionar tus archivos desde la raíz, usando la pestaña de proceso para alternar modos y visualizar claramente qué tienes seleccionado en cada momento.\n\nEl objetivo es que entiendas la lógica detrás de la agrupacion de objetos para que tu flujo de trabajo sea limpio desde el primer minuto. Veremos el proceso paso a paso: desde la creación de un cubo básico hasta su duplicación con control K, estableciendo las bases fundamentales para cualquier modelado 3d profesional. Al finalizar, sabrás cómo organizar escenas 3d complejas sin que la jerarquía se convierta en un obstáculo para tu creatividad.\n\nSuscríbete para recibir tutoriales semanales de modelado 3d y déjame un comentario sobre qué otra técnica de gestión de escenas te gustaría ver en el canal.",
+      "Agrupa piezas del mismo material para procesar ajustes en bloque.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "No Hagas Esto al Cortar en Bambustudio | Guía Completa del Tutorial #11",
+      "https://www.youtube.com/watch?v=STc2U-cqecQ",
+      "Bambu Studio",
+      "Evita impresiones fallidas dominando la herramienta colocar en cara para alinear tus modelos 3D correctamente.\n\nCuando una pieza no se asienta bien sobre la base, el riesgo de que las capas iniciales se despeguen aumenta drásticamente. En esta clase, aprenderás a utilizar la función colocar en cara, la cual ajusta automáticamente la rotación del objeto para que la superficie elegida quede perfectamente plana sobre la placa. Es un proceso sencillo pero indispensable para garantizar la estabilidad de cualquier figura que decidas imprimir.\n\nAdemás de la alineación, también exploraremos la herramienta cortar, otro recurso clave ubicado en la barra superior. Si buscas mejorar la precisión de tus proyectos, entender cómo colocar en cara correctamente es el primer paso para evitar errores comunes de adhesión. Estas configuraciones básicas son las que separan un trabajo profesional de una impresión frustrada.\n\nSuscríbete para recibir tutoriales semanales de configuración de impresión 3D y comenta qué otra herramienta del software te gustaría que analicemos en el siguiente video.",
+      "Añade conectores tipo pin con tolerancia de 0.15mm para un montaje firme.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Probando Madimaker: ¿La mejor alternativa para descargar modelos 3D?",
+      "https://www.youtube.com/watch?v=1ol3BaUnJ8Y",
+      "Modelado 3D",
+      "En este vídeo analizamos en profundidad el funcionamiento de Madimaker, explorando sus capacidades como repositorio y plataforma para modelos 3D.\n\nVeremos cómo se integra en nuestro flujo de trabajo habitual, qué tipo de archivos maestros ofrece y cómo preparar estos modelos correctamente en nuestro laminador (ya uses Bambu Studio u Orca Slicer). Analizo la topología de las piezas que se pueden encontrar aquí y os muestro qué parámetros de laminado son críticos ajustar antes de mandar el archivo a imprimir a máquinas exigentes como la serie X1 o la nueva H2C, para evitar fallos de extrusión o problemas de tolerancias.\n\n¿Quieres dejar de depender del ensayo y error y dominar tu impresora 3D?\nSi quieres aprender a laminar como un profesional y exprimir todo el potencial de tu máquina, apúntate a la lista de espera de mi nuevo curso. Apuntarse a la lista es 100% GRATIS. Únete aquí:\n👉 https://capacero3d.com/\n\n00:00 - Introducción: ¿Qué es Madimaker y qué lo hace diferente?\n02:15 - 🚀 Domina tu impresora 3D (¡Apuntarse al curso es GRATIS!)\n03:30 - Explorando la interfaz web y el catálogo de plantillas\n06:10 - Entrando al Customizer: Primer vistazo a la personalización\n09:45 - Modificando parámetros, piezas y articulaciones paso a paso\n13:20 - Ajuste de tolerancias para evitar piezas fusionadas\n16:15 - Generación del modelo final y opciones de exportación\n18:40 - Importando el modelo a Bambu Studio / Orca Slicer\n20:30 - Parámetros críticos de laminado (Perímetros y relleno)\n23:15 - Ajustes específicos para máquinas rápidas (Bambu Lab X1C / H2C)\n25:00 - Conclusiones, ventajas y opinión final sobre Madimaker\n\n\nSi te ha servido este análisis técnico de Madimaker, deja tu \"Me gusta\" y suscríbete al canal para seguir subiendo el nivel de tus impresiones.",
+      "Verifica siempre la escala del archivo importado antes de mandar a la cola de impresión.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ],
+    [
+      "Adiós a las limitaciones del AMS: Imprime multicolor así",
+      "https://www.youtube.com/watch?v=nPaTKz9Zqcs",
+      "Multicolor y AMS",
+      "¡Bienvenidos a Capa Cero! En este tutorial vamos a solucionar uno de los mayores dolores de cabeza en Bambu Studio: cómo hacer una pausa manual para cambiar de filamento cuando los diferentes colores están en la misma capa.\n\nPuedes acceder a mis modelos gratuitos en makerworld:\nhttps://makerworld.com/es/@capa_cero\n\nPor defecto, el laminador solo nos permite pausar entre capas, pero con este sencillo truco modificando el G-code del filamento, podréis imprimir piezas de 5, 6 o más colores, incluso si tenéis los AMS ocupados o no disponéis de uno.\n⚙️ Código G-code utilizado en el vídeo (Copiar y pegar en la sección Avanzado):\nM400 U1\n🧵 Filamentos y herramientas que utilizo:\nTal y como comento en el vídeo, podéis encontrar los filamentos que uso para mis impresiones y apoyar al canal directamente desde mi página web:\n👉 https://capacero3d.com\nSi este truco te ha salvado una impresión, ¡no olvides suscribirte y dejar un buen like para seguir aprendiendo a exprimir al máximo nuestras impresoras! 🚀",
+      "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.",
+      "https://makerworld.com/en/@capa_cero",
+      "",
+      "",
+      "NO"
+    ]
   ];
 }
 
