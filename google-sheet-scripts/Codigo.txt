@@ -50,22 +50,35 @@ var VIDEOS_IGNORADOS = [
 
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('🎥 Capa Cero')
-    .addItem('⚡ Activar Pegado Automático (Instalar Activador)', 'instalarActivadorPegadoAutomatico')
-    .addSeparator()
-    .addItem('🔔 Enviar Notificación Push a la App', 'abrirModalNotificacionPush')
-    .addItem('🧹 Limpiar y Desduplicar Suscripciones Push', 'desduplicarYLimpiarSuscripciones')
-    .addSeparator()
-    .addItem('🔄 Sincronizar Vídeos (Solo Horizontales)', 'sincronizarVideosCapaCero')
-    .addItem('🔄 Actualizar Datos del Vídeo en Fila Seleccionada', 'actualizarFilaSeleccionada')
+  
+  // 1. Submenú de Vídeos
+  var subMenuVideos = ui.createMenu('🎬 Vídeos de YouTube')
+    .addItem('🔄 Actualizar Vídeo en Fila Seleccionada', 'actualizarFilaSeleccionada')
     .addItem('✨ Actualizar Información de Todos los Vídeos', 'actualizarTodosLosVideosHoja')
-    .addItem('🗑️ Limpiar y Re-sincronizar Todo (29 Vídeos)', 'limpiarYResincronizar')
+    .addItem('🔍 Buscar Nuevos Vídeos en el Canal (Sincronizar)', 'sincronizarVideosCapaCero')
     .addSeparator()
+    .addItem('⚠️ Reconstruir Catálogo Completo (29 Vídeos)', 'limpiarYResincronizar');
+
+  // 2. Submenú de Notificaciones Push
+  var subMenuPush = ui.createMenu('🔔 Notificaciones Push')
+    .addItem('📲 Enviar Notificación Push a la App / Web', 'abrirModalNotificacionPush')
+    .addItem('🧹 Limpiar Suscriptores Duplicados o Caducados', 'desduplicarYLimpiarSuscripciones');
+
+  // 3. Submenú de Sistema y Mantenimiento
+  var subMenuSistema = ui.createMenu('⚙️ Sistema y Mantenimiento')
+    .addItem('⚡ Activar Pegado Automático (Instalar Activador)', 'instalarActivadorPegadoAutomatico')
     .addItem('📦 Actualizar Modelos MakerWorld', 'actualizarModelosMakerWorld')
     .addSeparator()
-    .addItem('📱 Crear y Formatear Pestaña "Suscripciones_Push"', 'crearYFormatearPestanaPush')
-    .addItem('📜 Crear y Formatear Pestaña "Historial_Notificaciones"', 'crearYFormatearPestanaHistorial')
-    .addItem('📊 Crear y Formatear Pestaña "Estadisticas"', 'crearYFormatearPestanaEstadisticas')
+    .addItem('🛠️ Crear / Reparar Todas las Pestañas', 'crearYRepararTodasLasPestanas');
+
+  // Menú Principal: Accesos rápidos directos + Submenús organizados
+  ui.createMenu('🎥 Capa Cero')
+    .addItem('🔄 Actualizar Fila Seleccionada', 'actualizarFilaSeleccionada')
+    .addItem('📲 Enviar Notificación Push', 'abrirModalNotificacionPush')
+    .addSeparator()
+    .addSubMenu(subMenuVideos)
+    .addSubMenu(subMenuPush)
+    .addSubMenu(subMenuSistema)
     .addToUi();
 }
 
@@ -1284,6 +1297,18 @@ function procesarEnvioPushDesdeModal(title, body, url) {
  * 7. PESTAÑA "Estadisticas"
  * ==============================================================================
  */
+/**
+ * Crea o verifica y da formato a todas las pestañas necesarias del sistema
+ * (Suscripciones_Push, Historial_Notificaciones, Estadisticas, Bovedas_Sync)
+ */
+function crearYRepararTodasLasPestanas() {
+  crearYFormatearPestanaPush(false);
+  crearYFormatearPestanaHistorial(false);
+  crearYFormatearPestanaEstadisticas(false);
+  obtenerOcrearPestanaBovedas();
+  SpreadsheetApp.getUi().alert("✅ ¡Pestañas Verificadas y Reparadas!\n\nSe han formateado y dejado listas todas las pestañas del sistema:\n• Suscripciones_Push\n• Historial_Notificaciones\n• Estadisticas\n• Bovedas_Sync");
+}
+
 function crearYFormatearPestanaEstadisticas(mostrarAlerta) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName("Estadisticas");
