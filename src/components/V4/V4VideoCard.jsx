@@ -73,8 +73,8 @@ export default function V4VideoCard({ video, onSelect }) {
             video.isScheduled ? 'brightness-75 grayscale-[20%]' : ''
           }`}
           onError={(e) => {
-            e.target.src = '/logo-capa-cero-small.png';
-            e.target.className = 'w-full h-full object-contain p-8 bg-zinc-950 opacity-40';
+            e.target.src = '/logo-capa-cero.webp';
+            e.target.className = 'w-full h-full object-contain p-6 bg-gradient-to-br from-zinc-900 via-blue-950/40 to-zinc-950';
           }}
         />
 

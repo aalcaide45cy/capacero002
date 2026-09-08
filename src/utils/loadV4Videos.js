@@ -233,12 +233,15 @@ export function normalizeVideoRow(raw, index = 0) {
 
   const popularityScore = raw.popularityScore !== undefined ? raw.popularityScore : ((likes * 10) + Math.round(views / 10) + (isFeatured ? 500 : 0));
 
+  const customThumb = String(raw.Miniatura || raw.miniatura || raw.Thumbnail || raw.thumbnail || '').trim();
+  const thumbnail = (customThumb && customThumb.startsWith('http')) ? customThumb : getYouTubeThumbnail(videoId);
+
   return {
     id: raw.id || `video-${index + 1}`,
     title: title || `Tutorial #${index + 1}`,
     youtubeUrl: rawUrl || `https://www.youtube.com/@CapaCero0`,
     youtubeId: videoId,
-    thumbnail: getYouTubeThumbnail(videoId),
+    thumbnail,
     category: category || 'Bambu Studio',
     description,
     consejoClave,
