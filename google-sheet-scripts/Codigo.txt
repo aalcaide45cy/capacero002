@@ -50,35 +50,19 @@ var VIDEOS_IGNORADOS = [
 
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  
-  // 1. Submenú de Vídeos
-  var subMenuVideos = ui.createMenu('🎬 Vídeos de YouTube')
-    .addItem('🔄 Actualizar Vídeo en Fila Seleccionada', 'actualizarFilaSeleccionada')
-    .addItem('✨ Actualizar Información de Todos los Vídeos', 'actualizarTodosLosVideosHoja')
-    .addItem('🔍 Buscar Nuevos Vídeos en el Canal (Sincronizar)', 'sincronizarVideosCapaCero')
-    .addSeparator()
-    .addItem('⚠️ Reconstruir Catálogo Completo (29 Vídeos)', 'limpiarYResincronizar');
-
-  // 2. Submenú de Notificaciones Push
-  var subMenuPush = ui.createMenu('🔔 Notificaciones Push')
-    .addItem('📲 Enviar Notificación Push a la App / Web', 'abrirModalNotificacionPush')
-    .addItem('🧹 Limpiar Suscriptores Duplicados o Caducados', 'desduplicarYLimpiarSuscripciones');
-
-  // 3. Submenú de Sistema y Mantenimiento
-  var subMenuSistema = ui.createMenu('⚙️ Sistema y Mantenimiento')
-    .addItem('⚡ Activar Pegado Automático (Instalar Activador)', 'instalarActivadorPegadoAutomatico')
-    .addItem('📦 Actualizar Modelos MakerWorld', 'actualizarModelosMakerWorld')
-    .addSeparator()
-    .addItem('🛠️ Crear / Reparar Todas las Pestañas', 'crearYRepararTodasLasPestanas');
-
-  // Menú Principal: Accesos rápidos directos + Submenús organizados
   ui.createMenu('🎥 Capa Cero')
-    .addItem('🔄 Actualizar Fila Seleccionada', 'actualizarFilaSeleccionada')
-    .addItem('📲 Enviar Notificación Push', 'abrirModalNotificacionPush')
+    .addItem('🔄 Actualizar Vídeo en Fila Seleccionada', 'actualizarFilaSeleccionada')
+    .addItem('✨ Actualizar Todos los Vídeos de la Hoja', 'actualizarTodosLosVideosHoja')
+    .addItem('🔍 Buscar Nuevos Vídeos en el Canal', 'sincronizarVideosCapaCero')
     .addSeparator()
-    .addSubMenu(subMenuVideos)
-    .addSubMenu(subMenuPush)
-    .addSubMenu(subMenuSistema)
+    .addItem('📲 Enviar Notificación Push (PWA/Web)', 'abrirModalNotificacionPush')
+    .addItem('🧹 Limpiar Suscriptores Duplicados o Caducados', 'desduplicarYLimpiarSuscripciones')
+    .addSeparator()
+    .addItem('📦 Actualizar Modelos MakerWorld', 'actualizarModelosMakerWorld')
+    .addItem('⚡ Activar Pegado Automático (Instalar Activador)', 'instalarActivadorPegadoAutomatico')
+    .addItem('🛠️ Crear / Reparar Pestañas del Sistema', 'crearYRepararTodasLasPestanas')
+    .addSeparator()
+    .addItem('⚠️ Reconstruir Catálogo Oficial (29 Vídeos)', 'limpiarYResincronizar')
     .addToUi();
 }
 
@@ -1907,7 +1891,13 @@ function obtenerInfoRealYouTube(videoId) {
         var html = resHtml.getContentText();
 
         // Detectar si YouTube exige login (vídeo privado, programado o restringido)
-        if (html.indexOf('"LOGIN_REQUIRED"') !== -1 || html.indexOf('playabilityStatus":{"status":"LOGIN_REQUIRED"') !== -1) {
+        if (
+          html.indexOf('"LOGIN_REQUIRED"') !== -1 || 
+          html.indexOf('playabilityStatus":{"status":"LOGIN_REQUIRED"') !== -1 ||
+          html.indexOf('"UNPLAYABLE"') !== -1 ||
+          html.indexOf('isUpcoming') !== -1 ||
+          html.indexOf('upcomingEventData') !== -1
+        ) {
           isLoginRequired = true;
           isScheduledOrPrivate = true;
         }
@@ -2052,7 +2042,9 @@ function obtenerInfoRealYouTube(videoId) {
     try {
       var oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=" + videoId + "&format=json";
       var resOe = UrlFetchApp.fetch(oembedUrl, { muteHttpExceptions: true });
-      if (resOe.getResponseCode() === 200) {
+      if (resOe.getResponseCode() !== 200) {
+        isScheduledOrPrivate = true;
+      } else {
         var dataOe = JSON.parse(resOe.getContentText());
         if (dataOe.title) {
           var tOe = dataOe.title.trim().toLowerCase();
