@@ -51,6 +51,8 @@ var VIDEOS_IGNORADOS = [
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   ui.createMenu('🎥 Capa Cero')
+    .addItem('⚡ Activar Pegado Automático (Instalar Activador)', 'instalarActivadorPegadoAutomatico')
+    .addSeparator()
     .addItem('🔔 Enviar Notificación Push a la App', 'abrirModalNotificacionPush')
     .addItem('🧹 Limpiar y Desduplicar Suscripciones Push', 'desduplicarYLimpiarSuscripciones')
     .addSeparator()
@@ -72,8 +74,42 @@ function onOpen() {
  * 0. GESTOR PRINCIPAL UNIFICADO AL PEGAR ENLACES (YouTube y MakerWorld)
  * ==============================================================================
  */
-function onEdit(e) {
+/**
+ * Instala o repara el Activador Instalable 'Al editar' para dar permisos
+ * completos de red (UrlFetchApp y YouTube API) al pegar enlaces.
+ */
+function instalarActivadorPegadoAutomatico() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Eliminar activadores previos para evitar ejecuciones duplicadas
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    var fn = triggers[i].getHandlerFunction();
+    if (fn === "alPegarEnlaceTrigger" || fn === "alPegarEnlace") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  
+  // Crear activador instalable con permisos completos
+  ScriptApp.newTrigger("alPegarEnlaceTrigger")
+    .forSpreadsheet(ss)
+    .onEdit()
+    .create();
+    
+  ss.toast("⚡ ¡Activador de pegado automático instalado!", "Capa Cero 3D", 5);
+  SpreadsheetApp.getUi().alert("✅ ¡Activador Instalado con Éxito!\n\nAhora, cada vez que pegues un enlace en la hoja, se autocompletará con permisos de red y API.");
+}
+
+function alPegarEnlaceTrigger(e) {
   alPegarEnlace(e);
+}
+
+function onEdit(e) {
+  try {
+    alPegarEnlace(e);
+  } catch (errSimple) {
+    Logger.log("Aviso simple onEdit (requiere activador instalable): " + errSimple.toString());
+  }
 }
 
 function alPegarEnlace(e) {
@@ -1789,7 +1825,7 @@ function obtenerInfoRealYouTube(videoId) {
   // Permite consultar vídeos propios privados, programados y con pruebas comparativas A/B directamente
   if (typeof YouTube !== 'undefined' && YouTube.Videos && YouTube.Videos.list) {
     try {
-      var ytApiRes = YouTube.Videos.list("snippet,status", { id: videoId });
+      var ytApiRes = YouTube.Videos.list("snippet,status,contentDetails", { id: videoId });
       if (ytApiRes && ytApiRes.items && ytApiRes.items.length > 0) {
         var item = ytApiRes.items[0];
         if (item.snippet) {
@@ -1797,6 +1833,22 @@ function obtenerInfoRealYouTube(videoId) {
           if (item.snippet.description) description = item.snippet.description;
           if (item.snippet.tags) keywords = item.snippet.tags;
         }
+      }
+      
+      if (!title && YouTube.Search && YouTube.Search.list) {
+        try {
+          var searchRes = YouTube.Search.list("snippet", { forMine: true, type: "video", maxResults: 25, q: videoId });
+          if (searchRes && searchRes.items && searchRes.items.length > 0) {
+            for (var s = 0; s < searchRes.items.length; s++) {
+              var sItem = searchRes.items[s];
+              if (sItem.id && sItem.id.videoId === videoId && sItem.snippet) {
+                if (sItem.snippet.title) title = sItem.snippet.title;
+                if (sItem.snippet.description) description = sItem.snippet.description;
+                break;
+              }
+            }
+          }
+        } catch (eSearch) {}
       }
     } catch (eYtApi) {
       Logger.log("Aviso YouTube Service: " + eYtApi.toString());
