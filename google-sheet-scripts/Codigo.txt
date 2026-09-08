@@ -511,19 +511,51 @@ function procesarPegadoYouTube(sheet, row, valorPegado) {
     }
     
     var filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
+    var tituloActual = String(filaActual[0] || "").trim();
     
-    // Título: Si está vacío, contiene http o es el placeholder genérico "Tutorial #", usar info.title
-    var esTituloGenerico = !filaActual[0] || String(filaActual[0]).indexOf("http") !== -1 || String(filaActual[0]).indexOf("Tutorial #") === 0;
-    var titulo = (esTituloGenerico || !filaActual[0]) ? info.title : (info.title || filaActual[0]);
+    // Validar si el título actual es falso o genérico
+    var esTituloFalso = tituloActual.toLowerCase() === "iniciar sesión" || 
+                        tituloActual.toLowerCase() === "iniciar sesion" ||
+                        tituloActual.toLowerCase() === "sign in" ||
+                        tituloActual.toLowerCase() === "acceder";
+    var esTituloGenerico = !tituloActual || 
+                           esTituloFalso || 
+                           tituloActual.indexOf("http") !== -1 || 
+                           tituloActual.indexOf("Tutorial #") === 0;
+    
+    var titulo;
+    if (info.title) {
+      titulo = esTituloGenerico ? info.title : (info.title || tituloActual);
+    } else if (info.isLoginRequired || info.isScheduledOrPrivate) {
+      titulo = (!tituloActual || esTituloFalso) ? "Vídeo Programado (" + videoId + ")" : tituloActual;
+    } else {
+      titulo = (!tituloActual || esTituloFalso) ? "Tutorial #" + videoId : tituloActual;
+    }
     
     // Categoría: Si está vacía o es Bambu Studio por defecto pero se detectó una específica, usar info.category
     var esCategoriaGenerica = !filaActual[2] || filaActual[2] === "Bambu Studio";
     var categoria = (!filaActual[2] || (esCategoriaGenerica && info.category !== "Bambu Studio")) ? info.category : filaActual[2];
     
-    // Descripción: Si la descripción actual es corta (< 150 caracteres) o genérica, o si info.description es más completa, actualizar
+    // Descripción: Si la descripción actual es corta (< 150 caracteres), genérica o de login, actualizar
     var descActual = String(filaActual[3] || "").trim();
-    var esCortaOGenerica = !descActual || descActual.length < 150 || descActual.indexOf("Tutorial oficial de Capa Cero") !== -1;
-    var descripcion = (esCortaOGenerica || (info.description && info.description.length > descActual.length)) ? info.description : descActual;
+    var esDescFalsa = descActual.indexOf("Iniciar sesión") !== -1 || 
+                      descActual.indexOf("Iniciar sesion") !== -1 || 
+                      descActual.indexOf("Sign in") !== -1;
+    var esCortaOGenerica = !descActual || 
+                           esDescFalsa || 
+                           descActual.length < 150 || 
+                           descActual.indexOf("Tutorial oficial de Capa Cero") !== -1;
+    
+    var descripcion;
+    if (info.description && info.description.length > 50 && !esDescFalsa) {
+      descripcion = (esCortaOGenerica || info.description.length > descActual.length) ? info.description : descActual;
+    } else if (info.isLoginRequired || info.isScheduledOrPrivate) {
+      descripcion = (!descActual || esDescFalsa || esCortaOGenerica) 
+        ? "Vídeo programado en YouTube (estreno próximo con pruebas A/B). Los datos oficiales se sincronizarán en cuanto se publique." 
+        : descActual;
+    } else {
+      descripcion = info.description ? info.description : descActual;
+    }
     
     // Consejo Clave: Si está vacío o tiene el texto genérico de placeholder, usar info.consejoClave
     var consejoStr = String(filaActual[4] || "").trim();
@@ -1750,95 +1782,141 @@ function obtenerInfoRealYouTube(videoId) {
   var durationSec = 0;
   var keywords = [];
   var isShort = false;
+  var isLoginRequired = false;
+  var isScheduledOrPrivate = false;
 
-  // MÉTODO 1 (El método histórico que extrajo la fila 29 con éxito):
-  // Scraping de YouTube Web con cookies de consentimiento europeas y User-Agent de navegador
-  try {
-    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-    var resHtml = UrlFetchApp.fetch(ytUrl, {
-      muteHttpExceptions: true,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Accept-Language": "es-ES,es;q=0.9",
-        "Cookie": "CONSENT=YES+cb.20210328-17-p0.es+FX+999; SOCS=CAESEwgDEgk2OTQ0NTQ5NTQaAmVzIAEaBgiA_L20Bg;"
-      }
-    });
-
-    if (resHtml.getResponseCode() === 200) {
-      var html = resHtml.getContentText();
-
-      // A. Título
-      var matchTitle = html.match(/"title":"(.*?)(?<!\\)"/);
-      if (matchTitle && matchTitle[1]) {
-        try {
-          title = JSON.parse('"' + matchTitle[1] + '"');
-        } catch (e) {
-          title = matchTitle[1].replace(/\\"/g, '"');
+  // MÉTODO 0: Servicio interno YouTube Data API v3 de Google Apps Script (si está habilitado)
+  // Permite consultar vídeos propios privados, programados y con pruebas comparativas A/B directamente
+  if (typeof YouTube !== 'undefined' && YouTube.Videos && YouTube.Videos.list) {
+    try {
+      var ytApiRes = YouTube.Videos.list("snippet,status", { id: videoId });
+      if (ytApiRes && ytApiRes.items && ytApiRes.items.length > 0) {
+        var item = ytApiRes.items[0];
+        if (item.snippet) {
+          if (item.snippet.title) title = item.snippet.title;
+          if (item.snippet.description) description = item.snippet.description;
+          if (item.snippet.tags) keywords = item.snippet.tags;
         }
       }
-      if (!title) {
-        var matchOgTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
-        if (matchOgTitle && matchOgTitle[1]) title = matchOgTitle[1];
-      }
-
-      // B. Descripción completa con regex de shortDescription (método de la fila 29)
-      var matchDesc = html.match(/"shortDescription":"(.*?)(?<!\\)"/);
-      if (matchDesc && matchDesc[1]) {
-        try {
-          description = JSON.parse('"' + matchDesc[1] + '"');
-        } catch (e) {
-          description = matchDesc[1]
-            .replace(/\\n/g, '\n')
-            .replace(/\\r/g, '')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
-        }
-      }
-
-      // C. Extracción por analizador de llaves sobre ytInitialPlayerResponse (inmune a saltos de línea)
-      var idxPlayer = html.indexOf("ytInitialPlayerResponse = ");
-      if (idxPlayer !== -1) {
-        var start = idxPlayer + "ytInitialPlayerResponse = ".length;
-        var count = 0;
-        var end = -1;
-        for (var p = start; p < start + 350000 && p < html.length; p++) {
-          if (html.charAt(p) === '{') count++;
-          else if (html.charAt(p) === '}') {
-            count--;
-            if (count === 0) {
-              end = p + 1;
-              break;
-            }
-          }
-        }
-        if (end !== -1) {
-          try {
-            var pObj = JSON.parse(html.slice(start, end));
-            if (pObj && pObj.videoDetails) {
-              if (!title && pObj.videoDetails.title) title = pObj.videoDetails.title;
-              if ((!description || description.length < 50) && pObj.videoDetails.shortDescription) {
-                description = pObj.videoDetails.shortDescription;
-              }
-              if (pObj.videoDetails.keywords) keywords = pObj.videoDetails.keywords;
-              if (pObj.videoDetails.lengthSeconds) durationSec = parseInt(pObj.videoDetails.lengthSeconds, 10);
-            }
-          } catch (eP) {}
-        }
-      }
-
-      // D. Duración para comprobación de Shorts
-      if (!durationSec) {
-        var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
-        if (matchDur && matchDur[1]) {
-          durationSec = Math.round(parseInt(matchDur[1], 10) / 1000);
-        }
-      }
+    } catch (eYtApi) {
+      Logger.log("Aviso YouTube Service: " + eYtApi.toString());
     }
-  } catch (eHtml) {
-    Logger.log("Aviso Scraping HTML: " + eHtml.toString());
   }
 
-  // MÉTODO 2: API Innertube con headers completos de navegador (si aún faltase descripción o título)
+  // MÉTODO 1: Scraping de YouTube Web con cookies de consentimiento europeas y User-Agent de navegador
+  if (!title || !description) {
+    try {
+      var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
+      var resHtml = UrlFetchApp.fetch(ytUrl, {
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept-Language": "es-ES,es;q=0.9",
+          "Cookie": "CONSENT=YES+cb.20210328-17-p0.es+FX+999; SOCS=CAESEwgDEgk2OTQ0NTQ5NTQaAmVzIAEaBgiA_L20Bg;"
+        }
+      });
+
+      if (resHtml.getResponseCode() === 200) {
+        var html = resHtml.getContentText();
+
+        // Detectar si YouTube exige login (vídeo privado, programado o restringido)
+        if (html.indexOf('"LOGIN_REQUIRED"') !== -1 || html.indexOf('playabilityStatus":{"status":"LOGIN_REQUIRED"') !== -1) {
+          isLoginRequired = true;
+          isScheduledOrPrivate = true;
+        }
+
+        // A. Título
+        var matchTitle = html.match(/"title":"(.*?)(?<!\\)"/);
+        if (matchTitle && matchTitle[1]) {
+          try {
+            title = JSON.parse('"' + matchTitle[1] + '"');
+          } catch (e) {
+            title = matchTitle[1].replace(/\\"/g, '"');
+          }
+        }
+        if (!title) {
+          var matchOgTitle = html.match(/<meta property="og:title" content="([^"]+)"/i) || html.match(/<meta name="title" content="([^"]+)"/i);
+          if (matchOgTitle && matchOgTitle[1]) title = matchOgTitle[1];
+        }
+
+        // Filtrar títulos falsos de login o páginas de error de YouTube
+        if (title) {
+          var cleanT = title.trim().toLowerCase();
+          if (
+            cleanT === "iniciar sesión" || 
+            cleanT === "iniciar sesion" || 
+            cleanT === "sign in" || 
+            cleanT === "acceder" || 
+            cleanT === "youtube" || 
+            cleanT === "- youtube" ||
+            cleanT.indexOf("iniciar sesión") !== -1 ||
+            cleanT.indexOf("iniciar sesion") !== -1
+          ) {
+            title = "";
+            isLoginRequired = true;
+            isScheduledOrPrivate = true;
+          }
+        }
+
+        // B. Descripción completa con regex de shortDescription (método de la fila 29)
+        var matchDesc = html.match(/"shortDescription":"(.*?)(?<!\\)"/);
+        if (matchDesc && matchDesc[1]) {
+          try {
+            description = JSON.parse('"' + matchDesc[1] + '"');
+          } catch (e) {
+            description = matchDesc[1]
+              .replace(/\\n/g, '\n')
+              .replace(/\\r/g, '')
+              .replace(/\\"/g, '"')
+              .replace(/\\\\/g, '\\');
+          }
+        }
+
+        // C. Extracción por analizador de llaves sobre ytInitialPlayerResponse
+        var idxPlayer = html.indexOf("ytInitialPlayerResponse = ");
+        if (idxPlayer !== -1) {
+          var start = idxPlayer + "ytInitialPlayerResponse = ".length;
+          var count = 0;
+          var end = -1;
+          for (var p = start; p < start + 350000 && p < html.length; p++) {
+            if (html.charAt(p) === '{') count++;
+            else if (html.charAt(p) === '}') {
+              count--;
+              if (count === 0) {
+                end = p + 1;
+                break;
+              }
+            }
+          }
+          if (end !== -1) {
+            try {
+              var pObj = JSON.parse(html.slice(start, end));
+              if (pObj && pObj.videoDetails) {
+                if (!title && pObj.videoDetails.title) title = pObj.videoDetails.title;
+                if ((!description || description.length < 50) && pObj.videoDetails.shortDescription) {
+                  description = pObj.videoDetails.shortDescription;
+                }
+                if (pObj.videoDetails.keywords) keywords = pObj.videoDetails.keywords;
+                if (pObj.videoDetails.lengthSeconds) durationSec = parseInt(pObj.videoDetails.lengthSeconds, 10);
+              }
+            } catch (eP) {}
+          }
+        }
+
+        // D. Duración para comprobación de Shorts
+        if (!durationSec) {
+          var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
+          if (matchDur && matchDur[1]) {
+            durationSec = Math.round(parseInt(matchDur[1], 10) / 1000);
+          }
+        }
+      }
+    } catch (eHtml) {
+      Logger.log("Aviso Scraping HTML: " + eHtml.toString());
+    }
+  }
+
+  // MÉTODO 2: API Innertube con headers completos de navegador
   if (!description || !title) {
     try {
       var payload = JSON.stringify({
@@ -1889,7 +1967,12 @@ function obtenerInfoRealYouTube(videoId) {
       var resOe = UrlFetchApp.fetch(oembedUrl, { muteHttpExceptions: true });
       if (resOe.getResponseCode() === 200) {
         var dataOe = JSON.parse(resOe.getContentText());
-        if (dataOe.title) title = dataOe.title;
+        if (dataOe.title) {
+          var tOe = dataOe.title.trim().toLowerCase();
+          if (tOe !== "iniciar sesión" && tOe !== "iniciar sesion" && tOe !== "sign in" && tOe !== "youtube") {
+            title = dataOe.title;
+          }
+        }
       }
     } catch (eOe) {}
   }
@@ -1901,17 +1984,18 @@ function obtenerInfoRealYouTube(videoId) {
       var resApi = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
       if (resApi.getResponseCode() === 200) {
         var dataApi = JSON.parse(resApi.getContentText());
-        if (dataApi.title) title = dataApi.title;
+        if (dataApi.title) {
+          var tApi = dataApi.title.trim().toLowerCase();
+          if (tApi !== "iniciar sesión" && tApi !== "iniciar sesion" && tApi !== "sign in" && tApi !== "youtube") {
+            title = dataApi.title;
+          }
+        }
       }
     } catch (eNo) {}
   }
 
   if (durationSec > 0 && durationSec <= 60) {
     isShort = true;
-  }
-
-  if (!title) {
-    title = "Tutorial #" + videoId;
   }
 
   // MÉTODO 5: Respaldo de seguridad con el catálogo del canal Capa Cero
@@ -1928,7 +2012,11 @@ function obtenerInfoRealYouTube(videoId) {
   }
 
   if (!description) {
-    description = "Tutorial oficial de Capa Cero 3D (" + title + "). Guía paso a paso para dominar tu impresora 3D y el laminador.";
+    if (isLoginRequired || isScheduledOrPrivate) {
+      description = "Vídeo programado en YouTube (estreno próximo con pruebas A/B). Los datos oficiales se sincronizarán en cuanto se publique.";
+    } else {
+      description = "Tutorial oficial de Capa Cero 3D (" + (title || ("Tutorial #" + videoId)) + "). Guía paso a paso para dominar tu impresora 3D y el laminador.";
+    }
   }
 
   // Detectar categoría precisa combinando título, keywords y descripción
@@ -1960,6 +2048,8 @@ function obtenerInfoRealYouTube(videoId) {
     consejoClave: consejoClave,
     durationSec: durationSec,
     isShort: isShort,
+    isLoginRequired: isLoginRequired,
+    isScheduledOrPrivate: isScheduledOrPrivate,
     descargas: descargas
   };
 }
