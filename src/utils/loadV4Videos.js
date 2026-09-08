@@ -3,8 +3,8 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V13';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V13';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V14';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V14';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 // Mapa de vídeos programados con sus fechas de estreno reales de YouTube (RNWxu9tsB-k ya está estrenado)
@@ -213,21 +213,23 @@ export function normalizeVideoRow(raw, index = 0) {
     raw.Estado || raw.estado || ''
   ).trim();
 
-  const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
+  const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled) || /programad|estreno/i.test(rawDestacado);
   
-  // Comprobación de fecha dinámica: SOLO es programado si su fecha es futura respecto a Date.now()
-  const scheduledDateCandidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || (isStateScheduled ? publishedAt : null);
-  const scheduledTimestamp = scheduledDateCandidate ? new Date(scheduledDateCandidate).getTime() : (publishedAt ? new Date(publishedAt).getTime() : NaN);
+  // Comprobación de fecha dinámica
+  const scheduledDateCandidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || null;
+  const scheduledTimestamp = scheduledDateCandidate ? new Date(scheduledDateCandidate).getTime() : NaN;
   const isFuture = !isNaN(scheduledTimestamp) && scheduledTimestamp > Date.now();
   
-  const isScheduled = isFuture && (Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled));
+  const isScheduled = Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled) || isFuture;
   
   let scheduledDateFormatted = null;
   if (isScheduled) {
     if (scheduledConfig?.label) {
       scheduledDateFormatted = scheduledConfig.label;
+    } else if (scheduledDateCandidate && isFuture) {
+      scheduledDateFormatted = formatScheduledDate(scheduledDateCandidate);
     } else {
-      scheduledDateFormatted = formatScheduledDate(scheduledDateCandidate || publishedAt);
+      scheduledDateFormatted = 'Estreno Próximamente';
     }
   }
 
