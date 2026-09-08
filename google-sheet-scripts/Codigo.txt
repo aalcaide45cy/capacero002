@@ -621,7 +621,17 @@ function procesarPegadoYouTube(sheet, row, valorPegado) {
     }
     var descarga2 = filaActual[6] ? filaActual[6] : ((info.descargas && info.descargas.length > 1) ? info.descargas[1] : "");
     var descarga3 = filaActual[7] ? filaActual[7] : ((info.descargas && info.descargas.length > 2) ? info.descargas[2] : "");
-    var destacado = filaActual[8] ? filaActual[8] : "NO";
+    
+    // Si el vídeo requiere login o es programado/privado, marcar automáticamente como PROGRAMADO en la columna I
+    var destacadoActual = String(filaActual[8] || "").trim().toUpperCase();
+    var destacado;
+    if (info.isLoginRequired || info.isScheduledOrPrivate) {
+      destacado = "PROGRAMADO";
+    } else if (destacadoActual === "PROGRAMADO") {
+      destacado = "NO"; // Ya se estrenó públicamente, pasa a estado normal
+    } else {
+      destacado = filaActual[8] ? filaActual[8] : "NO";
+    }
     
     sheet.getRange(row, 1, 1, 9).setValues([[
       titulo,
@@ -2073,6 +2083,10 @@ function obtenerInfoRealYouTube(videoId) {
 
   if (durationSec > 0 && durationSec <= 60) {
     isShort = true;
+  }
+
+  if (!title) {
+    isScheduledOrPrivate = true;
   }
 
   // MÉTODO 5: Respaldo de seguridad con el catálogo del canal Capa Cero
