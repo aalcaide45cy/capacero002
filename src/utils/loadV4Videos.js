@@ -3,13 +3,12 @@ import fallbackVideos from '../data/videos_v4.json';
 
 export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V14';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V14';
+const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V15';
+const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V15';
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 // Mapa de vídeos programados con sus fechas de estreno reales de YouTube (RNWxu9tsB-k ya está estrenado)
 export const SCHEDULED_VIDEOS_MAP = {
-  'STc2U-cqecQ': { isScheduled: true, scheduledDate: '2026-09-07T18:00:00Z', label: 'Estreno el día 7 de septiembre' },
   'ozlbqVkcinE': { isScheduled: true, scheduledDate: '2026-09-14T18:00:00Z', label: 'Estreno el día 14 de septiembre' },
   'mzItWgN4a5c': { isScheduled: true, scheduledDate: '2026-09-21T18:00:00Z', label: 'Estreno el día 21 de septiembre' },
   '3BtSMuvl8BQ': { isScheduled: true, scheduledDate: '2026-09-28T18:00:00Z', label: 'Estreno el día 28 de septiembre' },
@@ -18,12 +17,9 @@ export const SCHEDULED_VIDEOS_MAP = {
 
 // Fechas de publicación reales de YouTube para ordenación cronológica exacta
 const YOUTUBE_PUBLISH_DATES = {
+  'EdGZKop2NcE': '2026-09-08T18:00:00Z', // Bocetos Fusion 360 (PUBLICADO HOY)
+  'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PUBLICADO)
   'xf4K9wCJzdU': '2026-09-01T17:30:06Z', // Logotipos en Fusion 360 (PUBLICADO)
-  'IFTgPS3a6v8': '2026-10-05T18:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
-  '3BtSMuvl8BQ': '2026-09-28T18:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
-  'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
-  'ozlbqVkcinE': '2026-09-14T18:00:00Z', // #12 Grupos y Jerarquías (PROGRAMADO)
-  'STc2U-cqecQ': '2026-09-07T18:00:00Z', // #11 No Hagas Esto al Cortar (PROGRAMADO)
   'RNWxu9tsB-k': '2026-08-31T18:00:00Z', // #10 Escala, rota y posiciona (PUBLICADO)
   'utIYIcUG0tM': '2026-08-25T17:45:06Z', // Cajas Fusion 360 (PUBLICADO)
   'sIzQPJSVdvo': '2026-08-24T18:00:06Z', // #9 Interfaz (PUBLICADO)
@@ -46,11 +42,17 @@ const YOUTUBE_PUBLISH_DATES = {
   'YUMNakCgUJs': '2026-06-29T18:00:06Z', // #2 Ecosistema Bambu Lab
   'hVCS-uyGflk': '2026-06-22T18:00:06Z', // #1 Instalación Bambu Studio
   '1ol3BaUnJ8Y': '2026-05-23T08:00:06Z', // Madimaker
-  'nPaTKz9Zqcs': '2026-03-15T16:39:01Z'  // AMS Multicolor
+  'nPaTKz9Zqcs': '2026-03-15T16:39:01Z', // AMS Multicolor
+  'IFTgPS3a6v8': '2026-10-05T18:00:00Z', // #15 Textos y Modificadores (PROGRAMADO)
+  '3BtSMuvl8BQ': '2026-09-28T18:00:00Z', // #14 Pintar Objetos (PROGRAMADO)
+  'mzItWgN4a5c': '2026-09-21T18:00:00Z', // #13 Montaje de Objetos (PROGRAMADO)
+  'ozlbqVkcinE': '2026-09-14T18:00:00Z'  // #12 Grupos y Jerarquías (PROGRAMADO)
 };
 
 // Estadísticas de YouTube reales y actualizadas en directo
 export const YOUTUBE_STATS_MAP = {
+  "EdGZKop2NcE": { "views": 28, "likes": 12, "comments": 2 },
+  "STc2U-cqecQ": { "views": 781, "likes": 15, "comments": 2 },
   "xf4K9wCJzdU": { "views": 409, "likes": 10, "comments": 3 },
   "utIYIcUG0tM": { "views": 8897, "likes": 193, "comments": 9 },
   "lP0FvQZ6uwk": { "views": 7337, "likes": 417, "comments": 52 },
