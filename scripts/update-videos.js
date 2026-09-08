@@ -55,36 +55,35 @@ const YOUTUBE_PUBLISH_DATES = {
 
 // Estadísticas de YouTube reales y actualizadas en directo
 const YOUTUBE_STATS_MAP = {
-  "EdGZKop2NcE": { "views": 28, "likes": 12, "comments": 2 },
-  "STc2U-cqecQ": { "views": 781, "likes": 15, "comments": 2 },
-  "xf4K9wCJzdU": { "views": 409, "likes": 10, "comments": 3 },
-  "utIYIcUG0tM": { "views": 8897, "likes": 193, "comments": 9 },
-  "lP0FvQZ6uwk": { "views": 7337, "likes": 417, "comments": 52 },
-  "w-DRE8UtD9s": { "views": 6225, "likes": 378, "comments": 17 },
-  "PCbMinEbUd4": { "views": 4989, "likes": 280, "comments": 24 },
-  "nPaTKz9Zqcs": { "views": 3113, "likes": 88, "comments": 14 },
-  "OHLka3HAwn0": { "views": 2930, "likes": 197, "comments": 19 },
-  "kYbpS-vwqJM": { "views": 2467, "likes": 165, "comments": 16 },
-  "oDGtU6Z2VYM": { "views": 2178, "likes": 133, "comments": 27 },
-  "v3SFbjI8BEE": { "views": 1188, "likes": 76, "comments": 14 },
-  "-ZIU1pywxiQ": { "views": 764, "likes": 57, "comments": 9 },
-  "D6zKWJAS6G0": { "views": 743, "likes": 47, "comments": 11 },
-  "hVCS-uyGflk": { "views": 612, "likes": 27, "comments": 6 },
-  "zXLmMLsKLe4": { "views": 560, "likes": 35, "comments": 7 },
-  "YUMNakCgUJs": { "views": 488, "likes": 30, "comments": 6 },
-  "cfs1ctvUC-8": { "views": 441, "likes": 21, "comments": 5 },
-  "DNouZLKOnpk": { "views": 427, "likes": 24, "comments": 5 },
-  "-uD_McDZ3Qk": { "views": 416, "likes": 24, "comments": 9 },
-  "1ol3BaUnJ8Y": { "views": 414, "likes": 24, "comments": 7 },
-  "sIzQPJSVdvo": { "views": 401, "likes": 28, "comments": 4 },
-  "RNWxu9tsB-k": { "views": 398, "likes": 12, "comments": 2 },
-  "9otbdJPW1WA": { "views": 334, "likes": 29, "comments": 17 },
-  "hZvIHMnxb3w": { "views": 291, "likes": 17, "comments": 5 },
-  "fpvQEW7-9vo": { "views": 267, "likes": 10, "comments": 0 },
-  "3BtSMuvl8BQ": { "views": 2, "likes": 2, "comments": 0 },
-  "ozlbqVkcinE": { "views": 0, "likes": 1, "comments": 2 },
+  "EdGZKop2NcE": { "views": 32, "likes": 12, "comments": 2 },
+  "STc2U-cqecQ": { "views": 745, "likes": 24, "comments": 4 },
+  "xf4K9wCJzdU": { "views": 791, "likes": 13, "comments": 5 },
+  "RNWxu9tsB-k": { "views": 553, "likes": 15, "comments": 2 },
+  "utIYIcUG0tM": { "views": 9429, "likes": 210, "comments": 9 },
+  "sIzQPJSVdvo": { "views": 450, "likes": 29, "comments": 4 },
+  "D6zKWJAS6G0": { "views": 834, "likes": 48, "comments": 11 },
+  "PCbMinEbUd4": { "views": 5374, "likes": 283, "comments": 24 },
+  "hZvIHMnxb3w": { "views": 311, "likes": 18, "comments": 5 },
+  "9otbdJPW1WA": { "views": 363, "likes": 29, "comments": 17 },
+  "-uD_McDZ3Qk": { "views": 434, "likes": 24, "comments": 9 },
+  "oDGtU6Z2VYM": { "views": 2229, "likes": 134, "comments": 27 },
+  "-ZIU1pywxiQ": { "views": 870, "likes": 59, "comments": 9 },
+  "OHLka3HAwn0": { "views": 2977, "likes": 199, "comments": 19 },
+  "fpvQEW7-9vo": { "views": 274, "likes": 10, "comments": 0 },
+  "DNouZLKOnpk": { "views": 451, "likes": 25, "comments": 5 },
+  "w-DRE8UtD9s": { "views": 6324, "likes": 379, "comments": 17 },
+  "zXLmMLsKLe4": { "views": 614, "likes": 35, "comments": 7 },
+  "kYbpS-vwqJM": { "views": 2510, "likes": 167, "comments": 16 },
+  "v3SFbjI8BEE": { "views": 1329, "likes": 78, "comments": 14 },
+  "cfs1ctvUC-8": { "views": 464, "likes": 22, "comments": 5 },
+  "lP0FvQZ6uwk": { "views": 7571, "likes": 424, "comments": 54 },
+  "YUMNakCgUJs": { "views": 526, "likes": 31, "comments": 6 },
+  "hVCS-uyGflk": { "views": 711, "likes": 29, "comments": 6 },
+  "1ol3BaUnJ8Y": { "views": 422, "likes": 24, "comments": 7 },
+  "nPaTKz9Zqcs": { "views": 3371, "likes": 90, "comments": 14 },
+  "3BtSMuvl8BQ": { "views": 2, "likes": 3, "comments": 0 },
+  "ozlbqVkcinE": { "views": 0, "likes": 1, "comments": 4 },
   "mzItWgN4a5c": { "views": 0, "likes": 2, "comments": 0 },
-  "STc2U-cqecQ": { "views": 0, "likes": 1, "comments": 0 },
   "IFTgPS3a6v8": { "views": 0, "likes": 0, "comments": 0 }
 };
 
@@ -232,9 +231,9 @@ function normalizeVideoRow(raw, index = 0, liveStats = null) {
   const publishedAt = liveStats?.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || new Date(Date.now() + (index * 1000)).toISOString();
   
   const stats = YOUTUBE_STATS_MAP[videoId] || { views: 0, likes: 0, comments: 0 };
-  const views = liveStats?.views !== null && liveStats?.views !== undefined ? liveStats.views : (stats.views || 0);
-  const likes = liveStats?.likes !== null && liveStats?.likes !== undefined ? liveStats.likes : (stats.likes || 0);
-  const comments = liveStats?.comments !== null && liveStats?.comments !== undefined ? liveStats.comments : (stats.comments || 0);
+  const views = Math.max(liveStats?.views || 0, stats.views || 0);
+  const likes = Math.max(liveStats?.likes || 0, stats.likes || 0);
+  const comments = Math.max(liveStats?.comments || 0, stats.comments || 0);
   
   const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
   const rawScheduled = String(
