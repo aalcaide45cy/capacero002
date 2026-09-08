@@ -51,7 +51,7 @@ const YOUTUBE_PUBLISH_DATES = {
 
 // Estadísticas de YouTube reales y actualizadas en directo
 export const YOUTUBE_STATS_MAP = {
-  "EdGZKop2NcE": { "views": 32, "likes": 12, "comments": 2 },
+  "EdGZKop2NcE": { "views": 44, "likes": 14, "comments": 0 },
   "STc2U-cqecQ": { "views": 745, "likes": 24, "comments": 4 },
   "xf4K9wCJzdU": { "views": 791, "likes": 13, "comments": 5 },
   "RNWxu9tsB-k": { "views": 553, "likes": 15, "comments": 2 },
@@ -183,10 +183,10 @@ export function normalizeVideoRow(raw, index = 0) {
       parsedViews = parseInt(String(rawViews).replace(/[^0-9]/g, ''), 10);
     }
   }
-  const statViews = stats.views || 0;
-  const bakedViews = baked?.views || 0;
-  const sheetViews = (!isNaN(parsedViews) && parsedViews > 0) ? parsedViews : 0;
-  const views = Math.max(statViews, bakedViews, sheetViews);
+  const statViews = stats.views !== undefined ? stats.views : null;
+  const bakedViews = baked?.views !== undefined ? baked.views : null;
+  const sheetViews = (!isNaN(parsedViews) && parsedViews > 0) ? parsedViews : null;
+  const views = sheetViews ?? statViews ?? bakedViews ?? 0;
 
   let parsedLikes = raw.likes !== undefined ? parseInt(String(raw.likes).replace(/[^0-9]/g, ''), 10) : NaN;
   if (isNaN(parsedLikes)) {
@@ -195,10 +195,10 @@ export function normalizeVideoRow(raw, index = 0) {
       parsedLikes = parseInt(String(rawLikes).replace(/[^0-9]/g, ''), 10);
     }
   }
-  const statLikes = stats.likes || 0;
-  const bakedLikes = baked?.likes || 0;
-  const sheetLikes = (!isNaN(parsedLikes) && parsedLikes > 0) ? parsedLikes : 0;
-  const likes = Math.max(statLikes, bakedLikes, sheetLikes);
+  const statLikes = stats.likes !== undefined ? stats.likes : null;
+  const bakedLikes = baked?.likes !== undefined ? baked.likes : null;
+  const sheetLikes = (!isNaN(parsedLikes) && parsedLikes > 0) ? parsedLikes : null;
+  const likes = sheetLikes ?? statLikes ?? bakedLikes ?? 0;
 
   let parsedComments = raw.comments !== undefined ? parseInt(String(raw.comments).replace(/[^0-9]/g, ''), 10) : NaN;
   if (isNaN(parsedComments)) {
@@ -207,10 +207,10 @@ export function normalizeVideoRow(raw, index = 0) {
       parsedComments = parseInt(String(rawComments).replace(/[^0-9]/g, ''), 10);
     }
   }
-  const statComments = stats.comments || 0;
-  const bakedComments = baked?.comments || 0;
-  const sheetComments = (!isNaN(parsedComments) && parsedComments > 0) ? parsedComments : 0;
-  const comments = Math.max(statComments, bakedComments, sheetComments);
+  const statComments = stats.comments !== undefined ? stats.comments : null;
+  const bakedComments = baked?.comments !== undefined ? baked.comments : null;
+  const sheetComments = (!isNaN(parsedComments) && parsedComments > 0) ? parsedComments : null;
+  const comments = sheetComments ?? statComments ?? bakedComments ?? 0;
 
   const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
   const rawScheduled = String(

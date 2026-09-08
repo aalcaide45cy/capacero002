@@ -55,7 +55,7 @@ const YOUTUBE_PUBLISH_DATES = {
 
 // Estadísticas de YouTube reales y actualizadas en directo
 const YOUTUBE_STATS_MAP = {
-  "EdGZKop2NcE": { "views": 32, "likes": 12, "comments": 2 },
+  "EdGZKop2NcE": { "views": 44, "likes": 14, "comments": 0 },
   "STc2U-cqecQ": { "views": 745, "likes": 24, "comments": 4 },
   "xf4K9wCJzdU": { "views": 791, "likes": 13, "comments": 5 },
   "RNWxu9tsB-k": { "views": 553, "likes": 15, "comments": 2 },
@@ -187,9 +187,14 @@ async function fetchLiveYouTubeStats(videoId) {
             const text = panel.header?.engagementPanelTitleHeaderRenderer?.contextualInfo?.runs?.[0]?.text;
             if (text) {
               comments = parseInt(text.replace(/[^0-9]/g, ""), 10) || 0;
+            } else {
+              comments = 0;
             }
           }
         }
+      }
+      if (comments === null) {
+        comments = 0;
       }
     }
 
