@@ -68,12 +68,20 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
             <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
           </div>
           <div
-            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
-              mobileExpanded ? 'max-w-[130px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
+            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
+              mobileExpanded
+                ? 'max-w-[140px] pr-3.5 duration-350 delay-0'
+                : 'max-w-0 pr-0 duration-300 delay-100'
             }`}
           >
-            <span className="font-black text-xs tracking-wide">
-              Ir a Patreon
+            <span
+              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
+                mobileExpanded
+                  ? 'opacity-100 duration-200 ease-out delay-150'
+                  : 'opacity-0 duration-100 ease-in delay-0'
+              }`}
+            >
+              IR A PATREON
             </span>
           </div>
         </a>
@@ -92,36 +100,69 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
             <Mail className="w-5 h-5 text-white drop-shadow" />
           </div>
           <div
-            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
-              mobileExpanded ? 'max-w-[150px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
+            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
+              mobileExpanded
+                ? 'max-w-[160px] pr-3.5 duration-350 delay-0'
+                : 'max-w-0 pr-0 duration-300 delay-100'
             }`}
           >
-            <span className="font-black text-xs tracking-wide">
+            <span
+              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
+                mobileExpanded
+                  ? 'opacity-100 duration-200 ease-out delay-150'
+                  : 'opacity-0 duration-100 ease-in delay-0'
+              }`}
+            >
               COLABORACIONES
             </span>
           </div>
         </button>
 
-        {/* Botón 3 Móvil: YOUTUBE */}
+        {/* Botón 3 Móvil: YOUTUBE (Rojo cuando está extendido, azul cuando está contraído) */}
         <a
           href={subscribeUrl}
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackSubscribe && trackSubscribe('Botón Flotante YouTube (Mobile)')}
-          className="h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
+          className={`relative h-11 rounded-full text-white flex items-center active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0 border-2 ${
+            mobileExpanded
+              ? 'border-red-300/80 shadow-[0_0_20px_rgba(239,68,68,0.75)]'
+              : 'border-cyan-300/70 shadow-[0_0_18px_rgba(37,117,196,0.75)]'
+          }`}
           title="Ir al canal de YouTube"
           aria-label="Ir al canal de YouTube"
         >
-          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+          {/* Fondo azul base (visible cuando está contraído a icono) */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 transition-opacity duration-500 ease-in-out ${
+              mobileExpanded ? 'opacity-0' : 'opacity-100'
+            }`}
+          />
+          {/* Fondo rojo YouTube (visible cuando está extendido con texto) */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-r from-red-700 via-red-600 to-rose-500 transition-opacity duration-500 ease-in-out ${
+              mobileExpanded ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+
+          <div className="relative z-10 w-11 h-11 flex items-center justify-center shrink-0">
             <YouTubeIcon className="w-5 h-5 text-white drop-shadow" />
           </div>
           <div
-            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
-              mobileExpanded ? 'max-w-[130px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
+            className={`relative z-10 overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
+              mobileExpanded
+                ? 'max-w-[130px] pr-3.5 duration-350 delay-0'
+                : 'max-w-0 pr-0 duration-300 delay-100'
             }`}
           >
-            <span className="font-black text-xs tracking-wide">
-              Ir al canal
+            <span
+              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
+                mobileExpanded
+                  ? 'opacity-100 duration-200 ease-out delay-150'
+                  : 'opacity-0 duration-100 ease-in delay-0'
+              }`}
+            >
+              IR AL CANAL
             </span>
           </div>
         </a>
