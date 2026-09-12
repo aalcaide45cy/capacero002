@@ -143,40 +143,15 @@ export default function V4Hero({
             </a>
           </div>
 
-          {/* Grupo de Acciones: Instalar App (Solo si no está instalada) y Colaboraciones */}
+          {/* Grupo de Acciones: En móvil: Fila 1 (Patreon a la izquierda, Colaboraciones a la derecha), Fila 2 (Instalar App debajo). En desktop: los 3 alineados */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-2">
             
-            {/* Botón: Instalar App PWA (Oculto automáticamente si ya está instalada / abierta como App) */}
-            {!isStandalone && (
-              <button
-                onClick={(e) => { e.preventDefault(); onOpenInstall && onOpenInstall(); }}
-                className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
-                title="Instalar App Capa Cero 3D en pantalla de inicio"
-              >
-                <Smartphone className="w-4 h-4 text-cyan-400" />
-                <span>Instalar App</span>
-              </button>
-            )}
-
-            {/* Botón Destacado: COLABORACIONES */}
-            <button
-              onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
-              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.6)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95"
-              title="Contactar para Colaboraciones"
-            >
-              <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                <Mail className="w-4 h-4 text-cyan-200" />
-                COLABORACIONES
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
-            </button>
-
-            {/* Botón Destacado: PATREON */}
+            {/* Botón Destacado: PATREON (En móvil orden 1 a la izquierda, en desktop orden 3 a la derecha) */}
             <a
               href="https://www.patreon.com/Capacero3d"
               target="_blank"
               rel="noopener noreferrer"
-              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(245,158,11,0.55)] uppercase tracking-wide whitespace-nowrap border border-amber-300/60 group overflow-hidden cursor-pointer active:scale-95"
+              className="order-1 sm:order-3 relative flex items-center justify-center h-11 px-4 sm:px-7 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(245,158,11,0.55)] uppercase tracking-wide whitespace-nowrap border border-amber-300/60 group overflow-hidden cursor-pointer active:scale-95"
               title="Unirme a Patreon Capa Cero 3D"
             >
               <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
@@ -186,6 +161,33 @@ export default function V4Hero({
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
             </a>
+
+            {/* Botón Destacado: COLABORACIONES (En móvil orden 2 a la derecha, en desktop orden 2 en el centro) */}
+            <button
+              onClick={(e) => { e.preventDefault(); onOpenCollaboration && onOpenCollaboration(); }}
+              className="order-2 sm:order-2 relative flex items-center justify-center h-11 px-4 sm:px-7 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-500 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(59,130,246,0.6)] uppercase tracking-wide whitespace-nowrap border border-cyan-300/50 group overflow-hidden cursor-pointer active:scale-95"
+              title="Contactar para Colaboraciones"
+            >
+              <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <Mail className="w-4 h-4 text-cyan-200" />
+                COLABORACIONES
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
+            </button>
+
+            {/* Botón: Instalar App PWA (En móvil orden 3 debajo centrado ocupando fila completa; en desktop orden 1 a la izquierda) */}
+            {!isStandalone && (
+              <div className="order-3 sm:order-1 basis-full sm:basis-auto flex justify-center">
+                <button
+                  onClick={(e) => { e.preventDefault(); onOpenInstall && onOpenInstall(); }}
+                  className="flex items-center justify-center gap-2 h-11 px-4 sm:px-5 bg-zinc-950/90 hover:bg-zinc-900 text-cyan-300 hover:text-white font-extrabold text-xs sm:text-sm rounded-full border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.25)] transition-all duration-300 active:scale-95 cursor-pointer"
+                  title="Instalar App Capa Cero 3D en pantalla de inicio"
+                >
+                  <Smartphone className="w-4 h-4 text-cyan-400" />
+                  <span>Instalar App</span>
+                </button>
+              </div>
+            )}
 
           </div>
 
