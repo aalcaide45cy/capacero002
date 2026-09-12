@@ -26,9 +26,14 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
       mobileTimerRef.current = setTimeout(() => {
         setMobileExpanded(false);
       }, 2000);
-    } else if (!isSticky) {
-      setMobileExpanded(true);
+    } else if (!isSticky && prevStickyRef.current) {
+      // Al subir arriba, cancelamos el timer activo si lo hubiera
       if (mobileTimerRef.current) clearTimeout(mobileTimerRef.current);
+      // Mantenemos la forma actual durante el desvanecimiento (sin forzar expansión).
+      // Tras completarse la transición de salida (600ms), reseteamos a true en segundo plano invisible.
+      mobileTimerRef.current = setTimeout(() => {
+        setMobileExpanded(true);
+      }, 600);
     }
     prevStickyRef.current = isSticky;
 
