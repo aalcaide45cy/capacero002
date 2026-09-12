@@ -176,11 +176,11 @@ export default function V4Hero({
               href="https://www.patreon.com/Capacero3d"
               target="_blank"
               rel="noopener noreferrer"
-              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-orange-500 via-rose-500 to-pink-600 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(249,104,84,0.55)] uppercase tracking-wide whitespace-nowrap border border-orange-300/60 group overflow-hidden cursor-pointer active:scale-95"
+              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(245,158,11,0.55)] uppercase tracking-wide whitespace-nowrap border border-amber-300/60 group overflow-hidden cursor-pointer active:scale-95"
               title="Unirme a Patreon Capa Cero 3D"
             >
               <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
-                <PatreonIcon className="w-4 h-4 text-orange-100 fill-current drop-shadow" />
+                <PatreonIcon className="w-4 h-4 text-amber-100 fill-current drop-shadow" />
                 <span className="hidden sm:inline">ÚNETE A PATREON</span>
                 <span className="inline sm:hidden">PATREON</span>
               </span>
