@@ -60,20 +60,22 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           href={patreonUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`h-11 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center shadow-[0_0_18px_rgba(245,158,11,0.65)] border-2 border-amber-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer ${
-            mobileExpanded ? 'px-4 w-auto' : 'w-11 justify-center px-0'
-          }`}
+          className="h-11 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center shadow-[0_0_18px_rgba(245,158,11,0.65)] border-2 border-amber-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
           title="Ir a Patreon"
           aria-label="Ir a Patreon"
         >
-          <PatreonIcon className="w-5 h-5 text-white fill-current shrink-0 drop-shadow" />
-          <span
-            className={`font-black text-xs tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
-              mobileExpanded ? 'max-w-[130px] opacity-100 ml-2' : 'max-w-0 opacity-0 ml-0'
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
+          </div>
+          <div
+            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
+              mobileExpanded ? 'max-w-[130px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
             }`}
           >
-            Ir a Patreon
-          </span>
+            <span className="font-black text-xs tracking-wide">
+              Ir a Patreon
+            </span>
+          </div>
         </a>
 
         {/* Botón 2 Móvil: COLABORACIONES */}
@@ -82,20 +84,22 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
             e.preventDefault();
             onOpenCollaboration && onOpenCollaboration();
           }}
-          className={`h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer ${
-            mobileExpanded ? 'px-4 w-auto' : 'w-11 justify-center px-0'
-          }`}
+          className="h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
           title="Colaboraciones"
           aria-label="Contactar para Colaboraciones"
         >
-          <Mail className="w-5 h-5 text-white shrink-0 drop-shadow" />
-          <span
-            className={`font-black text-xs tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
-              mobileExpanded ? 'max-w-[150px] opacity-100 ml-2' : 'max-w-0 opacity-0 ml-0'
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <Mail className="w-5 h-5 text-white drop-shadow" />
+          </div>
+          <div
+            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
+              mobileExpanded ? 'max-w-[150px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
             }`}
           >
-            COLABORACIONES
-          </span>
+            <span className="font-black text-xs tracking-wide">
+              COLABORACIONES
+            </span>
+          </div>
         </button>
 
         {/* Botón 3 Móvil: YOUTUBE */}
@@ -104,20 +108,22 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackSubscribe && trackSubscribe('Botón Flotante YouTube (Mobile)')}
-          className={`h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer ${
-            mobileExpanded ? 'px-4 w-auto' : 'w-11 justify-center px-0'
-          }`}
+          className="h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
           title="Ir al canal de YouTube"
           aria-label="Ir al canal de YouTube"
         >
-          <YouTubeIcon className="w-5 h-5 text-white shrink-0 drop-shadow" />
-          <span
-            className={`font-black text-xs tracking-wide whitespace-nowrap transition-all duration-500 ease-in-out ${
-              mobileExpanded ? 'max-w-[130px] opacity-100 ml-2' : 'max-w-0 opacity-0 ml-0'
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <YouTubeIcon className="w-5 h-5 text-white drop-shadow" />
+          </div>
+          <div
+            className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-in-out flex items-center ${
+              mobileExpanded ? 'max-w-[130px] opacity-100 pr-3.5' : 'max-w-0 opacity-0 pr-0'
             }`}
           >
-            Ir al canal
-          </span>
+            <span className="font-black text-xs tracking-wide">
+              Ir al canal
+            </span>
+          </div>
         </a>
       </div>
 
