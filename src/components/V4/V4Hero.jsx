@@ -1,5 +1,6 @@
 import React from 'react';
 import { Play, Download, ExternalLink, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone, Bell } from 'lucide-react';
+import { PatreonIcon } from './PatreonIcon';
 import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
 
 function formatCounter(num) {
@@ -169,6 +170,22 @@ export default function V4Hero({
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
             </button>
+
+            {/* Botón Destacado: PATREON */}
+            <a
+              href="https://www.patreon.com/Capacero3d"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative flex items-center justify-center h-11 px-6 sm:px-7 bg-gradient-to-r from-orange-500 via-rose-500 to-pink-600 text-white font-black text-xs sm:text-sm rounded-full transition-all duration-300 hover:scale-105 shadow-[0_0_20px_rgba(249,104,84,0.55)] uppercase tracking-wide whitespace-nowrap border border-orange-300/60 group overflow-hidden cursor-pointer active:scale-95"
+              title="Unirme a Patreon Capa Cero 3D"
+            >
+              <span className="relative z-10 flex items-center gap-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                <PatreonIcon className="w-4 h-4 text-orange-100 fill-current drop-shadow" />
+                <span className="hidden sm:inline">ÚNETE A PATREON</span>
+                <span className="inline sm:hidden">PATREON</span>
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
+            </a>
 
           </div>
 
