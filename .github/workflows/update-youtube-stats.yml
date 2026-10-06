@@ -1,0 +1,40 @@
+name: Actualizar Estadísticas de YouTube y Videoteca
+
+on:
+  schedule:
+    # Ejecutar automáticamente dos veces al día (a las 06:00 y a las 18:00 UTC)
+    - cron: '0 6,18 * * *'
+  workflow_dispatch: # Permite ejecutar manualmente con un solo clic desde GitHub Actions
+
+permissions:
+  contents: write
+
+jobs:
+  update-videos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm install --no-audit
+
+      - name: Sincronizar estadísticas en vivo de YouTube y Google Sheets
+        run: node scripts/update-videos.js
+
+      - name: Verificar si hay cambios y guardar
+        run: |
+          git config --global user.name "Capa Cero Bot"
+          git config --global user.email "bot@capacero3d.com"
+          git add src/data/videos_v4.json
+          if git diff --staged --quiet; then
+            echo "Sin cambios nuevos en estadísticas."
+          else
+            git commit -m "Auto-sync: Actualizar estadísticas de visualizaciones, likes y comentarios de YouTube [skip ci]"
+            git push origin main
+          fi
