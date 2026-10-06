@@ -179,7 +179,7 @@ function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null) {
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (existing?.chapterNumber || null);
   
-  const publishedAt = liveStats?.publishedAt || existing?.publishedAt || new Date(Date.now() - (index * 86400000)).toISOString();
+  const publishedAt = liveStats?.publishedAt || existing?.publishedAt || new Date().toISOString();
   
   // Extraer estadísticas asegurando que nunca un 0 sobreescriba un número real
   const sheetViews = (raw.views || raw.Vistas || raw.vistas) ? parseInt(String(raw.views || raw.Vistas || raw.vistas).replace(/[^0-9]/g, ''), 10) : 0;

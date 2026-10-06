@@ -118,7 +118,8 @@ export function normalizeVideoRow(raw, index = 0) {
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (raw.chapterNumber || baked?.chapterNumber || null);
   
-  const publishedAt = baked?.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || raw.publishedAt || new Date(Date.now() - (index * 86400000)).toISOString();
+  // Si el vídeo es nuevo y aún no está en el archivo pre-horneado, asignar fecha actual para que aparezca arriba
+  const publishedAt = baked?.publishedAt || YOUTUBE_PUBLISH_DATES[videoId] || raw.publishedAt || new Date().toISOString();
   
   // 1. Visualizaciones (Prioridad: mayor valor entre Sheet, stats calculadas y pre-horneadas, nunca 0)
   let parsedViews = raw.views !== undefined ? parseInt(String(raw.views).replace(/[^0-9]/g, ''), 10) : NaN;
