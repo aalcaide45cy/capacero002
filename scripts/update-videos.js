@@ -9,6 +9,44 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.resolve(__dirname, '../src/data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
 const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
+const NOTIFIED_FILE = path.join(DATA_DIR, 'notified.json');
+
+function getNotifiedIds() {
+  if (fs.existsSync(NOTIFIED_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(NOTIFIED_FILE, 'utf-8'));
+      if (Array.isArray(data)) return new Set(data);
+    } catch (e) {
+      console.warn('Advertencia al leer notified.json:', e.message);
+    }
+  }
+  return null;
+}
+
+async function notifyNewVideoInAppsScript(video) {
+  const defaultUrl = 'https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec';
+  const baseUrl = process.env.SHEETS_DB_URL || defaultUrl;
+  const token = process.env.STATS_API_TOKEN || '';
+  const slug = video.slug || video.youtubeId;
+  const targetVideoUrl = `https://www.capacero3d.com/video/${slug}`;
+  const title = `Nuevo vídeo: ${video.title}`;
+  const body = video.description
+    ? (video.description.slice(0, 120) + '...')
+    : 'Ya disponible en Capa Cero 3D. Pulsa para ver el nuevo tutorial.';
+
+  try {
+    const notifyUrl = `${baseUrl}?action=notify_new_video&token=${encodeURIComponent(token)}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&slug=${encodeURIComponent(slug)}&url=${encodeURIComponent(targetVideoUrl)}`;
+    const res = await fetch(notifyUrl, { method: 'POST' });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.success) {
+      console.log(`🔔 Notificación push enviada con éxito para: "${video.title}"`);
+    } else {
+      console.warn(`⚠️ Apps Script no procesó el aviso push (${res.status}):`, data?.message || 'Acción no reconocida');
+    }
+  } catch (err) {
+    console.warn(`⚠️ Aviso: No se pudo enviar notificación push para "${video.title}":`, err.message);
+  }
+}
 
 function generateSlug(title) {
   if (!title) return 'video';
@@ -597,6 +635,33 @@ async function main() {
         console.log(`🎬 Vídeo #1: ${validVideos[0]?.title} [${validVideos[0]?.duration || 'N/A'}] (${validVideos[0]?.views} views | ${validVideos[0]?.likes} likes | ${validVideos[0]?.comments} comments)`);
         console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} [${validVideos[1]?.duration || 'N/A'}] (${validVideos[1]?.views} views | ${validVideos[1]?.likes} likes | ${validVideos[1]?.comments} comments)`);
         console.log(`🎬 Vídeo #3: ${validVideos[2]?.title} [${validVideos[2]?.duration || 'N/A'}] (${validVideos[2]?.views} views | ${validVideos[2]?.likes} likes | ${validVideos[2]?.comments} comments)\n`);
+
+        // Gestión de notificaciones push de nuevos vídeos (Fase 09)
+        let notifiedSet = getNotifiedIds();
+        if (!notifiedSet) {
+          // Primera ejecución: inicializar con todos los vídeos actuales para evitar spam de 33 avisos
+          notifiedSet = new Set();
+          for (const v of validVideos) {
+            if (v.youtubeId) notifiedSet.add(v.youtubeId);
+          }
+          fs.writeFileSync(NOTIFIED_FILE, JSON.stringify(Array.from(notifiedSet), null, 2), 'utf-8');
+          console.log(`📌 Primera ejecución: inicializados ${notifiedSet.size} vídeos en src/data/notified.json`);
+        } else {
+          // Ejecuciones posteriores: notificar vídeos nuevos publicados que no estén programados
+          let newNotifiedCount = 0;
+          for (const v of validVideos) {
+            if (v.youtubeId && !v.isScheduled && !notifiedSet.has(v.youtubeId)) {
+              console.log(`🆕 ¡Nuevo vídeo publicado detectado! ID: ${v.youtubeId} - "${v.title}"`);
+              await notifyNewVideoInAppsScript(v);
+              notifiedSet.add(v.youtubeId);
+              newNotifiedCount++;
+            }
+          }
+          if (newNotifiedCount > 0) {
+            fs.writeFileSync(NOTIFIED_FILE, JSON.stringify(Array.from(notifiedSet), null, 2), 'utf-8');
+            console.log(`💾 Actualizado src/data/notified.json con ${newNotifiedCount} nuevo(s) vídeo(s).`);
+          }
+        }
       },
       error: (err) => {
         console.error('🔥 Error parseando CSV de vídeos:', err);

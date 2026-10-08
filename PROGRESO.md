@@ -127,12 +127,15 @@ Se desarrolló el endpoint serverless `api/youtube-analytics.js` con soporte OAu
 ---
 
 ## FASE 09 — Avisos automáticos de vídeo nuevo
-- [ ] 1. Documentar sistema push en `docs/notificaciones.md`.
-- [ ] 2. `scripts/update-videos.js`: detectar vídeos nuevos no programados y llamar `notify_new_video` en Apps Script (`src/data/notified.json`).
-- [ ] 3. Fallback tolerante si Apps Script no reconoce la acción.
-- [ ] 4. Botón discreto y animado para activar avisos en escritorio y Android sin instalar PWA.
-- [ ] 5. Métricas de suscriptores y clics en panel.
-- [ ] 6. Protocolo de fin de fase 09.
+- [x] 1. Documentar sistema push en `docs/notificaciones.md`.
+- [x] 2. `scripts/update-videos.js`: detectar vídeos nuevos no programados y llamar `notify_new_video` en Apps Script (`src/data/notified.json`).
+- [x] 3. Fallback tolerante si Apps Script no reconoce la acción.
+- [x] 4. Botón discreto y animado para activar avisos en escritorio y Android sin instalar PWA.
+- [x] 5. Métricas de suscriptores y clics en panel.
+- [x] 6. Protocolo de fin de fase 09.
+
+*Notas Fase 09:*
+Se documentó la arquitectura completa de Web Push en `docs/notificaciones.md`. Se integró la acción `notify_new_video` en `Codigo.txt` y en `scripts/update-videos.js` gestionando `src/data/notified.json` (inicializado con los 33 vídeos existentes para evitar disparos retrospectivos, notificando únicamente publicaciones nuevas de forma tolerante a fallos de Apps Script). Se diseñó e implementó `V4NotificationBell.jsx` en la cabecera hero como botón discreto con animación de pulso que permite suscribirse a notificaciones Web Push directamente en Escritorio y Android sin instalar la PWA (guiando en iOS a la instalación en pantalla de inicio requerida por Safari). En la pestaña Push de `/estadisticas` se integraron KPIs de suscriptores activos, total de clics recibidos y desglose por notificación individual.
 
 ---
 

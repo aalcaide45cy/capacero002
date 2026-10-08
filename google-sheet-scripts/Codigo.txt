@@ -1810,6 +1810,34 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // notify_new_video: Envía notificación push automática al publicar un vídeo nuevo (Fase 09)
+  if (action === "notify_new_video") {
+    var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
+    var clientToken = (e && e.parameter && e.parameter.token) ? String(e.parameter.token).trim() : "";
+    if (expectedToken && expectedToken.length > 0) {
+      if (!clientToken || clientToken !== expectedToken) {
+        return ContentService.createTextOutput(JSON.stringify({
+          error: "unauthorized",
+          message: "Acceso denegado: token no válido para notify_new_video."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    var title = (e && e.parameter && e.parameter.title) ? e.parameter.title : "¡Nuevo tutorial en Capa Cero 3D!";
+    var slug = (e && e.parameter && e.parameter.slug) ? e.parameter.slug : "";
+    var videoUrl = (e && e.parameter && e.parameter.url) ? e.parameter.url : ("https://www.capacero3d.com/video/" + slug);
+    var body = (e && e.parameter && e.parameter.body) ? e.parameter.body : "Ya disponible el nuevo vídeo en la plataforma. ¡Pulsa para verlo!";
+    
+    var pushResult = procesarEnvioPushDesdeModal(title, body, videoUrl);
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      action: "notify_new_video",
+      title: title,
+      url: videoUrl,
+      result: pushResult
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   // mark_idea_done: Guarda el estado de una idea de vídeo marcada como grabada
   if (action === "mark_idea_done") {
     var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
