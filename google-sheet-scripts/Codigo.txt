@@ -45,7 +45,29 @@ var VIDEOS_IGNORADOS = [
   "YK1OFjCqjGc",
   "gRmLRA6tpZw",
   "-Ed4ICmVaZ8",
-  "z905Akv3KHQ"
+  "z905Akv3KHQ",
+  // Nuevos shorts de YouTube identificados en auditoría
+  "8PjZFMLb_OM",
+  "oYaSbq6Yjk8",
+  "7YgDFlq6uBs",
+  "CRDSsy35JBk",
+  "jomBf3QELNc",
+  "6UoWHgfVIE4",
+  "t1PApMmnfSc",
+  "Ry9kz9a1Vgk",
+  "50DYyWhk2kc",
+  "blaXzLq_X2Y",
+  "B9mJiZsoMqM",
+  "1hUob2u7IFk",
+  "aFDIc0efS3A",
+  "NLGoMeG6pyc",
+  "FA_8foK968Y",
+  "y6s0uvCUtj8",
+  "8ti2uDDbpT8",
+  "Thvfml_AI-Q",
+  "Tf7Ons6irt0",
+  "ushUk4xnMn8",
+  "lrfuCbksV1E"
 ];
 
 function onOpen() {
@@ -1900,6 +1922,59 @@ function doGet(e) {
       ideas: doneList
     })).setMimeType(ContentService.MimeType.JSON);
   }
+
+  // sync_videos: Sincroniza vídeos desde YouTube y devuelve el resultado detallado (Fase 11)
+  if (action === "sync_videos") {
+    var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
+    var clientToken = (e && e.parameter && e.parameter.token) ? String(e.parameter.token).trim() : "";
+    if (expectedToken && expectedToken.length > 0) {
+      if (!clientToken || clientToken !== expectedToken) {
+        return ContentService.createTextOutput(JSON.stringify({
+          error: "unauthorized",
+          message: "Acceso denegado: token no válido."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    var syncResult = sincronizarVideosCapaCero();
+    return ContentService.createTextOutput(JSON.stringify(syncResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // clean_shorts: Elimina filas de Shorts detectados en la hoja Videos (Mantenimiento)
+  if (action === "clean_shorts") {
+    var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
+    var clientToken = (e && e.parameter && e.parameter.token) ? String(e.parameter.token).trim() : "";
+    if (expectedToken && expectedToken.length > 0) {
+      if (!clientToken || clientToken !== expectedToken) {
+        return ContentService.createTextOutput(JSON.stringify({
+          error: "unauthorized",
+          message: "Acceso denegado: token no válido."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Videos") || ss.getSheetByName("Vídeos") || ss.getActiveSheet();
+    var lastRow = sheet.getLastRow();
+    var deleted = [];
+    if (lastRow > 1) {
+      var vals = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+      for (var r = vals.length - 1; r >= 0; r--) {
+        var vUrl = String(vals[r][1] || "");
+        var vTitle = String(vals[r][0] || "");
+        var vId = extraerYouTubeId(vUrl);
+        if (vId && (VIDEOS_IGNORADOS.indexOf(vId) !== -1 || esShort(vId, vUrl, vTitle, 0))) {
+          sheet.deleteRow(r + 2);
+          deleted.push({ id: vId, title: vTitle, row: r + 2 });
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      deletedCount: deleted.length,
+      deleted: deleted,
+      remainingRows: sheet.getLastRow()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
   
   return ContentService.createTextOutput("Capa Cero Analytics & Web Push Webhook Activo.")
     .setMimeType(ContentService.MimeType.TEXT);
@@ -1910,13 +1985,23 @@ function doGet(e) {
  * 9. DETECTOR ESTRICTO ANTI-SHORTS
  * ==============================================================================
  */
+function parseIsoDuration(iso) {
+  if (!iso) return 0;
+  var m = String(iso).match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/i);
+  if (!m) return 0;
+  var h = parseInt(m[1] || 0, 10);
+  var min = parseInt(m[2] || 0, 10);
+  var sec = parseInt(m[3] || 0, 10);
+  return h * 3600 + min * 60 + sec;
+}
+
 function esShort(videoId, url, title, durationSec) {
   var urlLower = (url || "").toLowerCase();
   var titleLower = (title || "").toLowerCase();
   
   if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) return true;
   if (urlLower.indexOf("/shorts/") !== -1) return true;
-  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1) return true;
+  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1 || titleLower.indexOf("#reels") !== -1 || titleLower.indexOf("#reel") !== -1) return true;
   
   if (durationSec && durationSec > 0) {
     return durationSec <= 60;
@@ -1957,6 +2042,9 @@ function obtenerInfoRealYouTube(videoId) {
           if (item.snippet.title) title = item.snippet.title;
           if (item.snippet.description) description = item.snippet.description;
           if (item.snippet.tags) keywords = item.snippet.tags;
+        }
+        if (item.contentDetails && item.contentDetails.duration) {
+          durationSec = parseIsoDuration(item.contentDetails.duration);
         }
       }
       
@@ -2707,6 +2795,7 @@ function obtenerCatalogoOficialCapaCero() {
 
 function sincronizarVideosCapaCero() {
   var CHANNEL_ID = "UCWKLBuYTfVEDwsCFc5GyEOQ";
+  var UPLOADS_PLAYLIST_ID = "UUWKLBuYTfVEDwsCFc5GyEOQ"; // Playlist oficial de subidas del canal Capa Cero
   var RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CHANNEL_ID;
   
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2724,51 +2813,133 @@ function sincronizarVideosCapaCero() {
       if (idFromColA) existingIds[idFromColA] = true;
     }
   }
-  
-  // 2. Consultar el RSS oficial de YouTube
-  var xml = UrlFetchApp.fetch(RSS_URL).getContentText();
-  var document = XmlService.parse(xml);
-  var root = document.getRootElement();
-  var atom = XmlService.getNamespace("http://www.w3.org/2005/Atom");
-  var yt = XmlService.getNamespace("http://www.youtube.com/xml/schemas/2015");
-  var entries = root.getChildren("entry", atom);
-  
+
+  var candidates = [];
+  var methodUsed = "";
+  var errors = [];
+
+  // MÉTODO A: YouTube Data API v3 oficial (Servicio Avanzado de Apps Script)
+  if (typeof YouTube !== 'undefined' && YouTube.PlaylistItems && YouTube.PlaylistItems.list) {
+    try {
+      var ytRes = YouTube.PlaylistItems.list("snippet,contentDetails", {
+        playlistId: UPLOADS_PLAYLIST_ID,
+        maxResults: 50
+      });
+      if (ytRes && ytRes.items && ytRes.items.length > 0) {
+        for (var y = 0; y < ytRes.items.length; y++) {
+          var yItem = ytRes.items[y];
+          var vId = yItem.contentDetails ? yItem.contentDetails.videoId : "";
+          var vTitle = yItem.snippet ? yItem.snippet.title : "";
+          if (vId) {
+            candidates.push({ id: vId, title: vTitle });
+          }
+        }
+        methodUsed = "YouTube_Data_API_v3";
+      }
+    } catch (eYtApi) {
+      errors.push("YouTube API v3: " + eYtApi.toString());
+      Logger.log("Aviso YouTube API v3: " + eYtApi.toString());
+    }
+  }
+
+  // MÉTODO B: RSS oficial de YouTube (con muteHttpExceptions para no fallar)
+  if (candidates.length === 0) {
+    try {
+      var rssResponse = UrlFetchApp.fetch(RSS_URL, {
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
+      });
+      var statusCode = rssResponse.getResponseCode();
+      if (statusCode === 200) {
+        var xml = rssResponse.getContentText();
+        var document = XmlService.parse(xml);
+        var root = document.getRootElement();
+        var atom = XmlService.getNamespace("http://www.w3.org/2005/Atom");
+        var ytNs = XmlService.getNamespace("http://www.youtube.com/xml/schemas/2015");
+        var entries = root.getChildren("entry", atom);
+        for (var k = 0; k < entries.length; k++) {
+          var entry = entries[k];
+          var entryId = entry.getChild("videoId", ytNs) ? entry.getChild("videoId", ytNs).getText() : "";
+          var entryTitle = entry.getChild("title", atom) ? entry.getChild("title", atom).getText() : "";
+          var linkElem = entry.getChild("link", atom);
+          var linkHref = linkElem ? linkElem.getAttribute("href").getValue() : "";
+          if (linkHref.indexOf("/shorts/") !== -1) continue;
+          if (entryId) {
+            candidates.push({ id: entryId, title: entryTitle });
+          }
+        }
+        methodUsed = "YouTube_RSS_Feed";
+      } else {
+        errors.push("RSS HTTP " + statusCode);
+      }
+    } catch (eRss) {
+      errors.push("RSS fetch: " + eRss.toString());
+      Logger.log("Aviso RSS: " + eRss.toString());
+    }
+  }
+
+  // MÉTODO C: Scraping directo de /@CapaCero0/videos (fallback)
+  if (candidates.length === 0) {
+    try {
+      var chanRes = UrlFetchApp.fetch("https://www.youtube.com/@CapaCero0/videos", {
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept-Language": "es-ES,es;q=0.9"
+        }
+      });
+      if (chanRes.getResponseCode() === 200) {
+        var chanHtml = chanRes.getContentText();
+        var vidMatches = [...chanHtml.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)];
+        var seenC = {};
+        for (var cm = 0; cm < vidMatches.length; cm++) {
+          var cId = vidMatches[cm][1];
+          if (!seenC[cId]) {
+            seenC[cId] = true;
+            candidates.push({ id: cId, title: "" });
+          }
+        }
+        if (candidates.length > 0) methodUsed = "YouTube_HTML_Scrape";
+      }
+    } catch (eScrape) {
+      errors.push("HTML scrape: " + eScrape.toString());
+    }
+  }
+
   var totalNuevos = 0;
-  
-  // 3. Revisar los vídeos del canal (de más antiguo a más nuevo para orden correlativo)
-  for (var k = entries.length - 1; k >= 0; k--) {
-    var entry = entries[k];
-    var videoId = entry.getChild("videoId", yt).getText();
-    var title = entry.getChild("title", atom).getText();
-    
-    // Filtro estricto de Shorts y vídeos ignorados
-    var linkElement = entry.getChild("link", atom);
-    var linkHref = linkElement ? linkElement.getAttribute("href").getValue() : "";
-    
+  var nuevosAgregados = [];
+
+  // Invertir orden para añadir de más antiguo a más nuevo si vienen de más reciente
+  for (var k = candidates.length - 1; k >= 0; k--) {
+    var item = candidates[k];
+    var videoId = item.id;
+    var title = item.title;
+
     if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) continue;
-    if (linkHref.indexOf("/shorts/") !== -1) continue;
-    if (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1) continue;
-    
+    if (title && (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1)) continue;
+
     // Si ya existe en la hoja, saltarlo
     if (existingIds[videoId]) continue;
-    
-    // Obtener la información completa usando tu propio extractor de YouTube
+
+    // Obtener información detallada del vídeo
     var info = obtenerInfoRealYouTube(videoId);
-    if (info.isShort) continue;
-    
+    if (info.isShort || esShort(videoId, "https://www.youtube.com/watch?v=" + videoId, info.title || title, info.durationSec)) continue;
+
     var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
     var finalTitle = info.title || title;
     var finalDesc = info.description || "";
     var finalCat = info.category || "Bambu Studio";
     var finalConsejo = info.consejoClave || "";
-    
+
     var d1 = (info.descargas && info.descargas.length > 0) ? info.descargas[0] : "https://makerworld.com/en/@capa_cero";
     var d2 = (info.descargas && info.descargas.length > 1) ? info.descargas[1] : "";
     var d3 = (info.descargas && info.descargas.length > 2) ? info.descargas[2] : "";
-    
+
     var destacado = info.isScheduledOrPrivate ? "PROGRAMADO" : "NO";
-    
-    // Añadir la fila con las 9 columnas oficiales
+
+    // Añadir fila oficial de 9 columnas
     sheet.appendRow([
       finalTitle,
       cleanUrl,
@@ -2780,20 +2951,34 @@ function sincronizarVideosCapaCero() {
       d3,
       destacado
     ]);
-    
+
     existingIds[videoId] = true;
     totalNuevos++;
+    nuevosAgregados.push({ id: videoId, title: finalTitle });
   }
-  
+
+  var msg = (totalNuevos > 0)
+    ? "✅ ¡Sincronizados " + totalNuevos + " nuevos tutoriales horizontales!"
+    : "ℹ️ La hoja ya está al día. No hay vídeos nuevos.";
+
+  // Mostrar alerta SOLO si hay interfaz gráfica disponible (evita fallos en activadores diarios)
   try {
-    SpreadsheetApp.getUi().alert(
-      totalNuevos > 0 
-        ? "✅ ¡Se han encontrado y añadido " + totalNuevos + " nuevos vídeos horizontales con sus datos y descargas!" 
-        : "ℹ️ Tu hoja ya está al día. No hay vídeos horizontales nuevos en el canal."
-    );
-  } catch (eSilent) {
-    Logger.log("Ejecución automática completada. Nuevos añadidos: " + totalNuevos);
+    var ui = SpreadsheetApp.getUi();
+    if (ui) {
+      ui.alert(msg);
+    }
+  } catch (eNoUi) {
+    Logger.log("Ejecución en segundo plano / activador diario. " + msg);
   }
+
+  return {
+    success: true,
+    totalNuevos: totalNuevos,
+    nuevosAgregados: nuevosAgregados,
+    methodUsed: methodUsed,
+    candidatesCount: candidates.length,
+    errors: errors
+  };
 }
 
 function limpiarYResincronizar() {

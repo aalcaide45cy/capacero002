@@ -207,3 +207,27 @@ Si por cualquier eventualidad necesitas volver al estado exacto previo a este pl
    - Busca el despliegue previo al inicio del plan y pulsa en los tres puntos > **Promote to Production**.
 3. **Descripciones de YouTube:**
    - El archivo `docs/backups/descripciones-2026-10-08.json` contiene el texto original exacto de cada vídeo por si fuera necesario restaurarlo.
+
+---
+
+## 8. Resolución de Incidencias Post-Entrega
+
+### 1. Error Diario en Apps Script (`sincronizarVideosCapaCero` - 404 en RSS)
+- **Causa raíz:** La función llamaba a `UrlFetchApp.fetch(RSS_URL)` sin la opción `muteHttpExceptions: true`. Al producirse bloqueos por geolocalización o límites de tasa de Google sobre la IP del servidor de Apps Script, la llamada arrojaba una excepción no capturada de código 404 de `https://www.youtube.com`. Además, el activador diario automático carece de interfaz gráfica, por lo que cualquier llamada a `SpreadsheetApp.getUi()` lanzaba un error fatal si no estaba protegida por `try...catch`.
+- **Solución implementada:**
+  - Rediseño con arquitectura de triple redundancia:
+    1. **Método A (Oficial y prioritario):** Servicio nativo `YouTube.PlaylistItems.list` sobre la lista de reproducción oficial de subidas del canal (`UUWKLBuYTfVEDwsCFc5GyEOQ`).
+    2. **Método B (Respaldo RSS):** Feed RSS con cabeceras de navegador reales y `muteHttpExceptions: true`.
+    3. **Método C (Scraping):** Extracción de IDs de `/@CapaCero0/videos` con `muteHttpExceptions: true`.
+  - Detección segura de interfaz de usuario (`SpreadsheetApp.getUi()` encapsulado con `try/catch` para ejecuciones desatendidas).
+  - Implementación de control anti-shorts mediante parsing estricto de duración ISO 8601 (`item.contentDetails.duration` $\le 60$s) y filtrado de etiquetas.
+  - Desplegado en la versión activa `@30` de Apps Script conservando la URL `/exec`.
+  - **Vídeos nuevos detectados:** El vídeo horizontal `aMl05b-tsVM` (*"El truco definitivo para grabar logos en 3D fácilmente"*, 16m 57s) se encontraba pendiente de sincronización y ha sido incorporado formalmente.
+
+### 2. Orden de Tarjetas de Vídeo en la Web
+- **Causa raíz:** Al reactivarse la sincronización automática de Apps Script, los últimos 21 YouTube Shorts subidos al canal se incorporaron a la hoja de Google Sheets. Al tener URLs estándar y no contener la etiqueta literal `#shorts` en el título, tanto `loadV4Videos.js` (cliente) como `update-videos.js` (build) los interpretaron como vídeos completos, y al carecer de fecha pre-horneada, se les asignó la fecha actual (`new Date().toISOString()`), colocándolos en las primeras 21 posiciones de la web y desplazando los tutoriales reales hacia abajo. Adicionalmente, el normalizador de categorías sobrescribía la categoría de *"Fusion 360 desde cero #1"* a *"Fusion 360"*, rompiendo la pestaña de Cursos.
+- **Solución implementada:**
+  - Se eliminaron las 21 filas de Shorts de Google Sheets mediante la acción de mantenimiento `clean_shorts` ejecutada en Apps Script.
+  - Se implementó filtro estricto anti-shorts por duración ($\le 60$s), hashtags (`#shorts`, `#short`, `#reels`, `#reel`) y lista negra de IDs conocidos tanto en Apps Script como en el frontend (`loadV4Videos.js`) y en `update-videos.js`.
+  - Se blindó la taxonomía de categorías para no alterar categorías que comiencen por `"Curso"`.
+  - Verificación visual y estructural headless (Puppeteer) a 390 px (móvil) y 1440 px (escritorio): el orden de las tarjetas y la pestaña de cursos coinciden exactamente con la línea base de `antes-de-plan` (34 tutoriales horizontales únicos, con el tutorial más reciente `aMl05b-tsVM` en posición #1 seguido de la secuencia exacta original #15, marcos de fotos, contracción térmica, #14, #13, etc.).

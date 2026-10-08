@@ -115,13 +115,15 @@ export default function V4VideoCard({ video, onSelect }) {
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         
         {/* Title como enlace semántico */}
-        <a
-          href={videoHref}
-          onClick={handleLinkClick}
-          className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2 block"
-        >
-          <h3>{video.title}</h3>
-        </a>
+        <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2">
+          <a
+            href={videoHref}
+            onClick={handleLinkClick}
+            className="block text-inherit hover:text-inherit"
+          >
+            {video.title}
+          </a>
+        </h3>
 
         {/* Description (ONLY if it exists and is not empty) */}
         {video.hasDescription && (

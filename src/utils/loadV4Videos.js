@@ -33,6 +33,17 @@ export const SCHEDULED_VIDEOS_MAP = {
   // Las fechas anteriores ya han sido emitidas y pasan a publicadas
 };
 
+export const KNOWN_SHORTS = new Set([
+  "C4tnZhcznnM", "cPEr2vj8OD8", "XIWrao4uNtU", "74U1uClr5LA",
+  "px2XMValBno", "lUI7KoJg40w", "YK1OFjCqjGc", "gRmLRA6tpZw",
+  "-Ed4ICmVaZ8", "z905Akv3KHQ", "8PjZFMLb_OM", "oYaSbq6Yjk8",
+  "7YgDFlq6uBs", "CRDSsy35JBk", "jomBf3QELNc", "6UoWHgfVIE4",
+  "t1PApMmnfSc", "Ry9kz9a1Vgk", "50DYyWhk2kc", "blaXzLq_X2Y",
+  "B9mJiZsoMqM", "1hUob2u7IFk", "aFDIc0efS3A", "NLGoMeG6pyc",
+  "FA_8foK968Y", "y6s0uvCUtj8", "8ti2uDDbpT8", "Thvfml_AI-Q",
+  "Tf7Ons6irt0", "ushUk4xnMn8", "lrfuCbksV1E"
+]);
+
 /**
  * Extrae el ID del vídeo de YouTube desde cualquier formato de URL o texto.
  */
@@ -92,9 +103,15 @@ export function normalizeVideoRow(raw, index = 0) {
   const title = String(raw.Titulo || raw.titulo || raw.Title || raw.title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.youtubeUrl || raw.URL || '').trim();
   const videoId = raw.youtubeId || extractYouTubeId(rawUrl);
-  if (!videoId) return null;
+  if (!videoId || KNOWN_SHORTS.has(videoId)) return null;
+
+  const baked = fallbackMap[videoId] || null;
+  const stats = YOUTUBE_STATS_MAP[videoId] || null;
   
-  const category = String(raw.Categoria || raw.categoria || raw.Category || raw.category || 'Bambu Studio').trim();
+  let category = String(raw.Categoria || raw.categoria || raw.Category || raw.category || baked?.category || 'Bambu Studio').trim();
+  if (baked?.category && !category.toLowerCase().startsWith('curso')) {
+    category = baked.category;
+  }
   const rawDesc = String(raw.Descripcion || raw.descripcion || raw.Description || raw.description || '').trim();
   const description = (rawDesc && !rawDesc.toLowerCase().includes('vacio') && !rawDesc.toLowerCase().includes('vacío')) ? rawDesc : '';
 
@@ -107,13 +124,13 @@ export function normalizeVideoRow(raw, index = 0) {
   const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES' || raw.isFeatured === true;
 
   // Filtrar shorts verticales de YouTube
-  const isShort = rawUrl.toLowerCase().includes('/shorts/') || 
+  const isShort = KNOWN_SHORTS.has(videoId) ||
+                  rawUrl.toLowerCase().includes('/shorts/') || 
                   title.toLowerCase().includes('#shorts') || 
-                  title.toLowerCase().includes('#short');
+                  title.toLowerCase().includes('#short') ||
+                  title.toLowerCase().includes('#reels') ||
+                  title.toLowerCase().includes('#reel');
   if (isShort) return null;
-
-  const baked = fallbackMap[videoId] || null;
-  const stats = YOUTUBE_STATS_MAP[videoId] || null;
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (raw.chapterNumber || baked?.chapterNumber || null);

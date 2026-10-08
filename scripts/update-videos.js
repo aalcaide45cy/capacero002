@@ -12,6 +12,17 @@ const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
 const NOTIFIED_FILE = path.join(DATA_DIR, 'notified.json');
 const CATEGORY_MAP_FILE = path.join(DATA_DIR, 'category-map.json');
 
+const KNOWN_SHORTS = new Set([
+  "C4tnZhcznnM", "cPEr2vj8OD8", "XIWrao4uNtU", "74U1uClr5LA",
+  "px2XMValBno", "lUI7KoJg40w", "YK1OFjCqjGc", "gRmLRA6tpZw",
+  "-Ed4ICmVaZ8", "z905Akv3KHQ", "8PjZFMLb_OM", "oYaSbq6Yjk8",
+  "7YgDFlq6uBs", "CRDSsy35JBk", "jomBf3QELNc", "6UoWHgfVIE4",
+  "t1PApMmnfSc", "Ry9kz9a1Vgk", "50DYyWhk2kc", "blaXzLq_X2Y",
+  "B9mJiZsoMqM", "1hUob2u7IFk", "aFDIc0efS3A", "NLGoMeG6pyc",
+  "FA_8foK968Y", "y6s0uvCUtj8", "8ti2uDDbpT8", "Thvfml_AI-Q",
+  "Tf7Ons6irt0", "ushUk4xnMn8", "lrfuCbksV1E"
+]);
+
 let _cachedCategoryMap = undefined;
 function getCategoryMap() {
   if (_cachedCategoryMap !== undefined) return _cachedCategoryMap;
@@ -428,11 +439,11 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
   const videoId = extractYouTubeId(rawUrl);
-  if (!videoId) return null;
+  if (!videoId || KNOWN_SHORTS.has(videoId)) return null;
   
   let category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
   const catMap = getCategoryMap();
-  if (catMap && catMap.titleContains) {
+  if (catMap && catMap.titleContains && !category.toLowerCase().startsWith('curso')) {
     for (const [matchSubstr, mappedCat] of Object.entries(catMap.titleContains)) {
       if (title.toLowerCase().includes(matchSubstr.toLowerCase())) {
         category = mappedCat;
@@ -452,9 +463,13 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES';
 
   // Filtrar shorts verticales de YouTube
-  const isShort = rawUrl.toLowerCase().includes('/shorts/') || 
+  const isShort = KNOWN_SHORTS.has(videoId) ||
+                  rawUrl.toLowerCase().includes('/shorts/') || 
                   title.toLowerCase().includes('#shorts') || 
-                  title.toLowerCase().includes('#short');
+                  title.toLowerCase().includes('#short') ||
+                  title.toLowerCase().includes('#reels') ||
+                  title.toLowerCase().includes('#reel') ||
+                  (liveStats?.lengthSeconds && liveStats.lengthSeconds <= 60);
   if (isShort) return null;
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
