@@ -1,7 +1,6 @@
 import React from 'react';
-import { Play, Download, ExternalLink, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone, Bell } from 'lucide-react';
+import { Play, Download, ExternalLink, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone } from 'lucide-react';
 import { PatreonIcon } from './PatreonIcon';
-import V4NotificationBell from './V4NotificationBell';
 import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
 
 function formatCounter(num) {
@@ -189,11 +188,6 @@ export default function V4Hero({
                 </button>
               </div>
             )}
-
-            {/* Botón: Activar Avisos de Vídeo Nuevo */}
-            <div className="order-4 sm:order-4 basis-auto flex justify-center">
-              <V4NotificationBell onOpenInstallModal={onOpenInstall} />
-            </div>
 
           </div>
 
