@@ -114,12 +114,15 @@ Se integró la consulta por lotes (hasta 50 IDs) con `videos.list` de YouTube Da
 ---
 
 ## FASE 08 — Panel "Camino a 4.000 horas"
-- [ ] 1. Crear `api/youtube-analytics.js` con OAuth 2.0.
-- [ ] 2. Crear `scripts/get-youtube-refresh-token.js`.
-- [ ] 3. Pestaña "Camino a 4.000 h" en `/estadisticas` con tarjetas animadas.
-- [ ] 4. Aviso fijo sobre discrepancia de horas válidas respecto a YouTube Studio.
-- [ ] 5. Tarjeta "pendiente de configuración" en caso de faltar variables.
-- [ ] 6. Protocolo de fin de fase 08.
+- [x] 1. Crear `api/youtube-analytics.js` con OAuth 2.0.
+- [x] 2. Crear `scripts/get-youtube-refresh-token.js`.
+- [x] 3. Pestaña "Camino a 4.000 h" en `/estadisticas` con tarjetas animadas.
+- [x] 4. Aviso fijo sobre discrepancia de horas válidas respecto a YouTube Studio.
+- [x] 5. Tarjeta "pendiente de configuración" en caso de faltar variables.
+- [x] 6. Protocolo de fin de fase 08.
+
+*Notas Fase 08:*
+Se desarrolló el endpoint serverless `api/youtube-analytics.js` con soporte OAuth 2.0 para consultar la API oficial de YouTube Analytics en Vercel, protegido por el token de sesión del panel y con respuesta tolerante `not_configured` cuando no existen las credenciales. Se programó el script interactivo local `scripts/get-youtube-refresh-token.js` para autorizar los scopes `yt-analytics.readonly` y `youtube.force-ssl` mediante servidor HTTP local efímero y almacenar el refresh token en `.secrets/youtube-oauth.json` (protegido por `.gitignore`). En `AnalyticsDashboard.jsx` se implementó la pestaña "Camino a 4.000 h" con tarjetas animadas (horas en los últimos 365 días hacia 4.000 h, suscriptores hacia 1.000, horas que caducan en 30 días, ritmo medio diario de 28 días y fecha estimada para alcanzar la meta, ranking de vídeos por horas y desglose de fuentes de tráfico destacando visualizaciones embebidas), incorporando el aviso oficial obligatorio sobre auditoría de YouTube Studio y estado informativo de configuración pendiente.
 
 ---
 
