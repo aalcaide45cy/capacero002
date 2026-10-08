@@ -450,11 +450,67 @@ export const trackVideoOpen = (video) => {
     });
 
     if (window.gtag) {
-        window.gtag('event', 'video_start', {
+        window.gtag('event', 'video_open', {
             video_title: video.title,
             video_id: video.youtubeId
         });
     }
+};
+
+// 2b. Telemetría IFrame API de Reproducción de Vídeo (Fase 05)
+export const trackVideoStart = (video) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General'
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_start',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_start', payload);
+    }
+};
+
+export const trackVideoProgress = (video, percent) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General',
+        video_percent: percent
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_progress',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_progress', payload);
+    }
+};
+
+export const trackVideoComplete = (video) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General'
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_complete',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_complete', payload);
+    }
+    sendToSheetsIfEnabled({
+        completedVideo: video.title || ''
+    });
 };
 
 // 3. Suscripción al Canal (¡CON ATRIBUCIÓN EXACTA!)

@@ -76,13 +76,16 @@ Se generó el catálogo de 33 slugs estables e inmutables en `src/data/slugs.jso
 ---
 
 ## FASE 05 — Reproductor, horas de visualización y sesiones
-- [ ] 1. Retirar `autoplay=1` y aplicar patrón facade (miniatura con botón de play grande animado). Mantener `rel=0`, `playsinline=1`, `enablejsapi=1`, `origin=https://www.capacero3d.com`.
-- [ ] 2. Dimensiones mínimas del reproductor: 480x270 px en escritorio, ancho completo en móvil.
-- [ ] 3. Playlists automáticas en `scripts/update-videos.js` con YouTube Data API.
-- [ ] 4. Botón "Ver la lista completa en YouTube" en modal y página de vídeo.
-- [ ] 5. Eventos GA4 y telemetría de visualización (`video_start`, `video_progress` a 25/50/75%, `video_complete`).
-- [ ] 6. Sugerencia del siguiente capítulo con cuenta atrás cancelable de 8s.
-- [ ] 7. Protocolo de fin de fase 05.
+- [x] 1. Retirar `autoplay=1` y aplicar patrón facade (miniatura con botón de play grande animado). Mantener `rel=0`, `playsinline=1`, `enablejsapi=1`, `origin=https://www.capacero3d.com`.
+- [x] 2. Dimensiones mínimas del reproductor: 480x270 px en escritorio, ancho completo en móvil.
+- [x] 3. Playlists automáticas en `scripts/update-videos.js` con YouTube Data API.
+- [x] 4. Botón "Ver la lista completa en YouTube" en modal y página de vídeo.
+- [x] 5. Eventos GA4 y telemetría de visualización (`video_start`, `video_progress` a 25/50/75%, `video_complete`).
+- [x] 6. Sugerencia del siguiente capítulo con cuenta atrás cancelable de 8s.
+- [x] 7. Protocolo de fin de fase 05.
+
+*Notas Fase 05:*
+Se eliminó `autoplay=1` e implementó el patrón facade (miniatura con botón de reproducción interactivo y animado) tanto en el modal como en la página individual de vídeo, garantizando dimensiones mínimas de 480×270 px en escritorio y ancho completo en dispositivos móviles. Se integró la IFrame API oficial de YouTube con eventos de telemetría GA4 y Google Sheets (`video_start`, `video_progress` al 25%, 50% y 75%, y `video_complete`). Se configuró la cuenta atrás cancelable de 8 segundos hacia el siguiente capítulo al terminar la reproducción, y se añadió la detección y enlace a playlists completas de YouTube cuando existe `playlistId`.
 
 ---
 

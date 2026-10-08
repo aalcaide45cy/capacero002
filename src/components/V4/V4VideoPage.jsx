@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ArrowLeft, Download, Lightbulb, ExternalLink, Heart, Eye, MessageCircle, 
-  Play, ChevronRight, Sparkles, BookOpen, Clock, Calendar, AlertCircle
+  Play, ChevronRight, Sparkles, BookOpen, Clock, Calendar, AlertCircle, Youtube, X
 } from 'lucide-react';
 import { getInitialV4Videos, loadV4Videos } from '../../utils/loadV4Videos';
+import { trackVideoStart, trackVideoProgress, trackVideoComplete, trackSocialClick } from '../../utils/analytics';
 import V4CircuitBackground from './V4CircuitBackground';
 import V4Footer from './V4Footer';
 
@@ -28,6 +29,13 @@ function formatPublishedDate(dateStr) {
 export default function V4VideoPage() {
   const [videos, setVideos] = useState(() => getInitialV4Videos());
   const [isPlaying, setIsPlaying] = useState(false);
+  const [countdownSeconds, setCountdownSeconds] = useState(null);
+
+  const countdownTimerRef = useRef(null);
+  const progressMilestonesRef = useRef(new Set());
+  const hasStartedRef = useRef(false);
+  const ytPlayerRef = useRef(null);
+  const playbackTrackerRef = useRef(null);
 
   // Extraer slug de la URL actual: /video/<slug>
   const pathSlug = typeof window !== 'undefined'
@@ -81,6 +89,110 @@ export default function V4VideoPage() {
     }
     return null;
   }, [video, videos]);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setCountdownSeconds(null);
+    progressMilestonesRef.current.clear();
+    hasStartedRef.current = false;
+  }, [video?.youtubeId]);
+
+  // Temporizador de cuenta atrás de 8s para siguiente lección
+  useEffect(() => {
+    if (countdownSeconds === null) return;
+    if (countdownSeconds === 0) {
+      setCountdownSeconds(null);
+      if (nextVideo) {
+        window.location.href = `/video/${nextVideo.slug || nextVideo.id}`;
+      }
+      return;
+    }
+    countdownTimerRef.current = setTimeout(() => {
+      setCountdownSeconds(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => {
+      if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
+    };
+  }, [countdownSeconds, nextVideo]);
+
+  const handleCancelCountdown = () => {
+    setCountdownSeconds(null);
+    if (countdownTimerRef.current) clearTimeout(countdownTimerRef.current);
+  };
+
+  const playerId = `yt-iframe-page-${video?.youtubeId}`;
+
+  // IFrame API de YouTube y Telemetría GA4 (Fase 05)
+  useEffect(() => {
+    if (!isPlaying || !video?.youtubeId) return;
+
+    function setupYT() {
+      if (window.YT && window.YT.Player && document.getElementById(playerId)) {
+        try {
+          ytPlayerRef.current = new window.YT.Player(playerId, {
+            events: {
+              onReady: () => {
+                if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+                playbackTrackerRef.current = setInterval(() => {
+                  if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+                    try {
+                      const cur = ytPlayerRef.current.getCurrentTime();
+                      const dur = ytPlayerRef.current.getDuration();
+                      if (dur && cur && dur > 0) {
+                        const percent = Math.floor((cur / dur) * 100);
+                        [25, 50, 75].forEach(milestone => {
+                          if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                            progressMilestonesRef.current.add(milestone);
+                            trackVideoProgress(video, milestone);
+                          }
+                        });
+                      }
+                    } catch (e) {}
+                  }
+                }, 1000);
+              },
+              onStateChange: (e) => {
+                if (e && e.data === 1) { // PLAYING
+                  if (!hasStartedRef.current) {
+                    hasStartedRef.current = true;
+                    trackVideoStart(video);
+                  }
+                } else if (e && e.data === 0) { // ENDED
+                  trackVideoComplete(video);
+                  if (nextVideo) {
+                    setCountdownSeconds(8);
+                  }
+                }
+              }
+            }
+          });
+        } catch (e) {}
+      }
+    }
+
+    if (window.YT && window.YT.Player) {
+      setupYT();
+    } else {
+      if (!document.getElementById('youtube-iframe-api-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+      const prevCb = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCb === 'function') prevCb();
+        setupYT();
+      };
+    }
+
+    return () => {
+      if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+        try { ytPlayerRef.current.destroy(); } catch (e) {}
+      }
+    };
+  }, [isPlaying, video?.youtubeId, nextVideo]);
 
   // --- RENDER 404 (SLUG NO ENCONTRADO) ---
   if (!video) {
@@ -160,9 +272,9 @@ export default function V4VideoPage() {
           <span className="text-cyan-400 font-semibold truncate max-w-xs">{video.title}</span>
         </nav>
 
-        {/* Reproductor de vídeo con Facade */}
+        {/* Reproductor de vídeo con Facade (mínimo 480x270 en escritorio, ancho completo en móvil) */}
         <section className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative">
-          <div className="relative aspect-video w-full bg-black min-h-[270px]">
+          <div className="relative aspect-video w-full md:min-w-[480px] md:min-h-[270px] bg-black min-h-[270px]">
             {!isPlaying ? (
               <div 
                 onClick={() => setIsPlaying(true)}
@@ -171,22 +283,54 @@ export default function V4VideoPage() {
                 <img
                   src={video.thumbnail}
                   alt={video.title}
+                  width="480"
+                  height="270"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-2xl shadow-cyan-500/50 group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center shadow-2xl shadow-cyan-500/50 group-hover:scale-110 active:scale-95 transition-transform">
                     <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
                   </div>
                 </div>
               </div>
             ) : (
               <iframe
+                id={playerId}
                 src={embedUrl}
                 title={video.title}
                 className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+            )}
+
+            {/* Cuenta atrás cancelable de 8s al terminar el vídeo */}
+            {countdownSeconds !== null && nextVideo && (
+              <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-30 animate-fade-in">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-3">
+                  <span className="text-3xl sm:text-4xl font-black text-cyan-400 font-mono">{countdownSeconds}</span>
+                </div>
+                <p className="text-sm font-bold text-white mb-1">Reproduciendo siguiente lección en {countdownSeconds}s...</p>
+                <p className="text-xs text-zinc-300 font-medium max-w-md line-clamp-1 mb-4">
+                  Siguiente: <strong className="text-cyan-300">{nextVideo.title}</strong>
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <a
+                    href={`/video/${nextVideo.slug || nextVideo.id}`}
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-lg transition-all active:scale-95"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span>Saltar Ahora</span>
+                  </a>
+                  <button
+                    onClick={handleCancelCountdown}
+                    className="flex items-center gap-1 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700 px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cancelar</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </section>
@@ -213,19 +357,49 @@ export default function V4VideoPage() {
             {video.title}
           </h1>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-zinc-400 pt-2 border-t border-zinc-900">
-            <span className="flex items-center gap-1.5">
-              <Eye className="w-4 h-4 text-zinc-500" />
-              <span>{formatCounter(video.views)} visualizaciones</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Heart className="w-4 h-4 text-rose-500" />
-              <span>{formatCounter(video.likes)} me gusta</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <MessageCircle className="w-4 h-4 text-blue-400" />
-              <span>{formatCounter(video.comments)} comentarios</span>
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-medium text-zinc-400 pt-2 border-t border-zinc-900">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5">
+                <Eye className="w-4 h-4 text-zinc-500" />
+                <span>{formatCounter(video.views)} visualizaciones</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Heart className="w-4 h-4 text-rose-500" />
+                <span>{formatCounter(video.likes)} me gusta</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-blue-400" />
+                <span>{formatCounter(video.comments)} comentarios</span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <a
+                href={video.youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackSocialClick && trackSocialClick('YouTube Button (Page)', video.title)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 border border-red-500/50 hover:border-red-400 text-red-200 hover:text-white text-xs font-bold transition-all shadow-md"
+              >
+                <Youtube className="w-4 h-4 text-red-400" />
+                <span>Ver en YouTube</span>
+                <ExternalLink className="w-3 h-3 opacity-70" />
+              </a>
+
+              {video.playlistId && (
+                <a
+                  href={`https://www.youtube.com/watch?v=${video.youtubeId}&list=${video.playlistId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackSocialClick && trackSocialClick('YouTube Playlist Button (Page)', video.title)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 hover:text-white text-xs font-bold transition-all shadow-md"
+                >
+                  <Youtube className="w-4 h-4 text-cyan-400" />
+                  <span>Ver la lista completa en YouTube</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              )}
+            </div>
           </div>
         </section>
 

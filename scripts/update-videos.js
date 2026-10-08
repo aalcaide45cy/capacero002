@@ -121,6 +121,82 @@ function extractValidDownloads(row) {
     .filter(Boolean);
 }
 
+async function fetchChannelPlaylists(apiKey) {
+  if (!apiKey) return new Map();
+  try {
+    console.log('📋 Buscando playlists del canal con YouTube API...');
+    const chanRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=CapaCero0&key=${apiKey}`);
+    if (!chanRes.ok) {
+      console.warn(`⚠️ Error al consultar canal en YouTube API: HTTP ${chanRes.status}`);
+      return new Map();
+    }
+    const chanData = await chanRes.json();
+    const channelId = chanData.items?.[0]?.id;
+    if (!channelId) {
+      console.warn('⚠️ No se encontró el canal para el handle CapaCero0');
+      return new Map();
+    }
+
+    let playlists = [];
+    let pageToken = '';
+    do {
+      const plUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&channelId=${channelId}&maxResults=50${pageToken ? `&pageToken=${pageToken}` : ''}&key=${apiKey}`;
+      const plRes = await fetch(plUrl);
+      if (!plRes.ok) break;
+      const plData = await plRes.json();
+      if (plData.items) {
+        playlists.push(...plData.items);
+      }
+      pageToken = plData.nextPageToken || '';
+    } while (pageToken);
+
+    console.log(`📑 Encontradas ${playlists.length} playlists públicas.`);
+
+    const videoPlaylistsMap = new Map();
+    for (const pl of playlists) {
+      const playlistId = pl.id;
+      const playlistTitle = pl.snippet?.title || '';
+      const itemCount = pl.contentDetails?.itemCount || 0;
+
+      let itemPageToken = '';
+      do {
+        const itemUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${playlistId}&maxResults=50${itemPageToken ? `&pageToken=${itemPageToken}` : ''}&key=${apiKey}`;
+        const itemRes = await fetch(itemUrl);
+        if (!itemRes.ok) break;
+        const itemData = await itemRes.json();
+        if (itemData.items) {
+          for (const item of itemData.items) {
+            const vid = item.contentDetails?.videoId;
+            if (vid) {
+              if (!videoPlaylistsMap.has(vid)) {
+                videoPlaylistsMap.set(vid, []);
+              }
+              videoPlaylistsMap.get(vid).push({
+                playlistId,
+                playlistTitle,
+                itemCount
+              });
+            }
+          }
+        }
+        itemPageToken = itemData.nextPageToken || '';
+      } while (itemPageToken);
+    }
+
+    const bestPlaylistMap = new Map();
+    for (const [vid, plList] of videoPlaylistsMap.entries()) {
+      plList.sort((a, b) => b.itemCount - a.itemCount);
+      bestPlaylistMap.set(vid, plList[0]);
+    }
+
+    console.log(`✅ Asignadas playlists a ${bestPlaylistMap.size} vídeos.`);
+    return bestPlaylistMap;
+  } catch (err) {
+    console.warn('⚠️ Error obteniendo playlists de YouTube:', err.message);
+    return new Map();
+  }
+}
+
 async function fetchLiveYouTubeStats(videoId) {
   if (!videoId) return null;
   try {
@@ -210,7 +286,7 @@ async function fetchLiveYouTubeStats(videoId) {
   }
 }
 
-function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null) {
+function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null, playlistInfo = null) {
   if (!raw || (typeof raw !== 'object' && !raw)) return null;
 
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
@@ -304,7 +380,9 @@ function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null) {
     comments,
     hasDownloads: downloads.length > 0 || Boolean(existing?.downloads?.length),
     hasTip: Boolean(consejoClave || existing?.consejoClave),
-    hasDescription: Boolean(description || existing?.description)
+    hasDescription: Boolean(description || existing?.description),
+    playlistId: playlistInfo?.playlistId || existing?.playlistId || null,
+    playlistTitle: playlistInfo?.playlistTitle || existing?.playlistTitle || null
   };
 }
 
@@ -353,6 +431,9 @@ async function main() {
 
         console.log(`📊 Procesando ${rows.length} filas de la hoja y obteniendo estadísticas en tiempo real...`);
 
+        const ytApiKey = process.env.YOUTUBE_API_KEY || '';
+        const playlistsMap = await fetchChannelPlaylists(ytApiKey);
+
         // Mapa para deduplicar por YouTube ID (conservando el contenido más completo)
         const videosMap = new Map();
 
@@ -369,7 +450,8 @@ async function main() {
           }
 
           const existing = existingVideosMap[videoId] || null;
-          const normalized = normalizeVideoRow(row, idx, liveStats, existing);
+          const playlistInfo = playlistsMap.get(videoId) || null;
+          const normalized = normalizeVideoRow(row, idx, liveStats, existing, playlistInfo);
           if (!normalized) continue;
 
           if (!videosMap.has(videoId)) {
