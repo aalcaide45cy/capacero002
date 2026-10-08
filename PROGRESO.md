@@ -140,13 +140,16 @@ Se documentó la arquitectura completa de Web Push en `docs/notificaciones.md`. 
 ---
 
 ## FASE 10 — Contenido, categorías y documentación
-- [ ] 1. Crear `src/data/category-map.json` para normalizar categoría "Fusion 360".
-- [ ] 2. Registrar vídeos que mencionan newsletter para reporte en informe final.
-- [ ] 3. Registrar vídeos con descargas prometidas sin enlace en informe final.
-- [ ] 4. Reescribir `README.md` con la arquitectura actual.
-- [ ] 5. Mover `INFORME_TECNICO.md` a `docs/historico/INFORME_TECNICO_v2.md`.
-- [ ] 6. Detectar archivos y dependencias sin uso para reporte final.
-- [ ] 7. Protocolo de fin de fase 10.
+- [x] 1. Crear `src/data/category-map.json` para normalizar categoría "Fusion 360".
+- [x] 2. Registrar vídeos que mencionan newsletter para reporte en informe final.
+- [x] 3. Registrar vídeos con descargas prometidas sin enlace en informe final.
+- [x] 4. Reescribir `README.md` con la arquitectura actual.
+- [x] 5. Mover `INFORME_TECNICO.md` a `docs/historico/INFORME_TECNICO_v2.md`.
+- [x] 6. Detectar archivos y dependencias sin uso para reporte final.
+- [x] 7. Protocolo de fin de fase 10.
+
+*Notas Fase 10:*
+Se implementó `src/data/category-map.json` para mapear de manera declarativa vídeos con "Fusion 360" en el título a la categoría "Fusion 360" sin modificar la hoja de cálculo de Google Sheets (6 tutoriales normalizados automáticamente), permitiendo desactivar la regla vaciando el archivo. Se auditó la videoteca identificando el vídeo `xf4K9wCJzdU` con mención a newsletter y verificando que todos los vídeos con mención a descargas contienen sus recursos activos en `downloads`. Se reescribió `README.md` documentando la arquitectura actual (V4Hub, SSG, scripts, serverless functions, variables de entorno y guía paso a paso para publicar vídeos) y se archivó `INFORME_TECNICO.md` en `docs/historico/INFORME_TECNICO_v2.md` con aviso de obsolescencia. Se auditaron dependencias huérfanas y ficheros residuales (`rendimiento web.pdf`, `vite.svg`, librerías editoriales) para su inclusión en el informe final.
 
 ---
 

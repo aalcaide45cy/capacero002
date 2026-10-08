@@ -1,3 +1,9 @@
+# ⚠️ DOCUMENTO HISTÓRICO OBSOLETO — INFORME TÉCNICO V2
+
+> **NOTA DE OBSOLESCENCIA:** Este documento describe una arquitectura previa (v2) del proyecto, orientada a un Hub de Afiliados de productos y Academia de Cursos que ya no se utiliza. La arquitectura en producción corresponde a la Videoteca V4 (Capa Cero 3D) con generación estática de páginas por vídeo, integración con Google Sheets como CMS y sincronización automatizada con la API de YouTube. Para la arquitectura actual, consulta el `README.md` y `docs/notificaciones.md`.
+
+---
+
 # 🤖 INFORME MAESTRO PARA REPLICA DE IA (Paso a Paso)
 
 Este documento es un "Mega Prompt" o Manual de Instrucciones diseñado específicamente para alimentar a otra Inteligencia Artificial. Al entregar este documento a otra IA, será capaz de reconstruir la aplicación **Capa Cero Web v2** exactamente igual sin alucinar y respetando los límites de tokens al seguir un desarrollo por Fases.
@@ -107,4 +113,4 @@ El proyecto NO tiene una base de datos tradicional. Se alimenta de archivos JSON
 2. **scripts/update-products.js** (El CMS No-Code): Usando NODE.JS nativo. Hace fetch al archivo XLSX expuesto públicamente de Google Sheets. Usa la librería `xlsx` para leerlo, y por fila descarga las imágenes originarias al disco local, comprimiéndolas con `sharp` y convirtiéndolas a `.webp`. Tras tabular todo, genera el archivo `src/data/products.json`. Inyecta adicionalmente SEO estático (script LD+JSON) modificando físicamente con `fs` el `index.html` en las carpetas. Escribe automáticamente también el `sitemap.xml`. Debe tener arquitectura limpia de Node.
 
 ---
-*(Fin del informe, espera a que te confirme la IA para iniciar la Fase 1)*
+*(Fin del informe histórico)*

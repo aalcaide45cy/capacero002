@@ -10,6 +10,23 @@ const DATA_DIR = path.resolve(__dirname, '../src/data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
 const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
 const NOTIFIED_FILE = path.join(DATA_DIR, 'notified.json');
+const CATEGORY_MAP_FILE = path.join(DATA_DIR, 'category-map.json');
+
+let _cachedCategoryMap = undefined;
+function getCategoryMap() {
+  if (_cachedCategoryMap !== undefined) return _cachedCategoryMap;
+  if (fs.existsSync(CATEGORY_MAP_FILE)) {
+    try {
+      const raw = fs.readFileSync(CATEGORY_MAP_FILE, 'utf-8').trim();
+      _cachedCategoryMap = raw ? JSON.parse(raw) : null;
+      return _cachedCategoryMap;
+    } catch (e) {
+      console.warn('Advertencia al leer category-map.json:', e.message);
+    }
+  }
+  _cachedCategoryMap = null;
+  return null;
+}
 
 function getNotifiedIds() {
   if (fs.existsSync(NOTIFIED_FILE)) {
@@ -413,7 +430,16 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   const videoId = extractYouTubeId(rawUrl);
   if (!videoId) return null;
   
-  const category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
+  let category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
+  const catMap = getCategoryMap();
+  if (catMap && catMap.titleContains) {
+    for (const [matchSubstr, mappedCat] of Object.entries(catMap.titleContains)) {
+      if (title.toLowerCase().includes(matchSubstr.toLowerCase())) {
+        category = mappedCat;
+        break;
+      }
+    }
+  }
   const rawDesc = String(raw.Descripcion || raw.descripcion || raw.Description || '').trim();
   const description = (rawDesc && !rawDesc.toLowerCase().includes('vacio') && !rawDesc.toLowerCase().includes('vacío')) ? rawDesc : '';
 
