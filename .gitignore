@@ -26,3 +26,6 @@ dist-ssr
 # Secrets and local configurations
 .secrets/
 .vercel
+
+.vercel
+.env*

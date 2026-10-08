@@ -1,0 +1,162 @@
+# PROGRESO DEL PLAN DE MEJORA — capacero3d.com
+
+Estado general: En ejecución en rama `mejoras-plan`
+
+---
+
+## FASE 01 — Preparación
+- [x] 1. `git checkout main && git pull origin main`
+- [x] 2. Crear y subir la rama de trabajo: `mejoras-plan`
+- [x] 3. Añadir `.secrets/` a `.gitignore` y hacer commit antes de crear la carpeta. Crear `.secrets/`.
+- [x] 4. `npm install` y `npm run build`. Build inicial limpia y exitosa en 4.19s sin errores.
+- [x] 5. Crear `PROGRESO.md` con una casilla por cada tarea numerada de los archivos 01 a 12.
+- [x] 6. Comprobar herramientas:
+  - `gh auth status`: Autenticado como `aalcaide45cy`.
+  - `npx vercel whoami`: Autenticado como `aalcaide45cy-9755`. Proyecto enlazado a `capacero002b` (`https://www.capacero3d.com`).
+  - `clasp`: Autenticado como `aalcaide45cy@gmail.com`.
+  - Navegador interactivo de agente: No disponible directamente en entorno headless; se usan CLIs y scripts.
+- [x] 7. Medir la línea base: Lighthouse móvil de `https://www.capacero3d.com/`:
+  - Rendimiento (Performance): **76**
+  - Accesibilidad (Accessibility): **100**
+  - Buenas prácticas (Best Practices): **100**
+  - SEO: **100**
+- [x] 8. Protocolo de fin de fase 01 y continuar con `02_SEGURIDAD.md`.
+
+*Notas Fase 01:*
+Herramientas instaladas (`gh` v2.102.0) y autenticadas con éxito (`gh` como `aalcaide45cy`, `vercel` como `aalcaide45cy-9755`, `clasp` como `aalcaide45cy@gmail.com`). Proyecto Vercel enlazado a `capacero002b` (`https://www.capacero3d.com`). Rama `mejoras-plan` creada. Línea base Lighthouse móvil registrada (76 / 100 / 100 / 100).
+
+---
+
+## FASE 02 — Seguridad
+- [ ] 1. Generar nuevo par VAPID (`npx web-push generate-vapid-keys --json > .secrets/vapid.json`).
+- [ ] 2. `Codigo.txt`: quitar valor de `VAPID_PRIVATE_KEY` y leer con `PropertiesService.getScriptProperties().getProperty('VAPID_PRIVATE_KEY')`.
+- [ ] 3. `src/utils/pushManager.js`: poner nueva clave pública y re-suscripción silenciosa si cambia.
+- [ ] 4. Generar secretos aleatorios (32 bytes, base64url) en `.secrets/stats.json` (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`).
+- [ ] 5. Crear `api/_lib/auth.js` con utilidades crypto (comparación en tiempo constante, firma/verificación HMAC-SHA256 con expiración).
+- [ ] 6. Crear `api/auth-stats.js` con rate limiting (10 intentos / 15 min).
+- [ ] 7. Crear `api/stats-proxy.js` reenviando al Apps Script con `token=STATS_API_TOKEN`.
+- [ ] 8. `AnalyticsDashboard.jsx`: eliminar `VAULT_PASSWORD`, usar `/api/auth-stats` y `/api/stats-proxy` con tarjeta "Panel pendiente de configuración".
+- [ ] 9. `Codigo.txt`: proteger acciones privadas (`push_stats`, etc.) con token `STATS_API_TOKEN`. Mantener públicas las de telemetría y PWA.
+- [ ] 10. Crear `google-sheet-scripts/README.md`.
+- [ ] 11. Comprobar: `git grep -n "PRIVATE_KEY = \""` y `git grep -n "VAULT_PASSWORD"` no devuelven nada.
+- [ ] 12. Protocolo de fin de fase 02.
+
+---
+
+## FASE 03 — Sitemap, HTML estático y automatización
+- [ ] 1. Reescribir generación de sitemap (sin URLs con `#`, `lastmod` real por URL, número de vídeos calculado dinámicamente).
+- [ ] 2. Generar bloque HTML estático en `index.html` con todos los vídeos publicados y títulos exactos.
+- [ ] 3. Añadir script a `prebuild` en `package.json` tras `update-data`.
+- [ ] 4. En el workflow: añadir `public/sitemap.xml` e `index.html` al `git add`.
+- [ ] 5. Idempotencia asegurada (sin commits vacíos del bot).
+- [ ] 6. Protocolo de fin de fase 03.
+
+---
+
+## FASE 04 — Una página indexable por vídeo
+- [ ] 1. Slugs estables (`src/data/slugs.json`) generados por `update-videos.js`. Inmutables una vez asignados.
+- [ ] 2. Ruta `/video/:slug` en `App.jsx` con `V4VideoPage.jsx` y 404 estilizado.
+- [ ] 3. Sincronización modal-URL con `history.pushState` y soporte del botón Atrás.
+- [ ] 4. Prerenderizado `scripts/prerender-videos.js` (`postbuild`) con `VideoObject` y `BreadcrumbList`.
+- [ ] 5. Regla en `vercel.json` para servir `/video/:slug/index.html` si aplica.
+- [ ] 6. Sitemap con bloque `<video:video>` para cada `/video/<slug>`.
+- [ ] 7. Tarjetas y Hero usan `<a href="/video/<slug>">` interceptados en SPA.
+- [ ] 8. Comprobar en vista previa de Vercel con `curl` que el HTML incluye metadatos y JSON-LD sin JS.
+- [ ] 9. Protocolo de fin de fase 04.
+
+---
+
+## FASE 05 — Reproductor, horas de visualización y sesiones
+- [ ] 1. Retirar `autoplay=1` y aplicar patrón facade (miniatura con botón de play grande animado). Mantener `rel=0`, `playsinline=1`, `enablejsapi=1`, `origin=https://www.capacero3d.com`.
+- [ ] 2. Dimensiones mínimas del reproductor: 480x270 px en escritorio, ancho completo en móvil.
+- [ ] 3. Playlists automáticas en `scripts/update-videos.js` con YouTube Data API.
+- [ ] 4. Botón "Ver la lista completa en YouTube" en modal y página de vídeo.
+- [ ] 5. Eventos GA4 y telemetría de visualización (`video_start`, `video_progress` a 25/50/75%, `video_complete`).
+- [ ] 6. Sugerencia del siguiente capítulo con cuenta atrás cancelable de 8s.
+- [ ] 7. Protocolo de fin de fase 05.
+
+---
+
+## FASE 06 — Buscador como generador de ideas de vídeo
+- [ ] 1. Extraer lógica de filtrado compartida, registrar `resultsCount` real con debounce de 1.2s.
+- [ ] 2. Evento GA4 `search_no_results`.
+- [ ] 3. Buscador tolerante (tildes, mayúsculas, equivalencias como bambu studio / fusion 360, descripción y consejos clave).
+- [ ] 4. Pestaña "Ideas de vídeo" en `/estadisticas` con ranking de búsquedas y acción `mark_idea_done`.
+- [ ] 5. Protocolo de fin de fase 06.
+
+---
+
+## FASE 07 — Estadísticas con la API oficial de YouTube
+- [ ] 1. Obtener estadísticas con `videos.list` de YouTube Data API v3 con fallback a scraper/existente.
+- [ ] 2. Guardar `duration` en `videos_v4.json` y mostrarla en tarjetas (`12:34`).
+- [ ] 3. Detectar estrenos mediante `liveStreamingDetails` / `snippet.liveBroadcastContent`.
+- [ ] 4. Pasar `YOUTUBE_API_KEY` desde secrets en el workflow.
+- [ ] 5. Protocolo de fin de fase 07.
+
+---
+
+## FASE 08 — Panel "Camino a 4.000 horas"
+- [ ] 1. Crear `api/youtube-analytics.js` con OAuth 2.0.
+- [ ] 2. Crear `scripts/get-youtube-refresh-token.js`.
+- [ ] 3. Pestaña "Camino a 4.000 h" en `/estadisticas` con tarjetas animadas.
+- [ ] 4. Aviso fijo sobre discrepancia de horas válidas respecto a YouTube Studio.
+- [ ] 5. Tarjeta "pendiente de configuración" en caso de faltar variables.
+- [ ] 6. Protocolo de fin de fase 08.
+
+---
+
+## FASE 09 — Avisos automáticos de vídeo nuevo
+- [ ] 1. Documentar sistema push en `docs/notificaciones.md`.
+- [ ] 2. `scripts/update-videos.js`: detectar vídeos nuevos no programados y llamar `notify_new_video` en Apps Script (`src/data/notified.json`).
+- [ ] 3. Fallback tolerante si Apps Script no reconoce la acción.
+- [ ] 4. Botón discreto y animado para activar avisos en escritorio y Android sin instalar PWA.
+- [ ] 5. Métricas de suscriptores y clics en panel.
+- [ ] 6. Protocolo de fin de fase 09.
+
+---
+
+## FASE 10 — Contenido, categorías y documentación
+- [ ] 1. Crear `src/data/category-map.json` para normalizar categoría "Fusion 360".
+- [ ] 2. Registrar vídeos que mencionan newsletter para reporte en informe final.
+- [ ] 3. Registrar vídeos con descargas prometidas sin enlace en informe final.
+- [ ] 4. Reescribir `README.md` con la arquitectura actual.
+- [ ] 5. Mover `INFORME_TECNICO.md` a `docs/historico/INFORME_TECNICO_v2.md`.
+- [ ] 6. Detectar archivos y dependencias sin uso para reporte final.
+- [ ] 7. Protocolo de fin de fase 10.
+
+---
+
+## FASE 11 — Configuración externa
+- [ ] 1. Clonar Apps Script en `.secrets/appsscript/`.
+- [ ] 2. Comparar e integrar cambios con `Codigo.txt`.
+- [ ] 3. Configurar Propiedades del script en Apps Script (`VAPID_PRIVATE_KEY`, `STATS_API_TOKEN`).
+- [ ] 4. Desplegar versión en Apps Script manteniendo ID de despliegue.
+- [ ] 5. Probar endpoints de Apps Script con `curl`.
+- [ ] 6. Habilitar YouTube Data API v3 y YouTube Analytics API en Google Cloud.
+- [ ] 7. Crear YouTube API Key y guardar en `.secrets/youtube.json`.
+- [ ] 8. Crear credenciales OAuth y obtener refresh token.
+- [ ] 9. Configurar secreto `YOUTUBE_API_KEY` en GitHub (`gh secret set`).
+- [ ] 10. Configurar secreto `STATS_API_TOKEN` en GitHub (`gh secret set`).
+- [ ] 11. Configurar variables de entorno en Vercel (`npx vercel env add`).
+- [ ] 12. Redesplegar vista previa y verificar funcionamiento.
+- [ ] 13. Protocolo de fin de fase 11.
+
+---
+
+## FASE 12 — Publicación, verificación y entrega
+- [ ] 1. `git fetch origin && git rebase origin/main` y regenerar con `npm run build`.
+- [ ] 2. `npm run build` sin errores. Push de rama.
+- [ ] 3. Crear PR y merge squash a `main` con `gh`.
+- [ ] 4. Esperar despliegue de producción en Vercel.
+- [ ] 5. Probar ejecución del workflow en GitHub Actions (`gh workflow run`).
+- [ ] 6. Verificar producción (portada, vídeo, modal, buscador, panel, etc.).
+- [ ] 7. Comprobar prerender con `curl https://www.capacero3d.com/video/<slug>`.
+- [ ] 8. Medir Lighthouse móvil final y comparar con línea base.
+- [ ] 9. Validar JSON-LD de página de vídeo.
+- [ ] 10. Enviar sitemap a Google Search Console.
+- [ ] 11. Solicitar indexación de 5 páginas top en Google Search Console.
+- [ ] 12. Backup de descripciones de YouTube en `docs/backups/descripciones-<fecha>.json`.
+- [ ] 13. Añadir enlace a la web en descripciones de YouTube vía API.
+- [ ] 14. Fallback de descripciones en informe final si API no disponible.
+- [ ] 15. Redactar `INFORME_FINAL.md`.
+- [ ] 16. Commit y entrega final.
