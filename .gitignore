@@ -26,6 +26,5 @@ dist-ssr
 # Secrets and local configurations
 .secrets/
 .vercel
-
-.vercel
+.clasp.json
 .env*

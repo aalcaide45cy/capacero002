@@ -21,7 +21,7 @@
 | **08** | Panel "Camino a 4.000 horas" | **COMPLETADA** | Desarrollo del endpoint serverless `api/youtube-analytics.js` con soporte OAuth 2.0. Script interactivo `scripts/get-youtube-refresh-token.js`. Pestaña visual en el panel con barras de progreso hacia 4.000 h de visualización y 1.000 suscriptores, cálculo de ritmo diario y aviso legal de YouTube Studio. |
 | **09** | Avisos de nuevos vídeos y Push | **COMPLETADA** | Documentación de arquitectura Web Push (`docs/notificaciones.md`). Automatización en `scripts/update-videos.js` mediante `src/data/notified.json` (sembrado con los 33 vídeos iniciales). Botón discreto y animado `V4NotificationBell` en la cabecera para activar notificaciones en PC y Android sin forzar PWA. Renovación automática en `pushManager.js` al comparar `applicationServerKey` en la carga. |
 | **10** | Categorías y documentación | **COMPLETADA** | Regla de normalización declarativa en `src/data/category-map.json` para vídeos de "Fusion 360" sin tocar Google Sheets. Reescribir `README.md` con la arquitectura en producción. Archivar `INFORME_TECNICO.md` antiguo a `docs/historico/INFORME_TECNICO_v2.md`. Auditoría de dependencias no usadas. |
-| **11** | Configuración externa | **PARCIALMENTE COMPLETADA / PENDIENTES EXTERNOS** | **Hecho:** Variables configuradas en Vercel (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`, `VAPID_PUBLIC_KEY`, `SHEETS_DB_URL`) y en GitHub Secrets (`STATS_API_TOKEN`). Verificación real de endpoints de autenticación y proxy.<br>**Pendiente (requiere sesión interactiva en navegador de Alfonso):** 1) Guardar código y variables en Google Apps Script; 2) Crear API Key y OAuth en Google Cloud; 3) Enviar sitemap e indexación en Google Search Console. |
+| **11** | Configuración externa | **PARCIALMENTE COMPLETADA / PENDIENTES EXTERNOS** | **Hecho:** Variables configuradas en Vercel (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`, `VAPID_PUBLIC_KEY`, `SHEETS_DB_URL`) y en GitHub Secrets (`STATS_API_TOKEN`). Verificación real de endpoints de autenticación y proxy.<br>**Google Apps Script:** Completamente clonado, integrado, secretos inyectados en `PropertiesService` y desplegado con `clasp` sobre la implementación activa `@28`. Verificados todos los endpoints con respuestas 200.<br>**Pendiente (requiere sesión interactiva en navegador de Alfonso):** 1) Crear API Key y OAuth en Google Cloud; 2) Enviar sitemap e indexación en Google Search Console. |
 | **12** | Publicación y entrega | **COMPLETADA** | Fusión de `mejoras-plan` en `main` mediante PR #1 con squash. Despliegue automático de Producción en Vercel verificado en `https://www.capacero3d.com`. Ejecución exitosa del workflow de GitHub Actions pasando `STATS_API_TOKEN`. Verificación de JSON-LD y Lighthouse. Tabla de descripciones regenerada con IDs reales. |
 
 ---
@@ -69,22 +69,12 @@ Se realizaron peticiones automatizadas reales contra el entorno de producción p
 
 ## 4. Tareas Marcadas como PENDIENTES EXTERNAS: Instrucciones Paso a Paso para Alfonso
 
-### Paso A — Actualizar Google Apps Script (Web Push y Sincronización)
-1. Abre tu hoja de cálculo de Google Sheets de Capa Cero.
-2. En el menú superior, pulsa en **Extensiones > Apps Script**.
-3. En el editor de código, selecciona el archivo `Código.gs`:
-   - Copia todo el contenido de `google-sheet-scripts/Codigo.txt` de este repositorio y pégalo reemplazando el código anterior.
-4. En el panel izquierdo de Apps Script, haz clic en el icono del engranaje ⚙️ (**Configuración del proyecto**).
-5. Baja hasta la sección **Propiedades de la secuencia de comandos** y pulsa **Añadir propiedad de la secuencia de comandos**:
-   - Propiedad: `VAPID_PRIVATE_KEY`  
-     Valor: el campo `privateKey` que tienes en `.secrets/vapid.json`.
-   - Propiedad: `STATS_API_TOKEN`  
-     Valor: el campo `STATS_API_TOKEN` que tienes en `.secrets/stats.json`.
-   - Pulsa **Guardar propiedades de la secuencia de comandos**.
-6. En la esquina superior derecha, pulsa en **Implementar > Administrar implementaciones**:
-   - Selecciona la implementación activa y pulsa en el lápiz ✏️ (**Editar**).
-   - En el desplegable **Versión**, elige **Nueva versión**.
-   - Haz clic en **Implementar** (la URL `/exec` se conserva idéntica).
+### Paso A — Google Apps Script (Web Push y Sincronización) — ✅ COMPLETADO
+> **Estado:** **100% COMPLETADO Y OPERATIVO EN PRODUCCIÓN.**  
+> - El código real de Apps Script se integró con `google-sheet-scripts/Codigo.txt` (incluyendo la sincronización automática por RSS de YouTube y las reglas de contracción térmica).
+> - Se inyectaron `VAPID_PRIVATE_KEY` y `STATS_API_TOKEN` en `PropertiesService` mediante una acción temporal protegida de un solo uso.
+> - Se desplegó con `clasp` sobre la implementación activa existente (`AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg @28`), por lo que la URL `/exec` se mantuvo intacta.
+> - Se verificaron todos los endpoints en vivo (`latest_notification`, rechazo de `push_stats` sin token, y lectura de los 14 dispositivos vía proxy). **No requiere ninguna acción manual.**
 
 ---
 

@@ -2299,6 +2299,9 @@ function generarConsejoClaveContextual(title, description, category) {
     }
   }
   
+  if (texto.indexOf("contracci") !== -1 || texto.indexOf("dilataci") !== -1 || texto.indexOf("t[eé]rmic") !== -1) {
+    return "Añade una junta de dilatación en transiciones bruscas de masa para evitar líneas visibles en el acabado exterior.";
+  }
   if (texto.indexOf("logotipo") !== -1 || texto.indexOf("logo") !== -1 || texto.indexOf("trofeo") !== -1) {
     return "Aplica chaflanes anti pie de elefante en la base y exporta en formato STEP para conseguir curvas perfectas sin pixelado.";
   }
@@ -2370,7 +2373,7 @@ function generarConsejoClaveContextual(title, description, category) {
     return "Ajusta los volúmenes de purga en la matriz de color para no desperdiciar filamento en transiciones de oscuro a claro.";
   }
   
-  return "Revisa la vista previa de corte capa por capa antes de mandar a imprimir para anticipar posibles errores de adversidad.";
+  return "Revisa la vista previa de corte capa por capa antes de mandar a imprimir para anticipar posibles errores.";
 }
 
 /**
@@ -2703,35 +2706,94 @@ function obtenerCatalogoOficialCapaCero() {
 }
 
 function sincronizarVideosCapaCero() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var catalogoCanal = obtenerCatalogoOficialCapaCero();
+  var CHANNEL_ID = "UCWKLBuYTfVEDwsCFc5GyEOQ";
+  var RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CHANNEL_ID;
   
-  var existingUrls = {};
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Videos") || ss.getSheetByName("Vídeos") || ss.getActiveSheet();
+  
+  // 1. Recopilar todos los IDs de YouTube que ya existen en la hoja
+  var existingIds = {};
   var lastRow = sheet.getLastRow();
   if (lastRow > 1) {
-    var data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
+    var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
     for (var i = 0; i < data.length; i++) {
-      if (data[i][0]) {
-        existingUrls[String(data[i][0]).trim()] = true;
-      }
+      var idFromColB = extraerYouTubeId(String(data[i][1] || ""));
+      var idFromColA = extraerYouTubeId(String(data[i][0] || ""));
+      if (idFromColB) existingIds[idFromColB] = true;
+      if (idFromColA) existingIds[idFromColA] = true;
     }
   }
+  
+  // 2. Consultar el RSS oficial de YouTube
+  var xml = UrlFetchApp.fetch(RSS_URL).getContentText();
+  var document = XmlService.parse(xml);
+  var root = document.getRootElement();
+  var atom = XmlService.getNamespace("http://www.w3.org/2005/Atom");
+  var yt = XmlService.getNamespace("http://www.youtube.com/xml/schemas/2015");
+  var entries = root.getChildren("entry", atom);
   
   var totalNuevos = 0;
-  for (var k = 0; k < catalogoCanal.length; k++) {
-    var videoUrl = catalogoCanal[k][1];
-    if (!existingUrls[videoUrl]) {
-      sheet.appendRow(catalogoCanal[k]);
-      existingUrls[videoUrl] = true;
-      totalNuevos++;
-    }
+  
+  // 3. Revisar los vídeos del canal (de más antiguo a más nuevo para orden correlativo)
+  for (var k = entries.length - 1; k >= 0; k--) {
+    var entry = entries[k];
+    var videoId = entry.getChild("videoId", yt).getText();
+    var title = entry.getChild("title", atom).getText();
+    
+    // Filtro estricto de Shorts y vídeos ignorados
+    var linkElement = entry.getChild("link", atom);
+    var linkHref = linkElement ? linkElement.getAttribute("href").getValue() : "";
+    
+    if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) continue;
+    if (linkHref.indexOf("/shorts/") !== -1) continue;
+    if (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1) continue;
+    
+    // Si ya existe en la hoja, saltarlo
+    if (existingIds[videoId]) continue;
+    
+    // Obtener la información completa usando tu propio extractor de YouTube
+    var info = obtenerInfoRealYouTube(videoId);
+    if (info.isShort) continue;
+    
+    var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
+    var finalTitle = info.title || title;
+    var finalDesc = info.description || "";
+    var finalCat = info.category || "Bambu Studio";
+    var finalConsejo = info.consejoClave || "";
+    
+    var d1 = (info.descargas && info.descargas.length > 0) ? info.descargas[0] : "https://makerworld.com/en/@capa_cero";
+    var d2 = (info.descargas && info.descargas.length > 1) ? info.descargas[1] : "";
+    var d3 = (info.descargas && info.descargas.length > 2) ? info.descargas[2] : "";
+    
+    var destacado = info.isScheduledOrPrivate ? "PROGRAMADO" : "NO";
+    
+    // Añadir la fila con las 9 columnas oficiales
+    sheet.appendRow([
+      finalTitle,
+      cleanUrl,
+      finalCat,
+      finalDesc,
+      finalConsejo,
+      d1,
+      d2,
+      d3,
+      destacado
+    ]);
+    
+    existingIds[videoId] = true;
+    totalNuevos++;
   }
   
-  SpreadsheetApp.getUi().alert(
-    totalNuevos > 0 
-      ? "✅ ¡Sincronizados " + totalNuevos + " tutoriales horizontales en español!" 
-      : "ℹ️ Tu hoja ya contiene exactamente los 29 tutoriales horizontales."
-  );
+  try {
+    SpreadsheetApp.getUi().alert(
+      totalNuevos > 0 
+        ? "✅ ¡Se han encontrado y añadido " + totalNuevos + " nuevos vídeos horizontales con sus datos y descargas!" 
+        : "ℹ️ Tu hoja ya está al día. No hay vídeos horizontales nuevos en el canal."
+    );
+  } catch (eSilent) {
+    Logger.log("Ejecución automática completada. Nuevos añadidos: " + totalNuevos);
+  }
 }
 
 function limpiarYResincronizar() {
