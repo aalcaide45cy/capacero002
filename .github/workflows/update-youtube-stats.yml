@@ -27,14 +27,17 @@ jobs:
       - name: Sincronizar estadísticas en vivo de YouTube y Google Sheets
         run: node scripts/update-videos.js
 
+      - name: Regenerar Sitemap y HTML estático
+        run: node scripts/update-seo-sitemap.js
+
       - name: Verificar si hay cambios y guardar
         run: |
           git config --global user.name "Capa Cero Bot"
           git config --global user.email "bot@capacero3d.com"
-          git add src/data/videos_v4.json
+          git add src/data/videos_v4.json public/sitemap.xml index.html
           if git diff --staged --quiet; then
             echo "Sin cambios nuevos en estadísticas."
           else
-            git commit -m "Auto-sync: Actualizar estadísticas de visualizaciones, likes y comentarios de YouTube"
+            git commit -m "Auto-sync: Actualizar estadísticas de YouTube, videoteca, sitemap y HTML estático"
             git push origin main
           fi

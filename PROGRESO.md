@@ -47,12 +47,15 @@ Rotación completa de claves VAPID y erradicación de contraseñas expuestas en 
 ---
 
 ## FASE 03 — Sitemap, HTML estático y automatización
-- [ ] 1. Reescribir generación de sitemap (sin URLs con `#`, `lastmod` real por URL, número de vídeos calculado dinámicamente).
-- [ ] 2. Generar bloque HTML estático en `index.html` con todos los vídeos publicados y títulos exactos.
-- [ ] 3. Añadir script a `prebuild` en `package.json` tras `update-data`.
-- [ ] 4. En el workflow: añadir `public/sitemap.xml` e `index.html` al `git add`.
-- [ ] 5. Idempotencia asegurada (sin commits vacíos del bot).
-- [ ] 6. Protocolo de fin de fase 03.
+- [x] 1. Reescribir generación de sitemap (sin URLs con `#`, `lastmod` real por URL, número de vídeos calculado dinámicamente).
+- [x] 2. Generar bloque HTML estático en `index.html` con todos los vídeos publicados y títulos exactos.
+- [x] 3. Añadir script a `prebuild` en `package.json` tras `update-data`.
+- [x] 4. En el workflow: añadir `public/sitemap.xml` e `index.html` al `git add`.
+- [x] 5. Idempotencia asegurada (sin commits vacíos del bot).
+- [x] 6. Protocolo de fin de fase 03.
+
+*Notas Fase 03:*
+Eliminadas URLs con `#` del sitemap y establecido `lastmod` dinámico con la fecha real del último vídeo publicado. Integrados los 33 vídeos publicados en el bloque `<noscript>` y Schema.org JSON-LD de `index.html`. Automatizado en `prebuild` de `package.json` y en el workflow `.github/workflows/update-youtube-stats.yml` garantizando idempotencia en cada ejecución.
 
 ---
 
