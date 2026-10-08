@@ -154,19 +154,22 @@ Se implementó `src/data/category-map.json` para mapear de manera declarativa v�
 ---
 
 ## FASE 11 — Configuración externa
-- [ ] 1. Clonar Apps Script en `.secrets/appsscript/`.
-- [ ] 2. Comparar e integrar cambios con `Codigo.txt`.
-- [ ] 3. Configurar Propiedades del script en Apps Script (`VAPID_PRIVATE_KEY`, `STATS_API_TOKEN`).
-- [ ] 4. Desplegar versión en Apps Script manteniendo ID de despliegue.
-- [ ] 5. Probar endpoints de Apps Script con `curl`.
-- [ ] 6. Habilitar YouTube Data API v3 y YouTube Analytics API en Google Cloud.
-- [ ] 7. Crear YouTube API Key y guardar en `.secrets/youtube.json`.
-- [ ] 8. Crear credenciales OAuth y obtener refresh token.
-- [ ] 9. Configurar secreto `YOUTUBE_API_KEY` en GitHub (`gh secret set`).
-- [ ] 10. Configurar secreto `STATS_API_TOKEN` en GitHub (`gh secret set`).
-- [ ] 11. Configurar variables de entorno en Vercel (`npx vercel env add`).
-- [ ] 12. Redesplegar vista previa y verificar funcionamiento.
-- [ ] 13. Protocolo de fin de fase 11.
+- [BLOQUEADO] 1. Clonar Apps Script en `.secrets/appsscript/` (script vinculado a hoja de cálculo; requiere interacción en editor web por ausencia de agente de navegador).
+- [x] 2. Comparar e integrar cambios con `Codigo.txt`.
+- [BLOQUEADO] 3. Configurar Propiedades del script en Apps Script (`VAPID_PRIVATE_KEY`, `STATS_API_TOKEN`) (requiere sesión interactiva en script.google.com; detallado en INFORME_FINAL.md).
+- [BLOQUEADO] 4. Desplegar versión en Apps Script manteniendo ID de despliegue (requiere sesión interactiva en script.google.com; detallado en INFORME_FINAL.md).
+- [x] 5. Probar endpoints de Apps Script con `curl` (probados `latest_notification` y `push_stats`).
+- [BLOQUEADO] 6. Habilitar YouTube Data API v3 y YouTube Analytics API en Google Cloud (requiere consola de Google Cloud con 2FA del titular; detallado en INFORME_FINAL.md).
+- [BLOQUEADO] 7. Crear YouTube API Key y guardar en `.secrets/youtube.json` (requiere consola de Google Cloud; detallado en INFORME_FINAL.md).
+- [BLOQUEADO] 8. Crear credenciales OAuth y obtener refresh token (requiere pantalla de consentimiento en Google Cloud y navegador interactivo; detallado en INFORME_FINAL.md).
+- [BLOQUEADO] 9. Configurar secreto `YOUTUBE_API_KEY` en GitHub (`gh secret set`) (pendiente de creación de API Key en Google Cloud; comando exacto en INFORME_FINAL.md).
+- [x] 10. Configurar secreto `STATS_API_TOKEN` en GitHub (`gh secret set`).
+- [x] 11. Configurar variables de entorno en Vercel (`npx vercel env add` para `STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`, `VAPID_PUBLIC_KEY`, `SHEETS_DB_URL`).
+- [x] 12. Redesplegar vista previa y verificar funcionamiento (`dpl_BCLMoNwPMbMCLBZbPneLCShBYeaL` verificado en Vercel).
+- [x] 13. Protocolo de fin de fase 11.
+
+*Notas Fase 11:*
+Se configuraron exitosamente los secretos en GitHub (`STATS_API_TOKEN`) mediante GitHub CLI y las variables de entorno de producción, preview y desarrollo en Vercel (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`, `VAPID_PUBLIC_KEY` y `SHEETS_DB_URL`) mediante Vercel CLI. Se desplegó una nueva versión de vista previa en Vercel (`dpl_BCLMoNwPMbMCLBZbPneLCShBYeaL`) verificándose la respuesta 200, la ejecución de las funciones serverless (`api/auth-stats`, `api/counter`, `api/stats-proxy`, `api/youtube-analytics`) y el correcto prerenderizado HTML con marcado VideoObject. Las tareas dependientes de consolas web de Google (Apps Script y Google Cloud Console) se marcaron como BLOQUEADO conforme a las directrices debido a la ausencia de herramienta de navegador web interactivo con sesión de titular, dejándose preparadas con instrucciones paso a paso para el `INFORME_FINAL.md`.
 
 ---
 
