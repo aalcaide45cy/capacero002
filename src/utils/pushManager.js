@@ -25,6 +25,34 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 /**
+ * Compara dos Uint8Array byte a byte
+ */
+function areUint8ArraysEqual(a, b) {
+  if (!a || !b) return false;
+  if (a.byteLength !== b.byteLength) return false;
+  for (let i = 0; i < a.byteLength; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * Comprueba si la clave pública de una suscripción coincide con la clave VAPID actual
+ */
+function doesSubscriptionMatchVapid(subscription) {
+  if (!subscription || !subscription.options || !subscription.options.applicationServerKey) {
+    return false;
+  }
+  try {
+    const subKeyBytes = new Uint8Array(subscription.options.applicationServerKey);
+    const targetKeyBytes = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    return areUint8ArraysEqual(subKeyBytes, targetKeyBytes);
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Registra el Service Worker de la PWA y comprueba rotación silenciosa si ya está suscrito
  */
 export async function registerServiceWorker() {
@@ -126,15 +154,14 @@ export async function subscribeToPushNotifications() {
     await navigator.serviceWorker.ready;
 
     // 3. Obtener suscripción existente o crear una nueva VAPID
-    const savedVapidKey = localStorage.getItem(PUSH_VAPID_KEY_STORAGE);
     let subscription = await registration.pushManager.getSubscription();
 
-    // Si la suscripción existente fue creada con otra clave VAPID, renovarla
-    if (subscription && savedVapidKey && savedVapidKey !== VAPID_PUBLIC_KEY) {
+    // Si la suscripción existente no coincide con la clave VAPID actual o no se puede leer, renovarla
+    if (subscription && !doesSubscriptionMatchVapid(subscription)) {
       try {
         await subscription.unsubscribe();
       } catch (unsubErr) {
-        console.warn('Error al cancelar suscripción previa con clave antigua:', unsubErr);
+        console.warn('Error al cancelar suscripción previa no coincidente:', unsubErr);
       }
       subscription = null;
     }
@@ -245,13 +272,24 @@ export async function checkAndRotatePushSubscriptionSilent() {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
 
   try {
-    const savedKey = localStorage.getItem(PUSH_VAPID_KEY_STORAGE);
-    if (savedKey === VAPID_PUBLIC_KEY) return false;
-
     const registration = await navigator.serviceWorker.ready;
     const existingSub = await registration.pushManager.getSubscription();
-    if (existingSub) {
-      await existingSub.unsubscribe();
+
+    const isMatching = doesSubscriptionMatchVapid(existingSub);
+    const savedKey = localStorage.getItem(PUSH_VAPID_KEY_STORAGE);
+
+    // Si ya existe suscripción, coincide la clave en PushManager y está guardada, no hace falta renovar
+    if (existingSub && isMatching && savedKey === VAPID_PUBLIC_KEY) {
+      return false;
+    }
+
+    // Si existe suscripción pero la clave no coincide o no se puede leer, desuscribir antes de renovar
+    if (existingSub && !isMatching) {
+      try {
+        await existingSub.unsubscribe();
+      } catch (unsubErr) {
+        console.warn('Error al desuscribir suscripción obsoleta o con clave diferente:', unsubErr);
+      }
     }
 
     const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
@@ -309,3 +347,17 @@ export async function checkAndRotatePushSubscriptionSilent() {
   }
   return false;
 }
+
+// Comprobación automática al cargar la web si las notificaciones ya fueron concedidas
+if (typeof window !== 'undefined' && typeof Notification !== 'undefined') {
+  if (Notification.permission === 'granted') {
+    if (document.readyState === 'complete') {
+      checkAndRotatePushSubscriptionSilent().catch(() => {});
+    } else {
+      window.addEventListener('load', () => {
+        checkAndRotatePushSubscriptionSilent().catch(() => {});
+      }, { once: true });
+    }
+  }
+}
+

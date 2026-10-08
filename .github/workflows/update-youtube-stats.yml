@@ -27,6 +27,7 @@ jobs:
       - name: Sincronizar estadísticas en vivo de YouTube y Google Sheets
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          STATS_API_TOKEN: ${{ secrets.STATS_API_TOKEN }}
         run: node scripts/update-videos.js
 
       - name: Regenerar Sitemap y HTML estático
