@@ -169,7 +169,7 @@ Copia y pega la línea correspondiente al final de la descripción de cada víde
 | :--- | :--- | :--- |
 | `IFTgPS3a6v8` | Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber` |
 | `6vrTY9sMXrQ` | El Secreto para Diseñar Marcos de Fotos en Fusion 360 (Paso a Paso) | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/el-secreto-para-disenar-marcos-de-fotos-en-fusion-360-paso-a-paso` |
-| `wADs7VJXfRY` | Adiós a los Defectos de Contracción Térmica: Truco Maestro en Fusion 360 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/adios-a-las-defectos-de-contraccion-termica-truco-maestro-en-fusion` |
+| `wADs7VJXfRY` | Adiós a los Defectos de Contracción Térmica: Truco Maestro en Fusion 360 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/adios-a-los-defectos-de-contraccion-termica-truco-maestro-en-fusion` |
 | `3BtSMuvl8BQ` | Pintar Objetos 3D Nunca Fue Tan Fácil - BambuStudio #14 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/pintar-objetos-3d-nunca-fue-tan-facil-bambustudio` |
 | `mzItWgN4a5c` | Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/montaje-de-objetos-3d-lo-que-no-sabias-que-podias-hacer-en-bambustudio` |
 | `ozlbqVkcinE` | Grupos y Jerarquías en Bambu Studio - La guía completa de mallas booleanas #12 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/grupos-y-jerarquias-en-bambu-studio-la-guia-completa-de-mallas` |
@@ -200,7 +200,6 @@ Copia y pega la línea correspondiente al final de la descripción de cada víde
 | `hVCS-uyGflk` | Instalación de Bambu Studio: Guía paso a paso #1 | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/instalacion-de-bambu-studio-guia-paso-a-paso` |
 | `1ol3BaUnJ8Y` | Probando Madimaker: ¿La mejor alternativa para descargar modelos 3D? | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/probando-madimaker-la-mejor-alternativa-para-descargar-modelos-3d` |
 | `nPaTKz9Zqcs` | Adiós a las limitaciones del AMS: Imprime multicolor así | `📖 Guía escrita, capítulos y descargas: https://www.capacero3d.com/video/adios-a-las-limitaciones-del-ams-imprime-multicolor-asi` |
-
 ---
 
 ## 7. Instrucciones para Deshacer Cambios (Rollback)
