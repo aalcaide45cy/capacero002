@@ -25,6 +25,8 @@ jobs:
         run: npm install --no-audit
 
       - name: Sincronizar estadísticas en vivo de YouTube y Google Sheets
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: node scripts/update-videos.js
 
       - name: Regenerar Sitemap y HTML estático

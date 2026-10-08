@@ -102,11 +102,14 @@ Lógica de búsqueda y filtrado centralizada en `src/utils/videoFilter.js`, tole
 ---
 
 ## FASE 07 — Estadísticas con la API oficial de YouTube
-- [ ] 1. Obtener estadísticas con `videos.list` de YouTube Data API v3 con fallback a scraper/existente.
-- [ ] 2. Guardar `duration` en `videos_v4.json` y mostrarla en tarjetas (`12:34`).
-- [ ] 3. Detectar estrenos mediante `liveStreamingDetails` / `snippet.liveBroadcastContent`.
-- [ ] 4. Pasar `YOUTUBE_API_KEY` desde secrets en el workflow.
-- [ ] 5. Protocolo de fin de fase 07.
+- [x] 1. Obtener estadísticas con `videos.list` de YouTube Data API v3 con fallback a scraper/existente.
+- [x] 2. Guardar `duration` en `videos_v4.json` y mostrarla en tarjetas (`12:34`).
+- [x] 3. Detectar estrenos mediante `liveStreamingDetails` / `snippet.liveBroadcastContent`.
+- [x] 4. Pasar `YOUTUBE_API_KEY` desde secrets en el workflow.
+- [x] 5. Protocolo de fin de fase 07.
+
+*Notas Fase 07:*
+Se integró la consulta por lotes (hasta 50 IDs) con `videos.list` de YouTube Data API v3 en `scripts/update-videos.js` (`statistics,snippet,contentDetails,liveStreamingDetails`), manteniendo el scraper interno y los datos previos como capas de respaldo resiliente. Se añadió el cálculo y almacenamiento de la duración (`duration`) en formato `MM:SS` tanto desde la API oficial (ISO 8601) como desde el reproductor interno (`lengthSeconds`), visualizándose como badge distintivo en las tarjetas de vídeo (`V4VideoCard.jsx`). Los estrenos y directos se detectan prioritariamente mediante `liveStreamingDetails.scheduledStartTime` y `snippet.liveBroadcastContent`, manteniendo `SCHEDULED_VIDEOS_MAP` como soporte. Se configuró el pase de `YOUTUBE_API_KEY` en el workflow de GitHub Actions.
 
 ---
 

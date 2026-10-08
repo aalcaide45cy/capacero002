@@ -99,7 +99,15 @@ export default function V4VideoCard({ video, onSelect }) {
           </div>
         ) : (
           /* Gradient Overlay Estándar */
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+          <>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+            {video.duration && (
+              <div className="absolute bottom-2 right-2 bg-black/85 text-zinc-100 text-[10px] sm:text-xs font-bold font-mono px-1.5 py-0.5 rounded-md border border-zinc-700/60 shadow-md flex items-center gap-1 z-10">
+                <Clock className="w-3 h-3 text-cyan-400" />
+                <span>{video.duration}</span>
+              </div>
+            )}
+          </>
         )}
       </a>
 

@@ -197,6 +197,82 @@ async function fetchChannelPlaylists(apiKey) {
   }
 }
 
+function parseISO8601Duration(isoDuration) {
+  if (!isoDuration) return null;
+  const match = String(isoDuration).match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return null;
+  const days = parseInt(match[1] || 0, 10);
+  const hours = parseInt(match[2] || 0, 10) + days * 24;
+  const minutes = parseInt(match[3] || 0, 10);
+  const seconds = parseInt(match[4] || 0, 10);
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatSecondsDuration(sec) {
+  const total = parseInt(sec, 10);
+  if (isNaN(total) || total <= 0) return null;
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+async function fetchYouTubeApiStatsBatch(videoIds, apiKey) {
+  if (!apiKey || !videoIds || videoIds.length === 0) return new Map();
+  const resultMap = new Map();
+  try {
+    console.log(`📡 Consultando YouTube Data API v3 oficial para ${videoIds.length} vídeos...`);
+    const chunkSize = 50;
+    for (let i = 0; i < videoIds.length; i += chunkSize) {
+      const chunk = videoIds.slice(i, i + chunkSize);
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails,liveStreamingDetails&id=${chunk.join(',')}&key=${apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.warn(`⚠️ Error en YouTube API v3 videos.list (HTTP ${res.status})`);
+        return resultMap;
+      }
+      const data = await res.json();
+      if (Array.isArray(data.items)) {
+        for (const item of data.items) {
+          const vid = item.id;
+          const stats = item.statistics || {};
+          const snippet = item.snippet || {};
+          const content = item.contentDetails || {};
+          const live = item.liveStreamingDetails || {};
+
+          const isUpcoming = snippet.liveBroadcastContent === 'upcoming' || Boolean(live.scheduledStartTime && new Date(live.scheduledStartTime).getTime() > Date.now());
+          const scheduledDate = live.scheduledStartTime || null;
+          const duration = parseISO8601Duration(content.duration);
+
+          resultMap.set(vid, {
+            views: stats.viewCount ? parseInt(stats.viewCount, 10) : 0,
+            likes: stats.likeCount ? parseInt(stats.likeCount, 10) : 0,
+            comments: stats.commentCount ? parseInt(stats.commentCount, 10) : 0,
+            publishedAt: snippet.publishedAt || null,
+            duration,
+            isScheduled: isUpcoming,
+            scheduledDate,
+            title: snippet.title || null,
+            description: snippet.description || null
+          });
+        }
+      }
+    }
+    console.log(`✅ Obtenidas estadísticas de la API oficial para ${resultMap.size} vídeos.`);
+    return resultMap;
+  } catch (err) {
+    console.warn('⚠️ Error al consultar YouTube Data API v3:', err.message);
+    return resultMap;
+  }
+}
+
 async function fetchLiveYouTubeStats(videoId) {
   if (!videoId) return null;
   try {
@@ -215,7 +291,7 @@ async function fetchLiveYouTubeStats(videoId) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000);
 
-    // 1. Consultar endpoint Player para visualizaciones y fecha exacta
+    // 1. Consultar endpoint Player para visualizaciones, duración y fecha exacta
     const pRes = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -225,6 +301,7 @@ async function fetchLiveYouTubeStats(videoId) {
 
     let views = null;
     let publishedAt = null;
+    let lengthSeconds = null;
 
     if (pRes.ok) {
       const pData = await pRes.json();
@@ -235,6 +312,10 @@ async function fetchLiveYouTubeStats(videoId) {
       const rawDate = pData.microformat?.playerMicroformatRenderer?.publishDate;
       if (rawDate) {
         publishedAt = new Date(rawDate).toISOString();
+      }
+      const rawLength = pData.videoDetails?.lengthSeconds;
+      if (rawLength) {
+        lengthSeconds = parseInt(rawLength, 10);
       }
     }
 
@@ -280,13 +361,13 @@ async function fetchLiveYouTubeStats(videoId) {
 
     clearTimeout(timeout);
 
-    return { views, likes, comments, publishedAt };
+    return { views, likes, comments, publishedAt, lengthSeconds };
   } catch (e) {
     return null;
   }
 }
 
-function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null, playlistInfo = null) {
+function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, existing = null, playlistInfo = null) {
   if (!raw || (typeof raw !== 'object' && !raw)) return null;
 
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
@@ -315,40 +396,54 @@ function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null, pl
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
   const chapterNumber = chapterMatch ? parseFloat(chapterMatch[1]) : (existing?.chapterNumber || null);
   
-  const publishedAt = liveStats?.publishedAt || existing?.publishedAt || new Date().toISOString();
+  const publishedAt = apiStats?.publishedAt || liveStats?.publishedAt || existing?.publishedAt || new Date().toISOString();
+  const duration = apiStats?.duration || (liveStats?.lengthSeconds ? formatSecondsDuration(liveStats.lengthSeconds) : null) || existing?.duration || null;
   
   // Extraer estadísticas asegurando que nunca un 0 sobreescriba un número real
   const sheetViews = (raw.views || raw.Vistas || raw.vistas) ? parseInt(String(raw.views || raw.Vistas || raw.vistas).replace(/[^0-9]/g, ''), 10) : 0;
-  const views = Math.max(liveStats?.views ?? 0, existing?.views ?? 0, sheetViews, 0);
+  const views = Math.max(apiStats?.views ?? 0, liveStats?.views ?? 0, existing?.views ?? 0, sheetViews, 0);
 
   const sheetLikes = (raw.likes || raw.Likes || raw.likes) ? parseInt(String(raw.likes || raw.Likes || raw.likes).replace(/[^0-9]/g, ''), 10) : 0;
-  const likes = Math.max(liveStats?.likes ?? 0, existing?.likes ?? 0, sheetLikes, 0);
+  const likes = Math.max(apiStats?.likes ?? 0, liveStats?.likes ?? 0, existing?.likes ?? 0, sheetLikes, 0);
 
   const sheetComments = (raw.comments || raw.Comments || raw.comments) ? parseInt(String(raw.comments || raw.Comments || raw.comments).replace(/[^0-9]/g, ''), 10) : 0;
-  const comments = Math.max(liveStats?.comments ?? 0, existing?.comments ?? 0, sheetComments, 0);
+  const comments = Math.max(apiStats?.comments ?? 0, liveStats?.comments ?? 0, existing?.comments ?? 0, sheetComments, 0);
   
-  const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
-  const rawScheduled = String(
-    raw.Programado || raw.programado || 
-    raw.Fecha_Estreno || raw.fecha_estreno || 
-    raw.Estreno || raw.estreno || 
-    raw.Fecha_Programada || raw.fecha_programada || 
-    raw.Fecha_Publicacion || raw.fecha_publicacion ||
-    raw.Fecha || raw.fecha ||
-    raw.Estado || raw.estado || ''
-  ).trim();
+  // Detección de estrenos: primero API oficial de YouTube, luego respaldo SCHEDULED_VIDEOS_MAP o Google Sheets
+  let isScheduled = false;
+  let scheduledDateCandidate = null;
 
-  const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
-  
-  // Comprobación de fecha dinámica: SOLO es programado si su fecha es futura respecto a Date.now()
-  const scheduledDateCandidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || (isStateScheduled ? publishedAt : null);
-  const scheduledTimestamp = scheduledDateCandidate ? new Date(scheduledDateCandidate).getTime() : (publishedAt ? new Date(publishedAt).getTime() : NaN);
-  const isFuture = !isNaN(scheduledTimestamp) && scheduledTimestamp > Date.now();
-  
-  const isScheduled = isFuture && (Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled));
+  if (apiStats && apiStats.isScheduled) {
+    isScheduled = true;
+    scheduledDateCandidate = apiStats.scheduledDate;
+  }
+
+  if (!isScheduled) {
+    const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
+    const rawScheduled = String(
+      raw.Programado || raw.programado || 
+      raw.Fecha_Estreno || raw.fecha_estreno || 
+      raw.Estreno || raw.estreno || 
+      raw.Fecha_Programada || raw.fecha_programada || 
+      raw.Fecha_Publicacion || raw.fecha_publicacion ||
+      raw.Fecha || raw.fecha ||
+      raw.Estado || raw.estado || ''
+    ).trim();
+
+    const isStateScheduled = /programad|estreno|proximamente/i.test(rawScheduled);
+    const candidate = scheduledConfig?.scheduledDate || raw.Fecha_Estreno || raw.fecha_estreno || (isStateScheduled ? publishedAt : null);
+    const scheduledTimestamp = candidate ? new Date(candidate).getTime() : NaN;
+    const isFuture = !isNaN(scheduledTimestamp) && scheduledTimestamp > Date.now();
+
+    if (isFuture && (Boolean(scheduledConfig?.isScheduled) || isStateScheduled || Boolean(raw.isScheduled))) {
+      isScheduled = true;
+      scheduledDateCandidate = candidate;
+    }
+  }
   
   let scheduledDateFormatted = null;
   if (isScheduled) {
+    const scheduledConfig = SCHEDULED_VIDEOS_MAP[videoId];
     if (scheduledConfig?.label) {
       scheduledDateFormatted = scheduledConfig.label;
     } else {
@@ -375,6 +470,7 @@ function normalizeVideoRow(raw, index = 0, liveStats = null, existing = null, pl
     chapterNumber,
     popularityScore,
     publishedAt,
+    duration,
     views,
     likes,
     comments,
@@ -434,6 +530,16 @@ async function main() {
         const ytApiKey = process.env.YOUTUBE_API_KEY || '';
         const playlistsMap = await fetchChannelPlaylists(ytApiKey);
 
+        // Extraer todos los IDs de vídeo únicos para consulta por lotes (Fase 07)
+        const allVideoIds = Array.from(new Set(
+          rows.map(r => extractYouTubeId(String(r.URL_Youtube || r.url_youtube || r.Youtube || r.URL || '').trim())).filter(Boolean)
+        ));
+
+        let apiStatsMap = new Map();
+        if (ytApiKey) {
+          apiStatsMap = await fetchYouTubeApiStatsBatch(allVideoIds, ytApiKey);
+        }
+
         // Mapa para deduplicar por YouTube ID (conservando el contenido más completo)
         const videosMap = new Map();
 
@@ -443,15 +549,17 @@ async function main() {
           const videoId = extractYouTubeId(rawUrl);
           if (!videoId) continue;
 
+          let apiStats = apiStatsMap.get(videoId) || null;
           let liveStats = null;
-          // Solo consultar YouTube si no lo hemos consultado ya en esta corrida
-          if (!videosMap.has(videoId)) {
+
+          // Si no hay datos de la API oficial para este vídeo, usar respaldo (scraping/player)
+          if (!apiStats && !videosMap.has(videoId)) {
             liveStats = await fetchLiveYouTubeStats(videoId);
           }
 
           const existing = existingVideosMap[videoId] || null;
           const playlistInfo = playlistsMap.get(videoId) || null;
-          const normalized = normalizeVideoRow(row, idx, liveStats, existing, playlistInfo);
+          const normalized = normalizeVideoRow(row, idx, apiStats, liveStats, existing, playlistInfo);
           if (!normalized) continue;
 
           if (!videosMap.has(videoId)) {
@@ -465,6 +573,7 @@ async function main() {
               downloads: (normalized.downloads && normalized.downloads.length > 0) ? normalized.downloads : prev.downloads,
               description: normalized.description || prev.description,
               consejoClave: normalized.consejoClave || prev.consejoClave,
+              duration: normalized.duration || prev.duration || null,
               views: Math.max(prev.views || 0, normalized.views || 0),
               likes: Math.max(prev.likes || 0, normalized.likes || 0),
               comments: Math.max(prev.comments || 0, normalized.comments || 0),
@@ -485,9 +594,9 @@ async function main() {
 
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(validVideos, null, 2));
         console.log(`✨ Generados ${validVideos.length} vídeos ÚNICOS con estadísticas reales de YouTube en src/data/videos_v4.json`);
-        console.log(`🎬 Vídeo #1 (Hero y primero de lista): ${validVideos[0]?.title} (${validVideos[0]?.views} visualizaciones | ${validVideos[0]?.likes} likes | ${validVideos[0]?.comments} comentarios)`);
-        console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} (${validVideos[1]?.views} visualizaciones | ${validVideos[1]?.likes} likes | ${validVideos[1]?.comments} comentarios)`);
-        console.log(`🎬 Vídeo #3: ${validVideos[2]?.title} (${validVideos[2]?.views} visualizaciones | ${validVideos[2]?.likes} likes | ${validVideos[2]?.comments} comentarios)\n`);
+        console.log(`🎬 Vídeo #1: ${validVideos[0]?.title} [${validVideos[0]?.duration || 'N/A'}] (${validVideos[0]?.views} views | ${validVideos[0]?.likes} likes | ${validVideos[0]?.comments} comments)`);
+        console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} [${validVideos[1]?.duration || 'N/A'}] (${validVideos[1]?.views} views | ${validVideos[1]?.likes} likes | ${validVideos[1]?.comments} comments)`);
+        console.log(`🎬 Vídeo #3: ${validVideos[2]?.title} [${validVideos[2]?.duration || 'N/A'}] (${validVideos[2]?.views} views | ${validVideos[2]?.likes} likes | ${validVideos[2]?.comments} comments)\n`);
       },
       error: (err) => {
         console.error('🔥 Error parseando CSV de vídeos:', err);
