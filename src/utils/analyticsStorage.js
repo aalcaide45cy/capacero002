@@ -723,8 +723,34 @@ export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e
 // Obtener métricas y registros de notificaciones push desde Google Sheets
 export const fetchPushStats = async () => {
     try {
-        const url = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
-        const res = await fetch(url);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('capa_cero_stats_token') : null;
+        let res;
+        try {
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            res = await fetch('/api/stats-proxy?action=push_stats&t=' + Date.now(), { headers });
+            if (res.status === 503) {
+                return {
+                    notConfigured: true,
+                    total: 0,
+                    mobiles: 0,
+                    pcs: 0,
+                    expired: 0,
+                    countries: [],
+                    devices: [],
+                    history: []
+                };
+            }
+        } catch {
+            res = null;
+        }
+
+        // Si el proxy no responde (entorno local sin backend Vercel), fallback directo a Apps Script
+        if (!res || !res.ok) {
+            const fallbackUrl = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
+            res = await fetch(fallbackUrl);
+        }
+
         if (!res.ok) throw new Error("HTTP error " + res.status);
         const data = await res.json();
         return {

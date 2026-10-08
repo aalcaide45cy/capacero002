@@ -17,8 +17,8 @@
  */
 
 // Claves Criptográficas VAPID de Capa Cero 3D
-var VAPID_PUBLIC_KEY = "BEOU0E1RrejUcC2jauuW_M3QWaVXstMPuGqxoBNLC3zud9NFAKece21xxQC6evzt9EsX4N5z_mHfUrThlZHci-s";
-var VAPID_PRIVATE_KEY = "8m4kjknOsRlGe6JZMnrQYxA2d0sWzdnpM5dNQ3Ts3_c";
+var VAPID_PUBLIC_KEY = "BB1OXByPbiP9Y2ADikAImkmfqjNArnVUo6oQ_iRe1rHYF16thPUitNAArFTHVrtrP6rBpoU5Kh-4bvRfk7LlSo8";
+var VAPID_PRIVATE_KEY = PropertiesService.getScriptProperties().getProperty("VAPID_PRIVATE_KEY") || "";
 var VAPID_SUBJECT = "mailto:capacero3d@gmail.com";
 
 // Constantes BigInt para compatibilidad estricta con el editor de Apps Script
@@ -1640,6 +1640,8 @@ function doPost(e) {
 function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "";
 
+  // --- ACCIONES PÚBLICAS DE LA WEB (usadas por visitantes anónimos / PWA) ---
+  // vault_pull: Recupera datos de bóveda anónima sin cuenta de usuario
   if (action === "vault_pull") {
     var getVId = (e && e.parameter && e.parameter.vaultId) ? String(e.parameter.vaultId).trim().toUpperCase() : "";
     var vPayload = "";
@@ -1669,6 +1671,7 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // qr_sync_poll: Emparejamiento P2P temporal entre móvil y PC sin login
   if (action === "qr_sync_poll") {
     var pollPairId = (e && e.parameter && e.parameter.pairId) ? e.parameter.pairId : "";
     var phoneData = "";
@@ -1685,6 +1688,7 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
   
+  // latest_notification: Consulta del Service Worker para avisos push
   if (action === "latest_notification") {
     var raw = PropertiesService.getScriptProperties().getProperty("latest_notification");
     var notif = raw ? JSON.parse(raw) : {
@@ -1697,7 +1701,18 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
   
+  // --- ACCIONES PRIVADAS (requieren STATS_API_TOKEN) ---
   if (action === "push_stats") {
+    var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
+    var clientToken = (e && e.parameter && e.parameter.token) ? String(e.parameter.token).trim() : "";
+    if (expectedToken && expectedToken.length > 0) {
+      if (!clientToken || clientToken !== expectedToken) {
+        return ContentService.createTextOutput(JSON.stringify({
+          error: "unauthorized",
+          message: "Acceso denegado: token no válido para push_stats."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var pushSheet = ss.getSheetByName("Suscripciones_Push");
     var histSheet = ss.getSheetByName("Historial_Notificaciones");

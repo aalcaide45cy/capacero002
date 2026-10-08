@@ -4,10 +4,11 @@
 
 import { SHEETS_DB_URL, getGeoLocation } from './analytics';
 
-// Clave Pública VAPID oficial de Capa Cero 3D
-export const VAPID_PUBLIC_KEY = 'BEOU0E1RrejUcC2jauuW_M3QWaVXstMPuGqxoBNLC3zud9NFAKece21xxQC6evzt9EsX4N5z_mHfUrThlZHci-s';
+// Clave Pública VAPID oficial de Capa Cero 3D (rotada en Fase 02 de seguridad)
+export const VAPID_PUBLIC_KEY = 'BB1OXByPbiP9Y2ADikAImkmfqjNArnVUo6oQ_iRe1rHYF16thPUitNAArFTHVrtrP6rBpoU5Kh-4bvRfk7LlSo8';
 
 const PUSH_STORAGE_KEY = 'capacero_push_subscribed_v1';
+const PUSH_VAPID_KEY_STORAGE = 'capacero_push_vapid_key';
 
 /**
  * Convierte una clave VAPID base64 URL-safe en Uint8Array para el navegador
@@ -24,7 +25,7 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 /**
- * Registra el Service Worker de la PWA
+ * Registra el Service Worker de la PWA y comprueba rotación silenciosa si ya está suscrito
  */
 export async function registerServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -32,6 +33,9 @@ export async function registerServiceWorker() {
   }
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    if ('Notification' in window && Notification.permission === 'granted') {
+      checkAndRotatePushSubscriptionSilent().catch(() => {});
+    }
     return registration;
   } catch (error) {
     console.warn('Error registrando Service Worker:', error);
@@ -122,7 +126,19 @@ export async function subscribeToPushNotifications() {
     await navigator.serviceWorker.ready;
 
     // 3. Obtener suscripción existente o crear una nueva VAPID
+    const savedVapidKey = localStorage.getItem(PUSH_VAPID_KEY_STORAGE);
     let subscription = await registration.pushManager.getSubscription();
+
+    // Si la suscripción existente fue creada con otra clave VAPID, renovarla
+    if (subscription && savedVapidKey && savedVapidKey !== VAPID_PUBLIC_KEY) {
+      try {
+        await subscription.unsubscribe();
+      } catch (unsubErr) {
+        console.warn('Error al cancelar suscripción previa con clave antigua:', unsubErr);
+      }
+      subscription = null;
+    }
+
     if (!subscription) {
       const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
@@ -185,6 +201,7 @@ export async function subscribeToPushNotifications() {
     }
 
     localStorage.setItem(PUSH_STORAGE_KEY, 'true');
+    localStorage.setItem(PUSH_VAPID_KEY_STORAGE, VAPID_PUBLIC_KEY);
     window.dispatchEvent(new CustomEvent('capacero-push-changed', { detail: { state: 'subscribed' } }));
 
     return { 
@@ -209,6 +226,7 @@ export async function unsubscribeFromPushNotifications() {
     if (subscription) {
       await subscription.unsubscribe();
       localStorage.removeItem(PUSH_STORAGE_KEY);
+      localStorage.removeItem(PUSH_VAPID_KEY_STORAGE);
       window.dispatchEvent(new CustomEvent('capacero-push-changed', { detail: { state: 'unsubscribed' } }));
       return true;
     }
@@ -217,4 +235,77 @@ export async function unsubscribeFromPushNotifications() {
     console.warn('Error desuscribiendo:', e);
     return false;
   }
+}
+
+/**
+ * Rota la suscripción silenciosamente en segundo plano si la clave VAPID ha cambiado
+ */
+export async function checkAndRotatePushSubscriptionSilent() {
+  if (!isPushSupported() || typeof window === 'undefined') return false;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return false;
+
+  try {
+    const savedKey = localStorage.getItem(PUSH_VAPID_KEY_STORAGE);
+    if (savedKey === VAPID_PUBLIC_KEY) return false;
+
+    const registration = await navigator.serviceWorker.ready;
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) {
+      await existingSub.unsubscribe();
+    }
+
+    const convertedVapidKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    const newSub = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedVapidKey
+    });
+
+    if (newSub) {
+      const subJson = newSub.toJSON();
+      const { os, device, browser } = getDeviceContext();
+      let geo = { country: 'España', countryCode: 'ES', flag: '🇪🇸', region: 'Madrid', city: 'Madrid' };
+      try { geo = await getGeoLocation(); } catch (e) {}
+      const timezone = (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Europe/Madrid';
+
+      const payload = {
+        type: 'push_subscription',
+        timestamp: new Date().toISOString(),
+        endpoint: subJson.endpoint || '',
+        p256dh: subJson.keys?.p256dh || '',
+        auth: subJson.keys?.auth || '',
+        country: geo.country || 'España',
+        countryCode: geo.countryCode || 'ES',
+        flag: geo.flag || '🇪🇸',
+        region: geo.region || geo.city || '',
+        city: geo.city || '',
+        timezone: timezone,
+        device: device,
+        os: os,
+        browser: browser,
+        isPwa: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+      };
+
+      if (SHEETS_DB_URL && payload.endpoint) {
+        const jsonPayload = JSON.stringify(payload);
+        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+          navigator.sendBeacon(SHEETS_DB_URL, new Blob([jsonPayload], { type: 'text/plain;charset=utf-8' }));
+        } else {
+          await fetch(SHEETS_DB_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            keepalive: true,
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: jsonPayload
+          });
+        }
+      }
+
+      localStorage.setItem(PUSH_STORAGE_KEY, 'true');
+      localStorage.setItem(PUSH_VAPID_KEY_STORAGE, VAPID_PUBLIC_KEY);
+      return true;
+    }
+  } catch (err) {
+    console.warn('Rotación silenciosa push no requerida o cancelada:', err);
+  }
+  return false;
 }

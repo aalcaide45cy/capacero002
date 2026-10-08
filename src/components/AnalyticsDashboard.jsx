@@ -21,12 +21,12 @@ import {
 } from '../utils/analyticsStorage';
 import { loadV4Videos, getYouTubeThumbnail } from '../utils/loadV4Videos';
 
-const VAULT_PASSWORD = "Estadisticas02?";
-
 export default function AnalyticsDashboard() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
     const [error, setError] = useState(false);
+    const [loginErrorMessage, setLoginErrorMessage] = useState('');
+    const [isNotConfigured, setIsNotConfigured] = useState(false);
 
     // Data Mode: 'live' (Datos Reales de la Web) vs 'demo' (Simulación)
     const [dataMode, setDataMode] = useState(() => {
@@ -74,8 +74,8 @@ export default function AnalyticsDashboard() {
         }
         metaRobots.content = "noindex, nofollow";
 
-        const savedAuth = localStorage.getItem('capa_cero_admin_auth');
-        if (savedAuth === 'true') {
+        const savedToken = localStorage.getItem('capa_cero_stats_token');
+        if (savedToken) {
             setIsAuthenticated(true);
             fetchData(dataMode);
         }
@@ -84,22 +84,41 @@ export default function AnalyticsDashboard() {
         loadV4Videos().then(v => setVideosMetadata(v || []));
     }, []);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (passwordInput === VAULT_PASSWORD) {
+        setError(false);
+        setLoginErrorMessage('');
+        try {
+            const res = await fetch('/api/auth-stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: passwordInput })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 503 || data.error === 'not_configured') {
+                setIsNotConfigured(true);
+                return;
+            }
+            if (!res.ok || !data.token) {
+                setError(true);
+                setLoginErrorMessage(data.message || 'Contraseña incorrecta.');
+                setPasswordInput('');
+                return;
+            }
+            localStorage.setItem('capa_cero_stats_token', data.token);
             setIsAuthenticated(true);
             setError(false);
-            localStorage.setItem('capa_cero_admin_auth', 'true');
             fetchData(dataMode);
-        } else {
+        } catch (err) {
+            console.error('Error de autenticación:', err);
             setError(true);
-            setPasswordInput('');
+            setLoginErrorMessage('Error de conexión con el servicio de autenticación.');
         }
     };
 
     const handleLogout = () => {
         setIsAuthenticated(false);
-        localStorage.removeItem('capa_cero_admin_auth');
+        localStorage.removeItem('capa_cero_stats_token');
     };
 
     const handleSwitchMode = (newMode) => {
@@ -285,6 +304,39 @@ export default function AnalyticsDashboard() {
         return list;
     }, [metrics.rawSessions, tableSortField, tableSortOrder]);
 
+    // --- RENDER NOT CONFIGURED CARD ---
+    if (isNotConfigured) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 relative selection:bg-[#2575c4] selection:text-white">
+                <a href="/" className="absolute top-6 left-6 text-zinc-400 hover:text-white flex items-center gap-2 transition-colors text-sm font-semibold">
+                    <ArrowLeft className="w-4 h-4 text-cyan-400" /> Volver a Capa Cero
+                </a>
+
+                <div className="bg-zinc-950 p-8 sm:p-10 rounded-3xl max-w-md w-full border border-amber-500/30 shadow-2xl shadow-amber-950/20 relative overflow-hidden text-center animate-fade-in">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-cyan-400 to-blue-500" />
+
+                    <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                        <Lock className="w-8 h-8 text-amber-400 animate-pulse" />
+                    </div>
+
+                    <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+                        Panel pendiente de configuración
+                    </h2>
+                    <p className="text-zinc-400 text-xs sm:text-sm mb-6 leading-relaxed">
+                        Las variables de entorno de seguridad (<code className="text-cyan-400 bg-zinc-900 px-1 py-0.5 rounded">STATS_PASSWORD</code> y <code className="text-cyan-400 bg-zinc-900 px-1 py-0.5 rounded">STATS_SECRET</code>) están pendientes de desplegar en Vercel. Una vez configuradas en la Fase 11, podrás acceder a este panel de administración con tu clave maestra.
+                    </p>
+
+                    <button
+                        onClick={() => setIsNotConfigured(false)}
+                        className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold py-3 rounded-xl border border-zinc-800 text-sm transition-all shadow active:scale-95"
+                    >
+                        Reintentar acceso
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // --- RENDER LOGIN ---
     if (!isAuthenticated) {
         return (
@@ -322,7 +374,7 @@ export default function AnalyticsDashboard() {
                                 className={`w-full bg-zinc-900/90 border ${error ? 'border-red-500' : 'border-zinc-800'} rounded-xl py-3 px-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400 text-sm transition-all`}
                                 autoFocus
                             />
-                            {error && <p className="text-red-400 text-xs mt-2 ml-1">Contraseña incorrecta. Inténtalo de nuevo.</p>}
+                            {error && <p className="text-red-400 text-xs mt-2 ml-1">{loginErrorMessage || 'Contraseña incorrecta. Inténtalo de nuevo.'}</p>}
                         </div>
                         <button
                             type="submit"

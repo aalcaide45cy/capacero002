@@ -28,18 +28,21 @@ Herramientas instaladas (`gh` v2.102.0) y autenticadas con éxito (`gh` como `aa
 ---
 
 ## FASE 02 — Seguridad
-- [ ] 1. Generar nuevo par VAPID (`npx web-push generate-vapid-keys --json > .secrets/vapid.json`).
-- [ ] 2. `Codigo.txt`: quitar valor de `VAPID_PRIVATE_KEY` y leer con `PropertiesService.getScriptProperties().getProperty('VAPID_PRIVATE_KEY')`.
-- [ ] 3. `src/utils/pushManager.js`: poner nueva clave pública y re-suscripción silenciosa si cambia.
-- [ ] 4. Generar secretos aleatorios (32 bytes, base64url) en `.secrets/stats.json` (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`).
-- [ ] 5. Crear `api/_lib/auth.js` con utilidades crypto (comparación en tiempo constante, firma/verificación HMAC-SHA256 con expiración).
-- [ ] 6. Crear `api/auth-stats.js` con rate limiting (10 intentos / 15 min).
-- [ ] 7. Crear `api/stats-proxy.js` reenviando al Apps Script con `token=STATS_API_TOKEN`.
-- [ ] 8. `AnalyticsDashboard.jsx`: eliminar `VAULT_PASSWORD`, usar `/api/auth-stats` y `/api/stats-proxy` con tarjeta "Panel pendiente de configuración".
-- [ ] 9. `Codigo.txt`: proteger acciones privadas (`push_stats`, etc.) con token `STATS_API_TOKEN`. Mantener públicas las de telemetría y PWA.
-- [ ] 10. Crear `google-sheet-scripts/README.md`.
-- [ ] 11. Comprobar: `git grep -n "PRIVATE_KEY = \""` y `git grep -n "VAULT_PASSWORD"` no devuelven nada.
-- [ ] 12. Protocolo de fin de fase 02.
+- [x] 1. Generar nuevo par VAPID (`npx web-push generate-vapid-keys --json > .secrets/vapid.json`).
+- [x] 2. `Codigo.txt`: quitar valor de `VAPID_PRIVATE_KEY` y leer con `PropertiesService.getScriptProperties().getProperty('VAPID_PRIVATE_KEY')`.
+- [x] 3. `src/utils/pushManager.js`: poner nueva clave pública y re-suscripción silenciosa si cambia.
+- [x] 4. Generar secretos aleatorios (32 bytes, base64url) en `.secrets/stats.json` (`STATS_PASSWORD`, `STATS_SECRET`, `STATS_API_TOKEN`).
+- [x] 5. Crear `api/_lib/auth.js` con utilidades crypto (comparación en tiempo constante, firma/verificación HMAC-SHA256 con expiración).
+- [x] 6. Crear `api/auth-stats.js` con rate limiting (10 intentos / 15 min).
+- [x] 7. Crear `api/stats-proxy.js` reenviando al Apps Script con `token=STATS_API_TOKEN`.
+- [x] 8. `AnalyticsDashboard.jsx`: eliminar `VAULT_PASSWORD`, usar `/api/auth-stats` y `/api/stats-proxy` con tarjeta "Panel pendiente de configuración".
+- [x] 9. `Codigo.txt`: proteger acciones privadas (`push_stats`, etc.) con token `STATS_API_TOKEN`. Mantener públicas las de telemetría y PWA.
+- [x] 10. Crear `google-sheet-scripts/README.md`.
+- [x] 11. Comprobar: `git grep -n "PRIVATE_KEY = \""` y `git grep -n "VAULT_PASSWORD"` no devuelven nada.
+- [x] 12. Protocolo de fin de fase 02.
+
+*Notas Fase 02:*
+Rotación completa de claves VAPID y erradicación de contraseñas expuestas en cliente (`VAULT_PASSWORD`). La autenticación se delega a endpoints serverless en Vercel (`api/auth-stats.js` y `api/stats-proxy.js`) con tokens firmados HMAC-SHA256 y rate limiting por IP. El backend en Apps Script protege `push_stats` con `STATS_API_TOKEN` manteniendo abiertos los servicios públicos de la PWA.
 
 ---
 
