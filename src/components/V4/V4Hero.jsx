@@ -262,9 +262,15 @@ export default function V4Hero({
                 <div className="relative group bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-cyan-500/50 shadow-blue-950/40 hover:shadow-cyan-500/10">
                   
                   {/* Thumbnail Container */}
-                  <div
-                    onClick={() => onSelectVideo(featuredVideo)}
-                    className="relative aspect-video w-full bg-zinc-950 cursor-pointer overflow-hidden"
+                  <a
+                    href={`/video/${featuredVideo.slug || featuredVideo.id}`}
+                    onClick={(e) => {
+                      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                        e.preventDefault();
+                        onSelectVideo(featuredVideo);
+                      }
+                    }}
+                    className="relative block aspect-video w-full bg-zinc-950 cursor-pointer overflow-hidden"
                   >
                     <img
                       src={featuredVideo.thumbnail}
@@ -282,15 +288,22 @@ export default function V4Hero({
                     
                     {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
-                  </div>
+                  </a>
 
                   {/* Info Block */}
                   <div className="p-4 sm:p-5 text-left">
-                    <h2
-                      onClick={() => onSelectVideo(featuredVideo)}
-                      className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 cursor-pointer transition-colors mb-2"
-                    >
-                      {featuredVideo.title}
+                    <h2 className="text-base sm:text-lg font-bold text-white line-clamp-2 hover:text-cyan-400 transition-colors mb-2">
+                      <a
+                        href={`/video/${featuredVideo.slug || featuredVideo.id}`}
+                        onClick={(e) => {
+                          if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                            e.preventDefault();
+                            onSelectVideo(featuredVideo);
+                          }
+                        }}
+                      >
+                        {featuredVideo.title}
+                      </a>
                     </h2>
 
                     {featuredVideo.hasDescription && (

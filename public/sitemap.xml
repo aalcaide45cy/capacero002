@@ -374,6 +374,570 @@ Veremos cómo se integra en nuestro flujo de trabajo h</video:description>
     </video:video>
   </url>
   <url>
+    <loc>https://www.capacero3d.com/video/textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber</loc>
+    <lastmod>2026-10-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/IFTgPS3a6v8/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15</video:title>
+      <video:description>¿Necesitas editar tus modelos 3D antes de imprimir? Aprende a usar los modificadores en Bambu Studio para escalar y añadir texto.
+
+Puedes acceder a mis modelos gratuitos en makerworld:
+https://makerwo</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/IFTgPS3a6v8</video:player_loc>
+      <video:publication_date>2026-10-05T18:00:08.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>626</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/el-secreto-para-disenar-marcos-de-fotos-en-fusion-360-paso-a-paso</loc>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/6vrTY9sMXrQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>El Secreto para Diseñar Marcos de Fotos en Fusion 360 (Paso a Paso)</video:title>
+      <video:description>Aprende a diseñar desde cero un marco de fotos personalizado y su respectiva tapadera trasera utilizando Fusion 360, aplicando restricciones en bocetos, herramientas de extrusión avanzada, chaflanes p</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/6vrTY9sMXrQ</video:player_loc>
+      <video:publication_date>2026-10-03T12:40:27.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1732</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/adios-a-los-defectos-de-contraccion-termica-truco-maestro-en-fusion</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/wADs7VJXfRY/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Adiós a los Defectos de Contracción Térmica: Truco Maestro en Fusion 360</video:title>
+      <video:description>¿Tus piezas impresas en 3D muestran horribles líneas superficiales justo al pasar de una superficie grande a una más fina? Este problema de contracción térmica, documentado en la wiki de Bambu, ocurre</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/wADs7VJXfRY</video:player_loc>
+      <video:publication_date>2026-09-30T17:45:10.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>804</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/pintar-objetos-3d-nunca-fue-tan-facil-bambustudio</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/3BtSMuvl8BQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14</video:title>
+      <video:description>La herramienta de pintado en Bambu Studio es la clave para imprimir en colores tus modelos 3D favoritos sin complicaciones.
+
+🧩 PROYECTOS 3D, PERFILES 3MF Y LICENCIA COMERCIAL
+¿Tienes impresora 3D y q</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/3BtSMuvl8BQ</video:player_loc>
+      <video:publication_date>2026-09-28T18:00:09.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1257</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/montaje-de-objetos-3d-lo-que-no-sabias-que-podias-hacer-en-bambustudio</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/mzItWgN4a5c/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13</video:title>
+      <video:description>Domina la herramienta montar en BambuStudio para apilar piezas 3D con precisión exacta. Aprende a organizar tu base de impresión de forma eficiente.
+
+🧩 PROYECTOS 3D, PERFILES 3MF Y LICENCIA COMERCIAL</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/mzItWgN4a5c</video:player_loc>
+      <video:publication_date>2026-09-21T18:00:09.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2173</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/grupos-y-jerarquias-en-bambu-studio-la-guia-completa-de-mallas</loc>
+    <lastmod>2026-09-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/ozlbqVkcinE/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Grupos y Jerarquías en Bambu Studio | La guía completa de mallas booleanas #12</video:title>
+      <video:description>Domina las jerarquias 3d y las mallas booleanas para dejar de perderte entre cientos de capas en tus proyectos.
+
+🧩 PROYECTOS 3D, PERFILES 3MF Y LICENCIA COMERCIAL
+¿Tienes impresora 3D y quieres expri</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/ozlbqVkcinE</video:player_loc>
+      <video:publication_date>2026-09-14T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>948</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/soporte-personalizzado-para-iphone-diseno-y-3d</loc>
+    <lastmod>2026-09-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/ThMrxVrY8cU/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Soporte personalizzado para iphone: Diseño y 3D.</video:title>
+      <video:description>Los soportes genéricos tienen un problema: o la ranura es enorme y el teléfono baila, o no entra si llevas funda protectora. En este vídeo resolvemos esto midiendo las tolerancias reales para diseñar </video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/ThMrxVrY8cU</video:player_loc>
+      <video:publication_date>2026-09-13T17:00:10.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>571</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/guia-definitiva-de-bocetos-en-fusion-360-restricciones-y-el-comando</loc>
+    <lastmod>2026-09-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/EdGZKop2NcE/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Guía DEFINITIVA de BOCETOS en Fusion 360: Restricciones y el Comando Oculto que necesitas 🎯</video:title>
+      <video:description>¿Tus bocetos en Fusion 360 se deforman al arrastrar una línea? ¿Te vuelves loco buscando por qué no aparece el candado rojo en el árbol del proyecto?
+
+En esta clase técnica gratuita de Capacero3D, res</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/EdGZKop2NcE</video:player_loc>
+      <video:publication_date>2026-09-08T18:00:37.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>3508</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/no-hagas-esto-al-cortar-en-bambustudio-guia-completa-del-tutorial</loc>
+    <lastmod>2026-09-07</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/STc2U-cqecQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>No Hagas Esto al Cortar en Bambustudio | Guía Completa del Tutorial #11</video:title>
+      <video:description>Evita impresiones fallidas dominando la herramienta colocar en cara para alinear tus modelos 3D correctamente.
+
+Cuando una pieza no se asienta bien sobre la base, el riesgo de que las capas iniciales </video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/STc2U-cqecQ</video:player_loc>
+      <video:publication_date>2026-09-07T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1181</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/diseno-de-logotipos-en-fusion-360-consejos-y-trucos-para-principiantes</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/xf4K9wCJzdU/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Diseño de Logotipos en Fusion 360: Consejos y Trucos para Principiantes</video:title>
+      <video:description>Aprende a diseñar tu propio LOGOTIPO 3D o trofeo para IMPRESIÓN 3D en Autodesk Fusion 360 desde cero, aunque nunca hayas usado CAD. Tutorial paso a paso para principiantes: convertimos cualquier image</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/xf4K9wCJzdU</video:player_loc>
+      <video:publication_date>2026-09-01T17:30:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>991</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/escala-rota-y-posiciona-aprende-los-controles-esenciales-de</loc>
+    <lastmod>2026-08-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/RNWxu9tsB-k/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Escala, rota y posiciona: aprende los controles esenciales de BambuStudio #10</video:title>
+      <video:description>Dominar las herramientas de transformacion en 3D es el primer paso para dejar de mover objetos al azar en tu escena.
+
+En esta clase practica, aprenderas a manipular primitivas como esferas y cubos con</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/RNWxu9tsB-k</video:player_loc>
+      <video:publication_date>2026-08-31T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>672</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/diseno-de-cajas-en-fusion-360-consejos-y-trucos-para-principiantes</loc>
+    <lastmod>2026-08-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/utIYIcUG0tM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Diseño de Cajas en Fusion 360: Consejos y Trucos para Principiantes</video:title>
+      <video:description>Aprende a diseñar una caja funcional y 100% paramétrica en Autodesk Fusion 360 desde cero. En este tutorial completo vemos dos metodologías profesionales de modelado (extrusión por perfiles vs. vaciad</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/utIYIcUG0tM</video:player_loc>
+      <video:publication_date>2026-08-25T17:45:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>10819</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/interfaz-de-bambu-studio-el-secreto-para-laminar-mas-rapido</loc>
+    <lastmod>2026-08-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/sIzQPJSVdvo/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Interfaz de Bambu Studio: El secreto para laminar más rápido #9</video:title>
+      <video:description>Aprende a usar el software de modelado 3d desde cero. Domina el menu superior, la insercion de objetos y la visualizacion de capas.Este tutorial esta diseñado para quienes estan comenzando en el mundo</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/sIzQPJSVdvo</video:player_loc>
+      <video:publication_date>2026-08-24T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>583</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/laminado-perfecto-a-la-primera-los-trucos-de-bambu-studio-que-nadie</loc>
+    <lastmod>2026-08-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/D6zKWJAS6G0/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Laminado perfecto a la primera: Los trucos de Bambu Studio que nadie usa</video:title>
+      <video:description>Aprende el proceso completo de laminado 3D para el modelo de barco Benji. Mira cómo preparar tu archivo para una impresión exitosa.Este tutorial detalla los pasos esenciales para preparar un modelo de</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/D6zKWJAS6G0</video:player_loc>
+      <video:publication_date>2026-08-17T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1262</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/adios-a-las-costuras-el-truco-definitivo-en-bambu-studio</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/PCbMinEbUd4/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¡Adiós a las costuras! El truco definitivo en Bambu Studio</video:title>
+      <video:description>¡Adiós a las costuras! El truco definitivo en Bambu Studio 🔥¿Tus piezas tienen esa costura marcada que arruina el acabado? En este tutorial de Bambu Studio te enseño el truco que el 90% de la gente n</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/PCbMinEbUd4</video:player_loc>
+      <video:publication_date>2026-08-13T17:45:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>7354</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/el-truco-definitivo-para-organizar-tus-piezas-en-3d-facil-y-rapido</loc>
+    <lastmod>2026-08-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/hZvIHMnxb3w/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>El truco definitivo para organizar tus piezas en 3D (Fácil y Rápido)</video:title>
+      <video:description>Aprende a manejar la placa de impresion 3d y posicionar tus piezas correctamente en el software. Mejora tu flujo de trabajo de impresion 3d.
+
+En esta clase practica, veremos los controles basicos para</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/hZvIHMnxb3w</video:player_loc>
+      <video:publication_date>2026-08-10T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>406</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/fusion-360-desde-cero-crea-tu-primera-mesa-en-menos-de-15-minutos</loc>
+    <lastmod>2026-08-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/9otbdJPW1WA/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Fusion 360 desde cero: Crea tu primera mesa en menos de 15 minutos</video:title>
+      <video:description>¿Cansado de solo descargar archivos STL? Es hora de que aprendas a CREARLOS. 🚀
+
+Aprender Autodesk Fusion 360 es el superpoder que todo maker necesita. En este tutorial diseñado específicamente para p</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/9otbdJPW1WA</video:player_loc>
+      <video:publication_date>2026-08-06T17:30:25.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>470</video:view_count>
+      <video:category>Curso Fusion 360</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/el-ajuste-critico-de-los-perfiles-de-impresion-que-estas-olvidando</loc>
+    <lastmod>2026-08-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/-uD_McDZ3Qk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>El ajuste crítico de los perfiles de impresión que estás olvidando</video:title>
+      <video:description>Domina la gestión de perfiles de impresión 3D ajustando la calidad y altura de capa. Aprende a configurar los parámetros del sistema.Esta clase técnica detalla el menú de procesos esencial para cualqu</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/-uD_McDZ3Qk</video:player_loc>
+      <video:publication_date>2026-08-03T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>543</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/bambu-studio-imprime-por-objeto-y-reduce-tus-placas-a-la-mitad-3</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/oDGtU6Z2VYM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Bambu Studio: Imprime por Objeto y Reduce tus Placas a la Mitad (3 Casos Reales)</video:title>
+      <video:description>¡Ahorra horas de impresión y reduce los cambios de placa a la mitad! En este tutorial te enseño el truco paso a paso en Bambu Studio para optimizar cualquier modelo de impresión 3D multi-pieza o diseñ</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/oDGtU6Z2VYM</video:player_loc>
+      <video:publication_date>2026-07-31T17:30:33.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2572</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/perfiles-vs-filamentos-en-bambu-studio-cual-es-la-diferencia-real</loc>
+    <lastmod>2026-07-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/-ZIU1pywxiQ/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Perfiles vs Filamentos en Bambu Studio: ¿Cuál es la diferencia real?</video:title>
+      <video:description>Aprende a gestionar perfiles de filamento en Bambu Studio para mejorar la calidad de tus impresiones 3D. Optimiza tus ajustes hoy.
+
+Este tutorial práctico está diseñado para usuarios de impresoras Bam</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/-ZIU1pywxiQ</video:player_loc>
+      <video:publication_date>2026-07-27T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1372</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/el-truco-de-bambu-studio-que-el-90-ignora-adios-torres-de-purga</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/OHLka3HAwn0/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>El truco de Bambu Studio que el 90% ignora (Adiós torres de purga)</video:title>
+      <video:description>Si sigues imprimiendo proyectos gigantes en múltiples placas y llenando tu papelera de torres de purga, estás perdiendo tiempo y dinero. Hoy te explico la técnica PRO que el 90% ignora. 👇
+
+Bienvenido</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/OHLka3HAwn0</video:player_loc>
+      <video:publication_date>2026-07-24T18:30:24.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>3055</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/algolaser-pixi-10w-la-mejor-laser-por-menos-de-300</loc>
+    <lastmod>2026-07-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/fpvQEW7-9vo/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>AlgoLaser Pixi 10W: ¿La mejor láser por menos de 300€?</video:title>
+      <video:description>¿Merece la pena la AlgoLaser Pixi de 10W o es otro juguete más? En este vídeo te cuento la verdad (Cero Filtros) y te enseño los trucos exactos para conseguir resultados de calidad industrial sin nece</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/fpvQEW7-9vo</video:player_loc>
+      <video:publication_date>2026-07-22T18:00:16.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>291</video:view_count>
+      <video:category>Grabado Láser</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/mas-detalle-o-mas-velocidad-la-verdad-sobre-las-boquillas-bambu-lab</loc>
+    <lastmod>2026-07-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/DNouZLKOnpk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¿Más detalle o más velocidad? La verdad sobre las boquillas Bambu Lab</video:title>
+      <video:description>Aprende a elegir las boquillas bambu lab correctas para tus impresiones. Conoce las diferencias entre tamaños y flujos en Bambu Studio.Este video detalla las opciones disponibles en el ecosistema de B</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/DNouZLKOnpk</video:player_loc>
+      <video:publication_date>2026-07-19T22:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>547</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/textos-perfectos-en-3d-el-ajuste-que-cambia-todo</loc>
+    <lastmod>2026-07-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/w-DRE8UtD9s/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Textos perfectos en 3D: El ajuste que cambia TODO</video:title>
+      <video:description>¿Cansado de que las letras en tus impresiones 3D parezcan manchas sin forma? En este vídeo te revelo el ajuste exacto de &quot;alta resolución&quot; que cambiará por completo la calidad de tus textos, permitién</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/w-DRE8UtD9s</video:player_loc>
+      <video:publication_date>2026-07-15T16:05:11.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>6710</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/aprende-a-configurar-las-placas-de-impresion-para-el-exito-en-bambu</loc>
+    <lastmod>2026-07-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/zXLmMLsKLe4/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Aprende a Configurar las Placas de Impresión para el Éxito en Bambu Lab</video:title>
+      <video:description>Aprende a elegir las mejores Bambu Lab placas para tus impresiones. Conoce las opciones de configuración en Bambu Studio paso a paso.
+
+Este tutorial explica cómo seleccionar correctamente las placas d</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/zXLmMLsKLe4</video:player_loc>
+      <video:publication_date>2026-07-13T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>936</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/deja-de-imprimir-basura-arreglando-modelos-generados-por-ia</loc>
+    <lastmod>2026-07-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/kYbpS-vwqJM/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>¡Deja de imprimir basura! Arreglando modelos generados por IA</video:title>
+      <video:description>Aprende a arreglar tus modelos generados por IA con Blender para luego exportarlos a Bambustudio y poder imprimirlos en 3D.
+
+Puedes acceder a mis modelos gratuitos en makerworld:
+https://makerworld.co</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/kYbpS-vwqJM</video:player_loc>
+      <video:publication_date>2026-07-10T16:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>2763</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/lo-que-chatgpt-hace-con-bambu-studio-te-sorprendera</loc>
+    <lastmod>2026-07-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/v3SFbjI8BEE/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Lo que ChatGPT Hace con Bambu Studio te Sorprenderá</video:title>
+      <video:description>Aprende a crear modelos 3D impresionantes desde cero utilizando Inteligencia Artificial. En este tutorial paso a paso, analizamos el flujo de trabajo completo para generar un busto de Goku (Super Saiy</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/v3SFbjI8BEE</video:player_loc>
+      <video:publication_date>2026-07-09T14:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1885</video:view_count>
+      <video:category>Trucos Rápidos</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/configura-tu-primer-setup-en-bambu-studio-correctamente</loc>
+    <lastmod>2026-07-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/cfs1ctvUC-8/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Configura tu primer Setup en Bambu Studio correctamente #3</video:title>
+      <video:description>Aprende a configurar tu impresora 3D en la pestaña Preparar de Bambu Studio. Domina los ajustes iniciales para comenzar tus proyectos.
+
+En esta clase nos enfocamos en el flujo de trabajo esencial dent</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/cfs1ctvUC-8</video:player_loc>
+      <video:publication_date>2026-07-06T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>552</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/aprende-a-laminar-como-un-pro-en-bambu-studio</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/lP0FvQZ6uwk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Aprende a laminar como un PRO en Bambu Studio</video:title>
+      <video:description>¿Cometes el error de laminar y enviar directamente a imprimir? En este tutorial de Bambu Studio, te revelo cómo dejar de ser un usuario básico y empezar a dominar los ajustes avanzados para obtener ac</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/lP0FvQZ6uwk</video:player_loc>
+      <video:publication_date>2026-07-05T11:30:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>8860</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/ecosistema-bambu-lab-guia-completa-para-principiantes</loc>
+    <lastmod>2026-06-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/YUMNakCgUJs/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Ecosistema Bambu Lab: Guía Completa para Principiantes #2</video:title>
+      <video:description>Aprende a usar la pantalla principal de Bamboo Studio paso a paso. Descubre cómo navegar por la interfaz Bamboo Studio y encontrar modelos.
+
+Este tutorial está diseñado para quienes están comenzando c</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/YUMNakCgUJs</video:player_loc>
+      <video:publication_date>2026-06-29T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>681</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/instalacion-de-bambu-studio-guia-paso-a-paso</loc>
+    <lastmod>2026-06-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/hVCS-uyGflk/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Instalación de Bambu Studio: Guía paso a paso #1</video:title>
+      <video:description>Aprende a instalar Bamboo Studio en tu ordenador Windows o Apple paso a paso. Sigue este tutorial para configurar el software de impresion 3D en minutos.Este video explica el proceso completo para des</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/hVCS-uyGflk</video:player_loc>
+      <video:publication_date>2026-06-22T18:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>1232</video:view_count>
+      <video:category>Curso BambuStudio</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/probando-madimaker-la-mejor-alternativa-para-descargar-modelos-3d</loc>
+    <lastmod>2026-05-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/1ol3BaUnJ8Y/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Probando Madimaker: ¿La mejor alternativa para descargar modelos 3D?</video:title>
+      <video:description>En este vídeo analizamos en profundidad el funcionamiento de Madimaker, explorando sus capacidades como repositorio y plataforma para modelos 3D.
+
+Veremos cómo se integra en nuestro flujo de trabajo h</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/1ol3BaUnJ8Y</video:player_loc>
+      <video:publication_date>2026-05-23T08:00:06.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>455</video:view_count>
+      <video:category>Modelado 3D</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/adios-a-las-limitaciones-del-ams-imprime-multicolor-asi</loc>
+    <lastmod>2026-03-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/nPaTKz9Zqcs/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Adiós a las limitaciones del AMS: Imprime multicolor así</video:title>
+      <video:description>¡Bienvenidos a Capa Cero! En este tutorial vamos a solucionar uno de los mayores dolores de cabeza en Bambu Studio: cómo hacer una pausa manual para cambiar de filamento cuando los diferentes colores </video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/nPaTKz9Zqcs</video:player_loc>
+      <video:publication_date>2026-03-15T16:39:01.000Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>4170</video:view_count>
+      <video:category>Multicolor y AMS</video:category>
+    </video:video>
+  </url>
+  <url>
     <loc>https://www.capacero3d.com/politica-privacidad</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>yearly</changefreq>

@@ -60,15 +60,18 @@ Eliminadas URLs con `#` del sitemap y establecido `lastmod` dinámico con la fec
 ---
 
 ## FASE 04 — Una página indexable por vídeo
-- [ ] 1. Slugs estables (`src/data/slugs.json`) generados por `update-videos.js`. Inmutables una vez asignados.
-- [ ] 2. Ruta `/video/:slug` en `App.jsx` con `V4VideoPage.jsx` y 404 estilizado.
-- [ ] 3. Sincronización modal-URL con `history.pushState` y soporte del botón Atrás.
-- [ ] 4. Prerenderizado `scripts/prerender-videos.js` (`postbuild`) con `VideoObject` y `BreadcrumbList`.
-- [ ] 5. Regla en `vercel.json` para servir `/video/:slug/index.html` si aplica.
-- [ ] 6. Sitemap con bloque `<video:video>` para cada `/video/<slug>`.
-- [ ] 7. Tarjetas y Hero usan `<a href="/video/<slug>">` interceptados en SPA.
-- [ ] 8. Comprobar en vista previa de Vercel con `curl` que el HTML incluye metadatos y JSON-LD sin JS.
-- [ ] 9. Protocolo de fin de fase 04.
+- [x] 1. Slugs estables (`src/data/slugs.json`) generados por `update-videos.js`. Inmutables una vez asignados.
+- [x] 2. Ruta `/video/:slug` en `App.jsx` con `V4VideoPage.jsx` y 404 estilizado.
+- [x] 3. Sincronización modal-URL con `history.pushState` y soporte del botón Atrás.
+- [x] 4. Prerenderizado `scripts/prerender-videos.js` (`postbuild`) con `VideoObject` y `BreadcrumbList`.
+- [x] 5. Regla en `vercel.json` para servir `/video/:slug/index.html` si aplica.
+- [x] 6. Sitemap con bloque `<video:video>` para cada `/video/<slug>`.
+- [x] 7. Tarjetas y Hero usan `<a href="/video/<slug>">` interceptados en SPA.
+- [x] 8. Comprobar en vista previa de Vercel con `curl` que el HTML incluye metadatos y JSON-LD sin JS.
+- [x] 9. Protocolo de fin de fase 04.
+
+*Notas Fase 04:*
+Se generó el catálogo de 33 slugs estables e inmutables en `src/data/slugs.json` mapeados por `youtubeId`. Se implementó la ruta `/video/:slug` con `V4VideoPage.jsx` y 404 personalizado, sincronización bidireccional de historial con `history.pushState` y popstate en la videoteca. Se creó el prerenderizador `scripts/prerender-videos.js` enlazado a `postbuild` que genera archivos `dist/video/<slug>/index.html` estáticos con `VideoObject`, `Clip` por capítulos, `BreadcrumbList`, etiquetas Open Graph/Twitter y contenido visible sin requerir JavaScript. El sitemap incluye todas las páginas con bloque `<video:video>` y `vercel.json` redirige las rutas limpias directamente al HTML estático prerenderizado.
 
 ---
 

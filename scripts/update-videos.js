@@ -8,6 +8,66 @@ const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.resolve(__dirname, '../src/data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
+const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
+
+function generateSlug(title) {
+  if (!title) return 'video';
+  let s = String(title)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // sin tildes
+    .replace(/#\d+/g, '') // sin #número
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // guiones
+    .replace(/^-+|-+$/g, ''); // recortar guiones
+  if (s.length > 70) {
+    s = s.slice(0, 70).replace(/-[^-]*$/, '');
+  }
+  return s || 'video';
+}
+
+function updateSlugsMap(videos) {
+  let slugsMap = {};
+  if (fs.existsSync(SLUGS_FILE)) {
+    try {
+      slugsMap = JSON.parse(fs.readFileSync(SLUGS_FILE, 'utf8'));
+    } catch {
+      slugsMap = {};
+    }
+  }
+
+  const usedSlugs = new Set(Object.values(slugsMap));
+  let changed = false;
+
+  for (const v of videos) {
+    if (!v.youtubeId) continue;
+    // Si ya tiene slug asignado, NO cambia nunca (regla de estabilidad)
+    if (!slugsMap[v.youtubeId]) {
+      let candidate = generateSlug(v.title);
+      let base = candidate;
+      let counter = 2;
+      while (usedSlugs.has(candidate)) {
+        candidate = `${base}-${counter++}`;
+      }
+      usedSlugs.add(candidate);
+      slugsMap[v.youtubeId] = candidate;
+      changed = true;
+    }
+    v.slug = slugsMap[v.youtubeId];
+  }
+
+  if (changed || !fs.existsSync(SLUGS_FILE)) {
+    fs.writeFileSync(SLUGS_FILE, JSON.stringify(slugsMap, null, 2), 'utf8');
+    console.log(`🔗 Guardado mapa de slugs estables en src/data/slugs.json (${Object.keys(slugsMap).length} slugs)`);
+  } else {
+    for (const v of videos) {
+      if (v.youtubeId && slugsMap[v.youtubeId]) {
+        v.slug = slugsMap[v.youtubeId];
+      }
+    }
+  }
+
+  return slugsMap;
+}
 
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
@@ -335,6 +395,9 @@ async function main() {
 
         // Orden cronológico estricto (más nuevo publicado primero)
         validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+        // Generar / preservar slugs estables para cada vídeo (Fase 04)
+        updateSlugsMap(validVideos);
 
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
