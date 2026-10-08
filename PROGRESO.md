@@ -174,19 +174,24 @@ Se configuraron exitosamente los secretos en GitHub (`STATS_API_TOKEN`) mediante
 ---
 
 ## FASE 12 — Publicación, verificación y entrega
-- [ ] 1. `git fetch origin && git rebase origin/main` y regenerar con `npm run build`.
-- [ ] 2. `npm run build` sin errores. Push de rama.
-- [ ] 3. Crear PR y merge squash a `main` con `gh`.
-- [ ] 4. Esperar despliegue de producción en Vercel.
-- [ ] 5. Probar ejecución del workflow en GitHub Actions (`gh workflow run`).
-- [ ] 6. Verificar producción (portada, vídeo, modal, buscador, panel, etc.).
-- [ ] 7. Comprobar prerender con `curl https://www.capacero3d.com/video/<slug>`.
-- [ ] 8. Medir Lighthouse móvil final y comparar con línea base.
-- [ ] 9. Validar JSON-LD de página de vídeo.
-- [ ] 10. Enviar sitemap a Google Search Console.
-- [ ] 11. Solicitar indexación de 5 páginas top en Google Search Console.
-- [ ] 12. Backup de descripciones de YouTube en `docs/backups/descripciones-<fecha>.json`.
-- [ ] 13. Añadir enlace a la web en descripciones de YouTube vía API.
-- [ ] 14. Fallback de descripciones en informe final si API no disponible.
-- [ ] 15. Redactar `INFORME_FINAL.md`.
-- [ ] 16. Commit y entrega final.
+- [x] 1. `git fetch origin && git rebase origin/main` y regenerar con `npm run build`.
+- [x] 2. `npm run build` sin errores. Push de rama.
+- [x] 3. Crear PR y merge squash a `main` con `gh` (PR #1 fusionado en `main`).
+- [x] 4. Esperar despliegue de producción en Vercel (`dpl_8sE45xLbwijLyf9AnmjR3MKSxW1K` desplegado en `capacero3d.com`).
+- [x] 5. Probar ejecución del workflow en GitHub Actions (`gh workflow run` completado con éxito en 46s).
+- [x] 6. Verificar producción (portada, vídeo, modal, buscador, panel, etc.).
+- [x] 7. Comprobar prerender con `curl https://www.capacero3d.com/video/<slug>` (verificado con VideoObject y HTML semántico).
+- [x] 8. Medir Lighthouse móvil final y comparar con línea base (Accesibilidad 100, Buenas prácticas 100, SEO 100, Rendimiento 72).
+- [x] 9. Validar JSON-LD de página de vídeo (estructura completa de VideoObject Schema.org).
+- [BLOQUEADO] 10. Enviar sitemap a Google Search Console (requiere sesión en Search Console; detallado en INFORME_FINAL.md).
+- [BLOQUEADO] 11. Solicitar indexación de 5 páginas top en Google Search Console (detallado en INFORME_FINAL.md con URLs directas).
+- [x] 12. Backup de descripciones de YouTube en `docs/backups/descripciones-2026-10-08.json`.
+- [BLOQUEADO] 13. Añadir enlace a la web en descripciones de YouTube vía API (pendiente de OAuth interactivo; detallado en INFORME_FINAL.md).
+- [x] 14. Fallback de descripciones en informe final con las 33 líneas listas para copiar.
+- [x] 15. Redactar `INFORME_FINAL.md` (completado, sin secretos).
+- [x] 16. Commit y entrega final.
+
+*Notas Fase 12:*
+La rama `mejoras-plan` se fusionó con éxito en `main` a través del Pull Request #1 con estrategia Squash. Vercel desplegó la versión de producción en los dominios `capacero3d.com`, `www.capacero3d.com` y `capacero.vercel.app` con estado Ready. El workflow de GitHub Actions fue probado mediante `workflow_dispatch` y finalizó en verde en 46s. Se verificó el funcionamiento de las páginas estáticas con metadatos JSON-LD `VideoObject` y se midió el rendimiento Lighthouse móvil final (Accesibilidad: 100, SEO: 100, Buenas Prácticas: 100). Se generó la copia de respaldo de las 33 descripciones en `docs/backups/descripciones-2026-10-08.json`. Se redactó el `INFORME_FINAL.md` estructurado y exhaustivo sin secretos, incluyendo instrucciones paso a paso para Search Console, Apps Script, Google Cloud y las líneas para descripciones de YouTube.
+
+---
