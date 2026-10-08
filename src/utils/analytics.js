@@ -589,25 +589,45 @@ export const trackDoctorSelect = (problem, clickedVideo = false) => {
     });
 };
 
-// 6. Búsqueda en el buscador
+// 6. Búsqueda en el buscador (con debounce de 1.2s y evento search_no_results)
 let searchDebounce = null;
 export const trackSearch = (searchTerm, resultsCount = 0) => {
     if (!searchTerm || searchTerm.trim().length < 2) return;
-    sessionSearchTerms.push(searchTerm.trim());
+    const cleanTerm = searchTerm.trim();
 
     if (searchDebounce) clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
+        sessionSearchTerms.push(cleanTerm);
+        const count = typeof resultsCount === 'number' ? resultsCount : 0;
+
         saveEvent({
             sessionId: getSessionId(),
             type: 'search_query',
             details: {
-                term: searchTerm.trim(),
-                resultsCount
+                term: cleanTerm,
+                resultsCount: count
             }
         });
 
         if (window.gtag) {
-            window.gtag('event', 'search', { search_term: searchTerm });
+            window.gtag('event', 'search', {
+                search_term: cleanTerm,
+                results_count: count
+            });
+
+            if (count === 0) {
+                window.gtag('event', 'search_no_results', {
+                    search_term: cleanTerm
+                });
+            }
+        }
+
+        if (count === 0) {
+            saveEvent({
+                sessionId: getSessionId(),
+                type: 'search_no_results',
+                details: { term: cleanTerm }
+            });
         }
     }, 1200);
 };

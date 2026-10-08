@@ -90,11 +90,14 @@ Se eliminó `autoplay=1` e implementó el patrón facade (miniatura con botón d
 ---
 
 ## FASE 06 — Buscador como generador de ideas de vídeo
-- [ ] 1. Extraer lógica de filtrado compartida, registrar `resultsCount` real con debounce de 1.2s.
-- [ ] 2. Evento GA4 `search_no_results`.
-- [ ] 3. Buscador tolerante (tildes, mayúsculas, equivalencias como bambu studio / fusion 360, descripción y consejos clave).
-- [ ] 4. Pestaña "Ideas de vídeo" en `/estadisticas` con ranking de búsquedas y acción `mark_idea_done`.
-- [ ] 5. Protocolo de fin de fase 06.
+- [x] 1. Extraer lógica de filtrado compartida, registrar `resultsCount` real con debounce de 1.2s.
+- [x] 2. Evento GA4 `search_no_results`.
+- [x] 3. Buscador tolerante (tildes, mayúsculas, equivalencias como bambu studio / fusion 360, descripción y consejos clave).
+- [x] 4. Pestaña "Ideas de vídeo" en `/estadisticas` con ranking de búsquedas y acción `mark_idea_done`.
+- [x] 5. Protocolo de fin de fase 06.
+
+*Notas Fase 06:*
+Lógica de búsqueda y filtrado centralizada en `src/utils/videoFilter.js`, tolerante a tildes, mayúsculas y variantes técnicas (equivalencias entre `bambustudio` y `bambu studio`, `fusion` y `fusion 360`, `ams` y `multicolor`, etc.), buscando también en descripciones y consejos clave. Se corrigió el registro de telemetría en `V4Hub.jsx` pasando el número real de resultados y disparando el evento GA4/Sheets `search_no_results` tras un debounce de 1.2s. Se creó la pestaña "Ideas de Vídeo" en `/estadisticas` categorizando búsquedas sin resultados (prioridad alta) y con resultados, con marcas de fecha de última búsqueda y botón interactivo "Grabado" sincronizado con `Codigo.txt` (`mark_idea_done`) y fallback local en `localStorage`.
 
 ---
 

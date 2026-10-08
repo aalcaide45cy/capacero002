@@ -10,7 +10,8 @@ import V4InstallModal from './V4InstallModal';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { loadMakerWorldModels } from '../../utils/loadMakerWorldModels';
-import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
+import { initAnalyticsSession, setActiveSection, trackSearch } from '../../utils/analytics';
+import { countSearchResults } from '../../utils/videoFilter';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
 import { applySyncPayload, completeQRExchange, syncVaultPull, getVaultId } from '../../utils/courseProgress';
 import { Sparkles, X } from 'lucide-react';
@@ -229,6 +230,8 @@ export default function V4Hub() {
 
   const handleSearchChange = (val) => {
     setSearchQuery(val);
+    const count = countSearchResults(videos, val);
+    trackSearch(val, count);
   };
 
   return (

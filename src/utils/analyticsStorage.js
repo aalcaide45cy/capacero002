@@ -597,15 +597,30 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         .sort((a, b) => b.count - a.count);
 
     const searchKeywordsMap = {};
-    filteredEvents.filter(e => e.type === 'search_query').forEach(e => {
+    filteredEvents.filter(e => e.type === 'search_query' || e.type === 'search_no_results').forEach(e => {
         const term = (e.details?.term || '').trim().toLowerCase();
         if (term) {
-            if (!searchKeywordsMap[term]) searchKeywordsMap[term] = { term, count: 0, resultsCount: e.details?.resultsCount ?? 1 };
+            const isZero = e.type === 'search_no_results' || e.details?.resultsCount === 0;
+            if (!searchKeywordsMap[term]) {
+                searchKeywordsMap[term] = {
+                    term,
+                    count: 0,
+                    resultsCount: isZero ? 0 : (e.details?.resultsCount ?? 1),
+                    lastSeen: e.timestamp || null
+                };
+            }
             searchKeywordsMap[term].count++;
+            if (isZero) {
+                searchKeywordsMap[term].resultsCount = 0;
+            }
+            if (e.timestamp && (!searchKeywordsMap[term].lastSeen || new Date(e.timestamp) > new Date(searchKeywordsMap[term].lastSeen))) {
+                searchKeywordsMap[term].lastSeen = e.timestamp;
+            }
         }
     });
     const searchKeywordsRank = Object.values(searchKeywordsMap).sort((a, b) => b.count - a.count);
     const zeroResultSearches = searchKeywordsRank.filter(s => s.resultsCount === 0);
+    const withResultSearches = searchKeywordsRank.filter(s => s.resultsCount > 0);
 
     // 8. Dispositivos y Canales de Origen
     const deviceMap = { 'Móvil': 0, 'Desktop': 0, 'Tablet': 0 };
@@ -660,6 +675,7 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         doctorSymptomsRank,
         searchKeywordsRank,
         zeroResultSearches,
+        withResultSearches,
         deviceMap,
         originsRank,
         funnel,

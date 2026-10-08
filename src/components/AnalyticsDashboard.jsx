@@ -5,7 +5,7 @@ import {
     Monitor, Tablet, ArrowUpRight, TrendingUp, ShieldCheck, CheckCircle2,
     Calendar, Sparkles, Filter, Trash2, Database, ExternalLink, HelpCircle,
     Play, X, Info, ChevronRight, Copy, Check, SlidersHorizontal, Eye,
-    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown, Bell
+    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown, Bell, Lightbulb, Video
 } from 'lucide-react';
 import {
     loadAnalyticsData,
@@ -39,6 +39,13 @@ export default function AnalyticsDashboard() {
     const [events, setEvents] = useState([]);
     const [videosMetadata, setVideosMetadata] = useState([]);
     const [pushStats, setPushStats] = useState({ total: 0, mobiles: 0, pcs: 0, expired: 0, devices: [], history: [] });
+    const [doneIdeas, setDoneIdeas] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('capa_cero_done_ideas') || '{}');
+        } catch {
+            return {};
+        }
+    });
     const [activeTab, setActiveTab] = useState('overview');
 
     // Granular Filters State
@@ -144,10 +151,60 @@ export default function AnalyticsDashboard() {
             setEvents(data.events || []);
             const pStats = await fetchPushStats();
             setPushStats(pStats);
+            await fetchDoneIdeas();
         } catch (err) {
             console.error("Error cargando estadísticas:", err);
         }
         setIsLoading(false);
+    };
+
+    const fetchDoneIdeas = async () => {
+        const token = localStorage.getItem('capa_cero_stats_token');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/stats-proxy?action=ideas_done_list', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.doneIdeas) {
+                    setDoneIdeas(prev => {
+                        const merged = { ...prev, ...data.doneIdeas };
+                        try {
+                            localStorage.setItem('capa_cero_done_ideas', JSON.stringify(merged));
+                        } catch (e) {}
+                        return merged;
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn("No se pudieron obtener ideas grabadas desde Apps Script:", e);
+        }
+    };
+
+    const handleToggleIdeaDone = async (term) => {
+        if (!term) return;
+        const norm = term.toLowerCase().trim();
+        const current = !!doneIdeas[norm];
+        const next = !current;
+        const updated = { ...doneIdeas, [norm]: next };
+        setDoneIdeas(updated);
+        try {
+            localStorage.setItem('capa_cero_done_ideas', JSON.stringify(updated));
+        } catch (e) {}
+        showToast(next ? `Idea "${term}" marcada como grabada` : `Idea "${term}" desmarcada`);
+
+        const token = localStorage.getItem('capa_cero_stats_token');
+        if (token) {
+            try {
+                await fetch(`/api/stats-proxy?action=mark_idea_done&term=${encodeURIComponent(norm)}&done=${next}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (err) {
+                console.warn("Guardado remoto falló, preservado localmente:", err);
+            }
+        }
     };
 
     const handleSyncSheets = async () => {
@@ -778,6 +835,7 @@ export default function AnalyticsDashboard() {
                 <div className="flex items-center gap-2 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 overflow-x-auto no-scrollbar">
                     {[
                         { id: 'overview', label: 'Visión General', icon: BarChart2 },
+                        { id: 'ideas', label: 'Ideas de Vídeo', icon: Lightbulb },
                         { id: 'push', label: 'Notificaciones Push & PWA', icon: Bell },
                         { id: 'geo', label: 'Geolocalización & Países', icon: Globe },
                         { id: 'subscriptions', label: 'Suscripciones & Origen', icon: Heart },
@@ -1571,6 +1629,183 @@ export default function AnalyticsDashboard() {
                                     ))}
                                     {metrics.searchKeywordsRank.length === 0 && (
                                         <p className="text-xs text-zinc-500 text-center py-6">No hay búsquedas registradas.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ================= TAB: IDEAS DE VÍDEO ================= */}
+                {activeTab === 'ideas' && (
+                    <div className="space-y-6 text-left">
+                        {/* Banner Informativo */}
+                        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 shadow-xl text-left">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Lightbulb className="w-5 h-5 text-amber-400" />
+                                        Ideas de Vídeo basadas en Búsquedas de Usuarios
+                                    </h3>
+                                    <p className="text-xs text-zinc-300 mt-1 max-w-2xl">
+                                        Cada término buscado es una petición directa de la comunidad. Las búsquedas con <strong className="text-amber-400">0 resultados</strong> indican temas clave que los usuarios necesitan y que aún no existen en Capa Cero. Pulsa <strong className="text-emerald-400">"Marcar grabado"</strong> cuando publiques el vídeo correspondiente.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl">
+                                        {(metrics.zeroResultSearches || []).length} sin resultado · {(metrics.searchKeywordsRank || []).length} términos
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Ranking 1: Búsquedas sin resultados (0 resultados) - Alta prioridad */}
+                            <div className="lg:col-span-6 bg-zinc-950/90 border border-amber-500/30 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-base font-bold text-amber-400 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-amber-400" />
+                                        Búsquedas sin resultados (0 vídeos en la web)
+                                    </h4>
+                                    <span className="text-[11px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-lg">
+                                        Alta Prioridad
+                                    </span>
+                                </div>
+                                <p className="text-xs text-zinc-400 mb-6">
+                                    Temas que los visitantes buscaron y se marcharon sin encontrar respuesta:
+                                </p>
+
+                                <div className="space-y-3">
+                                    {(metrics.zeroResultSearches || []).map((s, idx) => {
+                                        const isDone = !!doneIdeas[s.term.toLowerCase().trim()];
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                                    isDone
+                                                        ? 'bg-zinc-900/40 border-emerald-900/40 opacity-75'
+                                                        : 'bg-zinc-900/80 border-amber-500/20 hover:border-amber-500/40'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-sm font-bold font-mono ${isDone ? 'line-through text-zinc-400' : 'text-white'}`}>
+                                                            "{s.term}"
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                                                            0 res
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-400 flex items-center gap-3">
+                                                        <span><strong className="text-zinc-200">{s.count}</strong> {s.count === 1 ? 'búsqueda' : 'búsquedas'}</span>
+                                                        {s.lastSeen && (
+                                                            <span>· Última: <strong className="text-zinc-300">{formatDate(s.lastSeen)}</strong></span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleToggleIdeaDone(s.term)}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer ${
+                                                        isDone
+                                                            ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/80'
+                                                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500'
+                                                    }`}
+                                                >
+                                                    {isDone ? (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>Grabado</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Video className="w-3.5 h-3.5 text-zinc-400" />
+                                                            <span>Marcar grabado</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {(!metrics.zeroResultSearches || metrics.zeroResultSearches.length === 0) && (
+                                        <div className="p-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+                                            No hay búsquedas sin resultados registradas por el momento.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Ranking 2: Búsquedas con resultados existentes */}
+                            <div className="lg:col-span-6 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                        <Search className="w-4 h-4 text-cyan-400" />
+                                        Búsquedas con resultados existentes
+                                    </h4>
+                                    <span className="text-[11px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-2 py-0.5 rounded-lg">
+                                        Temas Frecuentes
+                                    </span>
+                                </div>
+                                <p className="text-xs text-zinc-400 mb-6">
+                                    Tutoriales que la gente busca y encuentra con éxito en la plataforma:
+                                </p>
+
+                                <div className="space-y-3">
+                                    {(metrics.withResultSearches || []).map((s, idx) => {
+                                        const isDone = !!doneIdeas[s.term.toLowerCase().trim()];
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                                    isDone
+                                                        ? 'bg-zinc-900/40 border-emerald-900/40 opacity-75'
+                                                        : 'bg-zinc-900/60 border-zinc-800/60 hover:border-zinc-700'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold font-mono text-white">
+                                                            "{s.term}"
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-md">
+                                                            {s.resultsCount} res
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-400 flex items-center gap-3">
+                                                        <span><strong className="text-zinc-200">{s.count}</strong> {s.count === 1 ? 'búsqueda' : 'búsquedas'}</span>
+                                                        {s.lastSeen && (
+                                                            <span>· Última: <strong className="text-zinc-300">{formatDate(s.lastSeen)}</strong></span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleToggleIdeaDone(s.term)}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer ${
+                                                        isDone
+                                                            ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/80'
+                                                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500'
+                                                    }`}
+                                                >
+                                                    {isDone ? (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>Grabado</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Video className="w-3.5 h-3.5 text-zinc-400" />
+                                                            <span>Marcar grabado</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {(!metrics.withResultSearches || metrics.withResultSearches.length === 0) && (
+                                        <div className="p-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+                                            No hay búsquedas con resultados registradas por el momento.
+                                        </div>
                                     )}
                                 </div>
                             </div>

@@ -27,6 +27,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber"
   },
   {
@@ -57,6 +59,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "el-secreto-para-disenar-marcos-de-fotos-en-fusion-360-paso-a-paso"
   },
   {
@@ -87,6 +91,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "adios-a-los-defectos-de-contraccion-termica-truco-maestro-en-fusion"
   },
   {
@@ -117,6 +123,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "pintar-objetos-3d-nunca-fue-tan-facil-bambustudio"
   },
   {
@@ -147,6 +155,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "montaje-de-objetos-3d-lo-que-no-sabias-que-podias-hacer-en-bambustudio"
   },
   {
@@ -177,6 +187,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "grupos-y-jerarquias-en-bambu-studio-la-guia-completa-de-mallas"
   },
   {
@@ -207,6 +219,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "soporte-personalizzado-para-iphone-diseno-y-3d"
   },
   {
@@ -237,6 +251,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "guia-definitiva-de-bocetos-en-fusion-360-restricciones-y-el-comando"
   },
   {
@@ -267,6 +283,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "no-hagas-esto-al-cortar-en-bambustudio-guia-completa-del-tutorial"
   },
   {
@@ -297,6 +315,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "diseno-de-logotipos-en-fusion-360-consejos-y-trucos-para-principiantes"
   },
   {
@@ -327,6 +347,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "escala-rota-y-posiciona-aprende-los-controles-esenciales-de"
   },
   {
@@ -357,6 +379,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "diseno-de-cajas-en-fusion-360-consejos-y-trucos-para-principiantes"
   },
   {
@@ -387,6 +411,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "interfaz-de-bambu-studio-el-secreto-para-laminar-mas-rapido"
   },
   {
@@ -417,6 +443,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "laminado-perfecto-a-la-primera-los-trucos-de-bambu-studio-que-nadie"
   },
   {
@@ -447,6 +475,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "adios-a-las-costuras-el-truco-definitivo-en-bambu-studio"
   },
   {
@@ -477,6 +507,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "el-truco-definitivo-para-organizar-tus-piezas-en-3d-facil-y-rapido"
   },
   {
@@ -507,6 +539,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "fusion-360-desde-cero-crea-tu-primera-mesa-en-menos-de-15-minutos"
   },
   {
@@ -537,6 +571,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "el-ajuste-critico-de-los-perfiles-de-impresion-que-estas-olvidando"
   },
   {
@@ -567,6 +603,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "bambu-studio-imprime-por-objeto-y-reduce-tus-placas-a-la-mitad-3"
   },
   {
@@ -597,6 +635,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "perfiles-vs-filamentos-en-bambu-studio-cual-es-la-diferencia-real"
   },
   {
@@ -632,6 +672,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "el-truco-de-bambu-studio-que-el-90-ignora-adios-torres-de-purga"
   },
   {
@@ -662,6 +704,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "algolaser-pixi-10w-la-mejor-laser-por-menos-de-300"
   },
   {
@@ -692,6 +736,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "mas-detalle-o-mas-velocidad-la-verdad-sobre-las-boquillas-bambu-lab"
   },
   {
@@ -722,6 +768,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "textos-perfectos-en-3d-el-ajuste-que-cambia-todo"
   },
   {
@@ -752,6 +800,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "aprende-a-configurar-las-placas-de-impresion-para-el-exito-en-bambu"
   },
   {
@@ -787,6 +837,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "deja-de-imprimir-basura-arreglando-modelos-generados-por-ia"
   },
   {
@@ -817,6 +869,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "lo-que-chatgpt-hace-con-bambu-studio-te-sorprendera"
   },
   {
@@ -847,6 +901,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "configura-tu-primer-setup-en-bambu-studio-correctamente"
   },
   {
@@ -882,6 +938,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "aprende-a-laminar-como-un-pro-en-bambu-studio"
   },
   {
@@ -912,6 +970,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "ecosistema-bambu-lab-guia-completa-para-principiantes"
   },
   {
@@ -942,6 +1002,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "instalacion-de-bambu-studio-guia-paso-a-paso"
   },
   {
@@ -972,6 +1034,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "probando-madimaker-la-mejor-alternativa-para-descargar-modelos-3d"
   },
   {
@@ -1002,6 +1066,8 @@
     "hasDownloads": true,
     "hasTip": true,
     "hasDescription": true,
+    "playlistId": null,
+    "playlistTitle": null,
     "slug": "adios-a-las-limitaciones-del-ams-imprime-multicolor-asi"
   }
 ]
