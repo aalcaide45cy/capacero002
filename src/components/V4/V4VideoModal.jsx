@@ -5,7 +5,7 @@ import {
   Bookmark, FileText, Trash2, Clock, Plus, ShieldCheck, Upload, Calendar, Edit3, AlertCircle,
   ChevronLeft, Share2, Layers, Zap, ThumbsUp
 } from 'lucide-react';
-import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick } from '../../utils/analytics';
+import { trackVideoOpen, trackDownload, trackSubscribe, trackSocialClick, trackVideoStart, trackVideoProgress, trackVideoComplete } from '../../utils/analytics';
 import { 
   saveCourseProgress, 
   getVideoPlaybackTime, 
@@ -63,6 +63,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     return !isOnline ? 'offline' : (vId ? 'synced' : 'unlinked');
   });
 
+  const [isPlayerActive, setIsPlayerActive] = useState(false);
+  const progressMilestonesRef = useRef(new Set());
+  const hasStartedRef = useRef(false);
+
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
   const onSelectVideoRef = useRef(onSelectVideo);
@@ -70,6 +74,12 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const countdownTimerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const playbackTrackerRef = useRef(null);
+
+  useEffect(() => {
+    setIsPlayerActive(false);
+    progressMilestonesRef.current.clear();
+    hasStartedRef.current = false;
+  }, [video?.youtubeId]);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
@@ -280,7 +290,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       if (hasTriggeredRef.current) return;
       if (!nextVideoRef.current) return;
       hasTriggeredRef.current = true;
-      setCountdownSeconds(5);
+      setCountdownSeconds(8);
     };
 
     // 1. Escuchar eventos postMessage de YouTube Player Iframe
@@ -291,9 +301,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           payload = JSON.parse(payload);
         }
         if (payload) {
-          if (payload.event === 'onStateChange' && (payload.info === 0 || payload.data === 0)) {
-            startCountdown();
+          if (payload.event === 'onStateChange') {
+            if (payload.info === 1 || payload.data === 1) {
+              if (!hasStartedRef.current) {
+                hasStartedRef.current = true;
+                trackVideoStart(video);
+              }
+            } else if (payload.info === 0 || payload.data === 0) {
+              trackVideoComplete(video);
+              startCountdown();
+            }
           } else if (payload.info === 0 && payload.event !== 'infoDelivery') {
+            trackVideoComplete(video);
             startCountdown();
           }
         }
@@ -306,6 +325,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     const playerId = `yt-iframe-${video?.youtubeId}`;
 
     function setupYTPlayer() {
+      if (!isPlayerActive) return;
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
         try {
           ytPlayerRef.current = new window.YT.Player(playerId, {
@@ -329,6 +349,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                         if (state === 1) {
                           const courseKey = extractCourseKey(video?.category);
                           saveVideoPlaybackTime(video?.youtubeId || video?.id, cur, courseKey);
+
+                          // Telemetría de progreso (25%, 50%, 75%)
+                          const dur = ytPlayerRef.current.getDuration();
+                          if (dur && dur > 0) {
+                            const percent = Math.floor((cur / dur) * 100);
+                            [25, 50, 75].forEach(milestone => {
+                              if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                                progressMilestonesRef.current.add(milestone);
+                                trackVideoProgress(video, milestone);
+                              }
+                            });
+                          }
                         }
                       }
                       if (!videoDuration && typeof ytPlayerRef.current.getDuration === 'function') {
@@ -340,7 +372,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                 }, 1000);
               },
               onStateChange: (e) => {
-                if (e && e.data === 0) {
+                if (e && e.data === 1) { // PLAYING
+                  if (!hasStartedRef.current) {
+                    hasStartedRef.current = true;
+                    trackVideoStart(video);
+                  }
+                } else if (e && e.data === 0) { // ENDED
+                  trackVideoComplete(video);
                   startCountdown();
                 }
               }
@@ -350,22 +388,24 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
     }
 
-    if (window.YT && window.YT.Player) {
-      setupYTPlayer();
-    } else {
-      if (!document.getElementById('youtube-iframe-api-script')) {
-        const tag = document.createElement('script');
-        tag.id = 'youtube-iframe-api-script';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      }
-
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prevCallback === 'function') prevCallback();
+    if (isPlayerActive) {
+      if (window.YT && window.YT.Player) {
         setupYTPlayer();
-      };
+      } else {
+        if (!document.getElementById('youtube-iframe-api-script')) {
+          const tag = document.createElement('script');
+          tag.id = 'youtube-iframe-api-script';
+          tag.src = 'https://www.youtube.com/iframe_api';
+          const firstScriptTag = document.getElementsByTagName('script')[0];
+          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        const prevCallback = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+          if (typeof prevCallback === 'function') prevCallback();
+          setupYTPlayer();
+        };
+      }
     }
 
     return () => {
@@ -377,15 +417,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         try { ytPlayerRef.current.destroy(); } catch (e) {}
       }
     };
-  }, [video?.youtubeId]);
+  }, [video?.youtubeId, isPlayerActive]);
 
   if (!video) return null;
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
   
-  // URL con parámetro de inicio exacto si existe reanudación
+  // URL con origen y sin autoplay=1 (Fase 05: patrón facade)
   const embedUrl = video.youtubeId
-    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
+    ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -483,7 +523,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const circleRadius = 32;
   const circleCircumference = 2 * Math.PI * circleRadius;
   const circleOffset = countdownSeconds !== null 
-    ? circleCircumference - ((5 - countdownSeconds) / 5) * circleCircumference
+    ? circleCircumference - ((8 - countdownSeconds) / 8) * circleCircumference
     : circleCircumference;
 
   const durationDisplay = videoDuration ? formatSecondsToTime(videoDuration) : '3:41';
@@ -614,19 +654,43 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               {/* LEFT COLUMN: Player, Metadata Bar & Lesson Core Info */}
               <div className="md:col-span-7 lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
-                {/* Video Player Box */}
-                <div className="relative aspect-video w-full bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
+                {/* Video Player Box (Mínimo 480x270 en escritorio, ancho completo en móvil) */}
+                <div className="relative aspect-video w-full md:min-w-[480px] md:min-h-[270px] bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
                   {embedUrl ? (
                     <>
-                      <iframe
-                        key={`${video.youtubeId}-${initialStartSecond}`}
-                        id={`yt-iframe-${video.youtubeId}`}
-                        src={embedUrl}
-                        title={video.title}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
+                      {!isPlayerActive ? (
+                        <div
+                          onClick={() => setIsPlayerActive(true)}
+                          className="relative w-full h-full cursor-pointer group flex items-center justify-center overflow-hidden"
+                        >
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            width="480"
+                            height="270"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <button
+                              type="button"
+                              aria-label="Reproducir vídeo"
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 flex items-center justify-center shadow-2xl shadow-cyan-500/50 group-hover:scale-110 active:scale-95 transition-all duration-300 pointer-events-none"
+                            >
+                              <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <iframe
+                          key={`${video.youtubeId}-${initialStartSecond}`}
+                          id={`yt-iframe-${video.youtubeId}`}
+                          src={embedUrl}
+                          title={video.title}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      )}
 
                       {/* Floating Resume Notification */}
                       {resumeNotice && (
@@ -791,6 +855,22 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                       <span>Ver en YouTube</span>
                       <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
                     </a>
+
+                    {/* Botón Ver Lista Completa en YouTube si tiene playlistId */}
+                    {video.playlistId && (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${video.youtubeId}&list=${video.playlistId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackSocialClick && trackSocialClick('YouTube Playlist Button', video.title)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 hover:text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-md shrink-0"
+                        title="Ver la lista de reproducción completa en YouTube"
+                      >
+                        <Youtube className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <span>Ver la lista completa en YouTube</span>
+                        <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
+                      </a>
+                    )}
                   </div>
 
                 </div>

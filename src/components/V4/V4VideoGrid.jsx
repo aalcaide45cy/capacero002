@@ -22,6 +22,7 @@ import {
   importProgressBackup,
   getAllStudyNotes
 } from '../../utils/courseProgress';
+import { filterVideos } from '../../utils/videoFilter';
 
 function formatCounter(num) {
   if (num === undefined || num === null || isNaN(num) || num <= 0) return '0';
@@ -255,39 +256,13 @@ export default function V4VideoGrid({
     return getCourseProgress(activeCourse.name);
   }, [activeCourse, progressTick]);
 
-  // Filtrado y Ordenación Inteligente para la Videoteca estándar
+  // Filtrado y Ordenación Inteligente para la Videoteca estándar (utilidad compartida y tolerante)
   const filteredVideos = useMemo(() => {
-    let result = videos.filter((video) => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery =
-        !q ||
-        video.title?.toLowerCase().includes(q) ||
-        video.description?.toLowerCase().includes(q) ||
-        video.category?.toLowerCase().includes(q) ||
-        video.consejoClave?.toLowerCase().includes(q);
-
-      return matchesQuery;
+    return filterVideos(videos, {
+      searchQuery,
+      activeCategory,
+      activeSortFilter
     });
-
-    if (activeCategory !== 'Todos') {
-      result = result.filter(v => v.category?.toLowerCase() === activeCategory?.toLowerCase());
-    }
-
-    // Separar publicados y programados: los publicados van PRIMERO, los programados AL FINAL
-    const published = result.filter(v => !v.isScheduled);
-    const scheduled = result.filter(v => v.isScheduled);
-
-    if (activeSortFilter === 'popular') {
-      published.sort((a, b) => ((b.views || 0) - (a.views || 0)) || ((b.likes || 0) - (a.likes || 0)));
-      scheduled.sort((a, b) => ((b.views || 0) - (a.views || 0)) || ((b.likes || 0) - (a.likes || 0)));
-    } else {
-      // 'newest': Más nuevos publicados primero
-      published.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-      // Programados ordenados por fecha de estreno más próxima
-      scheduled.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
-    }
-
-    return [...published, ...scheduled];
   }, [videos, activeCategory, searchQuery, activeSortFilter]);
 
   // Calcular total de apuntes existentes

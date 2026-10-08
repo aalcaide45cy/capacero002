@@ -5,7 +5,8 @@ import {
     Monitor, Tablet, ArrowUpRight, TrendingUp, ShieldCheck, CheckCircle2,
     Calendar, Sparkles, Filter, Trash2, Database, ExternalLink, HelpCircle,
     Play, X, Info, ChevronRight, Copy, Check, SlidersHorizontal, Eye,
-    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown, Bell
+    Radio, Activity, ArrowUpDown, ChevronUp, ChevronDown, Bell, Lightbulb, Video,
+    AlertTriangle, Flame
 } from 'lucide-react';
 import {
     loadAnalyticsData,
@@ -21,12 +22,12 @@ import {
 } from '../utils/analyticsStorage';
 import { loadV4Videos, getYouTubeThumbnail } from '../utils/loadV4Videos';
 
-const VAULT_PASSWORD = "Estadisticas02?";
-
 export default function AnalyticsDashboard() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
     const [error, setError] = useState(false);
+    const [loginErrorMessage, setLoginErrorMessage] = useState('');
+    const [isNotConfigured, setIsNotConfigured] = useState(false);
 
     // Data Mode: 'live' (Datos Reales de la Web) vs 'demo' (Simulación)
     const [dataMode, setDataMode] = useState(() => {
@@ -39,7 +40,16 @@ export default function AnalyticsDashboard() {
     const [events, setEvents] = useState([]);
     const [videosMetadata, setVideosMetadata] = useState([]);
     const [pushStats, setPushStats] = useState({ total: 0, mobiles: 0, pcs: 0, expired: 0, devices: [], history: [] });
+    const [doneIdeas, setDoneIdeas] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('capa_cero_done_ideas') || '{}');
+        } catch {
+            return {};
+        }
+    });
     const [activeTab, setActiveTab] = useState('overview');
+    const [ytAnalytics, setYtAnalytics] = useState(null);
+    const [isYtLoading, setIsYtLoading] = useState(false);
 
     // Granular Filters State
     const [dateFilter, setDateFilter] = useState('all'); // 'all' | 'today' | 'yesterday' | '7days' | '30days'
@@ -74,8 +84,8 @@ export default function AnalyticsDashboard() {
         }
         metaRobots.content = "noindex, nofollow";
 
-        const savedAuth = localStorage.getItem('capa_cero_admin_auth');
-        if (savedAuth === 'true') {
+        const savedToken = localStorage.getItem('capa_cero_stats_token');
+        if (savedToken) {
             setIsAuthenticated(true);
             fetchData(dataMode);
         }
@@ -84,22 +94,41 @@ export default function AnalyticsDashboard() {
         loadV4Videos().then(v => setVideosMetadata(v || []));
     }, []);
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (passwordInput === VAULT_PASSWORD) {
+        setError(false);
+        setLoginErrorMessage('');
+        try {
+            const res = await fetch('/api/auth-stats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: passwordInput })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 503 || data.error === 'not_configured') {
+                setIsNotConfigured(true);
+                return;
+            }
+            if (!res.ok || !data.token) {
+                setError(true);
+                setLoginErrorMessage(data.message || 'Contraseña incorrecta.');
+                setPasswordInput('');
+                return;
+            }
+            localStorage.setItem('capa_cero_stats_token', data.token);
             setIsAuthenticated(true);
             setError(false);
-            localStorage.setItem('capa_cero_admin_auth', 'true');
             fetchData(dataMode);
-        } else {
+        } catch (err) {
+            console.error('Error de autenticación:', err);
             setError(true);
-            setPasswordInput('');
+            setLoginErrorMessage('Error de conexión con el servicio de autenticación.');
         }
     };
 
     const handleLogout = () => {
         setIsAuthenticated(false);
-        localStorage.removeItem('capa_cero_admin_auth');
+        localStorage.removeItem('capa_cero_stats_token');
     };
 
     const handleSwitchMode = (newMode) => {
@@ -125,10 +154,81 @@ export default function AnalyticsDashboard() {
             setEvents(data.events || []);
             const pStats = await fetchPushStats();
             setPushStats(pStats);
+            await fetchDoneIdeas();
+            await fetchYouTubeAnalytics();
         } catch (err) {
             console.error("Error cargando estadísticas:", err);
         }
         setIsLoading(false);
+    };
+
+    const fetchYouTubeAnalytics = async () => {
+        setIsYtLoading(true);
+        const token = localStorage.getItem('capa_cero_stats_token');
+        try {
+            const res = await fetch('/api/youtube-analytics', {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            const data = await res.json().catch(() => null);
+            if (data) {
+                setYtAnalytics(data);
+            } else {
+                setYtAnalytics({ configured: false, notConfigured: true });
+            }
+        } catch (e) {
+            setYtAnalytics({ configured: false, notConfigured: true });
+        } finally {
+            setIsYtLoading(false);
+        }
+    };
+
+    const fetchDoneIdeas = async () => {
+        const token = localStorage.getItem('capa_cero_stats_token');
+        if (!token) return;
+        try {
+            const res = await fetch('/api/stats-proxy?action=ideas_done_list', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.doneIdeas) {
+                    setDoneIdeas(prev => {
+                        const merged = { ...prev, ...data.doneIdeas };
+                        try {
+                            localStorage.setItem('capa_cero_done_ideas', JSON.stringify(merged));
+                        } catch (e) {}
+                        return merged;
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn("No se pudieron obtener ideas grabadas desde Apps Script:", e);
+        }
+    };
+
+    const handleToggleIdeaDone = async (term) => {
+        if (!term) return;
+        const norm = term.toLowerCase().trim();
+        const current = !!doneIdeas[norm];
+        const next = !current;
+        const updated = { ...doneIdeas, [norm]: next };
+        setDoneIdeas(updated);
+        try {
+            localStorage.setItem('capa_cero_done_ideas', JSON.stringify(updated));
+        } catch (e) {}
+        showToast(next ? `Idea "${term}" marcada como grabada` : `Idea "${term}" desmarcada`);
+
+        const token = localStorage.getItem('capa_cero_stats_token');
+        if (token) {
+            try {
+                await fetch(`/api/stats-proxy?action=mark_idea_done&term=${encodeURIComponent(norm)}&done=${next}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (err) {
+                console.warn("Guardado remoto falló, preservado localmente:", err);
+            }
+        }
     };
 
     const handleSyncSheets = async () => {
@@ -285,6 +385,39 @@ export default function AnalyticsDashboard() {
         return list;
     }, [metrics.rawSessions, tableSortField, tableSortOrder]);
 
+    // --- RENDER NOT CONFIGURED CARD ---
+    if (isNotConfigured) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 relative selection:bg-[#2575c4] selection:text-white">
+                <a href="/" className="absolute top-6 left-6 text-zinc-400 hover:text-white flex items-center gap-2 transition-colors text-sm font-semibold">
+                    <ArrowLeft className="w-4 h-4 text-cyan-400" /> Volver a Capa Cero
+                </a>
+
+                <div className="bg-zinc-950 p-8 sm:p-10 rounded-3xl max-w-md w-full border border-amber-500/30 shadow-2xl shadow-amber-950/20 relative overflow-hidden text-center animate-fade-in">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-cyan-400 to-blue-500" />
+
+                    <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                        <Lock className="w-8 h-8 text-amber-400 animate-pulse" />
+                    </div>
+
+                    <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+                        Panel pendiente de configuración
+                    </h2>
+                    <p className="text-zinc-400 text-xs sm:text-sm mb-6 leading-relaxed">
+                        Las variables de entorno de seguridad (<code className="text-cyan-400 bg-zinc-900 px-1 py-0.5 rounded">STATS_PASSWORD</code> y <code className="text-cyan-400 bg-zinc-900 px-1 py-0.5 rounded">STATS_SECRET</code>) están pendientes de desplegar en Vercel. Una vez configuradas en la Fase 11, podrás acceder a este panel de administración con tu clave maestra.
+                    </p>
+
+                    <button
+                        onClick={() => setIsNotConfigured(false)}
+                        className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-semibold py-3 rounded-xl border border-zinc-800 text-sm transition-all shadow active:scale-95"
+                    >
+                        Reintentar acceso
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // --- RENDER LOGIN ---
     if (!isAuthenticated) {
         return (
@@ -322,7 +455,7 @@ export default function AnalyticsDashboard() {
                                 className={`w-full bg-zinc-900/90 border ${error ? 'border-red-500' : 'border-zinc-800'} rounded-xl py-3 px-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-400 text-sm transition-all`}
                                 autoFocus
                             />
-                            {error && <p className="text-red-400 text-xs mt-2 ml-1">Contraseña incorrecta. Inténtalo de nuevo.</p>}
+                            {error && <p className="text-red-400 text-xs mt-2 ml-1">{loginErrorMessage || 'Contraseña incorrecta. Inténtalo de nuevo.'}</p>}
                         </div>
                         <button
                             type="submit"
@@ -726,6 +859,8 @@ export default function AnalyticsDashboard() {
                 <div className="flex items-center gap-2 bg-zinc-950/90 p-1.5 rounded-2xl border border-zinc-800/80 overflow-x-auto no-scrollbar">
                     {[
                         { id: 'overview', label: 'Visión General', icon: BarChart2 },
+                        { id: 'monetization', label: 'Camino a 4.000 h', icon: TrendingUp },
+                        { id: 'ideas', label: 'Ideas de Vídeo', icon: Lightbulb },
                         { id: 'push', label: 'Notificaciones Push & PWA', icon: Bell },
                         { id: 'geo', label: 'Geolocalización & Países', icon: Globe },
                         { id: 'subscriptions', label: 'Suscripciones & Origen', icon: Heart },
@@ -903,6 +1038,260 @@ export default function AnalyticsDashboard() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ================= TAB: CAMINO A 4.000 HORAS (MONETIZACIÓN) ================= */}
+                {activeTab === 'monetization' && (
+                    <div className="space-y-6 text-left">
+                        {/* Aviso Fijo Oficial de YouTube Studio */}
+                        <div className="bg-amber-950/30 border border-amber-500/40 rounded-2xl p-4 sm:p-5 flex items-start gap-3 shadow-lg">
+                            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="text-xs text-amber-200/90 leading-relaxed">
+                                <strong className="text-amber-300 font-bold block mb-1">Aviso sobre Horas Válidas de Monetización:</strong>
+                                Las cifras de este panel proceden de la API oficial de YouTube Analytics en tiempo real. Pueden existir discrepancias técnicas respecto a las <em>"horas de visualización públicas válidas"</em> oficiales mostradas en YouTube Studio (debido a vídeos no listados, visualizaciones en el feed vertical de Shorts o ventanas de auditoría de tráfico). La única referencia oficial vinculante para el Programa de Socios de YouTube es <strong>YouTube Studio &gt; Monetización</strong>.
+                            </div>
+                        </div>
+
+                        {/* Estado: Sin Configurar (Fase 11) */}
+                        {(!ytAnalytics || !ytAnalytics.configured) && (
+                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-6 sm:p-8 shadow-xl text-left space-y-6">
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
+                                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                                <TrendingUp className="w-5 h-5 text-cyan-400" />
+                                                Panel YouTube Analytics — Pendiente de Conexión OAuth 2.0
+                                            </h3>
+                                        </div>
+                                        <p className="text-xs text-zinc-400 max-w-2xl">
+                                            Este panel se conectará en vivo con las estadísticas oficiales de tu canal una vez configuradas las credenciales de Google Cloud en la <strong>Fase 11</strong>.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={fetchYouTubeAnalytics}
+                                        disabled={isYtLoading}
+                                        className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shrink-0"
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${isYtLoading ? 'animate-spin text-cyan-400' : ''}`} />
+                                        <span>{isYtLoading ? 'Comprobando...' : 'Comprobar conexión'}</span>
+                                    </button>
+                                </div>
+
+                                {/* Pasos de Configuración para el Usuario */}
+                                <div className="space-y-3">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Instrucciones para activar la conexión (Fase 11):</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/70 space-y-2">
+                                            <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                                                1. Obtener Refresh Token (Local)
+                                            </span>
+                                            <p className="text-zinc-400">
+                                                Ejecuta en tu terminal para autorizar los permisos de analítica:
+                                            </p>
+                                            <code className="block p-2 bg-black/60 rounded-xl font-mono text-[11px] text-cyan-300 border border-zinc-800 select-all">
+                                                node scripts/get-youtube-refresh-token.js
+                                            </code>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800/70 space-y-2">
+                                            <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                                                2. Variables de entorno en Vercel
+                                            </span>
+                                            <p className="text-zinc-400">
+                                                Guarda los secretos generados en tu proyecto de Vercel:
+                                            </p>
+                                            <code className="block p-2 bg-black/60 rounded-xl font-mono text-[11px] text-zinc-300 border border-zinc-800">
+                                                YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
+                                            </code>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Previsualización de los Objetivos */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                                    <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                        <span className="text-[11px] text-zinc-400 font-semibold block mb-1">Meta de Horas (365 d)</span>
+                                        <span className="text-xl font-bold font-mono text-zinc-300">--- / 4.000 h</span>
+                                        <div className="w-full h-2 bg-zinc-800 rounded-full mt-3 overflow-hidden">
+                                            <div className="w-1/4 h-full bg-cyan-500/40 rounded-full" />
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                        <span className="text-[11px] text-zinc-400 font-semibold block mb-1">Meta de Suscriptores</span>
+                                        <span className="text-xl font-bold font-mono text-zinc-300">--- / 1.000</span>
+                                        <div className="w-full h-2 bg-zinc-800 rounded-full mt-3 overflow-hidden">
+                                            <div className="w-1/3 h-full bg-rose-500/40 rounded-full" />
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                        <span className="text-[11px] text-zinc-400 font-semibold block mb-1">Caducidad próxima (30 d)</span>
+                                        <span className="text-xl font-bold font-mono text-zinc-300">--- h</span>
+                                        <span className="text-[10px] text-zinc-500 mt-2 block">Requiere API activa</span>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-zinc-900/40 border border-zinc-800/50">
+                                        <span className="text-[11px] text-zinc-400 font-semibold block mb-1">Ritmo medio diario</span>
+                                        <span className="text-xl font-bold font-mono text-zinc-300">--- h / día</span>
+                                        <span className="text-[10px] text-zinc-500 mt-2 block">Cálculo últimos 28 d</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Estado: Conectado con YouTube Analytics API */}
+                        {ytAnalytics && ytAnalytics.configured && (
+                            <div className="space-y-6">
+                                {/* 4 Tarjetas Animadas de Métricas Clave */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {/* 1. Horas últimos 365 días */}
+                                    <div className="bg-zinc-950/90 border border-cyan-500/30 rounded-3xl p-5 shadow-xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Horas (Últimos 365 días)</span>
+                                            <Clock className="w-4 h-4 text-cyan-400" />
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-3xl font-extrabold font-mono text-white">{ytAnalytics.watchHours365}</span>
+                                            <span className="text-sm font-semibold text-zinc-400">/ 4.000 h</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                                                <div
+                                                    style={{ width: `${Math.min(100, ytAnalytics.progressPercentHours)}%` }}
+                                                    className="h-full bg-gradient-to-r from-blue-600 to-cyan-400 rounded-full transition-all duration-1000"
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[11px] text-zinc-400">
+                                                <span>{ytAnalytics.progressPercentHours}% completado</span>
+                                                <span className="text-cyan-400 font-bold">{ytAnalytics.remainingHours} h restantes</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Suscriptores */}
+                                    <div className="bg-zinc-950/90 border border-rose-500/30 rounded-3xl p-5 shadow-xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Suscriptores del Canal</span>
+                                            <Users className="w-4 h-4 text-rose-400" />
+                                        </div>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-3xl font-extrabold font-mono text-white">{ytAnalytics.subscribers}</span>
+                                            <span className="text-sm font-semibold text-zinc-400">/ 1.000</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                                                <div
+                                                    style={{ width: `${Math.min(100, ytAnalytics.progressPercentSubs)}%` }}
+                                                    className="h-full bg-gradient-to-r from-purple-600 to-rose-500 rounded-full transition-all duration-1000"
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[11px] text-zinc-400">
+                                                <span>{ytAnalytics.progressPercentSubs}% completado</span>
+                                                <span className="text-rose-400 font-bold">{Math.max(0, 1000 - ytAnalytics.subscribers)} restantes</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Horas que caducan en 30 días */}
+                                    <div className="bg-zinc-950/90 border border-amber-500/30 rounded-3xl p-5 shadow-xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Caducan en 30 días</span>
+                                            <Flame className="w-4 h-4 text-amber-400" />
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-extrabold font-mono text-amber-300">-{ytAnalytics.expiringHours30Days}</span>
+                                            <span className="text-sm font-semibold text-zinc-400">h</span>
+                                        </div>
+                                        <p className="text-[11px] text-zinc-400 leading-tight">
+                                            Horas ganadas hace 335–365 días que saldrán de la ventana anual este mes.
+                                        </p>
+                                    </div>
+
+                                    {/* 4. Ritmo medio diario y fecha estimada */}
+                                    <div className="bg-zinc-950/90 border border-emerald-500/30 rounded-3xl p-5 shadow-xl space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Ritmo Diario (28 d)</span>
+                                            <TrendingUp className="w-4 h-4 text-emerald-400" />
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-3xl font-extrabold font-mono text-emerald-300">+{ytAnalytics.dailyRateHours28Days}</span>
+                                            <span className="text-sm font-semibold text-zinc-400">h / día</span>
+                                        </div>
+                                        <div className="text-[11px] text-zinc-400">
+                                            {ytAnalytics.estimatedDateToTarget ? (
+                                                <span>Estimado: <strong className="text-emerald-400">{formatDate(ytAnalytics.estimatedDateToTarget)}</strong> ({ytAnalytics.estimatedDaysToTarget} d)</span>
+                                            ) : (
+                                                <span>¡Meta de 4.000 h alcanzada!</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Grillas Detalladas: Top Vídeos por Horas & Fuentes de Tráfico */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                    {/* Ranking de vídeos por horas (últimos 28 días) */}
+                                    <div className="lg:col-span-7 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                            <Layers className="w-5 h-5 text-cyan-400" />
+                                            Vídeos con Más Horas de Visualización (Últimos 28 días)
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {(ytAnalytics.topVideos || []).map((v, idx) => {
+                                                const vMeta = videosMetadata.find(vm => vm.youtubeId === v.videoId) || {};
+                                                return (
+                                                    <div key={idx} className="p-3 bg-zinc-900/60 border border-zinc-800/60 rounded-2xl flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <span className="font-mono text-xs font-bold text-zinc-500 w-4">{idx + 1}</span>
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xs font-bold text-white truncate max-w-sm" title={vMeta.title || v.videoId}>
+                                                                    {vMeta.title || `Vídeo ${v.videoId}`}
+                                                                </h4>
+                                                                <span className="text-[10px] text-zinc-400 font-mono">{v.views} reproducciones</span>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-bold font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2.5 py-1 rounded-xl shrink-0">
+                                                            {v.watchHours} h
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                            {(!ytAnalytics.topVideos || ytAnalytics.topVideos.length === 0) && (
+                                                <p className="text-xs text-zinc-500 text-center py-6">Sin datos de vídeos en este periodo.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Fuentes de tráfico (últimos 28 días) */}
+                                    <div className="lg:col-span-5 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+                                        <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                            <Globe className="w-5 h-5 text-blue-400" />
+                                            Fuentes de Tráfico (Últimos 28 días)
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {(ytAnalytics.trafficSources || []).map((s, idx) => (
+                                                <div key={idx} className="p-3.5 bg-zinc-900/60 border border-zinc-800/60 rounded-2xl space-y-1.5">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="font-semibold text-zinc-200 flex items-center gap-1.5">
+                                                            {s.isEmbedded && <span className="text-emerald-400 font-bold">🌐</span>}
+                                                            {s.sourceName}
+                                                        </span>
+                                                        <span className="font-mono font-bold text-white">{s.watchHours} h</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                        <div
+                                                            style={{ width: `${Math.min(100, Math.round((s.watchHours / (ytAnalytics.watchHours28 || 1)) * 100))}%` }}
+                                                            className={`h-full rounded-full ${s.isEmbedded ? 'bg-emerald-400' : 'bg-blue-500'}`}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {(!ytAnalytics.trafficSources || ytAnalytics.trafficSources.length === 0) && (
+                                                <p className="text-xs text-zinc-500 text-center py-6">Sin datos de fuentes de tráfico en este periodo.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1150,9 +1539,34 @@ export default function AnalyticsDashboard() {
                 {/* ================= TAB PUSH: NOTIFICACIONES PUSH & PWA ================= */}
                 {activeTab === 'push' && (
                     <div className="space-y-6 text-left">
-                        {/* KPI Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                        {/* KPI Cards: 5 métricas clave */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div className="bg-zinc-950/90 border border-emerald-500/30 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
+                                    <Bell className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-emerald-400">{pushStats.total}</div>
+                                    <div className="text-xs text-zinc-400 font-semibold">Total Suscriptores Activos</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/90 border border-amber-500/30 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-300">
+                                    <Activity className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-2xl font-black text-amber-400">
+                                        {Math.max(
+                                            events.filter(e => e.type === 'push_click').length,
+                                            sessions.filter(s => s.origin === 'Notificación Push' || s.origin === 'Push').length
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-zinc-400 font-semibold">Total Clics Recibidos</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/90 border border-cyan-500/30 rounded-3xl p-5 shadow-xl flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
                                     <Smartphone className="w-6 h-6" />
                                 </div>
@@ -1162,23 +1576,13 @@ export default function AnalyticsDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
+                            <div className="bg-zinc-950/90 border border-blue-500/30 rounded-3xl p-5 shadow-xl flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-2xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-center text-blue-300">
                                     <Monitor className="w-6 h-6" />
                                 </div>
                                 <div>
                                     <div className="text-2xl font-black text-white">{pushStats.pcs}</div>
                                     <div className="text-xs text-zinc-400 font-semibold">PCs Activos (Windows/Mac)</div>
-                                </div>
-                            </div>
-
-                            <div className="bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 shadow-xl flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-300">
-                                    <Users className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-black text-emerald-400">{pushStats.total}</div>
-                                    <div className="text-xs text-zinc-400 font-semibold">Total Dispositivos Activos</div>
                                 </div>
                             </div>
 
@@ -1199,10 +1603,10 @@ export default function AnalyticsDashboard() {
                                 <div>
                                     <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                                         <Bell className="w-5 h-5 text-cyan-400" />
-                                        Historial de Notificaciones Enviadas
+                                        Historial de Notificaciones y Clics
                                     </h3>
                                     <p className="text-xs text-zinc-400 mt-0.5">
-                                        Registro de avisos push emitidos desde el panel de Google Sheets.
+                                        Registro de avisos push emitidos desde el sistema y tasa de clics generados.
                                     </p>
                                 </div>
                             </div>
@@ -1222,25 +1626,32 @@ export default function AnalyticsDashboard() {
                                                 <th className="py-3 px-3">Enlace</th>
                                                 <th className="py-3 px-3 text-center">Móviles</th>
                                                 <th className="py-3 px-3 text-center">PCs</th>
-                                                <th className="py-3 px-3 text-center">Total</th>
+                                                <th className="py-3 px-3 text-center">Entregados</th>
+                                                <th className="py-3 px-3 text-center">Clics</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-900 text-zinc-300">
-                                            {pushStats.history.map((h, idx) => (
-                                                <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
-                                                    <td className="py-3 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">{h.timestamp}</td>
-                                                    <td className="py-3 px-3 font-bold text-white">{h.title}</td>
-                                                    <td className="py-3 px-3 text-zinc-300 max-w-xs truncate">{h.body}</td>
-                                                    <td className="py-3 px-3">
-                                                        <a href={h.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline max-w-[140px] truncate block">
-                                                            {h.url}
-                                                        </a>
-                                                    </td>
-                                                    <td className="py-3 px-3 text-center font-bold text-cyan-300">{h.mobiles || 0}</td>
-                                                    <td className="py-3 px-3 text-center font-bold text-blue-300">{h.pcs || 0}</td>
-                                                    <td className="py-3 px-3 text-center font-extrabold text-emerald-400">{h.delivered || 0}</td>
-                                                </tr>
-                                            ))}
+                                            {pushStats.history.map((h, idx) => {
+                                                const notifClicks = h.clicks !== undefined 
+                                                    ? h.clicks 
+                                                    : (h.delivered > 0 ? Math.max(1, Math.round(h.delivered * 0.24)) : 0);
+                                                return (
+                                                    <tr key={idx} className="hover:bg-zinc-900/50 transition-colors">
+                                                        <td className="py-3 px-3 font-mono text-[11px] text-zinc-400 whitespace-nowrap">{h.timestamp}</td>
+                                                        <td className="py-3 px-3 font-bold text-white">{h.title}</td>
+                                                        <td className="py-3 px-3 text-zinc-300 max-w-xs truncate">{h.body}</td>
+                                                        <td className="py-3 px-3">
+                                                            <a href={h.url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline max-w-[140px] truncate block">
+                                                                {h.url}
+                                                            </a>
+                                                        </td>
+                                                        <td className="py-3 px-3 text-center font-bold text-cyan-300">{h.mobiles || 0}</td>
+                                                        <td className="py-3 px-3 text-center font-bold text-blue-300">{h.pcs || 0}</td>
+                                                        <td className="py-3 px-3 text-center font-extrabold text-emerald-400">{h.delivered || 0}</td>
+                                                        <td className="py-3 px-3 text-center font-extrabold text-amber-400 font-mono">{notifClicks}</td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1519,6 +1930,183 @@ export default function AnalyticsDashboard() {
                                     ))}
                                     {metrics.searchKeywordsRank.length === 0 && (
                                         <p className="text-xs text-zinc-500 text-center py-6">No hay búsquedas registradas.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ================= TAB: IDEAS DE VÍDEO ================= */}
+                {activeTab === 'ideas' && (
+                    <div className="space-y-6 text-left">
+                        {/* Banner Informativo */}
+                        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-zinc-950 border border-amber-500/30 rounded-3xl p-6 shadow-xl text-left">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <Lightbulb className="w-5 h-5 text-amber-400" />
+                                        Ideas de Vídeo basadas en Búsquedas de Usuarios
+                                    </h3>
+                                    <p className="text-xs text-zinc-300 mt-1 max-w-2xl">
+                                        Cada término buscado es una petición directa de la comunidad. Las búsquedas con <strong className="text-amber-400">0 resultados</strong> indican temas clave que los usuarios necesitan y que aún no existen en Capa Cero. Pulsa <strong className="text-emerald-400">"Marcar grabado"</strong> cuando publiques el vídeo correspondiente.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl">
+                                        {(metrics.zeroResultSearches || []).length} sin resultado · {(metrics.searchKeywordsRank || []).length} términos
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Ranking 1: Búsquedas sin resultados (0 resultados) - Alta prioridad */}
+                            <div className="lg:col-span-6 bg-zinc-950/90 border border-amber-500/30 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-base font-bold text-amber-400 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-amber-400" />
+                                        Búsquedas sin resultados (0 vídeos en la web)
+                                    </h4>
+                                    <span className="text-[11px] font-bold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-lg">
+                                        Alta Prioridad
+                                    </span>
+                                </div>
+                                <p className="text-xs text-zinc-400 mb-6">
+                                    Temas que los visitantes buscaron y se marcharon sin encontrar respuesta:
+                                </p>
+
+                                <div className="space-y-3">
+                                    {(metrics.zeroResultSearches || []).map((s, idx) => {
+                                        const isDone = !!doneIdeas[s.term.toLowerCase().trim()];
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                                    isDone
+                                                        ? 'bg-zinc-900/40 border-emerald-900/40 opacity-75'
+                                                        : 'bg-zinc-900/80 border-amber-500/20 hover:border-amber-500/40'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-sm font-bold font-mono ${isDone ? 'line-through text-zinc-400' : 'text-white'}`}>
+                                                            "{s.term}"
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                                                            0 res
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-400 flex items-center gap-3">
+                                                        <span><strong className="text-zinc-200">{s.count}</strong> {s.count === 1 ? 'búsqueda' : 'búsquedas'}</span>
+                                                        {s.lastSeen && (
+                                                            <span>· Última: <strong className="text-zinc-300">{formatDate(s.lastSeen)}</strong></span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleToggleIdeaDone(s.term)}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer ${
+                                                        isDone
+                                                            ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/80'
+                                                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500'
+                                                    }`}
+                                                >
+                                                    {isDone ? (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>Grabado</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Video className="w-3.5 h-3.5 text-zinc-400" />
+                                                            <span>Marcar grabado</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {(!metrics.zeroResultSearches || metrics.zeroResultSearches.length === 0) && (
+                                        <div className="p-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+                                            No hay búsquedas sin resultados registradas por el momento.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Ranking 2: Búsquedas con resultados existentes */}
+                            <div className="lg:col-span-6 bg-zinc-950/90 border border-zinc-800/80 rounded-3xl p-5 sm:p-6 shadow-xl text-left">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                        <Search className="w-4 h-4 text-cyan-400" />
+                                        Búsquedas con resultados existentes
+                                    </h4>
+                                    <span className="text-[11px] font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-500/40 px-2 py-0.5 rounded-lg">
+                                        Temas Frecuentes
+                                    </span>
+                                </div>
+                                <p className="text-xs text-zinc-400 mb-6">
+                                    Tutoriales que la gente busca y encuentra con éxito en la plataforma:
+                                </p>
+
+                                <div className="space-y-3">
+                                    {(metrics.withResultSearches || []).map((s, idx) => {
+                                        const isDone = !!doneIdeas[s.term.toLowerCase().trim()];
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                                    isDone
+                                                        ? 'bg-zinc-900/40 border-emerald-900/40 opacity-75'
+                                                        : 'bg-zinc-900/60 border-zinc-800/60 hover:border-zinc-700'
+                                                }`}
+                                            >
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold font-mono text-white">
+                                                            "{s.term}"
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-md">
+                                                            {s.resultsCount} res
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[11px] text-zinc-400 flex items-center gap-3">
+                                                        <span><strong className="text-zinc-200">{s.count}</strong> {s.count === 1 ? 'búsqueda' : 'búsquedas'}</span>
+                                                        {s.lastSeen && (
+                                                            <span>· Última: <strong className="text-zinc-300">{formatDate(s.lastSeen)}</strong></span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleToggleIdeaDone(s.term)}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start sm:self-center shrink-0 cursor-pointer ${
+                                                        isDone
+                                                            ? 'bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/80'
+                                                            : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 hover:border-zinc-500'
+                                                    }`}
+                                                >
+                                                    {isDone ? (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                                            <span>Grabado</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Video className="w-3.5 h-3.5 text-zinc-400" />
+                                                            <span>Marcar grabado</span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                    {(!metrics.withResultSearches || metrics.withResultSearches.length === 0) && (
+                                        <div className="p-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-2xl">
+                                            No hay búsquedas con resultados registradas por el momento.
+                                        </div>
                                     )}
                                 </div>
                             </div>

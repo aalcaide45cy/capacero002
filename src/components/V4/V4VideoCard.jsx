@@ -47,6 +47,15 @@ export default function V4VideoCard({ video, onSelect }) {
   const likesCount = formatCounter(video.likes);
   const commentsCount = formatCounter(video.comments);
   const shortCategory = getShortCategory(video.category);
+  const videoHref = video.slug ? `/video/${video.slug}` : (video.youtubeId ? `/video/${video.youtubeId}` : '#');
+
+  const handleLinkClick = (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) {
+      return;
+    }
+    e.preventDefault();
+    handleSelect();
+  };
 
   return (
     <div className={`group bg-zinc-950 hover:bg-zinc-900 border rounded-2xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col h-full text-left ${
@@ -55,10 +64,12 @@ export default function V4VideoCard({ video, onSelect }) {
         : 'border-zinc-800/90 hover:border-zinc-700'
     }`}>
       
-      {/* Thumbnail Area */}
-      <div
-        onClick={handleSelect}
-        className="relative aspect-video w-full bg-zinc-950 cursor-pointer overflow-hidden"
+      {/* Thumbnail Area como enlace real */}
+      <a
+        href={videoHref}
+        onClick={handleLinkClick}
+        aria-label={`Ver vídeo: ${video.title}`}
+        className="block relative aspect-video w-full bg-zinc-950 cursor-pointer overflow-hidden"
       >
         <img
           src={video.thumbnail}
@@ -88,20 +99,29 @@ export default function V4VideoCard({ video, onSelect }) {
           </div>
         ) : (
           /* Gradient Overlay Estándar */
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+          <>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent pointer-events-none" />
+            {video.duration && (
+              <div className="absolute bottom-2 right-2 bg-black/85 text-zinc-100 text-[10px] sm:text-xs font-bold font-mono px-1.5 py-0.5 rounded-md border border-zinc-700/60 shadow-md flex items-center gap-1 z-10">
+                <Clock className="w-3 h-3 text-cyan-400" />
+                <span>{video.duration}</span>
+              </div>
+            )}
+          </>
         )}
-      </div>
+      </a>
 
       {/* Content Area */}
       <div className="p-4 sm:p-5 flex flex-col flex-1">
         
-        {/* Title */}
-        <h3
-          onClick={handleSelect}
-          className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2"
+        {/* Title como enlace semántico */}
+        <a
+          href={videoHref}
+          onClick={handleLinkClick}
+          className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-400 cursor-pointer transition-colors line-clamp-2 leading-snug mb-2 block"
         >
-          {video.title}
-        </h3>
+          <h3>{video.title}</h3>
+        </a>
 
         {/* Description (ONLY if it exists and is not empty) */}
         {video.hasDescription && (

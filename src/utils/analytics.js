@@ -450,11 +450,67 @@ export const trackVideoOpen = (video) => {
     });
 
     if (window.gtag) {
-        window.gtag('event', 'video_start', {
+        window.gtag('event', 'video_open', {
             video_title: video.title,
             video_id: video.youtubeId
         });
     }
+};
+
+// 2b. Telemetría IFrame API de Reproducción de Vídeo (Fase 05)
+export const trackVideoStart = (video) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General'
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_start',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_start', payload);
+    }
+};
+
+export const trackVideoProgress = (video, percent) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General',
+        video_percent: percent
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_progress',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_progress', payload);
+    }
+};
+
+export const trackVideoComplete = (video) => {
+    if (!video) return;
+    const payload = {
+        video_title: video.title || 'Tutorial',
+        video_id: video.youtubeId || video.id || '',
+        video_category: video.category || 'General'
+    };
+    saveEvent({
+        sessionId: getSessionId(),
+        type: 'video_complete',
+        details: payload
+    });
+    if (window.gtag) {
+        window.gtag('event', 'video_complete', payload);
+    }
+    sendToSheetsIfEnabled({
+        completedVideo: video.title || ''
+    });
 };
 
 // 3. Suscripción al Canal (¡CON ATRIBUCIÓN EXACTA!)
@@ -533,25 +589,45 @@ export const trackDoctorSelect = (problem, clickedVideo = false) => {
     });
 };
 
-// 6. Búsqueda en el buscador
+// 6. Búsqueda en el buscador (con debounce de 1.2s y evento search_no_results)
 let searchDebounce = null;
 export const trackSearch = (searchTerm, resultsCount = 0) => {
     if (!searchTerm || searchTerm.trim().length < 2) return;
-    sessionSearchTerms.push(searchTerm.trim());
+    const cleanTerm = searchTerm.trim();
 
     if (searchDebounce) clearTimeout(searchDebounce);
     searchDebounce = setTimeout(() => {
+        sessionSearchTerms.push(cleanTerm);
+        const count = typeof resultsCount === 'number' ? resultsCount : 0;
+
         saveEvent({
             sessionId: getSessionId(),
             type: 'search_query',
             details: {
-                term: searchTerm.trim(),
-                resultsCount
+                term: cleanTerm,
+                resultsCount: count
             }
         });
 
         if (window.gtag) {
-            window.gtag('event', 'search', { search_term: searchTerm });
+            window.gtag('event', 'search', {
+                search_term: cleanTerm,
+                results_count: count
+            });
+
+            if (count === 0) {
+                window.gtag('event', 'search_no_results', {
+                    search_term: cleanTerm
+                });
+            }
+        }
+
+        if (count === 0) {
+            saveEvent({
+                sessionId: getSessionId(),
+                type: 'search_no_results',
+                details: { term: cleanTerm }
+            });
         }
     }, 1200);
 };

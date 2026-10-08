@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "update-data": "node scripts/update-videos.js",
-    "prebuild": "npm run update-data"
+    "update-seo": "node scripts/update-seo-sitemap.js",
+    "prebuild": "npm run update-data && npm run update-seo",
+    "postbuild": "node scripts/prerender-videos.js"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.2.0",

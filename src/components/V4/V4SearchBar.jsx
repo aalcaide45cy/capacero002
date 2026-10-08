@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, X, Youtube, Instagram, Mail } from 'lucide-react';
 import Typewriter from 'typewriter-effect';
-import { trackSocialClick, trackSearch } from '../../utils/analytics';
+import { trackSocialClick } from '../../utils/analytics';
 
 // TikTok icon SVG component
 const TikTokIcon = ({ color = "currentColor" }) => (
@@ -47,9 +47,7 @@ export default function V4SearchBar({
             value={searchQuery}
             aria-label="Buscar tutoriales, trucos y perfiles de impresión 3D"
             onChange={(e) => {
-              const val = e.target.value;
-              setSearchQuery(val);
-              trackSearch(val);
+              setSearchQuery(e.target.value);
             }}
             className="w-full bg-zinc-900 text-white text-sm sm:text-base px-11 sm:px-14 py-2.5 sm:py-3 rounded-full border-2 border-zinc-800 focus:border-[#2575c4] focus:outline-none transition-all duration-300 search-focus glow-blue-static"
             placeholder=""
@@ -75,7 +73,6 @@ export default function V4SearchBar({
             <button
               onClick={() => {
                 setSearchQuery('');
-                trackSearch('');
               }}
               className="absolute inset-y-0 right-3.5 sm:right-4 flex items-center text-zinc-400 hover:text-white transition-colors"
               aria-label="Limpiar búsqueda"
@@ -102,7 +99,6 @@ export default function V4SearchBar({
               key={term}
               onClick={() => {
                 setSearchQuery(term);
-                trackSearch(term);
                 window.scrollTo({ top: 460, behavior: 'smooth' });
               }}
               className="bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 hover:text-cyan-300 border border-zinc-800 hover:border-cyan-500/40 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all active:scale-95 shadow-sm"
@@ -163,9 +159,7 @@ export default function V4SearchBar({
               aria-label="Buscar tutoriales"
               tabIndex={isSticky ? 0 : -1}
               onChange={(e) => {
-                const val = e.target.value;
-                setSearchQuery(val);
-                trackSearch(val);
+                setSearchQuery(e.target.value);
               }}
               className="w-full bg-zinc-900 text-white text-xs sm:text-sm pl-9 pr-9 py-1.5 sm:py-2 rounded-full border border-zinc-800 focus:border-[#2575c4] focus:outline-none transition-all search-focus"
               placeholder=""
@@ -190,7 +184,6 @@ export default function V4SearchBar({
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  trackSearch('');
                 }}
                 tabIndex={isSticky ? 0 : -1}
                 className="absolute inset-y-0 right-3 flex items-center text-zinc-400 hover:text-white transition-colors"

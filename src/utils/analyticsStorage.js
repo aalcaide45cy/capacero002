@@ -597,15 +597,30 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         .sort((a, b) => b.count - a.count);
 
     const searchKeywordsMap = {};
-    filteredEvents.filter(e => e.type === 'search_query').forEach(e => {
+    filteredEvents.filter(e => e.type === 'search_query' || e.type === 'search_no_results').forEach(e => {
         const term = (e.details?.term || '').trim().toLowerCase();
         if (term) {
-            if (!searchKeywordsMap[term]) searchKeywordsMap[term] = { term, count: 0, resultsCount: e.details?.resultsCount ?? 1 };
+            const isZero = e.type === 'search_no_results' || e.details?.resultsCount === 0;
+            if (!searchKeywordsMap[term]) {
+                searchKeywordsMap[term] = {
+                    term,
+                    count: 0,
+                    resultsCount: isZero ? 0 : (e.details?.resultsCount ?? 1),
+                    lastSeen: e.timestamp || null
+                };
+            }
             searchKeywordsMap[term].count++;
+            if (isZero) {
+                searchKeywordsMap[term].resultsCount = 0;
+            }
+            if (e.timestamp && (!searchKeywordsMap[term].lastSeen || new Date(e.timestamp) > new Date(searchKeywordsMap[term].lastSeen))) {
+                searchKeywordsMap[term].lastSeen = e.timestamp;
+            }
         }
     });
     const searchKeywordsRank = Object.values(searchKeywordsMap).sort((a, b) => b.count - a.count);
     const zeroResultSearches = searchKeywordsRank.filter(s => s.resultsCount === 0);
+    const withResultSearches = searchKeywordsRank.filter(s => s.resultsCount > 0);
 
     // 8. Dispositivos y Canales de Origen
     const deviceMap = { 'Móvil': 0, 'Desktop': 0, 'Tablet': 0 };
@@ -660,6 +675,7 @@ export const computeAnalyticsMetrics = (sessions, events, filters = {}) => {
         doctorSymptomsRank,
         searchKeywordsRank,
         zeroResultSearches,
+        withResultSearches,
         deviceMap,
         originsRank,
         funnel,
@@ -723,8 +739,34 @@ export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e
 // Obtener métricas y registros de notificaciones push desde Google Sheets
 export const fetchPushStats = async () => {
     try {
-        const url = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
-        const res = await fetch(url);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('capa_cero_stats_token') : null;
+        let res;
+        try {
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            res = await fetch('/api/stats-proxy?action=push_stats&t=' + Date.now(), { headers });
+            if (res.status === 503) {
+                return {
+                    notConfigured: true,
+                    total: 0,
+                    mobiles: 0,
+                    pcs: 0,
+                    expired: 0,
+                    countries: [],
+                    devices: [],
+                    history: []
+                };
+            }
+        } catch {
+            res = null;
+        }
+
+        // Si el proxy no responde (entorno local sin backend Vercel), fallback directo a Apps Script
+        if (!res || !res.ok) {
+            const fallbackUrl = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
+            res = await fetch(fallbackUrl);
+        }
+
         if (!res.ok) throw new Error("HTTP error " + res.status);
         const data = await res.json();
         return {

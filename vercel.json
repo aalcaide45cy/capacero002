@@ -38,6 +38,10 @@
     ],
     "rewrites": [
         {
+            "source": "/video/:slug",
+            "destination": "/video/:slug/index.html"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

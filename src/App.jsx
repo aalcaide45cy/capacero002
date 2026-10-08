@@ -7,6 +7,7 @@ const Header = lazy(() => import('./components/Header'));
 const PrivacyCookies = lazy(() => import('./components/PrivacyCookies'));
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
+const V4VideoPage = lazy(() => import('./components/V4/V4VideoPage'));
 
 function RouteLoadingFallback() {
     return (
@@ -28,7 +29,16 @@ function App() {
         return <V4Hub />;
     }
 
-    // 2. Intercepción de ruta para el Panel Privado de Estadísticas
+    // 2. Ruta individual indexable por vídeo (/video/:slug)
+    if (currentPath.startsWith('/video/') || currentPath === '/video') {
+        return (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <V4VideoPage />
+            </Suspense>
+        );
+    }
+
+    // 3. Intercepción de ruta para el Panel Privado de Estadísticas
     if (currentPath === '/estadisticas' || currentPath === '/estadisticas/') {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
@@ -37,7 +47,7 @@ function App() {
         );
     }
 
-    // 3. Intercepción de ruta para el Editor MD (Carga diferida aislada de CodeMirror)
+    // 4. Intercepción de ruta para el Editor MD (Carga diferida aislada de CodeMirror)
     if (currentPath === '/editor' || currentPath === '/editor/') {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
@@ -46,7 +56,7 @@ function App() {
         );
     }
 
-    // 4. Intercepción de ruta para Privacidad y Legal
+    // 5. Intercepción de ruta para Privacidad y Legal
     if (currentPath === '/politica-privacidad' || currentPath === '/politica-privacidad/') {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
@@ -60,7 +70,7 @@ function App() {
         );
     }
 
-    // 5. Limpieza automática de URL en el navegador para rutas eliminadas (/calculadora, /cursos, /v2-back, etc.)
+    // 6. Limpieza automática de URL en el navegador para rutas obsoletas (/calculadora, /v2-back, etc.)
     if (currentPath !== '/' && currentPath !== '') {
         window.history.replaceState({}, '', '/');
     }

@@ -10,7 +10,8 @@ import V4InstallModal from './V4InstallModal';
 import CollaborationModal from '../CollaborationModal';
 import { loadV4Videos, getInitialV4Videos } from '../../utils/loadV4Videos';
 import { loadMakerWorldModels } from '../../utils/loadMakerWorldModels';
-import { initAnalyticsSession, setActiveSection } from '../../utils/analytics';
+import { initAnalyticsSession, setActiveSection, trackSearch } from '../../utils/analytics';
+import { countSearchResults } from '../../utils/videoFilter';
 import { subscribeToPushNotifications } from '../../utils/pushManager';
 import { applySyncPayload, completeQRExchange, syncVaultPull, getVaultId } from '../../utils/courseProgress';
 import { Sparkles, X } from 'lucide-react';
@@ -25,6 +26,54 @@ export default function V4Hub() {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [syncToastMessage, setSyncToastMessage] = useState(null);
+
+  // Abrir modal actualizando la URL a /video/<slug> sin recargar la página (Fase 04)
+  const handleOpenVideoModal = (v) => {
+    if (!v) return;
+    const slug = v.slug || v.youtubeId;
+    if (typeof window !== 'undefined') {
+      if (!window.__originalTitle) window.__originalTitle = document.title;
+      document.title = `${v.title} | Capa Cero 3D`;
+      window.history.pushState({ modalOpen: true, videoId: v.youtubeId, slug }, '', `/video/${slug}`);
+    }
+    setSelectedVideoModal(v);
+  };
+
+  // Cerrar modal restaurando la URL a / y el título original (o permitiendo que el botón Atrás lo gestione)
+  const handleCloseVideoModal = () => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.startsWith('/video/')) {
+        window.history.pushState({}, '', '/');
+      }
+      if (window.__originalTitle) {
+        document.title = window.__originalTitle;
+      }
+    }
+    setSelectedVideoModal(null);
+  };
+
+  // Soporte para botón Atrás / Adelante del navegador
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/' || path === '') {
+        setSelectedVideoModal(null);
+        if (window.__originalTitle) {
+          document.title = window.__originalTitle;
+        }
+      } else if (path.startsWith('/video/')) {
+        const slug = path.replace(/^\/video\/?/, '').replace(/\/$/, '');
+        const target = videos.find(v => v.slug === slug || v.youtubeId === slug);
+        if (target) {
+          setSelectedVideoModal(target);
+          document.title = `${target.title} | Capa Cero 3D`;
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [videos]);
 
   // Sincronización continua en segundo plano y detección de hash (#pair= o #sync=)
   useEffect(() => {
@@ -181,6 +230,8 @@ export default function V4Hub() {
 
   const handleSearchChange = (val) => {
     setSearchQuery(val);
+    const count = countSearchResults(videos, val);
+    trackSearch(val, count);
   };
 
   return (
@@ -212,7 +263,7 @@ export default function V4Hub() {
       <V4Hero
         featuredVideo={featuredVideo}
         isSearching={isSearching}
-        onSelectVideo={(v) => setSelectedVideoModal(v)}
+        onSelectVideo={handleOpenVideoModal}
         onOpenCollaboration={() => setIsCollaborationOpen(true)}
         onOpenInstall={() => setIsInstallModalOpen(true)}
       >
@@ -232,7 +283,7 @@ export default function V4Hub() {
           onSelectCategory={setActiveCategory}
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
-          onSelectVideo={(v) => setSelectedVideoModal(v)}
+          onSelectVideo={handleOpenVideoModal}
         />
       </main>
 
@@ -250,8 +301,8 @@ export default function V4Hub() {
         <V4VideoModal
           video={selectedVideoModal}
           allVideos={videos}
-          onSelectVideo={(v) => setSelectedVideoModal(v)}
-          onClose={() => setSelectedVideoModal(null)}
+          onSelectVideo={handleOpenVideoModal}
+          onClose={handleCloseVideoModal}
         />
       )}
 
