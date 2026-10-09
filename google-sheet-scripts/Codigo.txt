@@ -822,7 +822,7 @@ function desduplicarYLimpiarSuscripciones(mostrarAlerta) {
   var numCols = sheet.getLastColumn() >= 14 ? 14 : 10;
   var data = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
   
-  var seenDevices = {};
+  var seenEndpoints = {};
   var limpiadas = 0;
   
   for (var i = data.length - 1; i >= 0; i--) {
@@ -831,17 +831,14 @@ function desduplicarYLimpiarSuscripciones(mostrarAlerta) {
     
     if (status === "CADUCADA") continue;
     
-    var dispCol = numCols >= 14 ? 9 : 5;
-    var osCol = numCols >= 14 ? 10 : 6;
-    var browserCol = numCols >= 14 ? 11 : 7;
+    var endpointKey = String(data[i][2] || "").trim();
+    if (!endpointKey) continue;
     
-    var deviceKey = String(data[i][dispCol]) + "_" + String(data[i][osCol]) + "_" + String(data[i][browserCol]);
-    
-    if (seenDevices[deviceKey]) {
+    if (seenEndpoints[endpointKey]) {
       sheet.getRange(i + 2, statusCol + 1).setValue("CADUCADA");
       limpiadas++;
     } else {
-      seenDevices[deviceKey] = true;
+      seenEndpoints[endpointKey] = true;
     }
   }
   
@@ -1236,15 +1233,20 @@ function procesarEnvioPushDesdeModal(title, body, url) {
       var response = UrlFetchApp.fetch(endpoint, options);
       var code = response.getResponseCode();
       
-      if (code >= 400) {
+      if (code === 404 || code === 410) {
+        // Suscripción dada de baja o eliminada del dispositivo en Apple APNs / Google FCM
         sheet.getRange(i + 2, statusCol + 1).setValue("CADUCADA");
         fallidos++;
-      } else {
+      } else if (code >= 200 && code < 300) {
         enviados++;
         if (isMobile) movilesEnviados++; else pcsEnviados++;
+      } else {
+        // Errores 400, 401, 403 (rechazo VAPID/auth) o 500 (servicio temporalmente no disponible):
+        // NO se marca la suscripción como CADUCADA para no perder suscriptores válidos por errores del servidor o claves
+        fallidos++;
       }
     } catch (err) {
-      sheet.getRange(i + 2, statusCol + 1).setValue("CADUCADA");
+      // Error de red temporal: NO marcar como CADUCADA
       fallidos++;
     }
   }
@@ -1408,13 +1410,6 @@ function doPost(e) {
           if (rowEndpoint && rowEndpoint === data.endpoint) {
             existingRowIndex = p + 2;
             break;
-          }
-          
-          if (existingData[p][rowStatusCol] === "ACTIVO" &&
-              rowDevice === data.device &&
-              rowOs === data.os &&
-              rowBrowser === data.browser) {
-            pushSheet.getRange(p + 2, rowStatusCol + 1).setValue("CADUCADA");
           }
         }
       }
