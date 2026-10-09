@@ -33,42 +33,7 @@ var B_CURVE = BigInt("0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e
 var N_CURVE = BigInt("0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 var GX_CURVE = BigInt("0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296");
 var GY_CURVE = BigInt("0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5");
-
-// Lista de Shorts y vídeos privados que no deben sincronizarse
-var VIDEOS_IGNORADOS = [
-  "C4tnZhcznnM",
-  "cPEr2vj8OD8",
-  "XIWrao4uNtU",
-  "74U1uClr5LA",
-  "px2XMValBno",
-  "lUI7KoJg40w",
-  "YK1OFjCqjGc",
-  "gRmLRA6tpZw",
-  "-Ed4ICmVaZ8",
-  "z905Akv3KHQ",
-  // Nuevos shorts de YouTube identificados en auditoría
-  "8PjZFMLb_OM",
-  "oYaSbq6Yjk8",
-  "7YgDFlq6uBs",
-  "CRDSsy35JBk",
-  "jomBf3QELNc",
-  "6UoWHgfVIE4",
-  "t1PApMmnfSc",
-  "Ry9kz9a1Vgk",
-  "50DYyWhk2kc",
-  "blaXzLq_X2Y",
-  "B9mJiZsoMqM",
-  "1hUob2u7IFk",
-  "aFDIc0efS3A",
-  "NLGoMeG6pyc",
-  "FA_8foK968Y",
-  "y6s0uvCUtj8",
-  "8ti2uDDbpT8",
-  "Thvfml_AI-Q",
-  "Tf7Ons6irt0",
-  "ushUk4xnMn8",
-  "lrfuCbksV1E"
-];
+// Detección dinámica y automática de Shorts (sin listas estáticas de IDs)
 
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
@@ -545,7 +510,7 @@ function actualizarModelosMakerWorld() {
 function procesarPegadoYouTube(sheet, row, valorPegado) {
   try {
     var videoId = extraerYouTubeId(valorPegado);
-    if (!videoId || VIDEOS_IGNORADOS.indexOf(videoId) !== -1) {
+    if (!videoId) {
       sheet.getRange(row, 1, 1, 9).clearContent();
       return;
     }
@@ -559,8 +524,8 @@ function procesarPegadoYouTube(sheet, row, valorPegado) {
     var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
     var info = obtenerInfoRealYouTube(videoId);
     
-    // Descartar si es short (por duración <= 60s o etiquetas #shorts)
-    if (info.isShort || esShort(videoId, cleanUrl, info.title, info.durationSec)) {
+    // Descartar si es short (por duración <= 180s en formato vertical/cuadrado o etiquetas #shorts)
+    if (info.isShort || esShort(videoId, cleanUrl, info.title, info.durationSec, info.isVerticalOrSquare, info.isShortsEligible, info.canonicalUrl)) {
       sheet.getRange(row, 1, 1, 9).clearContent();
       return;
     }
@@ -1962,7 +1927,7 @@ function doGet(e) {
         var vUrl = String(vals[r][1] || "");
         var vTitle = String(vals[r][0] || "");
         var vId = extraerYouTubeId(vUrl);
-        if (vId && (VIDEOS_IGNORADOS.indexOf(vId) !== -1 || esShort(vId, vUrl, vTitle, 0))) {
+        if (vId && esShort(vId, vUrl, vTitle, 0)) {
           sheet.deleteRow(r + 2);
           deleted.push({ id: vId, title: vTitle, row: r + 2 });
         }
@@ -1982,7 +1947,7 @@ function doGet(e) {
 
 /**
  * ==============================================================================
- * 9. DETECTOR ESTRICTO ANTI-SHORTS
+ * 9. DETECTOR ESTRICTO ANTI-SHORTS (HASTA 180S Y FORMATO VERTICAL/CUADRADO)
  * ==============================================================================
  */
 function parseIsoDuration(iso) {
@@ -1995,16 +1960,44 @@ function parseIsoDuration(iso) {
   return h * 3600 + min * 60 + sec;
 }
 
-function esShort(videoId, url, title, durationSec) {
+function esShort(videoId, url, title, durationSec, isVerticalOrSquare, isShortsEligible, canonicalUrl) {
   var urlLower = (url || "").toLowerCase();
   var titleLower = (title || "").toLowerCase();
   
-  if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) return true;
+  // Regla crítica: Los 34 tutoriales del catálogo oficial nunca se consideran Shorts
+  var catalogo = obtenerCatalogoOficialCapaCero();
+  for (var c = 0; c < catalogo.length; c++) {
+    if (catalogo[c][1].indexOf(videoId) !== -1) return false;
+  }
+
+  // 1. Detección por URL directa o etiquetas #shorts
   if (urlLower.indexOf("/shorts/") !== -1) return true;
-  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1 || titleLower.indexOf("#reels") !== -1 || titleLower.indexOf("#reel") !== -1) return true;
+  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1 || 
+      titleLower.indexOf("#reels") !== -1 || titleLower.indexOf("#reel") !== -1) return true;
   
-  if (durationSec && durationSec > 0) {
-    return durationSec <= 60;
+  // 2. Detección por metadatos oficiales de YouTube (Shorts de hasta 3 min / 180s en formato vertical o cuadrado)
+  if (isShortsEligible === true) return true;
+  if (canonicalUrl && canonicalUrl.toLowerCase().indexOf("/shorts/") !== -1) return true;
+  if (isVerticalOrSquare === true) return true;
+
+  // 3. Si la duración es <= 180 segundos:
+  if (durationSec && durationSec > 0 && durationSec <= 180) {
+    if (isVerticalOrSquare !== undefined) {
+      return isVerticalOrSquare === true;
+    }
+    // Verificación de formato mediante endpoint oficial de YouTube
+    try {
+      var chk = UrlFetchApp.fetch("https://www.youtube.com/shorts/" + videoId, {
+        followRedirects: false,
+        muteHttpExceptions: true,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        }
+      });
+      var loc = chk.getAllHeaders()["Location"] || chk.getAllHeaders()["location"] || "";
+      if (loc.indexOf("/watch?v=") !== -1) return false;
+      if (chk.getResponseCode() === 200 || loc.indexOf("/shorts/") !== -1) return true;
+    } catch (eChk) {}
   }
   
   return false;
@@ -2028,6 +2021,9 @@ function obtenerInfoRealYouTube(videoId) {
   var durationSec = 0;
   var keywords = [];
   var isShort = false;
+  var isShortsEligible = false;
+  var canonicalUrl = "";
+  var isVerticalOrSquare = false;
   var isLoginRequired = false;
   var isScheduledOrPrivate = false;
 
@@ -2083,6 +2079,10 @@ function obtenerInfoRealYouTube(videoId) {
 
       if (resHtml.getResponseCode() === 200) {
         var html = resHtml.getContentText();
+
+        if (html.indexOf('"isShortsEligible":true') !== -1) isShortsEligible = true;
+        var matchCanon = html.match(/<link rel="canonical" href="([^"]+)"/i);
+        if (matchCanon && matchCanon[1]) canonicalUrl = matchCanon[1];
 
         // Detectar si YouTube exige login (vídeo privado, programado o restringido)
         if (
@@ -2170,6 +2170,19 @@ function obtenerInfoRealYouTube(videoId) {
                 if (pObj.videoDetails.keywords) keywords = pObj.videoDetails.keywords;
                 if (pObj.videoDetails.lengthSeconds) durationSec = parseInt(pObj.videoDetails.lengthSeconds, 10);
               }
+              if (pObj && pObj.microformat && pObj.microformat.playerMicroformatRenderer) {
+                if (pObj.microformat.playerMicroformatRenderer.isShortsEligible === true) isShortsEligible = true;
+                if (pObj.microformat.playerMicroformatRenderer.canonicalUrl) canonicalUrl = pObj.microformat.playerMicroformatRenderer.canonicalUrl;
+              }
+              if (pObj && pObj.streamingData && (pObj.streamingData.formats || pObj.streamingData.adaptiveFormats)) {
+                var fmts = (pObj.streamingData.formats || []).concat(pObj.streamingData.adaptiveFormats || []);
+                for (var f = 0; f < fmts.length; f++) {
+                  if (fmts[f].width && fmts[f].height) {
+                    if (fmts[f].height >= fmts[f].width) isVerticalOrSquare = true;
+                    break;
+                  }
+                }
+              }
             } catch (eP) {}
           }
         }
@@ -2225,6 +2238,20 @@ function obtenerInfoRealYouTube(videoId) {
           if (!durationSec && details.lengthSeconds) durationSec = parseInt(details.lengthSeconds, 10);
           if ((!keywords || keywords.length === 0) && Array.isArray(details.keywords)) keywords = details.keywords;
         }
+        var micro = dataIt.microformat ? dataIt.microformat.playerMicroformatRenderer : null;
+        if (micro) {
+          if (micro.isShortsEligible === true) isShortsEligible = true;
+          if (micro.canonicalUrl) canonicalUrl = String(micro.canonicalUrl);
+        }
+        if (dataIt.streamingData && (dataIt.streamingData.formats || dataIt.streamingData.adaptiveFormats)) {
+          var fmtsIt = (dataIt.streamingData.formats || []).concat(dataIt.streamingData.adaptiveFormats || []);
+          for (var fi = 0; fi < fmtsIt.length; fi++) {
+            if (fmtsIt[fi].width && fmtsIt[fi].height) {
+              if (fmtsIt[fi].height >= fmtsIt[fi].width) isVerticalOrSquare = true;
+              break;
+            }
+          }
+        }
       }
     } catch (eIt) {
       Logger.log("Aviso Innertube: " + eIt.toString());
@@ -2267,8 +2294,41 @@ function obtenerInfoRealYouTube(videoId) {
     } catch (eNo) {}
   }
 
-  if (durationSec > 0 && durationSec <= 60) {
-    isShort = true;
+  // Comprobación anti-Shorts de YouTube (hasta 3 minutos / 180s en formato vertical o cuadrado)
+  // Regla estricta: Los vídeos del catálogo oficial nunca se marcan como Short
+  var esTutorialOficial = false;
+  var catalogo = obtenerCatalogoOficialCapaCero();
+  for (var c = 0; c < catalogo.length; c++) {
+    if (catalogo[c][1].indexOf(videoId) !== -1) {
+      esTutorialOficial = true;
+      break;
+    }
+  }
+
+  if (esTutorialOficial) {
+    isShort = false;
+  } else {
+    var hasShortTag = (title && (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1 || title.toLowerCase().indexOf("#reels") !== -1 || title.toLowerCase().indexOf("#reel") !== -1));
+    if (hasShortTag || (canonicalUrl && canonicalUrl.indexOf("/shorts/") !== -1) || isShortsEligible === true || isVerticalOrSquare === true) {
+      isShort = true;
+    } else if (durationSec > 0 && durationSec <= 180) {
+      // Si dura <= 180s y no es ni vertical ni shortsEligible, verificar si YouTube redirige a /watch?v= o mantiene /shorts/
+      try {
+        var chk = UrlFetchApp.fetch("https://www.youtube.com/shorts/" + videoId, {
+          followRedirects: false,
+          muteHttpExceptions: true,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+          }
+        });
+        var loc = chk.getAllHeaders()["Location"] || chk.getAllHeaders()["location"] || "";
+        if (loc.indexOf("/watch?v=") !== -1) {
+          isShort = false;
+        } else if (chk.getResponseCode() === 200 || loc.indexOf("/shorts/") !== -1) {
+          isShort = true;
+        }
+      } catch (eChk) {}
+    }
   }
 
   if (!title) {
@@ -2325,6 +2385,9 @@ function obtenerInfoRealYouTube(videoId) {
     consejoClave: consejoClave,
     durationSec: durationSec,
     isShort: isShort,
+    isShortsEligible: isShortsEligible,
+    canonicalUrl: canonicalUrl,
+    isVerticalOrSquare: isVerticalOrSquare,
     isLoginRequired: isLoginRequired,
     isScheduledOrPrivate: isScheduledOrPrivate,
     descargas: descargas
@@ -2917,15 +2980,14 @@ function sincronizarVideosCapaCero() {
     var videoId = item.id;
     var title = item.title;
 
-    if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) continue;
-    if (title && (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1)) continue;
+    if (title && (title.toLowerCase().indexOf("#shorts") !== -1 || title.toLowerCase().indexOf("#short") !== -1 || title.toLowerCase().indexOf("#reels") !== -1 || title.toLowerCase().indexOf("#reel") !== -1)) continue;
 
     // Si ya existe en la hoja, saltarlo
     if (existingIds[videoId]) continue;
 
     // Obtener información detallada del vídeo
     var info = obtenerInfoRealYouTube(videoId);
-    if (info.isShort || esShort(videoId, "https://www.youtube.com/watch?v=" + videoId, info.title || title, info.durationSec)) continue;
+    if (info.isShort || esShort(videoId, "https://www.youtube.com/watch?v=" + videoId, info.title || title, info.durationSec, info.isVerticalOrSquare, info.isShortsEligible, info.canonicalUrl)) continue;
 
     var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
     var finalTitle = info.title || title;

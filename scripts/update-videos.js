@@ -12,16 +12,8 @@ const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
 const NOTIFIED_FILE = path.join(DATA_DIR, 'notified.json');
 const CATEGORY_MAP_FILE = path.join(DATA_DIR, 'category-map.json');
 
-const KNOWN_SHORTS = new Set([
-  "C4tnZhcznnM", "cPEr2vj8OD8", "XIWrao4uNtU", "74U1uClr5LA",
-  "px2XMValBno", "lUI7KoJg40w", "YK1OFjCqjGc", "gRmLRA6tpZw",
-  "-Ed4ICmVaZ8", "z905Akv3KHQ", "8PjZFMLb_OM", "oYaSbq6Yjk8",
-  "7YgDFlq6uBs", "CRDSsy35JBk", "jomBf3QELNc", "6UoWHgfVIE4",
-  "t1PApMmnfSc", "Ry9kz9a1Vgk", "50DYyWhk2kc", "blaXzLq_X2Y",
-  "B9mJiZsoMqM", "1hUob2u7IFk", "aFDIc0efS3A", "NLGoMeG6pyc",
-  "FA_8foK968Y", "y6s0uvCUtj8", "8ti2uDDbpT8", "Thvfml_AI-Q",
-  "Tf7Ons6irt0", "ushUk4xnMn8", "lrfuCbksV1E"
-]);
+// Los Shorts se detectan dinámicamente sin listas estáticas de IDs
+
 
 let _cachedCategoryMap = undefined;
 function getCategoryMap() {
@@ -368,6 +360,9 @@ async function fetchLiveYouTubeStats(videoId) {
     let views = null;
     let publishedAt = null;
     let lengthSeconds = null;
+    let isShortsEligible = false;
+    let canonicalUrl = '';
+    let isVerticalOrSquare = false;
 
     if (pRes.ok) {
       const pData = await pRes.json();
@@ -382,6 +377,20 @@ async function fetchLiveYouTubeStats(videoId) {
       const rawLength = pData.videoDetails?.lengthSeconds;
       if (rawLength) {
         lengthSeconds = parseInt(rawLength, 10);
+      }
+      const micro = pData.microformat?.playerMicroformatRenderer;
+      if (micro) {
+        if (micro.isShortsEligible === true) isShortsEligible = true;
+        if (micro.canonicalUrl) canonicalUrl = String(micro.canonicalUrl);
+      }
+      const allFormats = [...(pData.streamingData?.formats || []), ...(pData.streamingData?.adaptiveFormats || [])];
+      for (const f of allFormats) {
+        if (f && f.width && f.height) {
+          if (f.height >= f.width) {
+            isVerticalOrSquare = true;
+          }
+          break;
+        }
       }
     }
 
@@ -427,7 +436,7 @@ async function fetchLiveYouTubeStats(videoId) {
 
     clearTimeout(timeout);
 
-    return { views, likes, comments, publishedAt, lengthSeconds };
+    return { views, likes, comments, publishedAt, lengthSeconds, isShortsEligible, canonicalUrl, isVerticalOrSquare };
   } catch (e) {
     return null;
   }
@@ -439,7 +448,7 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
   const videoId = extractYouTubeId(rawUrl);
-  if (!videoId || KNOWN_SHORTS.has(videoId)) return null;
+  if (!videoId) return null;
   
   let category = String(raw.Categoria || raw.categoria || raw.Category || 'Bambu Studio').trim();
   const catMap = getCategoryMap();
@@ -462,14 +471,29 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   const rawDestacado = String(raw.Destacado || raw.destacado || '').trim().toUpperCase();
   const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES';
 
-  // Filtrar shorts verticales de YouTube
-  const isShort = KNOWN_SHORTS.has(videoId) ||
-                  rawUrl.toLowerCase().includes('/shorts/') || 
-                  title.toLowerCase().includes('#shorts') || 
-                  title.toLowerCase().includes('#short') ||
-                  title.toLowerCase().includes('#reels') ||
-                  title.toLowerCase().includes('#reel') ||
-                  (liveStats?.lengthSeconds && liveStats.lengthSeconds <= 60);
+  // Detección dinámica de YouTube Shorts (hasta 3 minutos / 180s en formato vertical o cuadrado)
+  // Regla estricta: Los vídeos existentes en el catálogo oficial nunca se excluyen (incluso si duran <= 180s)
+  const isExistingTutorial = Boolean(existing);
+
+  const liveDurationSec = liveStats?.lengthSeconds || 0;
+  const apiDurationSec = apiStats?.duration ? (function(d){
+    const parts = String(d).split(':').map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : (parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0);
+  })(apiStats.duration) : 0;
+  const durationSec = liveDurationSec || apiDurationSec;
+  const isShortDuration = durationSec > 0 && durationSec <= 180;
+
+  const isShortUrl = rawUrl.toLowerCase().includes('/shorts/') || (liveStats?.canonicalUrl && liveStats.canonicalUrl.toLowerCase().includes('/shorts/'));
+  const hasShortTag = /#(shorts|short|reels|reel)\b/i.test(title);
+  const isShortsEligible = liveStats?.isShortsEligible === true;
+  const isVerticalOrSquare = liveStats?.isVerticalOrSquare === true;
+
+  const isShort = !isExistingTutorial && (
+    isShortUrl ||
+    hasShortTag ||
+    isShortsEligible ||
+    (isShortDuration && (isVerticalOrSquare || isShortsEligible || isShortUrl))
+  );
   if (isShort) return null;
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
@@ -631,8 +655,14 @@ async function main() {
           let apiStats = apiStatsMap.get(videoId) || null;
           let liveStats = null;
 
-          // Si no hay datos de la API oficial para este vídeo, usar respaldo (scraping/player)
-          if (!apiStats && !videosMap.has(videoId)) {
+          // Si no hay datos de la API oficial para este vídeo, o si dura <= 180s y no es un tutorial conocido, consultar player en vivo para verificar si es Short o formato horizontal
+          const isKnownTutorial = Boolean(existingVideosMap[videoId]);
+          const apiDurSec = apiStats?.duration ? (function(d){
+            const parts = String(d).split(':').map(Number);
+            return parts.length === 2 ? parts[0] * 60 + parts[1] : (parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0);
+          })(apiStats.duration) : 0;
+
+          if (!videosMap.has(videoId) && (!apiStats || (!isKnownTutorial && apiDurSec > 0 && apiDurSec <= 180))) {
             liveStats = await fetchLiveYouTubeStats(videoId);
           }
 

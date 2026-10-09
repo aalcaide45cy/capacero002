@@ -33,16 +33,8 @@ export const SCHEDULED_VIDEOS_MAP = {
   // Las fechas anteriores ya han sido emitidas y pasan a publicadas
 };
 
-export const KNOWN_SHORTS = new Set([
-  "C4tnZhcznnM", "cPEr2vj8OD8", "XIWrao4uNtU", "74U1uClr5LA",
-  "px2XMValBno", "lUI7KoJg40w", "YK1OFjCqjGc", "gRmLRA6tpZw",
-  "-Ed4ICmVaZ8", "z905Akv3KHQ", "8PjZFMLb_OM", "oYaSbq6Yjk8",
-  "7YgDFlq6uBs", "CRDSsy35JBk", "jomBf3QELNc", "6UoWHgfVIE4",
-  "t1PApMmnfSc", "Ry9kz9a1Vgk", "50DYyWhk2kc", "blaXzLq_X2Y",
-  "B9mJiZsoMqM", "1hUob2u7IFk", "aFDIc0efS3A", "NLGoMeG6pyc",
-  "FA_8foK968Y", "y6s0uvCUtj8", "8ti2uDDbpT8", "Thvfml_AI-Q",
-  "Tf7Ons6irt0", "ushUk4xnMn8", "lrfuCbksV1E"
-]);
+// Los Shorts se detectan automáticamente sin listas estáticas de IDs
+
 
 /**
  * Extrae el ID del vídeo de YouTube desde cualquier formato de URL o texto.
@@ -103,7 +95,7 @@ export function normalizeVideoRow(raw, index = 0) {
   const title = String(raw.Titulo || raw.titulo || raw.Title || raw.title || '').trim();
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.youtubeUrl || raw.URL || '').trim();
   const videoId = raw.youtubeId || extractYouTubeId(rawUrl);
-  if (!videoId || KNOWN_SHORTS.has(videoId)) return null;
+  if (!videoId) return null;
 
   const baked = fallbackMap[videoId] || null;
   const stats = YOUTUBE_STATS_MAP[videoId] || null;
@@ -123,13 +115,25 @@ export function normalizeVideoRow(raw, index = 0) {
   const rawDestacado = String(raw.Destacado || raw.destacado || raw.isFeatured || '').trim().toUpperCase();
   const isFeatured = rawDestacado === 'SI' || rawDestacado === 'SÍ' || rawDestacado === 'TRUE' || rawDestacado === '1' || rawDestacado === 'YES' || raw.isFeatured === true;
 
-  // Filtrar shorts verticales de YouTube
-  const isShort = KNOWN_SHORTS.has(videoId) ||
-                  rawUrl.toLowerCase().includes('/shorts/') || 
-                  title.toLowerCase().includes('#shorts') || 
-                  title.toLowerCase().includes('#short') ||
-                  title.toLowerCase().includes('#reels') ||
-                  title.toLowerCase().includes('#reel');
+  // Detección dinámica de YouTube Shorts (hasta 3 minutos / 180s en formato vertical o cuadrado)
+  // Regla estricta: Los 34 vídeos pre-horneados del catálogo oficial nunca se excluyen (incluso si duran <= 180s)
+  const isPreBakedTutorial = Boolean(baked);
+  const isShortUrl = rawUrl.toLowerCase().includes('/shorts/');
+  const hasShortTag = /#(shorts|short|reels|reel)\b/i.test(title);
+  const isCandidateShort = raw.isShort === true || raw.isShortsEligible === true;
+  const isVerticalOrSquare = raw.isVerticalOrSquare === true || (raw.aspectRatio && raw.aspectRatio <= 1);
+  const rawDurationSec = parseInt(raw.durationSec || raw.lengthSeconds || (raw.duration ? (function(d){
+    const parts = String(d).split(':').map(Number);
+    return parts.length === 2 ? parts[0] * 60 + parts[1] : (parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0);
+  })(raw.duration) : 0), 10);
+  const isShortDuration = rawDurationSec > 0 && rawDurationSec <= 180;
+
+  const isShort = !isPreBakedTutorial && (
+    isShortUrl ||
+    hasShortTag ||
+    isCandidateShort ||
+    (isVerticalOrSquare && (isShortDuration || !rawDurationSec))
+  );
   if (isShort) return null;
 
   const chapterMatch = title.match(/#(\d+(?:\.\d+)?)/);
