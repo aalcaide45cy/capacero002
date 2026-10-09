@@ -261,7 +261,7 @@ export default function CollaborationModal({ onClose }) {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="tuemail@ejemplo.com"
+                                placeholder="contacto@empresa.com"
                                 className="w-full max-w-full box-border bg-zinc-950 border border-zinc-800 text-white text-[16px] sm:text-sm rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 focus:border-capaBlue focus:outline-none transition-colors"
                             />
                         </div>
