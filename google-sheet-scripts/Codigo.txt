@@ -1810,13 +1810,60 @@ function doGet(e) {
     var videoUrl = (e && e.parameter && e.parameter.url) ? e.parameter.url : ("https://www.capacero3d.com/video/" + slug);
     var body = (e && e.parameter && e.parameter.body) ? e.parameter.body : "Ya disponible el nuevo vídeo en la plataforma. ¡Pulsa para verlo!";
     
-    var pushResult = procesarEnvioPushDesdeModal(title, body, videoUrl);
+    var skipPush = (e && e.parameter && (e.parameter.skip_push === "true" || e.parameter.dry_run === "true"));
+    var pushResult;
+    if (skipPush) {
+      var payloadObj = {
+        title: title,
+        body: body,
+        url: videoUrl,
+        icon: "https://www.capacero3d.com/icon-192.png",
+        badge: "https://www.capacero3d.com/icon-192.png",
+        timestamp: Date.now()
+      };
+      PropertiesService.getScriptProperties().setProperty("latest_notification", JSON.stringify(payloadObj));
+      pushResult = { success: true, message: "latest_notification actualizada sin envío push a suscriptores." };
+    } else {
+      pushResult = procesarEnvioPushDesdeModal(title, body, videoUrl);
+    }
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       action: "notify_new_video",
       title: title,
       url: videoUrl,
       result: pushResult
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // set_latest_notification: Actualiza latest_notification sin enviar push a suscriptores
+  if (action === "set_latest_notification") {
+    var expectedToken = PropertiesService.getScriptProperties().getProperty("STATS_API_TOKEN");
+    var clientToken = (e && e.parameter && e.parameter.token) ? String(e.parameter.token).trim() : "";
+    if (expectedToken && expectedToken.length > 0) {
+      if (!clientToken || clientToken !== expectedToken) {
+        return ContentService.createTextOutput(JSON.stringify({
+          error: "unauthorized",
+          message: "Acceso denegado: token no válido para set_latest_notification."
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    var title = (e && e.parameter && e.parameter.title) ? e.parameter.title : "🚀 ¡Nuevo vídeo en Capa Cero 3D!";
+    var slug = (e && e.parameter && e.parameter.slug) ? e.parameter.slug : "";
+    var videoUrl = (e && e.parameter && e.parameter.url) ? e.parameter.url : (slug ? ("https://www.capacero3d.com/video/" + slug) : "https://www.capacero3d.com");
+    var body = (e && e.parameter && e.parameter.body) ? e.parameter.body : "Ya disponible el nuevo vídeo en la plataforma. ¡Pulsa para verlo!";
+    var payloadObj = {
+      title: title,
+      body: body,
+      url: videoUrl,
+      icon: "https://www.capacero3d.com/icon-192.png",
+      badge: "https://www.capacero3d.com/icon-192.png",
+      timestamp: Date.now()
+    };
+    PropertiesService.getScriptProperties().setProperty("latest_notification", JSON.stringify(payloadObj));
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      action: "set_latest_notification",
+      latest_notification: payloadObj
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
