@@ -165,7 +165,7 @@ export default function V4Hero({
 
             {/* Botón Destacado: MAKERWORLD (En móvil orden 2 a la derecha de Patreon, en desktop orden 4 a la derecha) */}
             <a
-              href="https://makerworld.com/es/@capa_cero"
+              href="https://makerworld.com/@capa_cero"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackSocialClick && trackSocialClick('MakerWorld')}

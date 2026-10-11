@@ -18,7 +18,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
   const prevStickyRef = useRef(false);
 
   const patreonUrl = "https://www.patreon.com/Capacero3d";
-  const makerWorldUrl = "https://makerworld.com/es/@capa_cero";
+  const makerWorldUrl = "https://makerworld.com/@capa_cero";
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   // Control de la animación de 2 segundos en móvil al hacerse sticky
