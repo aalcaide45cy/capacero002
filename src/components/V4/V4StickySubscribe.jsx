@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Youtube, Mail } from 'lucide-react';
 import { YouTubeIcon } from './YouTubeIcon';
 import { PatreonIcon } from './PatreonIcon';
+import { MakerWorldIcon } from './MakerWorldIcon';
 import { trackSubscribe } from '../../utils/analytics';
 
 export default function V4StickySubscribe({ isSticky = false, onOpenCollaboration }) {
-  // Estados para PC: cada una de las 3 tarjetas se puede minimizar individualmente
+  // Estados para PC: cada una de las tarjetas se puede minimizar individualmente
   const [isPatreonDismissed, setIsPatreonDismissed] = useState(false);
+  const [isMakerWorldDismissed, setIsMakerWorldDismissed] = useState(false);
   const [isCollabDismissed, setIsCollabDismissed] = useState(false);
   const [isYoutubeDismissed, setIsYoutubeDismissed] = useState(false);
 
@@ -16,6 +18,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
   const prevStickyRef = useRef(false);
 
   const patreonUrl = "https://www.patreon.com/Capacero3d";
+  const makerWorldUrl = "https://makerworld.com/es/@capa_cero";
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
   // Control de la animación de 2 segundos en móvil al hacerse sticky
@@ -86,7 +89,38 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           </div>
         </a>
 
-        {/* Botón 2 Móvil: COLABORACIONES */}
+        {/* Botón 2 Móvil: MAKERWORLD */}
+        <a
+          href={makerWorldUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="h-11 rounded-full bg-gradient-to-r from-[#00c853] via-[#00ae42] to-[#008f37] text-white flex items-center shadow-[0_0_18px_rgba(0,174,66,0.65)] border-2 border-emerald-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
+          title="Ir a MakerWorld"
+          aria-label="Ir a MakerWorld"
+        >
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
+          </div>
+          <div
+            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
+              mobileExpanded
+                ? 'max-w-[140px] pr-3.5 duration-350 delay-0'
+                : 'max-w-0 pr-0 duration-300 delay-100'
+            }`}
+          >
+            <span
+              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
+                mobileExpanded
+                  ? 'opacity-100 duration-200 ease-out delay-150'
+                  : 'opacity-0 duration-100 ease-in delay-0'
+              }`}
+            >
+              MAKERWORLD
+            </span>
+          </div>
+        </a>
+
+        {/* Botón 3 Móvil: COLABORACIONES */}
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -229,7 +263,56 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           </a>
         )}
 
-        {/* Cajita / Botón 2 PC: COLABORACIONES */}
+        {/* Cajita / Botón 2 PC: MAKERWORLD */}
+        {!isMakerWorldDismissed ? (
+          <div className="bg-zinc-950/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-emerald-500/20 shadow-emerald-950/40 w-full animate-fade-in transition-all">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00c853] via-[#00ae42] to-[#008f37] flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/30 border border-emerald-300/50">
+                <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-black text-white leading-tight">
+                  MakerWorld Capa Cero 3D
+                </h4>
+                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">
+                  Descarga gratis mis diseños 3D oficiales, perfiles de impresión afinados y proyectos 3MF.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <a
+                href={makerWorldUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-[#00c853] via-[#00ae42] to-[#008f37] hover:from-[#00df5d] hover:to-[#00a33e] text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-emerald-300/50 cursor-pointer"
+              >
+                Ver Diseños
+              </a>
+              <button
+                onClick={() => setIsMakerWorldDismissed(true)}
+                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Minimizar a icono"
+                aria-label="Minimizar cajita MakerWorld"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <a
+            href={makerWorldUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-[#00c853] via-[#00ae42] to-[#008f37] text-white shadow-[0_0_18px_rgba(0,174,66,0.65)] border-2 border-emerald-300/70 hover:scale-110 active:scale-95 transition-all duration-200"
+            title="Ir a MakerWorld"
+            aria-label="Ir a MakerWorld"
+          >
+            <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
+          </a>
+        )}
+
+        {/* Cajita / Botón 3 PC: COLABORACIONES */}
         {!isCollabDismissed ? (
           <div className="bg-zinc-950/95 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-cyan-500/20 shadow-blue-950/40 w-full animate-fade-in transition-all">
             <div className="flex items-center gap-3 min-w-0">
