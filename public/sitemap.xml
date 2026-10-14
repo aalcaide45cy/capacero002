@@ -3,9 +3,21 @@
         xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
   <url>
     <loc>https://www.capacero3d.com/</loc>
-    <lastmod>2026-10-07</lastmod>
+    <lastmod>2026-10-14</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/2HOn4jPzqAY/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Soportes manuales en Bambu Studio: así evitas marcas en la pieza</video:title>
+      <video:description>Soportes manuales Bambu Studio así evitas marcas pieza. En este tutorial te muestro paso a paso cómo colocar los soportes manualmente y eliminar esas marcas indeseadas.
+
+Enlace a mi perfil Makerworld:</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/2HOn4jPzqAY</video:player_loc>
+      <video:publication_date>2026-10-14T10:42:07.931Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>100</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
+    </video:video>
     <video:video>
       <video:thumbnail_loc>https://img.youtube.com/vi/aMl05b-tsVM/hqdefault.jpg</video:thumbnail_loc>
       <video:title>El truco definitivo para grabar logos en 3D fácilmente</video:title>
@@ -381,6 +393,24 @@ Veremos cómo se integra en nuestro flujo de trabajo h</video:description>
       <video:family_friendly>yes</video:family_friendly>
       <video:view_count>4250</video:view_count>
       <video:category>Multicolor y AMS</video:category>
+    </video:video>
+  </url>
+  <url>
+    <loc>https://www.capacero3d.com/video/soportes-manuales-en-bambu-studio-asi-evitas-marcas-en-la-pieza</loc>
+    <lastmod>2026-10-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <video:video>
+      <video:thumbnail_loc>https://img.youtube.com/vi/2HOn4jPzqAY/hqdefault.jpg</video:thumbnail_loc>
+      <video:title>Soportes manuales en Bambu Studio: así evitas marcas en la pieza</video:title>
+      <video:description>Soportes manuales Bambu Studio así evitas marcas pieza. En este tutorial te muestro paso a paso cómo colocar los soportes manualmente y eliminar esas marcas indeseadas.
+
+Enlace a mi perfil Makerworld:</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/2HOn4jPzqAY</video:player_loc>
+      <video:publication_date>2026-10-14T10:42:07.931Z</video:publication_date>
+      <video:family_friendly>yes</video:family_friendly>
+      <video:view_count>100</video:view_count>
+      <video:category>Perfiles y Calibración</video:category>
     </video:video>
   </url>
   <url>
