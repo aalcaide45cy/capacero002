@@ -56,6 +56,19 @@ function formatDurationSec(totalSeconds) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function parseISO8601Duration(isoDuration) {
+  if (!isoDuration) return null;
+  const match = String(isoDuration).match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return null;
+  const days = parseInt(match[1] || 0, 10);
+  const hours = parseInt(match[2] || 0, 10) + days * 24;
+  const minutes = parseInt(match[3] || 0, 10);
+  const seconds = parseInt(match[4] || 0, 10);
+  const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+  return { lengthSeconds: totalSeconds };
+}
+
+
 async function fetchVideoStats(videoId) {
   const payload = {
     videoId: videoId,
@@ -161,10 +174,14 @@ async function fetchVideoStats(videoId) {
         if (!lengthSeconds || lengthSeconds === 0) {
           const mSec = html.match(/"lengthSeconds":"(\d+)"/);
           const mMs = html.match(/"approxDurationMs":"(\d+)"/);
+          const mIso = html.match(/itemprop="duration"\s+content="([^"]+)"/);
           if (mSec) {
             lengthSeconds = parseInt(mSec[1], 10);
           } else if (mMs) {
             lengthSeconds = Math.round(parseInt(mMs[1], 10) / 1000);
+          } else if (mIso) {
+            const isoParsed = parseISO8601Duration(mIso[1]);
+            if (isoParsed) lengthSeconds = isoParsed.lengthSeconds;
           }
         }
         if (!publishedAt) {
