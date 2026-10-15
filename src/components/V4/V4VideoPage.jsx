@@ -352,9 +352,7 @@ export default function V4VideoPage() {
           saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
         }
       }
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
-        try { ytPlayerRef.current.destroy(); } catch (e) {}
-      }
+      ytPlayerRef.current = null;
     };
   }, [isPlaying, video?.youtubeId, nextVideo]);
 

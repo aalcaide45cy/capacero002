@@ -63,6 +63,19 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     return !isOnline ? 'offline' : (vId ? 'synced' : 'unlinked');
   });
 
+  // Cálculo del segundo de inicio exacto para reanudar o saltar a la nota (-5 segundos si es reanudación)
+  const initialStartSecond = useMemo(() => {
+    if (!video) return 0;
+    if (typeof video.startTimestamp === 'number' && video.startTimestamp >= 0) {
+      return Math.max(0, Math.floor(video.startTimestamp));
+    }
+    const saved = getVideoPlaybackTime(video.youtubeId || video.id);
+    if (saved > 10) {
+      return Math.max(0, Math.floor(saved - 5));
+    }
+    return 0;
+  }, [video?.youtubeId, video?.id, video?.startTimestamp]);
+
   const progressMilestonesRef = useRef(new Set());
   const hasStartedRef = useRef(false);
   const hasEndedRef = useRef(false);
@@ -185,18 +198,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     };
   }, [video, allVideos]);
 
-  // Cálculo del segundo de inicio exacto para reanudar o saltar a la nota (-5 segundos si es reanudación)
-  const initialStartSecond = useMemo(() => {
-    if (!video) return 0;
-    if (typeof video.startTimestamp === 'number' && video.startTimestamp >= 0) {
-      return Math.max(0, Math.floor(video.startTimestamp));
-    }
-    const saved = getVideoPlaybackTime(video.youtubeId || video.id);
-    if (saved > 10) {
-      return Math.max(0, Math.floor(saved - 5));
-    }
-    return 0;
-  }, [video?.youtubeId, video?.id, video?.startTimestamp]);
 
   // Actualizar ref del siguiente vídeo y resetear estados al cambiar de vídeo
   useEffect(() => {
@@ -486,9 +487,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
         }
       }
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
-        try { ytPlayerRef.current.destroy(); } catch (e) {}
-      }
+      ytPlayerRef.current = null;
     };
   }, [video?.youtubeId]);
 
