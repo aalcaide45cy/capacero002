@@ -214,11 +214,36 @@ export default function V4Hub() {
       }
     }).catch(() => {});
 
+    const handleStatsUpdated = (e) => {
+      const { id, views, likes, comments, duration } = e.detail || {};
+      if (!id || !isMounted) return;
+      setVideos((prevVideos) =>
+        prevVideos.map((v) =>
+          v.youtubeId === id
+            ? {
+                ...v,
+                views: views !== undefined && views > 0 ? views : v.views,
+                likes: likes !== undefined && likes > 0 ? likes : v.likes,
+                comments: comments !== undefined ? comments : v.comments,
+                duration: duration || v.duration,
+                popularityScore: ((likes || v.likes || 0) * 10) + Math.round((views || v.views || 0) / 10) + (v.isFeatured ? 500 : 0)
+              }
+            : v
+        )
+      );
+    };
+
+    window.addEventListener('capacero:video-stats-updated', handleStatsUpdated);
+
     // Pre-carga inmediata de modelos en memoria RAM para navegación instantánea a 0ms
     loadMakerWorldModels().catch(() => {});
 
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+      window.removeEventListener('capacero:video-stats-updated', handleStatsUpdated);
+    };
   }, []);
+
 
   // El vídeo en Hero es siempre el último que se ha publicado (no programado)
   const featuredVideo = useMemo(() => {

@@ -43,12 +43,39 @@ export default function V4VideoPage() {
     : '';
 
   useEffect(() => {
+    let isMounted = true;
     loadV4Videos().then((fresh) => {
-      if (Array.isArray(fresh) && fresh.length > 0) {
+      if (isMounted && Array.isArray(fresh) && fresh.length > 0) {
         setVideos(fresh);
       }
     }).catch(() => {});
+
+    const handleStatsUpdated = (e) => {
+      const { id, views, likes, comments, duration } = e.detail || {};
+      if (!id || !isMounted) return;
+      setVideos((prevVideos) =>
+        prevVideos.map((v) =>
+          v.youtubeId === id
+            ? {
+                ...v,
+                views: views !== undefined && views > 0 ? views : v.views,
+                likes: likes !== undefined && likes > 0 ? likes : v.likes,
+                comments: comments !== undefined ? comments : v.comments,
+                duration: duration || v.duration
+              }
+            : v
+        )
+      );
+    };
+
+    window.addEventListener('capacero:video-stats-updated', handleStatsUpdated);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('capacero:video-stats-updated', handleStatsUpdated);
+    };
   }, []);
+
 
   const video = useMemo(() => {
     if (!videos || videos.length === 0 || !pathSlug) return null;

@@ -346,95 +346,150 @@ async function fetchLiveYouTubeStats(videoId) {
       }
     };
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7000);
-
-    // 1. Consultar endpoint Player para visualizaciones, duración y fecha exacta
-    const pRes = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-
     let views = null;
     let publishedAt = null;
     let lengthSeconds = null;
     let isShortsEligible = false;
     let canonicalUrl = '';
     let isVerticalOrSquare = false;
-
-    if (pRes.ok) {
-      const pData = await pRes.json();
-      const rawViews = pData.videoDetails?.viewCount;
-      if (rawViews !== undefined && rawViews !== null) {
-        views = parseInt(rawViews, 10);
-      }
-      const rawDate = pData.microformat?.playerMicroformatRenderer?.publishDate;
-      if (rawDate) {
-        publishedAt = new Date(rawDate).toISOString();
-      }
-      const rawLength = pData.videoDetails?.lengthSeconds;
-      if (rawLength) {
-        lengthSeconds = parseInt(rawLength, 10);
-      }
-      const micro = pData.microformat?.playerMicroformatRenderer;
-      if (micro) {
-        if (micro.isShortsEligible === true) isShortsEligible = true;
-        if (micro.canonicalUrl) canonicalUrl = String(micro.canonicalUrl);
-      }
-      const allFormats = [...(pData.streamingData?.formats || []), ...(pData.streamingData?.adaptiveFormats || [])];
-      for (const f of allFormats) {
-        if (f && f.width && f.height) {
-          if (f.height >= f.width) {
-            isVerticalOrSquare = true;
-          }
-          break;
-        }
-      }
-    }
-
-    // 2. Consultar endpoint Next para Likes y Comentarios en vivo
-    const nRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-
     let likes = null;
     let comments = null;
 
-    if (nRes.ok) {
-      const nData = await nRes.json();
-      const nStr = JSON.stringify(nData);
+    // 1. Consultar endpoint Player para visualizaciones, duración y fecha exacta
+    try {
+      const pRes = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(6000)
+      });
 
-      // Extraer Likes del botón con iconName "LIKE"
-      const mLike = nStr.match(/"iconName":"LIKE","title":"([\d.,]+)"/);
-      if (mLike) {
-        likes = parseInt(mLike[1].replace(/[^0-9]/g, ""), 10) || 0;
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        const rawViews = pData.videoDetails?.viewCount;
+        if (rawViews !== undefined && rawViews !== null) {
+          const pv = parseInt(rawViews, 10);
+          if (!isNaN(pv) && pv > 0) views = pv;
+        }
+        const rawDate = pData.microformat?.playerMicroformatRenderer?.publishDate;
+        if (rawDate) {
+          publishedAt = new Date(rawDate).toISOString();
+        }
+        const rawLength = pData.videoDetails?.lengthSeconds;
+        if (rawLength) {
+          lengthSeconds = parseInt(rawLength, 10);
+        }
+        const micro = pData.microformat?.playerMicroformatRenderer;
+        if (micro) {
+          if (micro.isShortsEligible === true) isShortsEligible = true;
+          if (micro.canonicalUrl) canonicalUrl = String(micro.canonicalUrl);
+        }
+        const allFormats = [...(pData.streamingData?.formats || []), ...(pData.streamingData?.adaptiveFormats || [])];
+        for (const f of allFormats) {
+          if (f && f.width && f.height) {
+            if (f.height >= f.width) {
+              isVerticalOrSquare = true;
+            }
+            break;
+          }
+        }
       }
+    } catch (eP) {}
 
-      // Extraer Comentarios del panel de comentarios
-      if (nData.engagementPanels) {
-        for (const ep of nData.engagementPanels) {
-          const panel = ep.engagementPanelSectionListRenderer;
-          if (panel && panel.panelIdentifier === "engagement-panel-comments-section") {
-            const text = panel.header?.engagementPanelTitleHeaderRenderer?.contextualInfo?.runs?.[0]?.text;
-            if (text) {
-              comments = parseInt(text.replace(/[^0-9]/g, ""), 10) || 0;
-            } else {
-              comments = 0;
+    // 2. Consultar endpoint Next para Likes, Comentarios y Respaldo de Visualizaciones
+    try {
+      const nRes = await fetch("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(6000)
+      });
+
+      if (nRes.ok) {
+        const nData = await nRes.json();
+        const nStr = JSON.stringify(nData);
+
+        // Extraer Likes del botón con iconName "LIKE"
+        const mLike = nStr.match(/"iconName":"LIKE","title":"([\d.,]+)"/);
+        if (mLike) {
+          likes = parseInt(mLike[1].replace(/[^0-9]/g, ""), 10) || 0;
+        }
+
+        // Extraer Comentarios del panel de comentarios
+        if (nData.engagementPanels) {
+          for (const ep of nData.engagementPanels) {
+            const panel = ep.engagementPanelSectionListRenderer;
+            if (panel && panel.panelIdentifier === "engagement-panel-comments-section") {
+              const text = panel.header?.engagementPanelTitleHeaderRenderer?.contextualInfo?.runs?.[0]?.text;
+              if (text) {
+                comments = parseInt(text.replace(/[^0-9]/g, ""), 10) || 0;
+              } else {
+                comments = 0;
+              }
+            }
+          }
+        }
+        if (comments === null) {
+          comments = 0;
+        }
+
+        // Extraer Visualizaciones desde Next si Player no las suministró o vino 0
+        if (!views || views === 0) {
+          const mViewMatch = nStr.match(/"videoViewCountRenderer":\{"viewCount":\{"simpleText":"([^"]+)"\}/) ||
+                             nStr.match(/"viewCount":\{"simpleText":"([^"]+)"\}/) ||
+                             nStr.match(/"viewCount":\{"runs":\[\{"text":"([^"]+)"\}/);
+          if (mViewMatch) {
+            const parsed = parseInt(mViewMatch[1].replace(/[^0-9]/g, ""), 10);
+            if (!isNaN(parsed) && parsed > 0) {
+              views = parsed;
             }
           }
         }
       }
-      if (comments === null) {
-        comments = 0;
-      }
-    }
+    } catch (eN) {}
 
-    clearTimeout(timeout);
+    // 3. Fallback a página pública de YouTube si falta views o duración
+    if (!views || views === 0 || !lengthSeconds || lengthSeconds === 0) {
+      try {
+        const watchRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept-Language": "es-ES,es;q=0.9"
+          },
+          signal: AbortSignal.timeout(6000)
+        });
+        if (watchRes.ok) {
+          const html = await watchRes.text();
+          if (!views || views === 0) {
+            const mHtmlView = html.match(/"viewCount":"(\d+)"/) || html.match(/itemprop="interactionCount"\s+content="(\d+)"/);
+            if (mHtmlView) {
+              views = parseInt(mHtmlView[1], 10);
+            }
+          }
+          if (!lengthSeconds || lengthSeconds === 0) {
+            const mSec = html.match(/"lengthSeconds":"(\d+)"/);
+            const mMs = html.match(/"approxDurationMs":"(\d+)"/);
+            if (mSec) {
+              lengthSeconds = parseInt(mSec[1], 10);
+            } else if (mMs) {
+              lengthSeconds = Math.round(parseInt(mMs[1], 10) / 1000);
+            }
+          }
+          if (!publishedAt) {
+            const mDate = html.match(/"publishDate":"([^"]+)"/) || html.match(/"uploadDate":"([^"]+)"/);
+            if (mDate) {
+              publishedAt = new Date(mDate[1]).toISOString();
+            }
+          }
+          if (likes === null) {
+            const mLike = html.match(/"iconName":"LIKE","title":"([\d.,]+)"/) || html.match(/"likeCount":"(\d+)"/);
+            if (mLike) {
+              likes = parseInt(mLike[1].replace(/[^0-9]/g, ""), 10) || 0;
+            }
+          }
+        }
+      } catch (eW) {}
+    }
 
     return { views, likes, comments, publishedAt, lengthSeconds, isShortsEligible, canonicalUrl, isVerticalOrSquare };
   } catch (e) {
@@ -662,11 +717,19 @@ async function main() {
             return parts.length === 2 ? parts[0] * 60 + parts[1] : (parts.length === 3 ? parts[0] * 3600 + parts[1] * 60 + parts[2] : 0);
           })(apiStats.duration) : 0;
 
-          if (!videosMap.has(videoId) && (!apiStats || (!isKnownTutorial && apiDurSec > 0 && apiDurSec <= 180))) {
+          const existing = existingVideosMap[videoId] || null;
+          const needsLiveStats = !apiStats ||
+                                 !apiStats.views ||
+                                 apiStats.views === 0 ||
+                                 !existing ||
+                                 !existing.views ||
+                                 existing.views === 0 ||
+                                 (!isKnownTutorial && apiDurSec > 0 && apiDurSec <= 180);
+
+          if (!videosMap.has(videoId) && needsLiveStats) {
             liveStats = await fetchLiveYouTubeStats(videoId);
           }
 
-          const existing = existingVideosMap[videoId] || null;
           const playlistInfo = playlistsMap.get(videoId) || null;
           const normalized = normalizeVideoRow(row, idx, apiStats, liveStats, existing, playlistInfo);
           if (!normalized) continue;

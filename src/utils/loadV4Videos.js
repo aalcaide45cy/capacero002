@@ -304,9 +304,15 @@ export async function loadV4Videos(forceRefresh = false) {
           // Re-normalizar para verificar si algún vídeo programado ya se estrenó
           const refreshed = parsed.map((v, idx) => normalizeVideoRow(v, idx)).filter(Boolean);
           refreshed.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-          return refreshed;
+          
+          // Si el caché tiene algún vídeo no programado con 0 visualizaciones, saltar el caché para hidratar
+          const hasZeroViews = refreshed.some(v => (!v.views || v.views <= 0) && !v.isScheduled);
+          if (!hasZeroViews) {
+            return refreshed;
+          }
         }
       }
+
     } catch (e) {
       console.warn('Error leyendo caché local de vídeos:', e);
     }
@@ -374,14 +380,44 @@ export async function loadV4Videos(forceRefresh = false) {
               // Orden cronológico estricto (más nuevo publicado primero)
               formatted.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-              if (formatted.length > 0) {
-                try {
-                  localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
-                  localStorage.setItem(CACHE_KEY_TIME, Date.now().toString());
-                } catch (err) {}
-                resolve(formatted);
+              // Hidratación en tiempo real para cualquier vídeo recién publicado con 0 visualizaciones
+              const unhydrated = formatted.filter(v => (!v.views || v.views <= 0) && !v.isScheduled);
+
+              const finish = () => {
+                if (formatted.length > 0) {
+                  try {
+                    localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
+                    localStorage.setItem(CACHE_KEY_TIME, Date.now().toString());
+                  } catch (err) {}
+                  resolve(formatted);
+                } else {
+                  resolve(getInitialV4Videos());
+                }
+              };
+
+              if (unhydrated.length > 0 && typeof window !== 'undefined') {
+                const idsParam = unhydrated.slice(0, 3).map(v => v.youtubeId).join(',');
+                fetch(`/api/video-stats?ids=${idsParam}`, { signal: AbortSignal.timeout(1800) })
+                  .then(r => r.ok ? r.json() : null)
+                  .then(data => {
+                    if (data) {
+                      const statsMap = data.results || (data.id ? { [data.id]: data } : {});
+                      for (const [vid, s] of Object.entries(statsMap)) {
+                        const target = formatted.find(v => v.youtubeId === vid);
+                        if (target && s) {
+                          if (s.views && s.views > 0) target.views = s.views;
+                          if (s.likes && s.likes > 0) target.likes = s.likes;
+                          if (s.comments !== undefined && s.comments !== null) target.comments = s.comments;
+                          if (s.duration) target.duration = s.duration;
+                          target.popularityScore = (target.likes * 10) + Math.round(target.views / 10) + (target.isFeatured ? 500 : 0);
+                        }
+                      }
+                    }
+                  })
+                  .catch(() => {})
+                  .finally(finish);
               } else {
-                resolve(getInitialV4Videos());
+                finish();
               }
             } else {
               resolve(getInitialV4Videos());
