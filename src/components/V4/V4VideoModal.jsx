@@ -63,9 +63,11 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     return !isOnline ? 'offline' : (vId ? 'synced' : 'unlinked');
   });
 
-  const [isPlayerActive, setIsPlayerActive] = useState(false);
   const progressMilestonesRef = useRef(new Set());
   const hasStartedRef = useRef(false);
+  const hasEndedRef = useRef(false);
+  const lastCurrentTimeRef = useRef(0);
+  const lastSavedTimeRef = useRef(0);
 
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
@@ -76,10 +78,12 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const playbackTrackerRef = useRef(null);
 
   useEffect(() => {
-    setIsPlayerActive(false);
     progressMilestonesRef.current.clear();
     hasStartedRef.current = false;
-  }, [video?.youtubeId]);
+    hasEndedRef.current = false;
+    lastCurrentTimeRef.current = initialStartSecond;
+    lastSavedTimeRef.current = initialStartSecond;
+  }, [video?.youtubeId, initialStartSecond]);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
@@ -293,6 +297,33 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       setCountdownSeconds(8);
     };
 
+    const handleVideoEnded = () => {
+      hasEndedRef.current = true;
+      trackVideoComplete(video);
+      const courseKey = extractCourseKey(video?.category);
+      saveVideoPlaybackTime(video?.youtubeId || video?.id, 0, courseKey);
+      if (courseKey) {
+        saveCourseProgress(courseKey, video, 0);
+      }
+      startCountdown();
+    };
+
+    const savePlayback = (seconds) => {
+      if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
+      const sec = Math.floor(seconds);
+      lastCurrentTimeRef.current = sec;
+      setCurrentLiveSeconds(sec);
+      const courseKey = extractCourseKey(video?.category);
+      // Guardar en localStorage cada ~3 segundos de reproducción
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 3) {
+        lastSavedTimeRef.current = sec;
+        saveVideoPlaybackTime(video?.youtubeId || video?.id, sec, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, sec);
+        }
+      }
+    };
+
     // 1. Escuchar eventos postMessage de YouTube Player Iframe
     const handleWindowMessage = (event) => {
       try {
@@ -301,19 +332,52 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           payload = JSON.parse(payload);
         }
         if (payload) {
-          if (payload.event === 'onStateChange') {
-            if (payload.info === 1 || payload.data === 1) {
+          // Entrega continua de información de YouTube (tiempo actual, duración y estado)
+          if (payload.event === 'infoDelivery' && payload.info) {
+            if (typeof payload.info.currentTime === 'number') {
+              savePlayback(payload.info.currentTime);
+            }
+            if (typeof payload.info.duration === 'number' && payload.info.duration > 0) {
+              setVideoDuration(Math.floor(payload.info.duration));
+            }
+            if (payload.info.playerState === 1) {
               if (!hasStartedRef.current) {
                 hasStartedRef.current = true;
                 trackVideoStart(video);
               }
-            } else if (payload.info === 0 || payload.data === 0) {
-              trackVideoComplete(video);
-              startCountdown();
+            } else if (payload.info.playerState === 2) {
+              // Pausado: guardar el segundo exacto
+              if (lastCurrentTimeRef.current > 0) {
+                const courseKey = extractCourseKey(video?.category);
+                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (courseKey) {
+                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                }
+              }
+            } else if (payload.info.playerState === 0) {
+              handleVideoEnded();
             }
-          } else if (payload.info === 0 && payload.event !== 'infoDelivery') {
-            trackVideoComplete(video);
-            startCountdown();
+          }
+
+          // Eventos onStateChange de YouTube
+          if (payload.event === 'onStateChange') {
+            const state = payload.info !== undefined ? payload.info : payload.data;
+            if (state === 1) { // PLAYING
+              if (!hasStartedRef.current) {
+                hasStartedRef.current = true;
+                trackVideoStart(video);
+              }
+            } else if (state === 2) { // PAUSED
+              if (lastCurrentTimeRef.current > 0) {
+                const courseKey = extractCourseKey(video?.category);
+                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (courseKey) {
+                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                }
+              }
+            } else if (state === 0) { // ENDED
+              handleVideoEnded();
+            }
           }
         }
       } catch (e) {}
@@ -325,7 +389,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     const playerId = `yt-iframe-${video?.youtubeId}`;
 
     function setupYTPlayer() {
-      if (!isPlayerActive) return;
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
         try {
           ytPlayerRef.current = new window.YT.Player(playerId, {
@@ -344,12 +407,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     try {
                       const cur = ytPlayerRef.current.getCurrentTime();
                       if (cur && !isNaN(cur)) {
-                        setCurrentLiveSeconds(Math.floor(cur));
+                        savePlayback(cur);
                         const state = ytPlayerRef.current.getPlayerState();
                         if (state === 1) {
-                          const courseKey = extractCourseKey(video?.category);
-                          saveVideoPlaybackTime(video?.youtubeId || video?.id, cur, courseKey);
-
                           // Telemetría de progreso (25%, 50%, 75%)
                           const dur = ytPlayerRef.current.getDuration();
                           if (dur && dur > 0) {
@@ -377,9 +437,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     hasStartedRef.current = true;
                     trackVideoStart(video);
                   }
+                } else if (e && e.data === 2) { // PAUSED
+                  if (lastCurrentTimeRef.current > 0) {
+                    const courseKey = extractCourseKey(video?.category);
+                    saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                    if (courseKey) {
+                      saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                    }
+                  }
                 } else if (e && e.data === 0) { // ENDED
-                  trackVideoComplete(video);
-                  startCountdown();
+                  handleVideoEnded();
                 }
               }
             }
@@ -388,24 +455,22 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
     }
 
-    if (isPlayerActive) {
-      if (window.YT && window.YT.Player) {
-        setupYTPlayer();
-      } else {
-        if (!document.getElementById('youtube-iframe-api-script')) {
-          const tag = document.createElement('script');
-          tag.id = 'youtube-iframe-api-script';
-          tag.src = 'https://www.youtube.com/iframe_api';
-          const firstScriptTag = document.getElementsByTagName('script')[0];
-          firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        }
-
-        const prevCallback = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => {
-          if (typeof prevCallback === 'function') prevCallback();
-          setupYTPlayer();
-        };
+    if (window.YT && window.YT.Player) {
+      setupYTPlayer();
+    } else {
+      if (!document.getElementById('youtube-iframe-api-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
       }
+
+      const prevCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCallback === 'function') prevCallback();
+        setupYTPlayer();
+      };
     }
 
     return () => {
@@ -413,19 +478,27 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       if (playbackTrackerRef.current) {
         clearInterval(playbackTrackerRef.current);
       }
+      // Guardar el último segundo al cerrar o cambiar de lección
+      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
+        const courseKey = extractCourseKey(video?.category);
+        saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+        }
+      }
       if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
         try { ytPlayerRef.current.destroy(); } catch (e) {}
       }
     };
-  }, [video?.youtubeId, isPlayerActive]);
+  }, [video?.youtubeId]);
 
   if (!video) return null;
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
   
-  // URL con origen y sin autoplay=1 (Fase 05: patrón facade)
+  // URL con autoplay=1 y soporte de inicio en el segundo guardado para reanudación instantánea
   const embedUrl = video.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${video.youtubeId}?enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
+    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -443,10 +516,28 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   // Salto a timestamp específico
   const handleSeekToTimestamp = (sec) => {
     if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
-      ytPlayerRef.current.seekTo(sec, true);
-      if (typeof ytPlayerRef.current.playVideo === 'function') {
-        ytPlayerRef.current.playVideo();
-      }
+      try {
+        ytPlayerRef.current.seekTo(sec, true);
+        if (typeof ytPlayerRef.current.playVideo === 'function') {
+          ytPlayerRef.current.playVideo();
+        }
+        return;
+      } catch (e) {}
+    }
+    const iframe = document.getElementById(`yt-iframe-${video?.youtubeId}`);
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'seekTo',
+          args: [sec, true]
+        }), '*');
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'playVideo',
+          args: []
+        }), '*');
+      } catch (e) {}
     }
   };
 
@@ -658,39 +749,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                 <div className="relative aspect-video w-full md:min-w-[480px] md:min-h-[270px] bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
                   {embedUrl ? (
                     <>
-                      {!isPlayerActive ? (
-                        <div
-                          onClick={() => setIsPlayerActive(true)}
-                          className="relative w-full h-full cursor-pointer group flex items-center justify-center overflow-hidden"
-                        >
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            width="480"
-                            height="270"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <button
-                              type="button"
-                              aria-label="Reproducir vídeo"
-                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 flex items-center justify-center shadow-2xl shadow-cyan-500/50 group-hover:scale-110 active:scale-95 transition-all duration-300 pointer-events-none"
-                            >
-                              <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white ml-1" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <iframe
-                          key={`${video.youtubeId}-${initialStartSecond}`}
-                          id={`yt-iframe-${video.youtubeId}`}
-                          src={embedUrl}
-                          title={video.title}
-                          className="w-full h-full border-0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                        />
-                      )}
+                      <iframe
+                        key={`${video.youtubeId}-${initialStartSecond}`}
+                        id={`yt-iframe-${video.youtubeId}`}
+                        src={embedUrl}
+                        title={video.title}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
 
                       {/* Floating Resume Notification */}
                       {resumeNotice && (

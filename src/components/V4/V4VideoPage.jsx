@@ -5,8 +5,25 @@ import {
 } from 'lucide-react';
 import { getInitialV4Videos, loadV4Videos } from '../../utils/loadV4Videos';
 import { trackVideoStart, trackVideoProgress, trackVideoComplete, trackSocialClick } from '../../utils/analytics';
+import { 
+  getVideoPlaybackTime, 
+  saveVideoPlaybackTime, 
+  saveCourseProgress, 
+  formatSecondsToTime 
+} from '../../utils/courseProgress';
 import V4CircuitBackground from './V4CircuitBackground';
 import V4Footer from './V4Footer';
+
+function extractCourseKey(category) {
+  if (!category) return null;
+  const c = category.trim();
+  if (/^curso/i.test(c)) {
+    let name = c.replace(/^curso\s*:?\s*/i, '').trim().toLowerCase();
+    if (name === 'bambustudio') name = 'bambu studio';
+    return name;
+  }
+  return null;
+}
 
 function formatCounter(num) {
   if (num === undefined || num === null || isNaN(num) || num <= 0) return '0';
@@ -30,10 +47,14 @@ export default function V4VideoPage() {
   const [videos, setVideos] = useState(() => getInitialV4Videos());
   const [isPlaying, setIsPlaying] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(null);
+  const [resumeNotice, setResumeNotice] = useState(null);
 
   const countdownTimerRef = useRef(null);
   const progressMilestonesRef = useRef(new Set());
   const hasStartedRef = useRef(false);
+  const hasEndedRef = useRef(false);
+  const lastCurrentTimeRef = useRef(0);
+  const lastSavedTimeRef = useRef(0);
   const ytPlayerRef = useRef(null);
   const playbackTrackerRef = useRef(null);
 
@@ -117,12 +138,32 @@ export default function V4VideoPage() {
     return null;
   }, [video, videos]);
 
+  const initialStartSecond = useMemo(() => {
+    if (!video) return 0;
+    const saved = getVideoPlaybackTime(video.youtubeId || video.id);
+    if (saved > 10) {
+      return Math.max(0, Math.floor(saved - 5));
+    }
+    return 0;
+  }, [video?.youtubeId, video?.id]);
+
   useEffect(() => {
     setIsPlaying(false);
     setCountdownSeconds(null);
     progressMilestonesRef.current.clear();
     hasStartedRef.current = false;
-  }, [video?.youtubeId]);
+    hasEndedRef.current = false;
+    lastCurrentTimeRef.current = initialStartSecond;
+    lastSavedTimeRef.current = initialStartSecond;
+
+    if (initialStartSecond > 0) {
+      setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
+      const timer = setTimeout(() => setResumeNotice(null), 5000);
+      return () => clearTimeout(timer);
+    } else {
+      setResumeNotice(null);
+    }
+  }, [video?.youtubeId, initialStartSecond]);
 
   // Temporizador de cuenta atrás de 8s para siguiente lección
   useEffect(() => {
@@ -149,9 +190,89 @@ export default function V4VideoPage() {
 
   const playerId = `yt-iframe-page-${video?.youtubeId}`;
 
-  // IFrame API de YouTube y Telemetría GA4 (Fase 05)
+  // IFrame API de YouTube y Telemetría GA4 + Guardado de progreso
   useEffect(() => {
     if (!isPlaying || !video?.youtubeId) return;
+
+    const handleEnded = () => {
+      hasEndedRef.current = true;
+      trackVideoComplete(video);
+      const courseKey = extractCourseKey(video?.category);
+      saveVideoPlaybackTime(video?.youtubeId || video?.id, 0, courseKey);
+      if (courseKey) {
+        saveCourseProgress(courseKey, video, 0);
+      }
+      if (nextVideo) {
+        setCountdownSeconds(8);
+      }
+    };
+
+    const savePlayback = (seconds) => {
+      if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
+      const sec = Math.floor(seconds);
+      lastCurrentTimeRef.current = sec;
+      const courseKey = extractCourseKey(video?.category);
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 3) {
+        lastSavedTimeRef.current = sec;
+        saveVideoPlaybackTime(video?.youtubeId || video?.id, sec, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, sec);
+        }
+      }
+    };
+
+    const handleWindowMessage = (event) => {
+      try {
+        let payload = event.data;
+        if (typeof payload === 'string') {
+          payload = JSON.parse(payload);
+        }
+        if (payload) {
+          if (payload.event === 'infoDelivery' && payload.info) {
+            if (typeof payload.info.currentTime === 'number') {
+              savePlayback(payload.info.currentTime);
+            }
+            if (payload.info.playerState === 1) {
+              if (!hasStartedRef.current) {
+                hasStartedRef.current = true;
+                trackVideoStart(video);
+              }
+            } else if (payload.info.playerState === 2) {
+              if (lastCurrentTimeRef.current > 0) {
+                const courseKey = extractCourseKey(video?.category);
+                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (courseKey) {
+                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                }
+              }
+            } else if (payload.info.playerState === 0) {
+              handleEnded();
+            }
+          }
+          if (payload.event === 'onStateChange') {
+            const state = payload.info !== undefined ? payload.info : payload.data;
+            if (state === 1) {
+              if (!hasStartedRef.current) {
+                hasStartedRef.current = true;
+                trackVideoStart(video);
+              }
+            } else if (state === 2) {
+              if (lastCurrentTimeRef.current > 0) {
+                const courseKey = extractCourseKey(video?.category);
+                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (courseKey) {
+                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                }
+              }
+            } else if (state === 0) {
+              handleEnded();
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('message', handleWindowMessage);
 
     function setupYT() {
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
@@ -165,6 +286,9 @@ export default function V4VideoPage() {
                     try {
                       const cur = ytPlayerRef.current.getCurrentTime();
                       const dur = ytPlayerRef.current.getDuration();
+                      if (cur && !isNaN(cur)) {
+                        savePlayback(cur);
+                      }
                       if (dur && cur && dur > 0) {
                         const percent = Math.floor((cur / dur) * 100);
                         [25, 50, 75].forEach(milestone => {
@@ -184,11 +308,16 @@ export default function V4VideoPage() {
                     hasStartedRef.current = true;
                     trackVideoStart(video);
                   }
-                } else if (e && e.data === 0) { // ENDED
-                  trackVideoComplete(video);
-                  if (nextVideo) {
-                    setCountdownSeconds(8);
+                } else if (e && e.data === 2) { // PAUSED
+                  if (lastCurrentTimeRef.current > 0) {
+                    const courseKey = extractCourseKey(video?.category);
+                    saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                    if (courseKey) {
+                      saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+                    }
                   }
+                } else if (e && e.data === 0) { // ENDED
+                  handleEnded();
                 }
               }
             }
@@ -214,7 +343,15 @@ export default function V4VideoPage() {
     }
 
     return () => {
+      window.removeEventListener('message', handleWindowMessage);
       if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
+        const courseKey = extractCourseKey(video?.category);
+        saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
+        }
+      }
       if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
         try { ytPlayerRef.current.destroy(); } catch (e) {}
       }
@@ -265,7 +402,7 @@ export default function V4VideoPage() {
   }
 
   // --- RENDER VIDEO PAGE ---
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${video.youtubeId}?rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}`;
+  const embedUrl = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`;
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans relative selection:bg-[#2575c4] selection:text-white">
@@ -329,6 +466,14 @@ export default function V4VideoPage() {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+            )}
+
+            {/* Aviso de reanudación automática */}
+            {resumeNotice && (
+              <div className="absolute top-3 left-3 z-20 bg-blue-950/90 text-cyan-200 border border-cyan-400/60 text-[11px] sm:text-xs font-bold px-3 py-1.5 rounded-xl shadow-xl flex items-center gap-1.5 animate-fade-in backdrop-blur-sm">
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{resumeNotice}</span>
+              </div>
             )}
 
             {/* Cuenta atrás cancelable de 8s al terminar el vídeo */}
