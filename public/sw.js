@@ -3,7 +3,7 @@
  * Version: 2.0.0
  */
 
-const CACHE_NAME = 'capacero-pwa-v2.2';
+const CACHE_NAME = 'capacero-pwa-v2.3';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

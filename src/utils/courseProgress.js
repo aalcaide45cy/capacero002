@@ -185,10 +185,12 @@ export function getAllVideoTimestamps() {
   }
 }
 
-export function getVideoPlaybackTime(videoId) {
-  if (!videoId) return 0;
+export function getVideoPlaybackTime(videoId, altId = null) {
+  if (!videoId && !altId) return 0;
   const all = getAllVideoTimestamps();
-  return all[videoId]?.timestamp || 0;
+  if (videoId && all[videoId]?.timestamp) return all[videoId].timestamp;
+  if (altId && all[altId]?.timestamp) return all[altId].timestamp;
+  return 0;
 }
 
 export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {

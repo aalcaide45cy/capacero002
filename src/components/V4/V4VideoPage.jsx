@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ArrowLeft, Download, Lightbulb, ExternalLink, Heart, Eye, MessageCircle, 
-  Play, ChevronRight, Sparkles, BookOpen, Clock, Calendar, AlertCircle, Youtube, X
+  Play, ChevronRight, Sparkles, BookOpen, Clock, Calendar, AlertCircle, Youtube, X, RotateCcw
 } from 'lucide-react';
 import { getInitialV4Videos, loadV4Videos } from '../../utils/loadV4Videos';
 import { trackVideoStart, trackVideoProgress, trackVideoComplete, trackSocialClick } from '../../utils/analytics';
@@ -48,6 +48,8 @@ export default function V4VideoPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(null);
   const [resumeNotice, setResumeNotice] = useState(null);
+  const [savedTimestamp, setSavedTimestamp] = useState(0);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
 
   const countdownTimerRef = useRef(null);
   const progressMilestonesRef = useRef(new Set());
@@ -140,7 +142,7 @@ export default function V4VideoPage() {
 
   const initialStartSecond = useMemo(() => {
     if (!video) return 0;
-    const saved = getVideoPlaybackTime(video.youtubeId || video.id);
+    const saved = getVideoPlaybackTime(video.youtubeId, video.id);
     if (saved > 10) {
       return Math.max(0, Math.floor(saved - 5));
     }
@@ -156,6 +158,10 @@ export default function V4VideoPage() {
     lastCurrentTimeRef.current = initialStartSecond;
     lastSavedTimeRef.current = initialStartSecond;
 
+    const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
+    setSavedTimestamp(saved);
+    setShowResumeBanner(saved > 10);
+
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
       const timer = setTimeout(() => setResumeNotice(null), 5000);
@@ -163,7 +169,7 @@ export default function V4VideoPage() {
     } else {
       setResumeNotice(null);
     }
-  }, [video?.youtubeId, initialStartSecond]);
+  }, [video?.youtubeId, video?.id, initialStartSecond]);
 
   // Temporizador de cuenta atrás de 8s para siguiente lección
   useEffect(() => {
@@ -190,6 +196,39 @@ export default function V4VideoPage() {
 
   const playerId = `yt-iframe-page-${video?.youtubeId}`;
 
+  // Salto a timestamp específico
+  const handleSeekToTimestamp = (sec) => {
+    const targetSec = Math.max(0, Math.floor(sec || 0));
+    lastCurrentTimeRef.current = targetSec;
+    if (!isPlaying) {
+      setIsPlaying(true);
+    }
+    if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
+      try {
+        ytPlayerRef.current.seekTo(targetSec, true);
+        if (typeof ytPlayerRef.current.playVideo === 'function') {
+          ytPlayerRef.current.playVideo();
+        }
+        return;
+      } catch (e) {}
+    }
+    const iframe = document.getElementById(playerId);
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'seekTo',
+          args: [targetSec, true]
+        }), '*');
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: 'playVideo',
+          args: []
+        }), '*');
+      } catch (e) {}
+    }
+  };
+
   // IFrame API de YouTube y Telemetría GA4 + Guardado de progreso
   useEffect(() => {
     if (!isPlaying || !video?.youtubeId) return;
@@ -198,10 +237,13 @@ export default function V4VideoPage() {
       hasEndedRef.current = true;
       trackVideoComplete(video);
       const courseKey = extractCourseKey(video?.category);
-      saveVideoPlaybackTime(video?.youtubeId || video?.id, 0, courseKey);
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0, courseKey);
       if (courseKey) {
         saveCourseProgress(courseKey, video, 0);
       }
+      setSavedTimestamp(0);
+      setShowResumeBanner(false);
       if (nextVideo) {
         setCountdownSeconds(8);
       }
@@ -212,9 +254,10 @@ export default function V4VideoPage() {
       const sec = Math.floor(seconds);
       lastCurrentTimeRef.current = sec;
       const courseKey = extractCourseKey(video?.category);
-      if (Math.abs(sec - lastSavedTimeRef.current) >= 3) {
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 2) {
         lastSavedTimeRef.current = sec;
-        saveVideoPlaybackTime(video?.youtubeId || video?.id, sec, courseKey);
+        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
+        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
         if (courseKey) {
           saveCourseProgress(courseKey, video, sec);
         }
@@ -240,7 +283,8 @@ export default function V4VideoPage() {
             } else if (payload.info.playerState === 2) {
               if (lastCurrentTimeRef.current > 0) {
                 const courseKey = extractCourseKey(video?.category);
-                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
+                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
                 if (courseKey) {
                   saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
                 }
@@ -259,7 +303,8 @@ export default function V4VideoPage() {
             } else if (state === 2) {
               if (lastCurrentTimeRef.current > 0) {
                 const courseKey = extractCourseKey(video?.category);
-                saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
+                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
                 if (courseKey) {
                   saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
                 }
@@ -274,34 +319,45 @@ export default function V4VideoPage() {
 
     window.addEventListener('message', handleWindowMessage);
 
+    // Heartbeat periódico con comando postMessage directo y YT.Player
+    if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+    playbackTrackerRef.current = setInterval(() => {
+      const iframe = document.getElementById(playerId);
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: 'getCurrentTime',
+            args: []
+          }), '*');
+        } catch (e) {}
+      }
+
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+        try {
+          const cur = ytPlayerRef.current.getCurrentTime();
+          const dur = ytPlayerRef.current.getDuration();
+          if (typeof cur === 'number' && !isNaN(cur)) {
+            savePlayback(cur);
+          }
+          if (dur && cur && dur > 0) {
+            const percent = Math.floor((cur / dur) * 100);
+            [25, 50, 75].forEach(milestone => {
+              if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                progressMilestonesRef.current.add(milestone);
+                trackVideoProgress(video, milestone);
+              }
+            });
+          }
+        } catch (e) {}
+      }
+    }, 1000);
+
     function setupYT() {
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
         try {
           ytPlayerRef.current = new window.YT.Player(playerId, {
             events: {
-              onReady: () => {
-                if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
-                playbackTrackerRef.current = setInterval(() => {
-                  if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
-                    try {
-                      const cur = ytPlayerRef.current.getCurrentTime();
-                      const dur = ytPlayerRef.current.getDuration();
-                      if (cur && !isNaN(cur)) {
-                        savePlayback(cur);
-                      }
-                      if (dur && cur && dur > 0) {
-                        const percent = Math.floor((cur / dur) * 100);
-                        [25, 50, 75].forEach(milestone => {
-                          if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
-                            progressMilestonesRef.current.add(milestone);
-                            trackVideoProgress(video, milestone);
-                          }
-                        });
-                      }
-                    } catch (e) {}
-                  }
-                }, 1000);
-              },
               onStateChange: (e) => {
                 if (e && e.data === 1) { // PLAYING
                   if (!hasStartedRef.current) {
@@ -311,7 +367,8 @@ export default function V4VideoPage() {
                 } else if (e && e.data === 2) { // PAUSED
                   if (lastCurrentTimeRef.current > 0) {
                     const courseKey = extractCourseKey(video?.category);
-                    saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+                    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
+                    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
                     if (courseKey) {
                       saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
                     }
@@ -347,7 +404,8 @@ export default function V4VideoPage() {
       if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
       if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
         const courseKey = extractCourseKey(video?.category);
-        saveVideoPlaybackTime(video?.youtubeId || video?.id, lastCurrentTimeRef.current, courseKey);
+        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
+        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
         if (courseKey) {
           saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
         }
@@ -504,6 +562,72 @@ export default function V4VideoPage() {
             )}
           </div>
         </section>
+
+        {/* Barra Interactiva de Reanudación de Vídeo */}
+        {savedTimestamp > 10 && showResumeBanner && (
+          <div className="bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 text-cyan-300" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
+                  <span>Progreso guardado:</span>
+                  <span className="text-cyan-300 font-mono font-black">{formatSecondsToTime(savedTimestamp)}</span>
+                  <span className="text-[11px] text-zinc-400 font-normal">(-5s de cortesía)</span>
+                </p>
+                <p className="text-[11px] text-zinc-400 hidden sm:block">
+                  Puedes continuar desde donde lo dejaste o empezar la lección desde el principio.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Botón Reanudar */}
+              <button
+                onClick={() => {
+                  const seekSec = Math.max(0, savedTimestamp - 5);
+                  handleSeekToTimestamp(seekSec);
+                  setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
+                  setTimeout(() => setResumeNotice(null), 3500);
+                }}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+              </button>
+
+              {/* Botón Desde el inicio */}
+              <button
+                onClick={() => {
+                  handleSeekToTimestamp(0);
+                  if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0);
+                  if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0);
+                  setSavedTimestamp(0);
+                  setShowResumeBanner(false);
+                  setResumeNotice("Reproduciendo desde el inicio (00:00)");
+                  setTimeout(() => setResumeNotice(null), 3000);
+                }}
+                className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                title="Empezar desde el segundo 00:00"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Desde el inicio</span>
+                <span className="sm:hidden">00:00</span>
+              </button>
+
+              {/* Botón Cerrar Banner */}
+              <button
+                onClick={() => setShowResumeBanner(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                aria-label="Cerrar aviso de reanudación"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Título y metadatos */}
         <section className="space-y-4 text-left">
