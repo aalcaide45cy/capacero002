@@ -188,24 +188,35 @@ export function getAllVideoTimestamps() {
 export function getVideoPlaybackTime(videoId, altId = null) {
   if (!videoId && !altId) return 0;
   const all = getAllVideoTimestamps();
-  if (videoId && all[videoId]?.timestamp) return all[videoId].timestamp;
-  if (altId && all[altId]?.timestamp) return all[altId].timestamp;
+  const getSec = (item) => {
+    if (!item) return 0;
+    if (typeof item === 'number' && !isNaN(item)) return Math.max(0, Math.floor(item));
+    if (typeof item.timestamp === 'number' && !isNaN(item.timestamp)) return Math.max(0, Math.floor(item.timestamp));
+    if (typeof item.seconds === 'number' && !isNaN(item.seconds)) return Math.max(0, Math.floor(item.seconds));
+    return 0;
+  };
+  const t1 = videoId ? getSec(all[videoId]) : 0;
+  if (t1 > 0) return t1;
+  const t2 = altId ? getSec(all[altId]) : 0;
+  if (t2 > 0) return t2;
   return 0;
 }
 
 export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
   if (!videoId || typeof window === 'undefined' || !window.localStorage) return;
+  const sec = Math.max(0, Math.floor(seconds || 0));
   const all = getAllVideoTimestamps();
   all[videoId] = {
     videoId,
-    timestamp: Math.max(0, Math.floor(seconds || 0)),
+    timestamp: sec,
+    seconds: sec,
     courseName,
     lastUpdated: new Date().toISOString()
   };
 
   try {
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));
-    window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { videoId, timestamp: seconds } }));
+    window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { videoId, timestamp: sec } }));
   } catch (e) {}
 }
 

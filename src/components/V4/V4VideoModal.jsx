@@ -51,9 +51,14 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const [videoDuration, setVideoDuration] = useState(null);
   
   // Estados para reanudación de tiempo y notas
+  const [savedTimestamp, setSavedTimestamp] = useState(() => {
+    return video ? getVideoPlaybackTime(video.youtubeId, video.id) : 0;
+  });
+  const [showResumeBanner, setShowResumeBanner] = useState(() => {
+    const s = video ? getVideoPlaybackTime(video.youtubeId, video.id) : 0;
+    return s > 0;
+  });
   const [resumeNotice, setResumeNotice] = useState(null);
-  const [savedTimestamp, setSavedTimestamp] = useState(0);
-  const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
   const [noteInputText, setNoteInputText] = useState('');
   const [notesTick, setNotesTick] = useState(0);
@@ -72,17 +77,22 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       return Math.max(0, Math.floor(video.startTimestamp));
     }
     const saved = getVideoPlaybackTime(video.youtubeId, video.id);
-    if (saved > 3) {
+    if (saved > 0) {
       return Math.max(0, Math.floor(saved - 5));
     }
     return 0;
   }, [video?.youtubeId, video?.id, video?.startTimestamp]);
 
+  // Segundo activo para forzar salto en iframe de forma determinista
+  const [activeStartSecond, setActiveStartSecond] = useState(initialStartSecond);
+
   const progressMilestonesRef = useRef(new Set());
   const hasStartedRef = useRef(false);
   const hasEndedRef = useRef(false);
-  const lastCurrentTimeRef = useRef(0);
-  const lastSavedTimeRef = useRef(0);
+  const lastCurrentTimeRef = useRef(initialStartSecond);
+  const lastSavedTimeRef = useRef(initialStartSecond);
+  const playbackStartRef = useRef(Date.now() - (initialStartSecond * 1000));
+  const isPlayingRef = useRef(false);
 
   const scrollContainerRef = useRef(null);
   const nextVideoRef = useRef(null);
@@ -98,6 +108,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     hasEndedRef.current = false;
     lastCurrentTimeRef.current = initialStartSecond;
     lastSavedTimeRef.current = initialStartSecond;
+    playbackStartRef.current = Date.now() - (initialStartSecond * 1000);
+    isPlayingRef.current = false;
+    setActiveStartSecond(initialStartSecond);
   }, [video?.youtubeId, initialStartSecond]);
 
   // Mantener las referencias actualizadas
@@ -211,7 +224,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 3);
+    setShowResumeBanner(saved > 0);
 
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
@@ -252,13 +265,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
     } catch (e) {}
 
-    if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
+    const cur = lastCurrentTimeRef.current;
+    if (cur > 0 && !hasEndedRef.current) {
       const courseKey = extractCourseKey(video?.category);
-      const sec = lastCurrentTimeRef.current;
-      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
-      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, cur, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, cur, courseKey);
       if (courseKey) {
-        saveCourseProgress(courseKey, video, sec);
+        saveCourseProgress(courseKey, video, cur);
       }
     }
 
@@ -344,6 +357,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       startCountdown();
     };
 
+    const flushCurrentProgress = () => {
+      const cur = lastCurrentTimeRef.current;
+      if (cur > 0 && !hasEndedRef.current) {
+        const courseKey = extractCourseKey(video?.category);
+        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, cur, courseKey);
+        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, cur, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, cur);
+        }
+      }
+    };
+
     const savePlayback = (seconds) => {
       if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
       const sec = Math.floor(seconds);
@@ -378,21 +403,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               setVideoDuration(Math.floor(payload.info.duration));
             }
             if (payload.info.playerState === 1) {
+              isPlayingRef.current = true;
               if (!hasStartedRef.current) {
                 hasStartedRef.current = true;
                 trackVideoStart(video);
               }
             } else if (payload.info.playerState === 2) {
-              // Pausado: guardar de inmediato el segundo exacto
-              if (lastCurrentTimeRef.current > 0) {
-                const courseKey = extractCourseKey(video?.category);
-                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                if (courseKey) {
-                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                }
-              }
+              isPlayingRef.current = false;
+              flushCurrentProgress();
             } else if (payload.info.playerState === 0) {
+              isPlayingRef.current = false;
               handleVideoEnded();
             }
           }
@@ -401,20 +421,17 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           if (payload.event === 'onStateChange') {
             const state = payload.info !== undefined ? payload.info : payload.data;
             if (state === 1) { // PLAYING
+              isPlayingRef.current = true;
+              playbackStartRef.current = Date.now() - (lastCurrentTimeRef.current * 1000);
               if (!hasStartedRef.current) {
                 hasStartedRef.current = true;
                 trackVideoStart(video);
               }
             } else if (state === 2) { // PAUSED
-              if (lastCurrentTimeRef.current > 0) {
-                const courseKey = extractCourseKey(video?.category);
-                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                if (courseKey) {
-                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                }
-              }
+              isPlayingRef.current = false;
+              flushCurrentProgress();
             } else if (state === 0) { // ENDED
+              isPlayingRef.current = false;
               handleVideoEnded();
             }
           }
@@ -424,20 +441,27 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
     window.addEventListener('message', handleWindowMessage);
 
-    // 2. Heartbeat activo: consultar currentTime cada 1s al iframe y a YT.Player
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushCurrentProgress();
+      }
+    };
+    window.addEventListener('beforeunload', flushCurrentProgress);
+    window.addEventListener('pagehide', flushCurrentProgress);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 2. Heartbeat activo: consultar currentTime cada 1s al iframe, a YT.Player y reloj de respaldo
     const playerId = `yt-iframe-${video?.youtubeId}`;
 
     if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
     playbackTrackerRef.current = setInterval(() => {
-      // Direct postMessage ping to iframe
+      let tracked = false;
+
+      // Direct postMessage ping to iframe to keep listening
       const iframe = document.getElementById(playerId);
       if (iframe && iframe.contentWindow) {
         try {
-          iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: 'getCurrentTime',
-            args: []
-          }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening' }), '*');
         } catch (e) {}
       }
 
@@ -448,8 +472,10 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           const cur = p.getCurrentTime();
           if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
             savePlayback(cur);
+            tracked = true;
             const state = typeof p.getPlayerState === 'function' ? p.getPlayerState() : -1;
             if (state === 1) {
+              isPlayingRef.current = true;
               const dur = typeof p.getDuration === 'function' ? p.getDuration() : 0;
               if (dur && dur > 0) {
                 const percent = Math.floor((cur / dur) * 100);
@@ -460,6 +486,8 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   }
                 });
               }
+            } else if (state === 2 || state === 0) {
+              isPlayingRef.current = false;
             }
           }
           if (!videoDuration && typeof p.getDuration === 'function') {
@@ -468,9 +496,17 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
           }
         } catch (err) {}
       }
+
+      // 3. Reloj interno de respaldo: si la API externa está bloqueada o retrasada, avanzar mientras reproduce
+      if (!tracked && isPlayingRef.current) {
+        const elapsed = Math.floor((Date.now() - playbackStartRef.current) / 1000);
+        if (elapsed > 0) {
+          savePlayback(elapsed);
+        }
+      }
     }, 1000);
 
-    // 3. Inicializar YouTube IFrame Player API oficial
+    // 4. Inicializar YouTube IFrame Player API oficial
     function setupYTPlayer() {
       if (window.YT && window.YT.Player && document.getElementById(playerId)) {
         try {
@@ -482,27 +518,24 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   if (dur && !isNaN(dur) && dur > 0) {
                     setVideoDuration(Math.floor(dur));
                   }
-                  if (initialStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
-                    ytPlayerRef.current.seekTo(initialStartSecond, true);
+                  if (activeStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
+                    ytPlayerRef.current.seekTo(activeStartSecond, true);
                   }
                 } catch (e) {}
               },
               onStateChange: (e) => {
                 if (e && e.data === 1) { // PLAYING
+                  isPlayingRef.current = true;
+                  playbackStartRef.current = Date.now() - (lastCurrentTimeRef.current * 1000);
                   if (!hasStartedRef.current) {
                     hasStartedRef.current = true;
                     trackVideoStart(video);
                   }
                 } else if (e && e.data === 2) { // PAUSED
-                  if (lastCurrentTimeRef.current > 0) {
-                    const courseKey = extractCourseKey(video?.category);
-                    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                    if (courseKey) {
-                      saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                    }
-                  }
+                  isPlayingRef.current = false;
+                  flushCurrentProgress();
                 } else if (e && e.data === 0) { // ENDED
+                  isPlayingRef.current = false;
                   handleVideoEnded();
                 }
               }
@@ -532,27 +565,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
     return () => {
       window.removeEventListener('message', handleWindowMessage);
+      window.removeEventListener('beforeunload', flushCurrentProgress);
+      window.removeEventListener('pagehide', flushCurrentProgress);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (playbackTrackerRef.current) {
         clearInterval(playbackTrackerRef.current);
       }
-      try {
-        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
-        if (p && typeof p.getCurrentTime === 'function') {
-          const cur = p.getCurrentTime();
-          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
-            lastCurrentTimeRef.current = Math.floor(cur);
-          }
-        }
-      } catch (e) {}
-
-      // Guardar el último segundo al cerrar o cambiar de lección
-      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
-        const courseKey = extractCourseKey(video?.category);
-        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-        if (courseKey) {
-          saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-        }
+      flushCurrentProgress();
+      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
+        try { ytPlayerRef.current.destroy(); } catch (e) {}
       }
       ytPlayerRef.current = null;
     };
@@ -562,13 +583,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
   
-  const currentOrigin = typeof window !== 'undefined' && window.location.origin
-    ? window.location.origin
-    : 'https://www.capacero3d.com';
-
-  // URL con autoplay=1, origin y soporte de inicio en el segundo guardado para reanudación instantánea
+  // URL con autoplay=1 y soporte de inicio en el segundo guardado para reanudación instantánea
   const embedUrl = video.youtubeId
-    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(currentOrigin)}${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`
+    ? `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1${activeStartSecond > 0 ? `&start=${activeStartSecond}` : ''}`
     : null;
 
   const handleDownloadClick = (dl) => {
@@ -583,11 +600,19 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     }
   };
 
-  // Salto a timestamp específico
+  // Salto a timestamp específico y persistencia inmediata
   const handleSeekToTimestamp = (sec) => {
     const targetSec = Math.max(0, Math.floor(sec || 0));
     lastCurrentTimeRef.current = targetSec;
     setCurrentLiveSeconds(targetSec);
+    playbackStartRef.current = Date.now() - (targetSec * 1000);
+    isPlayingRef.current = true;
+
+    const courseKey = extractCourseKey(video?.category);
+    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
+    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
+    if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+
     const playerId = `yt-iframe-${video?.youtubeId}`;
     const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
     if (p && typeof p.seekTo === 'function') {
@@ -596,10 +621,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         if (typeof p.playVideo === 'function') {
           p.playVideo();
         }
-        return;
       } catch (e) {}
     }
-    const iframe = document.getElementById(`yt-iframe-${video?.youtubeId}`);
+    const iframe = document.getElementById(playerId);
     if (iframe && iframe.contentWindow) {
       try {
         iframe.contentWindow.postMessage(JSON.stringify({
@@ -614,6 +638,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         }), '*');
       } catch (e) {}
     }
+
+    // Forzar actualización del segundo activo si la API no está disponible
+    setActiveStartSecond(targetSec);
   };
 
   // Guardar nuevo apunte con el segundo actual
@@ -754,9 +781,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
             <div className="flex items-center gap-1.5 sm:gap-2">
               
               {/* Botón Reanudar en el Header (Siempre visible de inmediato sin scroll) */}
-              {savedTimestamp > 3 && (
+              {savedTimestamp > 0 && (
                 <button
-                  onClick={() => handleSeekToTimestamp(Math.max(0, savedTimestamp - 5))}
+                  onClick={() => {
+                    const seekSec = Math.max(0, savedTimestamp - 5);
+                    handleSeekToTimestamp(seekSec);
+                    setResumeNotice(`Reanudando desde ${formatSecondsToTime(seekSec)} (-5s cortesía)`);
+                    setShowResumeBanner(false);
+                    setTimeout(() => setResumeNotice(null), 3500);
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-black transition-all active:scale-95 cursor-pointer shadow-lg shadow-cyan-500/25 border border-cyan-300/40 shrink-0 animate-fade-in"
                   title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))} (-5s cortesía)`}
                 >
@@ -833,7 +866,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               <div className="md:col-span-7 lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
                 {/* ================= BARRA INTERACTIVA DE REANUDACIÓN DE VÍDEO (ALTA VISIBILIDAD) ================= */}
-                {savedTimestamp > 3 && showResumeBanner && (
+                {savedTimestamp > 0 && showResumeBanner && (
                   <div className="mx-3 sm:mx-4 md:mx-0 bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
@@ -904,7 +937,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   {embedUrl ? (
                     <>
                       <iframe
-                        key={`${video.youtubeId}-${initialStartSecond}`}
+                        key={`${video.youtubeId}-${activeStartSecond}`}
                         id={`yt-iframe-${video.youtubeId}`}
                         src={embedUrl}
                         title={video.title}
@@ -912,6 +945,26 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowFullScreen
                       />
+
+                      {/* Floating Resume Quick-Action on Player */}
+                      {savedTimestamp > 0 && (
+                        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const seekSec = Math.max(0, savedTimestamp - 5);
+                              handleSeekToTimestamp(seekSec);
+                              setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
+                              setShowResumeBanner(false);
+                              setTimeout(() => setResumeNotice(null), 3500);
+                            }}
+                            className="bg-blue-950/90 hover:bg-blue-900 text-cyan-200 hover:text-white border border-cyan-400/60 text-[11px] sm:text-xs font-black px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer animate-fade-in"
+                            title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
+                          >
+                            <Play className="w-3 h-3 fill-cyan-400 text-cyan-400" />
+                            <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                          </button>
+                        </div>
+                      )}
 
                       {/* Floating Resume Notification */}
                       {resumeNotice && (

@@ -127,7 +127,7 @@ export default function V4VideoCard({ video, onSelect }) {
         />
 
         {/* Badge Reanudar en miniatura */}
-        {savedTime > 3 && !video.isScheduled && (
+        {savedTime > 0 && !video.isScheduled && (
           <div className="absolute top-2 left-2 z-20 bg-blue-950/95 text-cyan-300 border border-cyan-400/60 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg shadow-lg flex items-center gap-1 backdrop-blur-md animate-fade-in">
             <Play className="w-2.5 h-2.5 fill-cyan-300 text-cyan-300" />
             <span>Reanudar {formatSecondsToTime(savedTime)}</span>
@@ -135,7 +135,7 @@ export default function V4VideoCard({ video, onSelect }) {
         )}
 
         {/* Barra de progreso de reproducción guardada */}
-        {savedTime > 3 && progressPct > 0 && !video.isScheduled && (
+        {savedTime > 0 && progressPct > 0 && !video.isScheduled && (
           <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-950/90 z-20">
             <div
               className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-300 rounded-r-full transition-all duration-300"

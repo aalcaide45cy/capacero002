@@ -61,6 +61,20 @@ export async function registerServiceWorker() {
   }
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    
+    // Forzar actualización periódica para recibir siempre los bundles más recientes
+    try {
+      registration.update();
+    } catch (e) {}
+
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     if ('Notification' in window && Notification.permission === 'granted') {
       checkAndRotatePushSubscriptionSilent().catch(() => {});
     }

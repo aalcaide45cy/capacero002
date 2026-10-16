@@ -341,7 +341,7 @@ export default function V4Hero({
                     />
                     
                     {/* Badge Reanudar en miniatura destacada */}
-                    {featuredSavedTime > 3 && (
+                    {featuredSavedTime > 0 && (
                       <div className="absolute top-2.5 left-2.5 z-20 bg-blue-950/95 text-cyan-300 border border-cyan-400/60 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1.5 backdrop-blur-md animate-fade-in">
                         <Play className="w-2.5 h-2.5 fill-cyan-300 text-cyan-300" />
                         <span>Reanudar {formatSecondsToTime(featuredSavedTime)}</span>
@@ -349,7 +349,7 @@ export default function V4Hero({
                     )}
 
                     {/* Barra de progreso destacada */}
-                    {featuredSavedTime > 3 && featuredProgressPct > 0 && (
+                    {featuredSavedTime > 0 && featuredProgressPct > 0 && (
                       <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-950/90 z-20">
                         <div
                           className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-300 rounded-r-full transition-all duration-300"
