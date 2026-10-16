@@ -72,7 +72,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       return Math.max(0, Math.floor(video.startTimestamp));
     }
     const saved = getVideoPlaybackTime(video.youtubeId, video.id);
-    if (saved > 10) {
+    if (saved > 3) {
       return Math.max(0, Math.floor(saved - 5));
     }
     return 0;
@@ -211,7 +211,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 10);
+    setShowResumeBanner(saved > 3);
 
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
@@ -241,14 +241,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   // Manejo de cierre seguro del modal (guarda tiempo exacto antes de desmontar)
   const handleCloseModal = () => {
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
-      try {
-        const t = ytPlayerRef.current.getCurrentTime();
+    const playerId = `yt-iframe-${video?.youtubeId}`;
+    try {
+      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+      if (p && typeof p.getCurrentTime === 'function') {
+        const t = p.getCurrentTime();
         if (typeof t === 'number' && !isNaN(t) && t > 0) {
           lastCurrentTimeRef.current = Math.floor(t);
         }
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
 
     if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
       const courseKey = extractCourseKey(video?.category);
@@ -440,14 +442,15 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
 
       // Query via YT.Player instance if initialized
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+      if (p && typeof p.getCurrentTime === 'function') {
         try {
-          const cur = ytPlayerRef.current.getCurrentTime();
-          if (typeof cur === 'number' && !isNaN(cur)) {
+          const cur = p.getCurrentTime();
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
             savePlayback(cur);
-            const state = ytPlayerRef.current.getPlayerState();
+            const state = typeof p.getPlayerState === 'function' ? p.getPlayerState() : -1;
             if (state === 1) {
-              const dur = ytPlayerRef.current.getDuration();
+              const dur = typeof p.getDuration === 'function' ? p.getDuration() : 0;
               if (dur && dur > 0) {
                 const percent = Math.floor((cur / dur) * 100);
                 [25, 50, 75].forEach(milestone => {
@@ -459,8 +462,8 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               }
             }
           }
-          if (!videoDuration && typeof ytPlayerRef.current.getDuration === 'function') {
-            const d = ytPlayerRef.current.getDuration();
+          if (!videoDuration && typeof p.getDuration === 'function') {
+            const d = p.getDuration();
             if (d && !isNaN(d) && d > 0) setVideoDuration(Math.floor(d));
           }
         } catch (err) {}
@@ -478,6 +481,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                   const dur = ytPlayerRef.current.getDuration();
                   if (dur && !isNaN(dur) && dur > 0) {
                     setVideoDuration(Math.floor(dur));
+                  }
+                  if (initialStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
+                    ytPlayerRef.current.seekTo(initialStartSecond, true);
                   }
                 } catch (e) {}
               },
@@ -529,6 +535,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       if (playbackTrackerRef.current) {
         clearInterval(playbackTrackerRef.current);
       }
+      try {
+        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+        if (p && typeof p.getCurrentTime === 'function') {
+          const cur = p.getCurrentTime();
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+            lastCurrentTimeRef.current = Math.floor(cur);
+          }
+        }
+      } catch (e) {}
+
       // Guardar el último segundo al cerrar o cambiar de lección
       if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
         const courseKey = extractCourseKey(video?.category);
@@ -572,11 +588,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     const targetSec = Math.max(0, Math.floor(sec || 0));
     lastCurrentTimeRef.current = targetSec;
     setCurrentLiveSeconds(targetSec);
-    if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
+    const playerId = `yt-iframe-${video?.youtubeId}`;
+    const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+    if (p && typeof p.seekTo === 'function') {
       try {
-        ytPlayerRef.current.seekTo(targetSec, true);
-        if (typeof ytPlayerRef.current.playVideo === 'function') {
-          ytPlayerRef.current.playVideo();
+        p.seekTo(targetSec, true);
+        if (typeof p.playVideo === 'function') {
+          p.playVideo();
         }
         return;
       } catch (e) {}
@@ -735,6 +753,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
             {/* Right: Direct Action Buttons (ALL ACCESSIBLE AT A GLANCE) */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               
+              {/* Botón Reanudar en el Header (Siempre visible de inmediato sin scroll) */}
+              {savedTimestamp > 3 && (
+                <button
+                  onClick={() => handleSeekToTimestamp(Math.max(0, savedTimestamp - 5))}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-black transition-all active:scale-95 cursor-pointer shadow-lg shadow-cyan-500/25 border border-cyan-300/40 shrink-0 animate-fade-in"
+                  title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))} (-5s cortesía)`}
+                >
+                  <Play className="w-3.5 h-3.5 fill-white text-white shrink-0" />
+                  <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                </button>
+              )}
+
               {/* Botón Ver en YouTube */}
               <a
                 href={video.youtubeUrl}
@@ -802,6 +832,73 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               {/* LEFT COLUMN: Player, Metadata Bar & Lesson Core Info */}
               <div className="md:col-span-7 lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
+                {/* ================= BARRA INTERACTIVA DE REANUDACIÓN DE VÍDEO (ALTA VISIBILIDAD) ================= */}
+                {savedTimestamp > 3 && showResumeBanner && (
+                  <div className="mx-3 sm:mx-4 md:mx-0 bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
+                        <Clock className="w-4 h-4 text-cyan-300" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
+                          <span>Progreso guardado:</span>
+                          <span className="text-cyan-300 font-mono font-black">{formatSecondsToTime(savedTimestamp)}</span>
+                          <span className="text-[11px] text-zinc-400 font-normal">(-5s de cortesía)</span>
+                        </p>
+                        <p className="text-[11px] text-zinc-400 hidden sm:block">
+                          ¿Deseas continuar donde lo dejaste o empezar la lección desde el principio?
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* Botón Reanudar */}
+                      <button
+                        onClick={() => {
+                          const seekSec = Math.max(0, savedTimestamp - 5);
+                          handleSeekToTimestamp(seekSec);
+                          setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
+                          setShowResumeBanner(false);
+                          setTimeout(() => setResumeNotice(null), 3500);
+                        }}
+                        className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                        title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
+                      >
+                        <Play className="w-3.5 h-3.5 fill-white" />
+                        <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                      </button>
+
+                      {/* Botón Desde el inicio */}
+                      <button
+                        onClick={() => {
+                          handleSeekToTimestamp(0);
+                          if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0);
+                          if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0);
+                          setSavedTimestamp(0);
+                          setShowResumeBanner(false);
+                          setResumeNotice("Reproduciendo desde el inicio (00:00)");
+                          setTimeout(() => setResumeNotice(null), 3000);
+                        }}
+                        className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                        title="Empezar desde el segundo 00:00"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Desde el inicio</span>
+                        <span className="sm:hidden">00:00</span>
+                      </button>
+
+                      {/* Botón Cerrar Banner */}
+                      <button
+                        onClick={() => setShowResumeBanner(false)}
+                        className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                        aria-label="Cerrar aviso de reanudación"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Video Player Box (Mínimo 480x270 en escritorio, ancho completo en móvil) */}
                 <div className="relative aspect-video w-full md:min-w-[480px] md:min-h-[270px] bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
                   {embedUrl ? (
@@ -905,72 +1002,6 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                     </div>
                   )}
                 </div>
-
-                {/* ================= BARRA INTERACTIVA DE REANUDACIÓN DE VÍDEO ================= */}
-                {savedTimestamp > 10 && showResumeBanner && (
-                  <div className="mx-3 sm:mx-4 md:mx-0 bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
-                        <Clock className="w-4 h-4 text-cyan-300" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
-                          <span>Progreso guardado:</span>
-                          <span className="text-cyan-300 font-mono font-black">{formatSecondsToTime(savedTimestamp)}</span>
-                          <span className="text-[11px] text-zinc-400 font-normal">(-5s de cortesía)</span>
-                        </p>
-                        <p className="text-[11px] text-zinc-400 hidden sm:block">
-                          Puedes continuar desde donde lo dejaste o empezar la lección desde el principio.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Botón Reanudar */}
-                      <button
-                        onClick={() => {
-                          const seekSec = Math.max(0, savedTimestamp - 5);
-                          handleSeekToTimestamp(seekSec);
-                          setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
-                          setTimeout(() => setResumeNotice(null), 3500);
-                        }}
-                        className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
-                        title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
-                      >
-                        <Play className="w-3.5 h-3.5 fill-white" />
-                        <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
-                      </button>
-
-                      {/* Botón Desde el inicio */}
-                      <button
-                        onClick={() => {
-                          handleSeekToTimestamp(0);
-                          if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0);
-                          if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0);
-                          setSavedTimestamp(0);
-                          setShowResumeBanner(false);
-                          setResumeNotice("Reproduciendo desde el inicio (00:00)");
-                          setTimeout(() => setResumeNotice(null), 3000);
-                        }}
-                        className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
-                        title="Empezar desde el segundo 00:00"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Desde el inicio</span>
-                        <span className="sm:hidden">00:00</span>
-                      </button>
-
-                      {/* Botón Cerrar Banner */}
-                      <button
-                        onClick={() => setShowResumeBanner(false)}
-                        className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
-                        aria-label="Cerrar aviso de reanudación"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* ================= METADATA BAR (LIMPIA, SIN SCROLLBAR HORIZONTAL Y SIN BOTÓN GUARDAR NI NIVEL) ================= */}
                 <div className="mx-3 sm:mx-4 md:mx-0 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-md">

@@ -1,6 +1,20 @@
-import React from 'react';
-import { Lightbulb, ExternalLink, Eye, Heart, MessageCircle, Calendar, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lightbulb, ExternalLink, Eye, Heart, MessageCircle, Calendar, Clock, Play } from 'lucide-react';
 import { trackCardClick } from '../../utils/analytics';
+import { getVideoPlaybackTime, formatSecondsToTime } from '../../utils/courseProgress';
+
+// Parsear duración en formato MM:SS o HH:MM:SS a segundos
+function parseDurationToSeconds(durationStr) {
+  if (!durationStr || typeof durationStr !== 'string') return 0;
+  const parts = durationStr.split(':').map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return 0;
+}
 
 // Función para formatear números compactos sin palabras (ej: 2719 -> 2.7k, 6882 -> 6.9k, 179 -> 179)
 function formatCounter(num) {
@@ -34,6 +48,24 @@ function getShortCategory(category) {
 }
 
 export default function V4VideoCard({ video, onSelect }) {
+  const [savedTime, setSavedTime] = useState(() => {
+    return getVideoPlaybackTime(video.youtubeId, video.id);
+  });
+
+  useEffect(() => {
+    setSavedTime(getVideoPlaybackTime(video.youtubeId, video.id));
+
+    const handleUpdate = (e) => {
+      const vId = e?.detail?.videoId;
+      if (vId === video.youtubeId || vId === video.id) {
+        setSavedTime(getVideoPlaybackTime(video.youtubeId, video.id));
+      }
+    };
+
+    window.addEventListener('capacero-timestamp-updated', handleUpdate);
+    return () => window.removeEventListener('capacero-timestamp-updated', handleUpdate);
+  }, [video.youtubeId, video.id]);
+
   const handleSelect = () => {
     trackCardClick(video);
     if (onSelect) onSelect(video);
@@ -48,6 +80,11 @@ export default function V4VideoCard({ video, onSelect }) {
   const commentsCount = formatCounter(video.comments);
   const shortCategory = getShortCategory(video.category);
   const videoHref = video.slug ? `/video/${video.slug}` : (video.youtubeId ? `/video/${video.youtubeId}` : '#');
+
+  const totalSeconds = parseDurationToSeconds(video.duration);
+  const progressPct = totalSeconds > 0 && savedTime > 0
+    ? Math.min(100, Math.max(3, Math.round((savedTime / totalSeconds) * 100)))
+    : 0;
 
   const handleLinkClick = (e) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) {
@@ -88,6 +125,24 @@ export default function V4VideoCard({ video, onSelect }) {
             e.target.className = 'w-full h-full object-contain p-6 bg-gradient-to-br from-zinc-900 via-blue-950/40 to-zinc-950';
           }}
         />
+
+        {/* Badge Reanudar en miniatura */}
+        {savedTime > 3 && !video.isScheduled && (
+          <div className="absolute top-2 left-2 z-20 bg-blue-950/95 text-cyan-300 border border-cyan-400/60 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg shadow-lg flex items-center gap-1 backdrop-blur-md animate-fade-in">
+            <Play className="w-2.5 h-2.5 fill-cyan-300 text-cyan-300" />
+            <span>Reanudar {formatSecondsToTime(savedTime)}</span>
+          </div>
+        )}
+
+        {/* Barra de progreso de reproducción guardada */}
+        {savedTime > 3 && progressPct > 0 && !video.isScheduled && (
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-950/90 z-20">
+            <div
+              className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-300 rounded-r-full transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        )}
 
         {/* Overlay Oscurecido + Badge "Estreno el día..." con colores de la web (Azul Eléctrico y Cyan) */}
         {video.isScheduled ? (

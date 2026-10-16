@@ -143,7 +143,7 @@ export default function V4VideoPage() {
   const initialStartSecond = useMemo(() => {
     if (!video) return 0;
     const saved = getVideoPlaybackTime(video.youtubeId, video.id);
-    if (saved > 10) {
+    if (saved > 3) {
       return Math.max(0, Math.floor(saved - 5));
     }
     return 0;
@@ -160,7 +160,7 @@ export default function V4VideoPage() {
 
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 10);
+    setShowResumeBanner(saved > 3);
 
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
@@ -333,11 +333,12 @@ export default function V4VideoPage() {
         } catch (e) {}
       }
 
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.getCurrentTime === 'function') {
+      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+      if (p && typeof p.getCurrentTime === 'function') {
         try {
-          const cur = ytPlayerRef.current.getCurrentTime();
-          const dur = ytPlayerRef.current.getDuration();
-          if (typeof cur === 'number' && !isNaN(cur)) {
+          const cur = p.getCurrentTime();
+          const dur = typeof p.getDuration === 'function' ? p.getDuration() : 0;
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
             savePlayback(cur);
           }
           if (dur && cur && dur > 0) {
@@ -358,6 +359,13 @@ export default function V4VideoPage() {
         try {
           ytPlayerRef.current = new window.YT.Player(playerId, {
             events: {
+              onReady: () => {
+                try {
+                  if (initialStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
+                    ytPlayerRef.current.seekTo(initialStartSecond, true);
+                  }
+                } catch (e) {}
+              },
               onStateChange: (e) => {
                 if (e && e.data === 1) { // PLAYING
                   if (!hasStartedRef.current) {
@@ -402,6 +410,15 @@ export default function V4VideoPage() {
     return () => {
       window.removeEventListener('message', handleWindowMessage);
       if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+      try {
+        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+        if (p && typeof p.getCurrentTime === 'function') {
+          const cur = p.getCurrentTime();
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+            lastCurrentTimeRef.current = Math.floor(cur);
+          }
+        }
+      } catch (e) {}
       if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
         const courseKey = extractCourseKey(video?.category);
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
@@ -564,7 +581,7 @@ export default function V4VideoPage() {
         </section>
 
         {/* Barra Interactiva de Reanudación de Vídeo */}
-        {savedTimestamp > 10 && showResumeBanner && (
+        {savedTimestamp > 3 && showResumeBanner && (
           <div className="bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
