@@ -1,8 +1,21 @@
-import React from 'react';
-import { Play, Download, ExternalLink, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, Download, ExternalLink, Eye, Heart, MessageCircle, Sparkles, Zap, ShieldCheck, ArrowRight, Youtube, Instagram, Mail, Smartphone, Clock } from 'lucide-react';
 import { PatreonIcon } from './PatreonIcon';
 import { MakerWorldIcon } from './MakerWorldIcon';
 import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
+import { getVideoPlaybackTime, formatSecondsToTime } from '../../utils/courseProgress';
+
+function parseDurationToSeconds(durationStr) {
+  if (!durationStr || typeof durationStr !== 'string') return 0;
+  const parts = durationStr.split(':').map(Number);
+  if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return 0;
+}
 
 function formatCounter(num) {
   if (num === undefined || num === null || isNaN(num) || num <= 0) return '0';
@@ -56,6 +69,30 @@ export default function V4Hero({
 }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
   const [isStandalone, setIsStandalone] = React.useState(false);
+
+  const [featuredSavedTime, setFeaturedSavedTime] = useState(() => {
+    return featuredVideo ? getVideoPlaybackTime(featuredVideo.youtubeId, featuredVideo.id) : 0;
+  });
+
+  useEffect(() => {
+    if (!featuredVideo) return;
+    setFeaturedSavedTime(getVideoPlaybackTime(featuredVideo.youtubeId, featuredVideo.id));
+
+    const handleUpdate = (e) => {
+      const vId = e?.detail?.videoId;
+      if (!vId || vId === featuredVideo.youtubeId || vId === featuredVideo.id) {
+        setFeaturedSavedTime(getVideoPlaybackTime(featuredVideo.youtubeId, featuredVideo.id));
+      }
+    };
+
+    window.addEventListener('capacero-timestamp-updated', handleUpdate);
+    return () => window.removeEventListener('capacero-timestamp-updated', handleUpdate);
+  }, [featuredVideo?.youtubeId, featuredVideo?.id]);
+
+  const featuredTotalSeconds = featuredVideo ? parseDurationToSeconds(featuredVideo.duration) : 0;
+  const featuredProgressPct = featuredTotalSeconds > 0 && featuredSavedTime > 0
+    ? Math.min(100, Math.max(3, Math.round((featuredSavedTime / featuredTotalSeconds) * 100)))
+    : 0;
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -303,6 +340,24 @@ export default function V4Hero({
                       }}
                     />
                     
+                    {/* Badge Reanudar en miniatura destacada */}
+                    {featuredSavedTime > 3 && (
+                      <div className="absolute top-2.5 left-2.5 z-20 bg-blue-950/95 text-cyan-300 border border-cyan-400/60 text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1.5 backdrop-blur-md animate-fade-in">
+                        <Play className="w-2.5 h-2.5 fill-cyan-300 text-cyan-300" />
+                        <span>Reanudar {formatSecondsToTime(featuredSavedTime)}</span>
+                      </div>
+                    )}
+
+                    {/* Barra de progreso destacada */}
+                    {featuredSavedTime > 3 && featuredProgressPct > 0 && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-zinc-950/90 z-20">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-cyan-300 rounded-r-full transition-all duration-300"
+                          style={{ width: `${featuredProgressPct}%` }}
+                        />
+                      </div>
+                    )}
+
                     {/* Overlay gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent pointer-events-none" />
                   </a>
