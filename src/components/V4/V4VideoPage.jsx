@@ -143,11 +143,16 @@ export default function V4VideoPage() {
   const initialStartSecond = useMemo(() => {
     if (!video) return 0;
     const saved = getVideoPlaybackTime(video.youtubeId, video.id);
-    if (saved > 3) {
-      return Math.max(0, Math.floor(saved - 5));
+    if (saved > 10) {
+      return Math.floor(saved - 5);
+    }
+    if (saved > 0) {
+      return Math.floor(saved);
     }
     return 0;
   }, [video?.youtubeId, video?.id]);
+
+  const [activeStartSecond, setActiveStartSecond] = useState(initialStartSecond);
 
   useEffect(() => {
     setIsPlaying(false);
@@ -157,10 +162,11 @@ export default function V4VideoPage() {
     hasEndedRef.current = false;
     lastCurrentTimeRef.current = initialStartSecond;
     lastSavedTimeRef.current = initialStartSecond;
+    setActiveStartSecond(initialStartSecond);
 
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 3);
+    setShowResumeBanner(saved > 0);
 
     if (initialStartSecond > 0) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
@@ -200,9 +206,15 @@ export default function V4VideoPage() {
   const handleSeekToTimestamp = (sec) => {
     const targetSec = Math.max(0, Math.floor(sec || 0));
     lastCurrentTimeRef.current = targetSec;
+    setActiveStartSecond(targetSec);
     if (!isPlaying) {
       setIsPlaying(true);
     }
+    const courseKey = extractCourseKey(video?.category);
+    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
+    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
+    if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+
     if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
       try {
         ytPlayerRef.current.seekTo(targetSec, true);
@@ -249,17 +261,46 @@ export default function V4VideoPage() {
       }
     };
 
-    const savePlayback = (seconds) => {
+    const savePlayback = (seconds, force = false) => {
       if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
       const sec = Math.floor(seconds);
+
+      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 'currentTime: 0'
+      // antes de posicionarse en el timestamp guardado (&start=).
+      if (sec === 0 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
+        return;
+      }
+
       lastCurrentTimeRef.current = sec;
+      if (sec === 0 && !force) return;
+
       const courseKey = extractCourseKey(video?.category);
-      if (Math.abs(sec - lastSavedTimeRef.current) >= 2) {
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 2 || force) {
         lastSavedTimeRef.current = sec;
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
         if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
         if (courseKey) {
           saveCourseProgress(courseKey, video, sec);
+        }
+      }
+    };
+
+    const flushCurrentProgress = () => {
+      try {
+        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+        if (p && typeof p.getCurrentTime === 'function') {
+          const cur = p.getCurrentTime();
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+            lastCurrentTimeRef.current = Math.floor(cur);
+          }
+        }
+      } catch (e) {}
+      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
+        const courseKey = extractCourseKey(video?.category);
+        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
+        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
         }
       }
     };
@@ -281,14 +322,7 @@ export default function V4VideoPage() {
                 trackVideoStart(video);
               }
             } else if (payload.info.playerState === 2) {
-              if (lastCurrentTimeRef.current > 0) {
-                const courseKey = extractCourseKey(video?.category);
-                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                if (courseKey) {
-                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                }
-              }
+              flushCurrentProgress();
             } else if (payload.info.playerState === 0) {
               handleEnded();
             }
@@ -301,14 +335,7 @@ export default function V4VideoPage() {
                 trackVideoStart(video);
               }
             } else if (state === 2) {
-              if (lastCurrentTimeRef.current > 0) {
-                const courseKey = extractCourseKey(video?.category);
-                if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                if (courseKey) {
-                  saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                }
-              }
+              flushCurrentProgress();
             } else if (state === 0) {
               handleEnded();
             }
@@ -318,6 +345,16 @@ export default function V4VideoPage() {
     };
 
     window.addEventListener('message', handleWindowMessage);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushCurrentProgress();
+      }
+    };
+
+    window.addEventListener('beforeunload', flushCurrentProgress);
+    window.addEventListener('pagehide', flushCurrentProgress);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Heartbeat periódico con comando postMessage directo y YT.Player
     if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
@@ -361,8 +398,8 @@ export default function V4VideoPage() {
             events: {
               onReady: () => {
                 try {
-                  if (initialStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
-                    ytPlayerRef.current.seekTo(initialStartSecond, true);
+                  if (activeStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
+                    ytPlayerRef.current.seekTo(activeStartSecond, true);
                   }
                 } catch (e) {}
               },
@@ -373,14 +410,7 @@ export default function V4VideoPage() {
                     trackVideoStart(video);
                   }
                 } else if (e && e.data === 2) { // PAUSED
-                  if (lastCurrentTimeRef.current > 0) {
-                    const courseKey = extractCourseKey(video?.category);
-                    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-                    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-                    if (courseKey) {
-                      saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-                    }
-                  }
+                  flushCurrentProgress();
                 } else if (e && e.data === 0) { // ENDED
                   handleEnded();
                 }
@@ -409,24 +439,11 @@ export default function V4VideoPage() {
 
     return () => {
       window.removeEventListener('message', handleWindowMessage);
+      window.removeEventListener('beforeunload', flushCurrentProgress);
+      window.removeEventListener('pagehide', flushCurrentProgress);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
-      try {
-        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
-        if (p && typeof p.getCurrentTime === 'function') {
-          const cur = p.getCurrentTime();
-          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
-            lastCurrentTimeRef.current = Math.floor(cur);
-          }
-        }
-      } catch (e) {}
-      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
-        const courseKey = extractCourseKey(video?.category);
-        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
-        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
-        if (courseKey) {
-          saveCourseProgress(courseKey, video, lastCurrentTimeRef.current);
-        }
-      }
+      flushCurrentProgress();
       ytPlayerRef.current = null;
     };
   }, [isPlaying, video?.youtubeId, nextVideo]);
@@ -475,7 +492,8 @@ export default function V4VideoPage() {
   }
 
   // --- RENDER VIDEO PAGE ---
-  const embedUrl = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}${initialStartSecond > 0 ? `&start=${initialStartSecond}` : ''}`;
+  const resumeSec = savedTimestamp > 10 ? Math.floor(savedTimestamp - 5) : Math.floor(savedTimestamp);
+  const embedUrl = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : 'https://www.capacero3d.com')}${activeStartSecond > 0 ? `&start=${activeStartSecond}` : ''}`;
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans relative selection:bg-[#2575c4] selection:text-white">
@@ -491,14 +509,33 @@ export default function V4VideoPage() {
             <ArrowLeft className="w-4 h-4 text-cyan-400" />
             <span>Videoteca Principal</span>
           </a>
-          <a href="/" className="flex items-center gap-2">
-            <img src="/logo-capa-cero.webp" alt="Capa Cero 3D" className="h-7 w-auto" />
-          </a>
+
+          <div className="flex items-center gap-2.5">
+            {savedTimestamp > 0 && (
+              <button
+                onClick={() => {
+                  handleSeekToTimestamp(resumeSec);
+                  setResumeNotice(`Reanudando desde ${formatSecondsToTime(resumeSec)}`);
+                  setShowResumeBanner(false);
+                  setTimeout(() => setResumeNotice(null), 3500);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-black transition-all active:scale-95 cursor-pointer shadow-lg shadow-cyan-500/25 border border-cyan-300/40 shrink-0 animate-fade-in"
+                title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
+              >
+                <Play className="w-3.5 h-3.5 fill-white text-white shrink-0" />
+                <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
+              </button>
+            )}
+
+            <a href="/" className="flex items-center gap-2">
+              <img src="/logo-capa-cero.webp" alt="Capa Cero 3D" className="h-7 w-auto" />
+            </a>
+          </div>
         </div>
       </header>
 
       {/* Contenido principal de la página del vídeo */}
-      <main className="flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8 z-10 space-y-8">
+      <main className="flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8 z-10 space-y-6">
         
         {/* Breadcrumb semántico */}
         <nav aria-label="Migas de pan" className="text-xs text-zinc-400 flex items-center gap-1.5 flex-wrap">
@@ -508,6 +545,69 @@ export default function V4VideoPage() {
           <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
           <span className="text-cyan-400 font-semibold truncate max-w-xs">{video.title}</span>
         </nav>
+
+        {/* Banner de Reanudación de Vídeo */}
+        {savedTimestamp > 0 && showResumeBanner && (
+          <div className="bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4 text-cyan-300" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
+                  <span>Progreso guardado:</span>
+                  <span className="text-cyan-300 font-mono font-black">{formatSecondsToTime(savedTimestamp)}</span>
+                  <span className="text-[11px] text-zinc-400 font-normal">(-5s de cortesía)</span>
+                </p>
+                <p className="text-[11px] text-zinc-400 hidden sm:block">
+                  ¿Deseas continuar donde lo dejaste o empezar la lección desde el principio?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  handleSeekToTimestamp(resumeSec);
+                  setResumeNotice(`Reanudando en ${formatSecondsToTime(resumeSec)}`);
+                  setShowResumeBanner(false);
+                  setTimeout(() => setResumeNotice(null), 3500);
+                }}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
+                title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
+              >
+                <Play className="w-3.5 h-3.5 fill-white" />
+                <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  handleSeekToTimestamp(0);
+                  if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0);
+                  if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0);
+                  setSavedTimestamp(0);
+                  setShowResumeBanner(false);
+                  setResumeNotice("Reproduciendo desde el inicio (00:00)");
+                  setTimeout(() => setResumeNotice(null), 3000);
+                }}
+                className="flex items-center gap-1.5 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+                title="Empezar desde el segundo 00:00"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Desde el inicio</span>
+                <span className="sm:hidden">00:00</span>
+              </button>
+
+              <button
+                onClick={() => setShowResumeBanner(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
+                aria-label="Cerrar aviso de reanudación"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Reproductor de vídeo con Facade (mínimo 480x270 en escritorio, ancho completo en móvil) */}
         <section className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl relative">
@@ -532,6 +632,7 @@ export default function V4VideoPage() {
               </div>
             ) : (
               <iframe
+                key={`${video.youtubeId}-${activeStartSecond}`}
                 id={playerId}
                 src={embedUrl}
                 title={video.title}
@@ -539,6 +640,25 @@ export default function V4VideoPage() {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+            )}
+
+            {/* Floating Resume Quick-Action on Player */}
+            {savedTimestamp > 0 && (
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleSeekToTimestamp(resumeSec);
+                    setResumeNotice(`Reanudando en ${formatSecondsToTime(resumeSec)}`);
+                    setShowResumeBanner(false);
+                    setTimeout(() => setResumeNotice(null), 3500);
+                  }}
+                  className="bg-blue-950/90 hover:bg-blue-900 text-cyan-200 hover:text-white border border-cyan-400/60 text-[11px] sm:text-xs font-black px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer animate-fade-in"
+                  title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
+                >
+                  <Play className="w-3 h-3 fill-cyan-400 text-cyan-400" />
+                  <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
+                </button>
+              </div>
             )}
 
             {/* Aviso de reanudación automática */}

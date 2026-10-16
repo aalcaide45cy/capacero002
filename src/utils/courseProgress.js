@@ -217,6 +217,7 @@ export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
   try {
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));
     window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { videoId, timestamp: sec } }));
+    syncVaultPush(false);
   } catch (e) {}
 }
 
@@ -494,13 +495,25 @@ export function applySyncPayload(encodedPayload, isInitialMerge = false) {
     const importedNotes = data.sn || data.studyNotes || {};
 
     if (!isInitialMerge) {
-      // 1. Sincronización exacta de Bóveda: El estado de la nube es la verdad (incluye borrados y ediciones)
+      // 1. Sincronización exacta de Bóveda: El estado de la nube es la verdad para notas y cursos
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(importedNotes));
       localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(importedCourses));
-      localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(importedTimestamps));
+
+      // Timestamps de reproducción: Fusión inteligente para que la nube nunca borre el progreso local más reciente
+      const currentTimestamps = getAllVideoTimestamps();
+      const mergedTimestamps = { ...importedTimestamps };
+      Object.keys(currentTimestamps).forEach((vId) => {
+        const curSec = currentTimestamps[vId]?.timestamp ?? currentTimestamps[vId]?.seconds ?? 0;
+        const impSec = importedTimestamps[vId]?.timestamp ?? importedTimestamps[vId]?.seconds ?? 0;
+        if (curSec > impSec) {
+          mergedTimestamps[vId] = currentTimestamps[vId];
+        }
+      });
+      localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
 
       window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: importedCourses } }));
       window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: importedNotes } }));
+      window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { all: mergedTimestamps } }));
 
       return {
         success: true,
@@ -560,7 +573,14 @@ export function applySyncPayload(encodedPayload, isInitialMerge = false) {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(mergedCourses));
 
     const currentTimestamps = getAllVideoTimestamps();
-    const mergedTimestamps = { ...currentTimestamps, ...importedTimestamps };
+    const mergedTimestamps = { ...importedTimestamps };
+    Object.keys(currentTimestamps).forEach((vId) => {
+      const curSec = currentTimestamps[vId]?.timestamp ?? currentTimestamps[vId]?.seconds ?? 0;
+      const impSec = importedTimestamps[vId]?.timestamp ?? importedTimestamps[vId]?.seconds ?? 0;
+      if (curSec > impSec) {
+        mergedTimestamps[vId] = currentTimestamps[vId];
+      }
+    });
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
 
     window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: mergedCourses } }));

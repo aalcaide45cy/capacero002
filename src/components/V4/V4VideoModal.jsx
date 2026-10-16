@@ -77,8 +77,11 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       return Math.max(0, Math.floor(video.startTimestamp));
     }
     const saved = getVideoPlaybackTime(video.youtubeId, video.id);
+    if (saved > 10) {
+      return Math.floor(saved - 5);
+    }
     if (saved > 0) {
-      return Math.max(0, Math.floor(saved - 5));
+      return Math.floor(saved);
     }
     return 0;
   }, [video?.youtubeId, video?.id, video?.startTimestamp]);
@@ -103,6 +106,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const playbackTrackerRef = useRef(null);
 
   useEffect(() => {
+    const s = video ? getVideoPlaybackTime(video.youtubeId, video.id) : 0;
+    setSavedTimestamp(s);
+    setShowResumeBanner(s > 0);
     progressMilestonesRef.current.clear();
     hasStartedRef.current = false;
     hasEndedRef.current = false;
@@ -111,7 +117,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     playbackStartRef.current = Date.now() - (initialStartSecond * 1000);
     isPlayingRef.current = false;
     setActiveStartSecond(initialStartSecond);
-  }, [video?.youtubeId, initialStartSecond]);
+  }, [video?.youtubeId, video?.id, initialStartSecond]);
 
   // Mantener las referencias actualizadas
   useEffect(() => {
@@ -369,14 +375,28 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
     };
 
-    const savePlayback = (seconds) => {
+    const savePlayback = (seconds, force = false) => {
       if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
       const sec = Math.floor(seconds);
+
+      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 'currentTime: 0'
+      // antes de posicionarse en el timestamp guardado (&start=).
+      // Si el vídeo tenía progreso guardado (> 5s), ese 0 inicial jamás debe sobreescribir el progreso.
+      if (sec === 0 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
+        return;
+      }
+
       lastCurrentTimeRef.current = sec;
       setCurrentLiveSeconds(sec);
+
+      // Nunca persistir automáticamente 0 por fluctuaciones del reproductor
+      if (sec === 0 && !force) {
+        return;
+      }
+
       const courseKey = extractCourseKey(video?.category);
       // Guardar en localStorage cada ~2 segundos de reproducción
-      if (Math.abs(sec - lastSavedTimeRef.current) >= 2) {
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 2 || force) {
         lastSavedTimeRef.current = sec;
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
         if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
@@ -723,6 +743,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const softwareDisplay = video.category ? video.category.replace(/^curso\s*:?\s*/i, '') : 'Bambu Studio';
   const publishedDisplay = formatPublishedDate(video.publishedAt);
   const likesDisplay = video.likes || 812;
+  const resumeSec = savedTimestamp > 10 ? Math.floor(savedTimestamp - 5) : Math.floor(savedTimestamp);
 
   return (
     <>
@@ -784,17 +805,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               {savedTimestamp > 0 && (
                 <button
                   onClick={() => {
-                    const seekSec = Math.max(0, savedTimestamp - 5);
-                    handleSeekToTimestamp(seekSec);
-                    setResumeNotice(`Reanudando desde ${formatSecondsToTime(seekSec)} (-5s cortesía)`);
+                    handleSeekToTimestamp(resumeSec);
+                    setResumeNotice(`Reanudando desde ${formatSecondsToTime(resumeSec)}`);
                     setShowResumeBanner(false);
                     setTimeout(() => setResumeNotice(null), 3500);
                   }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-black transition-all active:scale-95 cursor-pointer shadow-lg shadow-cyan-500/25 border border-cyan-300/40 shrink-0 animate-fade-in"
-                  title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))} (-5s cortesía)`}
+                  title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
                 >
                   <Play className="w-3.5 h-3.5 fill-white text-white shrink-0" />
-                  <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                  <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
                 </button>
               )}
 
@@ -888,17 +908,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                       {/* Botón Reanudar */}
                       <button
                         onClick={() => {
-                          const seekSec = Math.max(0, savedTimestamp - 5);
-                          handleSeekToTimestamp(seekSec);
-                          setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
+                          handleSeekToTimestamp(resumeSec);
+                          setResumeNotice(`Reanudando en ${formatSecondsToTime(resumeSec)}`);
                           setShowResumeBanner(false);
                           setTimeout(() => setResumeNotice(null), 3500);
                         }}
                         className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-extrabold px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md shadow-blue-500/30 transition-all active:scale-95 cursor-pointer border border-cyan-300/40"
-                        title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
+                        title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
                       >
                         <Play className="w-3.5 h-3.5 fill-white" />
-                        <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                        <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
                       </button>
 
                       {/* Botón Desde el inicio */}
@@ -951,17 +970,16 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                         <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
                           <button
                             onClick={() => {
-                              const seekSec = Math.max(0, savedTimestamp - 5);
-                              handleSeekToTimestamp(seekSec);
-                              setResumeNotice(`Reanudando en ${formatSecondsToTime(seekSec)}`);
+                              handleSeekToTimestamp(resumeSec);
+                              setResumeNotice(`Reanudando en ${formatSecondsToTime(resumeSec)}`);
                               setShowResumeBanner(false);
                               setTimeout(() => setResumeNotice(null), 3500);
                             }}
                             className="bg-blue-950/90 hover:bg-blue-900 text-cyan-200 hover:text-white border border-cyan-400/60 text-[11px] sm:text-xs font-black px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 backdrop-blur-md transition-all active:scale-95 cursor-pointer animate-fade-in"
-                            title={`Reanudar desde ${formatSecondsToTime(Math.max(0, savedTimestamp - 5))}`}
+                            title={`Reanudar desde ${formatSecondsToTime(resumeSec)}`}
                           >
                             <Play className="w-3 h-3 fill-cyan-400 text-cyan-400" />
-                            <span>Reanudar ({formatSecondsToTime(Math.max(0, savedTimestamp - 5))})</span>
+                            <span>Reanudar ({formatSecondsToTime(resumeSec)})</span>
                           </button>
                         </div>
                       )}
