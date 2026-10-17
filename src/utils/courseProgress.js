@@ -213,17 +213,13 @@ export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
     return;
   }
 
-  if (sec === 0) {
-    delete all[videoId];
-  } else {
-    all[videoId] = {
-      videoId,
-      timestamp: sec,
-      seconds: sec,
-      courseName,
-      lastUpdated: new Date().toISOString()
-    };
-  }
+  all[videoId] = {
+    videoId,
+    timestamp: sec,
+    seconds: sec,
+    courseName,
+    lastUpdated: new Date().toISOString()
+  };
 
   try {
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));
@@ -511,13 +507,32 @@ export function applySyncPayload(encodedPayload, isInitialMerge = false) {
       localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(importedCourses));
 
       // Timestamps de reproducción: Fusión inteligente para que la nube nunca borre el progreso local más reciente
+      // Timestamps de reproducción: Fusión inteligente basada en la fecha más reciente (lastUpdated)
       const currentTimestamps = getAllVideoTimestamps();
       const mergedTimestamps = { ...importedTimestamps };
       Object.keys(currentTimestamps).forEach((vId) => {
-        const curSec = currentTimestamps[vId]?.timestamp ?? currentTimestamps[vId]?.seconds ?? 0;
-        const impSec = importedTimestamps[vId]?.timestamp ?? importedTimestamps[vId]?.seconds ?? 0;
-        if (curSec > impSec) {
-          mergedTimestamps[vId] = currentTimestamps[vId];
+        const curItem = currentTimestamps[vId];
+        const impItem = importedTimestamps[vId];
+        if (!impItem) {
+          mergedTimestamps[vId] = curItem;
+          return;
+        }
+        const curDate = curItem?.lastUpdated ? new Date(curItem.lastUpdated).getTime() : 0;
+        const impDate = impItem?.lastUpdated ? new Date(impItem.lastUpdated).getTime() : 0;
+        if (curDate > 0 && impDate > 0) {
+          if (curDate > impDate) {
+            mergedTimestamps[vId] = curItem;
+          } else {
+            mergedTimestamps[vId] = impItem;
+          }
+        } else {
+          const curSec = curItem?.timestamp ?? curItem?.seconds ?? 0;
+          const impSec = impItem?.timestamp ?? impItem?.seconds ?? 0;
+          if (curSec > impSec) {
+            mergedTimestamps[vId] = curItem;
+          } else {
+            mergedTimestamps[vId] = impItem;
+          }
         }
       });
       localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
@@ -586,16 +601,35 @@ export function applySyncPayload(encodedPayload, isInitialMerge = false) {
     const currentTimestamps = getAllVideoTimestamps();
     const mergedTimestamps = { ...importedTimestamps };
     Object.keys(currentTimestamps).forEach((vId) => {
-      const curSec = currentTimestamps[vId]?.timestamp ?? currentTimestamps[vId]?.seconds ?? 0;
-      const impSec = importedTimestamps[vId]?.timestamp ?? importedTimestamps[vId]?.seconds ?? 0;
-      if (curSec > impSec) {
-        mergedTimestamps[vId] = currentTimestamps[vId];
+      const curItem = currentTimestamps[vId];
+      const impItem = importedTimestamps[vId];
+      if (!impItem) {
+        mergedTimestamps[vId] = curItem;
+        return;
+      }
+      const curDate = curItem?.lastUpdated ? new Date(curItem.lastUpdated).getTime() : 0;
+      const impDate = impItem?.lastUpdated ? new Date(impItem.lastUpdated).getTime() : 0;
+      if (curDate > 0 && impDate > 0) {
+        if (curDate > impDate) {
+          mergedTimestamps[vId] = curItem;
+        } else {
+          mergedTimestamps[vId] = impItem;
+        }
+      } else {
+        const curSec = curItem?.timestamp ?? curItem?.seconds ?? 0;
+        const impSec = impItem?.timestamp ?? impItem?.seconds ?? 0;
+        if (curSec > impSec) {
+          mergedTimestamps[vId] = curItem;
+        } else {
+          mergedTimestamps[vId] = impItem;
+        }
       }
     });
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(mergedTimestamps));
 
     window.dispatchEvent(new CustomEvent('capacero-progress-updated', { detail: { all: mergedCourses } }));
     window.dispatchEvent(new CustomEvent('capacero-notes-updated', { detail: { all: mergedNotes } }));
+    window.dispatchEvent(new CustomEvent('capacero-timestamp-updated', { detail: { all: mergedTimestamps } }));
 
     return {
       success: true,
