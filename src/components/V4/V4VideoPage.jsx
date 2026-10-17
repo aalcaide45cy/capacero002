@@ -265,9 +265,9 @@ export default function V4VideoPage() {
       if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
       const sec = Math.floor(seconds);
 
-      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 'currentTime: 0'
-      // antes de posicionarse en el timestamp guardado (&start=).
-      if (sec === 0 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
+      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 0 o 1
+      // mientras carga el buffer antes de posicionarse en el timestamp guardado (&start=).
+      if (sec <= 1 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
         return;
       }
 
@@ -632,7 +632,7 @@ export default function V4VideoPage() {
               </div>
             ) : (
               <iframe
-                key={`${video.youtubeId}-${activeStartSecond}`}
+                key={video.youtubeId}
                 id={playerId}
                 src={embedUrl}
                 title={video.title}
