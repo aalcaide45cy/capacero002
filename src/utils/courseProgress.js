@@ -190,10 +190,11 @@ export function getVideoPlaybackTime(videoId, altId = null) {
   const all = getAllVideoTimestamps();
   const getSec = (item) => {
     if (!item) return 0;
-    if (typeof item === 'number' && !isNaN(item)) return Math.max(0, Math.floor(item));
-    if (typeof item.timestamp === 'number' && !isNaN(item.timestamp)) return Math.max(0, Math.floor(item.timestamp));
-    if (typeof item.seconds === 'number' && !isNaN(item.seconds)) return Math.max(0, Math.floor(item.seconds));
-    return 0;
+    let s = 0;
+    if (typeof item === 'number' && !isNaN(item)) s = Math.max(0, Math.floor(item));
+    else if (typeof item.timestamp === 'number' && !isNaN(item.timestamp)) s = Math.max(0, Math.floor(item.timestamp));
+    else if (typeof item.seconds === 'number' && !isNaN(item.seconds)) s = Math.max(0, Math.floor(item.seconds));
+    return s > 2 ? s : 0;
   };
   const t1 = videoId ? getSec(all[videoId]) : 0;
   if (t1 > 0) return t1;
@@ -206,13 +207,23 @@ export function saveVideoPlaybackTime(videoId, seconds, courseName = null) {
   if (!videoId || typeof window === 'undefined' || !window.localStorage) return;
   const sec = Math.max(0, Math.floor(seconds || 0));
   const all = getAllVideoTimestamps();
-  all[videoId] = {
-    videoId,
-    timestamp: sec,
-    seconds: sec,
-    courseName,
-    lastUpdated: new Date().toISOString()
-  };
+
+  // Ignorar 1-2s para prevenir residuos de buffering inicial (00:01)
+  if (sec > 0 && sec <= 2) {
+    return;
+  }
+
+  if (sec === 0) {
+    delete all[videoId];
+  } else {
+    all[videoId] = {
+      videoId,
+      timestamp: sec,
+      seconds: sec,
+      courseName,
+      lastUpdated: new Date().toISOString()
+    };
+  }
 
   try {
     localStorage.setItem(TIMESTAMPS_STORAGE_KEY, JSON.stringify(all));

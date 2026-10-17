@@ -57,6 +57,7 @@ export default function V4VideoPage() {
   const hasEndedRef = useRef(false);
   const lastCurrentTimeRef = useRef(0);
   const lastSavedTimeRef = useRef(0);
+  const playerContainerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const playbackTrackerRef = useRef(null);
 
@@ -146,7 +147,7 @@ export default function V4VideoPage() {
     if (saved > 10) {
       return Math.floor(saved - 5);
     }
-    if (saved > 0) {
+    if (saved > 2) {
       return Math.floor(saved);
     }
     return 0;
@@ -166,9 +167,9 @@ export default function V4VideoPage() {
 
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 0);
+    setShowResumeBanner(saved > 2);
 
-    if (initialStartSecond > 0) {
+    if (initialStartSecond > 2) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
       const timer = setTimeout(() => setResumeNotice(null), 5000);
       return () => clearTimeout(timer);
@@ -211,9 +212,15 @@ export default function V4VideoPage() {
       setIsPlaying(true);
     }
     const courseKey = extractCourseKey(video?.category);
-    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
-    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
-    if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+    if (targetSec > 2) {
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
+      if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+    } else if (targetSec === 0) {
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0, courseKey);
+      if (courseKey) saveCourseProgress(courseKey, video, 0);
+    }
 
     if (ytPlayerRef.current && typeof ytPlayerRef.current.seekTo === 'function') {
       try {
@@ -245,6 +252,9 @@ export default function V4VideoPage() {
   useEffect(() => {
     if (!isPlaying || !video?.youtubeId) return;
 
+    let isMounted = true;
+    let fallbackTimer = null;
+
     const handleEnded = () => {
       hasEndedRef.current = true;
       trackVideoComplete(video);
@@ -261,41 +271,17 @@ export default function V4VideoPage() {
       }
     };
 
-    const savePlayback = (seconds, force = false) => {
-      if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
-      const sec = Math.floor(seconds);
-
-      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 0 o 1
-      // mientras carga el buffer antes de posicionarse en el timestamp guardado (&start=).
-      if (sec <= 1 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
-        return;
-      }
-
-      lastCurrentTimeRef.current = sec;
-      if (sec === 0 && !force) return;
-
-      const courseKey = extractCourseKey(video?.category);
-      if (Math.abs(sec - lastSavedTimeRef.current) >= 2 || force) {
-        lastSavedTimeRef.current = sec;
-        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
-        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
-        if (courseKey) {
-          saveCourseProgress(courseKey, video, sec);
-        }
-      }
-    };
-
     const flushCurrentProgress = () => {
       try {
-        const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+        const p = ytPlayerRef.current;
         if (p && typeof p.getCurrentTime === 'function') {
           const cur = p.getCurrentTime();
-          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 2) {
             lastCurrentTimeRef.current = Math.floor(cur);
           }
         }
       } catch (e) {}
-      if (lastCurrentTimeRef.current > 0 && !hasEndedRef.current) {
+      if (lastCurrentTimeRef.current > 2 && !hasEndedRef.current) {
         const courseKey = extractCourseKey(video?.category);
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, lastCurrentTimeRef.current, courseKey);
         if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, lastCurrentTimeRef.current, courseKey);
@@ -305,72 +291,144 @@ export default function V4VideoPage() {
       }
     };
 
-    const handleWindowMessage = (event) => {
-      try {
-        let payload = event.data;
-        if (typeof payload === 'string') {
-          payload = JSON.parse(payload);
-        }
-        if (payload) {
-          if (payload.event === 'infoDelivery' && payload.info) {
-            if (typeof payload.info.currentTime === 'number') {
-              savePlayback(payload.info.currentTime);
-            }
-            if (payload.info.playerState === 1) {
-              if (!hasStartedRef.current) {
-                hasStartedRef.current = true;
-                trackVideoStart(video);
-              }
-            } else if (payload.info.playerState === 2) {
-              flushCurrentProgress();
-            } else if (payload.info.playerState === 0) {
-              handleEnded();
-            }
-          }
-          if (payload.event === 'onStateChange') {
-            const state = payload.info !== undefined ? payload.info : payload.data;
-            if (state === 1) {
-              if (!hasStartedRef.current) {
-                hasStartedRef.current = true;
-                trackVideoStart(video);
-              }
-            } else if (state === 2) {
-              flushCurrentProgress();
-            } else if (state === 0) {
-              handleEnded();
-            }
-          }
-        }
-      } catch (e) {}
-    };
+    const savePlayback = (seconds, force = false) => {
+      if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
+      const sec = Math.floor(seconds);
 
-    window.addEventListener('message', handleWindowMessage);
+      if (sec <= 2 && !hasEndedRef.current) {
+        lastCurrentTimeRef.current = sec;
+        return;
+      }
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        flushCurrentProgress();
+      lastCurrentTimeRef.current = sec;
+
+      const courseKey = extractCourseKey(video?.category);
+      if (Math.abs(sec - lastSavedTimeRef.current) >= 2 || force) {
+        lastSavedTimeRef.current = sec;
+        setSavedTimestamp(sec);
+        if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
+        if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
+        if (courseKey) {
+          saveCourseProgress(courseKey, video, sec);
+        }
       }
     };
 
-    window.addEventListener('beforeunload', flushCurrentProgress);
-    window.addEventListener('pagehide', flushCurrentProgress);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const initPlayer = () => {
+      if (!isMounted || !playerContainerRef.current) return;
 
-    // Heartbeat periódico con comando postMessage directo y YT.Player
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch (e) {}
+        ytPlayerRef.current = null;
+      }
+
+      playerContainerRef.current.innerHTML = '';
+      const targetDiv = document.createElement('div');
+      targetDiv.id = `yt-player-page-target-${video.youtubeId}`;
+      targetDiv.className = 'w-full h-full';
+      playerContainerRef.current.appendChild(targetDiv);
+
+      try {
+        ytPlayerRef.current = new window.YT.Player(targetDiv.id, {
+          videoId: video.youtubeId,
+          width: '100%',
+          height: '100%',
+          playerVars: {
+            autoplay: 1,
+            playsinline: 1,
+            rel: 0,
+            enablejsapi: 1,
+            origin: window.location.origin,
+            start: activeStartSecond > 2 ? activeStartSecond : undefined
+          },
+          events: {
+            onReady: (e) => {
+              if (!isMounted) return;
+              try {
+                if (activeStartSecond > 2 && typeof e.target.seekTo === 'function') {
+                  e.target.seekTo(activeStartSecond, true);
+                }
+              } catch (err) {}
+            },
+            onStateChange: (e) => {
+              if (!isMounted || !e) return;
+              if (e.data === 1) { // PLAYING
+                if (!hasStartedRef.current) {
+                  hasStartedRef.current = true;
+                  trackVideoStart(video);
+                }
+              } else if (e.data === 2) { // PAUSED
+                try {
+                  const cur = e.target.getCurrentTime();
+                  if (typeof cur === 'number' && !isNaN(cur)) {
+                    savePlayback(cur, true);
+                  }
+                } catch (err) {}
+              } else if (e.data === 0) { // ENDED
+                handleEnded();
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Error launching YT.Player on page:', err);
+      }
+    };
+
+    const loadAndInit = () => {
+      if (window.YT && window.YT.Player) {
+        initPlayer();
+      } else {
+        window.__capacero_yt_cbs = window.__capacero_yt_cbs || [];
+        window.__capacero_yt_cbs.push(() => {
+          if (isMounted) initPlayer();
+        });
+
+        if (!window.__capacero_yt_loading) {
+          window.__capacero_yt_loading = true;
+          const prevReady = window.onYouTubeIframeAPIReady;
+          window.onYouTubeIframeAPIReady = () => {
+            if (typeof prevReady === 'function') prevReady();
+            if (Array.isArray(window.__capacero_yt_cbs)) {
+              const cbs = [...window.__capacero_yt_cbs];
+              window.__capacero_yt_cbs = [];
+              cbs.forEach(cb => {
+                try { cb(); } catch (e) {}
+              });
+            }
+          };
+
+          if (!document.getElementById('youtube-iframe-api-script')) {
+            const tag = document.createElement('script');
+            tag.id = 'youtube-iframe-api-script';
+            tag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(tag);
+          }
+        }
+      }
+    };
+
+    loadAndInit();
+
+    fallbackTimer = setTimeout(() => {
+      if (isMounted && !ytPlayerRef.current && playerContainerRef.current) {
+        const fallbackSrc = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}${activeStartSecond > 2 ? `&start=${activeStartSecond}` : ''}`;
+        playerContainerRef.current.innerHTML = `
+          <iframe
+            id="${playerId}"
+            src="${fallbackSrc}"
+            title="${(video.title || '').replace(/"/g, '&quot;')}"
+            class="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        `;
+      }
+    }, 3000);
+
     if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
     playbackTrackerRef.current = setInterval(() => {
-      const iframe = document.getElementById(playerId);
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: 'getCurrentTime',
-            args: []
-          }), '*');
-        } catch (e) {}
-      }
-
-      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+      const p = ytPlayerRef.current;
       if (p && typeof p.getCurrentTime === 'function') {
         try {
           const cur = p.getCurrentTime();
@@ -391,62 +449,45 @@ export default function V4VideoPage() {
       }
     }, 1000);
 
-    function setupYT() {
-      if (window.YT && window.YT.Player && document.getElementById(playerId)) {
-        try {
-          ytPlayerRef.current = new window.YT.Player(playerId, {
-            events: {
-              onReady: () => {
-                try {
-                  if (activeStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
-                    ytPlayerRef.current.seekTo(activeStartSecond, true);
-                  }
-                } catch (e) {}
-              },
-              onStateChange: (e) => {
-                if (e && e.data === 1) { // PLAYING
-                  if (!hasStartedRef.current) {
-                    hasStartedRef.current = true;
-                    trackVideoStart(video);
-                  }
-                } else if (e && e.data === 2) { // PAUSED
-                  flushCurrentProgress();
-                } else if (e && e.data === 0) { // ENDED
-                  handleEnded();
-                }
-              }
-            }
-          });
-        } catch (e) {}
-      }
-    }
+    const handleWindowMessage = (event) => {
+      try {
+        let payload = event.data;
+        if (typeof payload === 'string') payload = JSON.parse(payload);
+        if (payload?.info?.currentTime && typeof payload.info.currentTime === 'number' && payload.info.currentTime > 2) {
+          savePlayback(payload.info.currentTime);
+        }
+        if (payload?.info?.playerState === 2) flushCurrentProgress();
+        else if (payload?.info?.playerState === 0) handleEnded();
+      } catch (e) {}
+    };
 
-    if (window.YT && window.YT.Player) {
-      setupYT();
-    } else {
-      if (!document.getElementById('youtube-iframe-api-script')) {
-        const tag = document.createElement('script');
-        tag.id = 'youtube-iframe-api-script';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        document.head.appendChild(tag);
+    window.addEventListener('message', handleWindowMessage);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        flushCurrentProgress();
       }
-      const prevCb = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prevCb === 'function') prevCb();
-        setupYT();
-      };
-    }
+    };
+
+    window.addEventListener('beforeunload', flushCurrentProgress);
+    window.addEventListener('pagehide', flushCurrentProgress);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      isMounted = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
       window.removeEventListener('message', handleWindowMessage);
       window.removeEventListener('beforeunload', flushCurrentProgress);
       window.removeEventListener('pagehide', flushCurrentProgress);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
       flushCurrentProgress();
-      ytPlayerRef.current = null;
+      if (ytPlayerRef.current) {
+        try { ytPlayerRef.current.destroy(); } catch (e) {}
+        ytPlayerRef.current = null;
+      }
     };
-  }, [isPlaying, video?.youtubeId, nextVideo]);
+  }, [isPlaying, video?.youtubeId, activeStartSecond]);
 
   // --- RENDER 404 (SLUG NO ENCONTRADO) ---
   if (!video) {
@@ -511,7 +552,7 @@ export default function V4VideoPage() {
           </a>
 
           <div className="flex items-center gap-2.5">
-            {savedTimestamp > 0 && (
+            {savedTimestamp > 2 && (
               <button
                 onClick={() => {
                   handleSeekToTimestamp(resumeSec);
@@ -547,7 +588,7 @@ export default function V4VideoPage() {
         </nav>
 
         {/* Banner de Reanudación de Vídeo */}
-        {savedTimestamp > 0 && showResumeBanner && (
+        {savedTimestamp > 2 && showResumeBanner && (
           <div className="bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
@@ -631,19 +672,14 @@ export default function V4VideoPage() {
                 </div>
               </div>
             ) : (
-              <iframe
-                key={video.youtubeId}
-                id={playerId}
-                src={embedUrl}
-                title={video.title}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
+              <div
+                ref={playerContainerRef}
+                className="w-full h-full bg-black"
               />
             )}
 
             {/* Floating Resume Quick-Action on Player */}
-            {savedTimestamp > 0 && (
+            {savedTimestamp > 2 && (
               <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
                 <button
                   onClick={() => {

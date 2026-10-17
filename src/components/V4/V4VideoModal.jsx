@@ -56,7 +56,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   });
   const [showResumeBanner, setShowResumeBanner] = useState(() => {
     const s = video ? getVideoPlaybackTime(video.youtubeId, video.id) : 0;
-    return s > 0;
+    return s > 2;
   });
   const [resumeNotice, setResumeNotice] = useState(null);
   const [currentLiveSeconds, setCurrentLiveSeconds] = useState(0);
@@ -80,7 +80,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     if (saved > 10) {
       return Math.floor(saved - 5);
     }
-    if (saved > 0) {
+    if (saved > 2) {
       return Math.floor(saved);
     }
     return 0;
@@ -102,13 +102,14 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
   const onSelectVideoRef = useRef(onSelectVideo);
   const hasTriggeredRef = useRef(false);
   const countdownTimerRef = useRef(null);
+  const playerContainerRef = useRef(null);
   const ytPlayerRef = useRef(null);
   const playbackTrackerRef = useRef(null);
 
   useEffect(() => {
     const s = video ? getVideoPlaybackTime(video.youtubeId, video.id) : 0;
     setSavedTimestamp(s);
-    setShowResumeBanner(s > 0);
+    setShowResumeBanner(s > 2);
     progressMilestonesRef.current.clear();
     hasStartedRef.current = false;
     hasEndedRef.current = false;
@@ -230,9 +231,9 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     
     const saved = getVideoPlaybackTime(video?.youtubeId, video?.id);
     setSavedTimestamp(saved);
-    setShowResumeBanner(saved > 0);
+    setShowResumeBanner(saved > 2);
 
-    if (initialStartSecond > 0) {
+    if (initialStartSecond > 2) {
       setResumeNotice(`Reanudando desde el min ${formatSecondsToTime(initialStartSecond)} (-5s)`);
       const timer = setTimeout(() => setResumeNotice(null), 5000);
       return () => clearTimeout(timer);
@@ -260,19 +261,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   // Manejo de cierre seguro del modal (guarda tiempo exacto antes de desmontar)
   const handleCloseModal = () => {
-    const playerId = `yt-iframe-${video?.youtubeId}`;
     try {
-      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+      const p = ytPlayerRef.current;
       if (p && typeof p.getCurrentTime === 'function') {
         const t = p.getCurrentTime();
-        if (typeof t === 'number' && !isNaN(t) && t > 0) {
+        if (typeof t === 'number' && !isNaN(t) && t > 2) {
           lastCurrentTimeRef.current = Math.floor(t);
         }
       }
     } catch (e) {}
 
     const cur = lastCurrentTimeRef.current;
-    if (cur > 0 && !hasEndedRef.current) {
+    if (cur > 2 && !hasEndedRef.current) {
       const courseKey = extractCourseKey(video?.category);
       if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, cur, courseKey);
       if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, cur, courseKey);
@@ -342,6 +342,17 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
 
   // ================= SEGUIMIENTO DE REPRODUCCIÓN EN TIEMPO REAL & YOUTUBE API =================
   useEffect(() => {
+    if (!video?.youtubeId) return;
+
+    let isMounted = true;
+    let fallbackTimer = null;
+
+    hasStartedRef.current = false;
+    hasEndedRef.current = false;
+    isPlayingRef.current = false;
+    lastCurrentTimeRef.current = initialStartSecond;
+    lastSavedTimeRef.current = initialStartSecond;
+
     const startCountdown = () => {
       if (hasTriggeredRef.current) return;
       if (!nextVideoRef.current) return;
@@ -364,8 +375,18 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     };
 
     const flushCurrentProgress = () => {
+      try {
+        const p = ytPlayerRef.current;
+        if (p && typeof p.getCurrentTime === 'function') {
+          const cur = p.getCurrentTime();
+          if (typeof cur === 'number' && !isNaN(cur) && cur > 2) {
+            lastCurrentTimeRef.current = Math.floor(cur);
+          }
+        }
+      } catch (e) {}
+
       const cur = lastCurrentTimeRef.current;
-      if (cur > 0 && !hasEndedRef.current) {
+      if (cur > 2 && !hasEndedRef.current) {
         const courseKey = extractCourseKey(video?.category);
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, cur, courseKey);
         if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, cur, courseKey);
@@ -379,25 +400,20 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       if (typeof seconds !== 'number' || isNaN(seconds) || seconds < 0) return;
       const sec = Math.floor(seconds);
 
-      // PREVENCIÓN CRÍTICA: Durante la inicialización del iframe, YouTube emite 0 o 1
-      // mientras carga el buffer, antes de saltar a &start=.
-      // Si el vídeo tenía un progreso guardado (> 5s), ese 0 o 1 inicial jamás debe sobreescribir el progreso.
-      if (sec <= 1 && (lastSavedTimeRef.current > 5 || initialStartSecond > 5) && !force && !hasEndedRef.current) {
+      // Prevenir guardar 1-2s de buffering inicial como progreso
+      if (sec <= 2 && !hasEndedRef.current) {
+        lastCurrentTimeRef.current = sec;
+        setCurrentLiveSeconds(sec);
         return;
       }
 
       lastCurrentTimeRef.current = sec;
       setCurrentLiveSeconds(sec);
 
-      // Nunca persistir 0 automáticamente a menos que sea forzado por fin de vídeo
-      if (sec === 0 && !force) {
-        return;
-      }
-
       const courseKey = extractCourseKey(video?.category);
-      // Guardar en localStorage de inmediato ante cambios o cada 2 segundos de reproducción continua
       if (Math.abs(sec - lastSavedTimeRef.current) >= 2 || force) {
         lastSavedTimeRef.current = sec;
+        setSavedTimestamp(sec);
         if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, sec, courseKey);
         if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, sec, courseKey);
         if (courseKey) {
@@ -406,51 +422,176 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
       }
     };
 
-    // 1. Escuchar eventos postMessage de YouTube Player Iframe
+    const initPlayer = () => {
+      if (!isMounted || !playerContainerRef.current) return;
+
+      if (ytPlayerRef.current) {
+        try {
+          ytPlayerRef.current.destroy();
+        } catch (e) {}
+        ytPlayerRef.current = null;
+      }
+
+      playerContainerRef.current.innerHTML = '';
+      const targetDiv = document.createElement('div');
+      targetDiv.id = `yt-player-target-${video.youtubeId}`;
+      targetDiv.className = 'w-full h-full';
+      playerContainerRef.current.appendChild(targetDiv);
+
+      try {
+        ytPlayerRef.current = new window.YT.Player(targetDiv.id, {
+          videoId: video.youtubeId,
+          width: '100%',
+          height: '100%',
+          playerVars: {
+            autoplay: 1,
+            playsinline: 1,
+            rel: 0,
+            enablejsapi: 1,
+            origin: window.location.origin,
+            start: initialStartSecond > 2 ? initialStartSecond : undefined
+          },
+          events: {
+            onReady: (e) => {
+              if (!isMounted) return;
+              try {
+                const dur = e.target.getDuration();
+                if (dur && !isNaN(dur) && dur > 0) {
+                  setVideoDuration(Math.floor(dur));
+                }
+                if (initialStartSecond > 2 && typeof e.target.seekTo === 'function') {
+                  e.target.seekTo(initialStartSecond, true);
+                }
+              } catch (err) {}
+            },
+            onStateChange: (e) => {
+              if (!isMounted || !e) return;
+              if (e.data === 1) { // PLAYING
+                isPlayingRef.current = true;
+                if (!hasStartedRef.current) {
+                  hasStartedRef.current = true;
+                  trackVideoStart(video);
+                }
+              } else if (e.data === 2) { // PAUSED
+                isPlayingRef.current = false;
+                try {
+                  const cur = e.target.getCurrentTime();
+                  if (typeof cur === 'number' && !isNaN(cur)) {
+                    savePlayback(cur, true);
+                  }
+                } catch (err) {}
+              } else if (e.data === 0) { // ENDED
+                isPlayingRef.current = false;
+                handleVideoEnded();
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Error launching YT.Player:', err);
+      }
+    };
+
+    const loadAndInit = () => {
+      if (window.YT && window.YT.Player) {
+        initPlayer();
+      } else {
+        window.__capacero_yt_cbs = window.__capacero_yt_cbs || [];
+        window.__capacero_yt_cbs.push(() => {
+          if (isMounted) initPlayer();
+        });
+
+        if (!window.__capacero_yt_loading) {
+          window.__capacero_yt_loading = true;
+          const prevReady = window.onYouTubeIframeAPIReady;
+          window.onYouTubeIframeAPIReady = () => {
+            if (typeof prevReady === 'function') prevReady();
+            if (Array.isArray(window.__capacero_yt_cbs)) {
+              const cbs = [...window.__capacero_yt_cbs];
+              window.__capacero_yt_cbs = [];
+              cbs.forEach(cb => {
+                try { cb(); } catch (e) {}
+              });
+            }
+          };
+
+          if (!document.getElementById('youtube-iframe-api-script')) {
+            const tag = document.createElement('script');
+            tag.id = 'youtube-iframe-api-script';
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            if (firstScriptTag && firstScriptTag.parentNode) {
+              firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            } else {
+              document.head.appendChild(tag);
+            }
+          }
+        }
+      }
+    };
+
+    loadAndInit();
+
+    // Fallback if YT.Player fails to load within 3s (e.g. adblocker)
+    fallbackTimer = setTimeout(() => {
+      if (isMounted && !ytPlayerRef.current && playerContainerRef.current) {
+        const fallbackSrc = `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&enablejsapi=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}${initialStartSecond > 2 ? `&start=${initialStartSecond}` : ''}`;
+        playerContainerRef.current.innerHTML = `
+          <iframe
+            id="yt-iframe-${video.youtubeId}"
+            src="${fallbackSrc}"
+            title="${(video.title || '').replace(/"/g, '&quot;')}"
+            class="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        `;
+      }
+    }, 3000);
+
+    // Heartbeat tracker: reads getCurrentTime every second while playing
+    if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
+    playbackTrackerRef.current = setInterval(() => {
+      const p = ytPlayerRef.current;
+      if (p && typeof p.getCurrentTime === 'function') {
+        try {
+          const state = typeof p.getPlayerState === 'function' ? p.getPlayerState() : -1;
+          if (state === 1) { // PLAYING
+            isPlayingRef.current = true;
+            const cur = p.getCurrentTime();
+            if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
+              savePlayback(cur, false);
+            }
+            const dur = typeof p.getDuration === 'function' ? p.getDuration() : 0;
+            if (dur && cur && dur > 0) {
+              const percent = Math.floor((cur / dur) * 100);
+              [25, 50, 75].forEach(milestone => {
+                if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
+                  progressMilestonesRef.current.add(milestone);
+                  trackVideoProgress(video, milestone);
+                }
+              });
+            }
+          } else if (state === 2 || state === 0) {
+            isPlayingRef.current = false;
+          }
+        } catch (e) {}
+      }
+    }, 1000);
+
+    // Fallback window message listener
     const handleWindowMessage = (event) => {
       try {
         let payload = event.data;
-        if (typeof payload === 'string') {
-          payload = JSON.parse(payload);
-        }
+        if (typeof payload === 'string') payload = JSON.parse(payload);
         if (!payload || typeof payload !== 'object') return;
-
-        // Captura universal de tiempo actual (currentTime o curNow en info o data)
         const info = payload.info !== undefined ? payload.info : payload.data;
-        let time = null;
         if (info && typeof info === 'object') {
-          if (typeof info.currentTime === 'number') time = info.currentTime;
-          else if (typeof info.curNow === 'number') time = info.curNow;
-        } else if (typeof info === 'number' && (payload.event === 'infoDelivery' || payload.event === 'delivery')) {
-          time = info;
-        }
-
-        if (typeof time === 'number' && !isNaN(time) && time > 0) {
-          savePlayback(time);
-        }
-
-        // Duración del vídeo
-        if (info && typeof info === 'object' && typeof info.duration === 'number' && info.duration > 0) {
-          setVideoDuration(Math.floor(info.duration));
-        }
-
-        // Estados del reproductor (1=playing, 2=paused, 0=ended)
-        const state = (info && typeof info === 'object' && typeof info.playerState === 'number')
-          ? info.playerState
-          : (payload.event === 'onStateChange' ? (payload.info !== undefined ? payload.info : payload.data) : null);
-
-        if (state === 1) { // PLAYING
-          isPlayingRef.current = true;
-          if (!hasStartedRef.current) {
-            hasStartedRef.current = true;
-            trackVideoStart(video);
+          if (typeof info.currentTime === 'number' && info.currentTime > 2) {
+            savePlayback(info.currentTime);
           }
-        } else if (state === 2) { // PAUSED
-          isPlayingRef.current = false;
-          flushCurrentProgress();
-        } else if (state === 0) { // ENDED
-          isPlayingRef.current = false;
-          handleVideoEnded();
+          if (info.playerState === 2) flushCurrentProgress();
+          else if (info.playerState === 0) handleVideoEnded();
         }
       } catch (e) {}
     };
@@ -462,128 +603,30 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         flushCurrentProgress();
       }
     };
+
     window.addEventListener('beforeunload', flushCurrentProgress);
     window.addEventListener('pagehide', flushCurrentProgress);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // 2. Heartbeat activo: consultar currentTime cada 1s al iframe y a YT.Player
-    const playerId = `yt-iframe-${video?.youtubeId}`;
-
-    if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
-    playbackTrackerRef.current = setInterval(() => {
-      // Direct postMessage ping to iframe to keep listening and reporting currentTime
-      const iframe = document.getElementById(playerId);
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening' }), '*');
-          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'getCurrentTime', args: [] }), '*');
-        } catch (e) {}
-      }
-
-      // Query via YT.Player instance if initialized
-      const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
-      if (p && typeof p.getCurrentTime === 'function') {
-        try {
-          const cur = p.getCurrentTime();
-          if (typeof cur === 'number' && !isNaN(cur) && cur > 0) {
-            savePlayback(cur);
-            const state = typeof p.getPlayerState === 'function' ? p.getPlayerState() : -1;
-            if (state === 1) {
-              isPlayingRef.current = true;
-              const dur = typeof p.getDuration === 'function' ? p.getDuration() : 0;
-              if (dur && dur > 0) {
-                const percent = Math.floor((cur / dur) * 100);
-                [25, 50, 75].forEach(milestone => {
-                  if (percent >= milestone && !progressMilestonesRef.current.has(milestone)) {
-                    progressMilestonesRef.current.add(milestone);
-                    trackVideoProgress(video, milestone);
-                  }
-                });
-              }
-            } else if (state === 2 || state === 0) {
-              isPlayingRef.current = false;
-            }
-          }
-          if (!videoDuration && typeof p.getDuration === 'function') {
-            const d = p.getDuration();
-            if (d && !isNaN(d) && d > 0) setVideoDuration(Math.floor(d));
-          }
-        } catch (err) {}
-      }
-    }, 1000);
-
-    // 4. Inicializar YouTube IFrame Player API oficial
-    function setupYTPlayer() {
-      if (window.YT && window.YT.Player && document.getElementById(playerId)) {
-        try {
-          ytPlayerRef.current = new window.YT.Player(playerId, {
-            events: {
-              onReady: () => {
-                try {
-                  const dur = ytPlayerRef.current.getDuration();
-                  if (dur && !isNaN(dur) && dur > 0) {
-                    setVideoDuration(Math.floor(dur));
-                  }
-                  if (activeStartSecond > 0 && typeof ytPlayerRef.current.seekTo === 'function') {
-                    ytPlayerRef.current.seekTo(activeStartSecond, true);
-                  }
-                } catch (e) {}
-              },
-              onStateChange: (e) => {
-                if (e && e.data === 1) { // PLAYING
-                  isPlayingRef.current = true;
-                  playbackStartRef.current = Date.now() - (lastCurrentTimeRef.current * 1000);
-                  if (!hasStartedRef.current) {
-                    hasStartedRef.current = true;
-                    trackVideoStart(video);
-                  }
-                } else if (e && e.data === 2) { // PAUSED
-                  isPlayingRef.current = false;
-                  flushCurrentProgress();
-                } else if (e && e.data === 0) { // ENDED
-                  isPlayingRef.current = false;
-                  handleVideoEnded();
-                }
-              }
-            }
-          });
-        } catch (err) {}
-      }
-    }
-
-    if (window.YT && window.YT.Player) {
-      setupYTPlayer();
-    } else {
-      if (!document.getElementById('youtube-iframe-api-script')) {
-        const tag = document.createElement('script');
-        tag.id = 'youtube-iframe-api-script';
-        tag.src = 'https://www.youtube.com/iframe_api';
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      }
-
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prevCallback === 'function') prevCallback();
-        setupYTPlayer();
-      };
-    }
-
     return () => {
+      isMounted = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (playbackTrackerRef.current) clearInterval(playbackTrackerRef.current);
       window.removeEventListener('message', handleWindowMessage);
       window.removeEventListener('beforeunload', flushCurrentProgress);
       window.removeEventListener('pagehide', flushCurrentProgress);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (playbackTrackerRef.current) {
-        clearInterval(playbackTrackerRef.current);
-      }
+
       flushCurrentProgress();
-      if (ytPlayerRef.current && typeof ytPlayerRef.current.destroy === 'function') {
-        try { ytPlayerRef.current.destroy(); } catch (e) {}
+
+      if (ytPlayerRef.current) {
+        try {
+          ytPlayerRef.current.destroy();
+        } catch (e) {}
+        ytPlayerRef.current = null;
       }
-      ytPlayerRef.current = null;
     };
-  }, [video?.youtubeId]);
+  }, [video?.youtubeId, initialStartSecond]);
 
   if (!video) return null;
 
@@ -615,12 +658,17 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
     isPlayingRef.current = true;
 
     const courseKey = extractCourseKey(video?.category);
-    if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
-    if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
-    if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+    if (targetSec > 2) {
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, targetSec, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, targetSec, courseKey);
+      if (courseKey) saveCourseProgress(courseKey, video, targetSec);
+    } else if (targetSec === 0) {
+      if (video?.youtubeId) saveVideoPlaybackTime(video.youtubeId, 0, courseKey);
+      if (video?.id && video.id !== video.youtubeId) saveVideoPlaybackTime(video.id, 0, courseKey);
+      if (courseKey) saveCourseProgress(courseKey, video, 0);
+    }
 
-    const playerId = `yt-iframe-${video?.youtubeId}`;
-    const p = ytPlayerRef.current || (window.YT && typeof window.YT.get === 'function' ? window.YT.get(playerId) : null);
+    const p = ytPlayerRef.current;
     if (p && typeof p.seekTo === 'function') {
       try {
         p.seekTo(targetSec, true);
@@ -629,6 +677,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
         }
       } catch (e) {}
     }
+    const playerId = `yt-iframe-${video?.youtubeId}`;
     const iframe = document.getElementById(playerId);
     if (iframe && iframe.contentWindow) {
       try {
@@ -788,7 +837,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
             <div className="flex items-center gap-1.5 sm:gap-2">
               
               {/* Botón Reanudar en el Header (Siempre visible de inmediato sin scroll) */}
-              {savedTimestamp > 0 && (
+              {savedTimestamp > 2 && (
                 <button
                   onClick={() => {
                     handleSeekToTimestamp(resumeSec);
@@ -872,7 +921,7 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
               <div className="md:col-span-7 lg:col-span-7 xl:col-span-7 flex flex-col gap-4">
                 
                 {/* ================= BARRA INTERACTIVA DE REANUDACIÓN DE VÍDEO (ALTA VISIBILIDAD) ================= */}
-                {savedTimestamp > 0 && showResumeBanner && (
+                {savedTimestamp > 2 && showResumeBanner && (
                   <div className="mx-3 sm:mx-4 md:mx-0 bg-gradient-to-r from-blue-950/95 via-zinc-900/90 to-cyan-950/90 border border-cyan-500/50 rounded-2xl p-3 sm:p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl shadow-cyan-950/40 animate-fade-in">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center shrink-0">
@@ -941,18 +990,13 @@ export default function V4VideoModal({ video, onClose, onSelectVideo, nextVideo:
                 <div className="relative aspect-video w-full md:min-w-[480px] md:min-h-[270px] bg-black md:rounded-2xl overflow-hidden border-b md:border border-zinc-800 shadow-2xl">
                   {embedUrl ? (
                     <>
-                      <iframe
-                        key={video.youtubeId}
-                        id={`yt-iframe-${video.youtubeId}`}
-                        src={embedUrl}
-                        title={video.title}
-                        className="w-full h-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
+                      <div
+                        ref={playerContainerRef}
+                        className="w-full h-full bg-black"
                       />
 
                       {/* Floating Resume Quick-Action on Player */}
-                      {savedTimestamp > 0 && (
+                      {savedTimestamp > 2 && (
                         <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
                           <button
                             onClick={() => {
