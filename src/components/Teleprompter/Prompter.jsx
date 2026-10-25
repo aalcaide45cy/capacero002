@@ -9,6 +9,7 @@ import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
+import { saveRecording, deleteRecording } from './recStore';
 import { loadPosition, savePosition } from './storage';
 
 const FONT_STACKS = {
@@ -109,15 +110,22 @@ function LogBox({ text }) {
   );
 }
 
-function RecordingResult({ result, wav, onDiscard }) {
-  const file = useMemo(() => new File([result.blob], result.name, { type: result.type }), [result]);
+function RecordingResult({ result, wav, backup, onDiscard }) {
+  // El tipo se limpia (sin la lista de códecs): iOS puede rechazar «video/mp4;codecs=...» al compartir
+  const file = useMemo(() => new File([result.blob], result.name, { type: result.type.split(';')[0] }), [result]);
   const canShare = typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] });
+  const [shareError, setShareError] = useState('');
 
   const share = async () => {
+    setShareError('');
+    recLog.add(`compartir: ${(file.size / 1048576).toFixed(1)} MB ${file.type}`);
     try {
-      await navigator.share({ files: [file], title: 'Grabación del teleprompter' });
-    } catch {
-      // El usuario canceló el menú de compartir
+      await navigator.share({ files: [file] });
+      recLog.add('compartir: terminado');
+    } catch (err) {
+      recLog.add(`compartir: ${err?.name} ${err?.message}`);
+      recLog.save();
+      if (err?.name !== 'AbortError') setShareError(`No se pudo compartir (${err?.name || 'error'}). Usa «Descargar» y guárdalo desde Archivos.`);
     }
   };
 
@@ -125,7 +133,7 @@ function RecordingResult({ result, wav, onDiscard }) {
     <div className="tp-modal-backdrop">
       <div className="tp-modal tp-result" role="dialog" aria-label="Grabación terminada">
         <h2>Grabación terminada</h2>
-        <video src={result.url} controls playsInline className="tp-result-video" />
+        <video src={result.url} controls playsInline preload="metadata" className="tp-result-video" />
         <p className="tp-hint">
           {(result.blob.size / 1048576).toFixed(1)} MB · {result.type.split(';')[0]}. El vídeo solo está en este
           dispositivo: guárdalo antes de salir.
@@ -137,6 +145,9 @@ function RecordingResult({ result, wav, onDiscard }) {
             {(wav.blob.size / 1048576).toFixed(0)} MB. Sincronízalo con el vídeo en tu editor.
           </p>
         )}
+        {backup === 'ok' && <p className="tp-hint">✓ Copia de seguridad guardada en este dispositivo: si la página se recarga, la encontrarás en «Grabaciones».</p>}
+        {backup === 'error' && <p className="tp-hint">No se pudo guardar la copia de seguridad en el navegador (poco espacio o modo privado).</p>}
+        {shareError && <p className="tp-error">{shareError}</p>}
         {recLog.hasData() && <LogBox text={recLog.text()} />}
         {!result.hasAudio && <p className="tp-error">Esta grabación no tiene audio: no llegaba sonido del micrófono.</p>}
         <div className="tp-modal-actions">
@@ -187,6 +198,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   controlsVisibleRef.current = controlsVisible;
   const [now, setNow] = useState(Date.now());
   const [frozen, setFrozen] = useState(false);
+  const [backupState, setBackupState] = useState('');
   const lastFrameRef = useRef(0);
   const frameCountRef = useRef(0);
 
@@ -304,6 +316,30 @@ export default function Prompter({ script, settings, update, onExit }) {
     micSettings.sampleRate ? `${(micSettings.sampleRate / 1000).toFixed(1)} kHz` : '',
     micSettings.channelCount === 2 ? 'estéreo' : micSettings.channelCount === 1 ? 'mono' : '',
   ].filter(Boolean).join(' · ');
+
+  // Copia de seguridad de la grabación terminada (IndexedDB, solo en este dispositivo)
+  useEffect(() => {
+    const r = recorder.result;
+    if (!r) {
+      setBackupState('');
+      return;
+    }
+    if (!settingsRef.current.backupRecordings) return;
+    setBackupState('guardando');
+    saveRecording({
+      id: r.name,
+      name: r.name,
+      type: r.type.split(';')[0],
+      video: r.blob,
+      wav: wav.result?.blob || null,
+      wavName: wav.result?.name,
+    })
+      .then(() => setBackupState('ok'))
+      .catch(err => {
+        recLog.add(`copia de seguridad: ERROR ${err?.name} ${err?.message}`);
+        setBackupState('error');
+      });
+  }, [recorder.result, wav.result]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vigilante de imagen: avisa si la cámara deja de entregar fotogramas mientras se graba
   useEffect(() => {
@@ -799,7 +835,9 @@ export default function Prompter({ script, settings, update, onExit }) {
         <RecordingResult
           result={recorder.result}
           wav={wav.result}
+          backup={backupState}
           onDiscard={() => {
+            if (recorder.result) deleteRecording(recorder.result.name);
             recorder.discard();
             wav.discard();
           }}

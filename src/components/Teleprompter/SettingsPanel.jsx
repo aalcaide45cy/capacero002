@@ -281,6 +281,15 @@ function CameraSection({ settings, update, camera, recording }) {
             potencia al teléfono y que el vídeo no se congele. Si grabas en 4K o a 60 fps, mejor déjalo activado.
           </p>
           <Toggle
+            label="Guardar copia de la grabación en este dispositivo"
+            checked={settings.backupRecordings}
+            onChange={v => update({ backupRecordings: v })}
+          />
+          <p className="tp-hint">
+            Evita perder el vídeo si la página se recarga al guardarlo. Se queda solo en este navegador hasta que
+            pulses «Descartar» o la borres en «Grabaciones».
+          </p>
+          <Toggle
             label="Mostrar el nivel del micrófono en pantalla"
             checked={settings.showMicMeter}
             onChange={v => update({ showMicMeter: v })}

@@ -715,3 +715,8 @@ body.tp-active {
   white-space: pre;
   resize: vertical;
 }
+
+.tp-saved-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.tp-saved-list li { padding: 10px; border: 1px solid var(--tp-border); border-radius: 10px; }
+.tp-saved-list strong { display: block; word-break: break-all; }
+.tp-saved-list small { display: block; margin: 2px 0 8px; color: var(--tp-muted); }

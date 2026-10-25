@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
+import SavedRecordings, { useSavedRecordings } from './SavedRecordings';
 import { loadEditorMdFiles } from './storage';
 
 const ACCEPTED = '.md,.markdown,.txt,.text,text/plain,text/markdown';
@@ -51,6 +52,8 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
   const [dragging, setDragging] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [installTip, setInstallTip] = useState(false);
+  const [recsOpen, setRecsOpen] = useState(false);
+  const saved = useSavedRecordings();
   const editorFiles = useMemo(() => loadEditorMdFiles(), []);
 
   const words = useMemo(() => (script.text.match(/[\p{L}\p{N}]+/gu) || []).length, [script.text]);
@@ -149,6 +152,16 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
         />
       </header>
 
+      {saved.items.length > 0 && (
+        <div className="tp-install-tip">
+          <p>
+            Tienes <strong>{saved.items.length}</strong> {saved.items.length === 1 ? 'grabación guardada' : 'grabaciones guardadas'} en
+            este dispositivo (copia de seguridad).
+          </p>
+          <button type="button" className="tp-btn" onClick={() => setRecsOpen(true)}>Ver grabaciones</button>
+        </div>
+      )}
+
       {installTip && (
         <div className="tp-install-tip">
           <p>
@@ -202,6 +215,8 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
       {dragging && <div className="tp-drop">Suelta el archivo .md o .txt</div>}
 
       {panelOpen && <SettingsPanel settings={settings} update={update} onClose={() => setPanelOpen(false)} />}
+
+      {recsOpen && <SavedRecordings items={saved.items} refresh={saved.refresh} onClose={() => setRecsOpen(false)} />}
 
       {importOpen && (
         <ImportEditorModal
