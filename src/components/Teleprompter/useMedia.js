@@ -28,12 +28,8 @@ function describeError(err) {
   }
 }
 
-function audioConstraints({ micId, voiceProcessing, audioSampleRate, audioChannels }, useDeviceIds) {
-  const audio = {
-    echoCancellation: voiceProcessing,
-    noiseSuppression: voiceProcessing,
-    autoGainControl: voiceProcessing,
-  };
+function audioConstraints({ micId, echoCancellation, noiseSuppression, autoGainControl, audioSampleRate, audioChannels }, useDeviceIds) {
+  const audio = { echoCancellation, noiseSuppression, autoGainControl };
   if (audioSampleRate > 0) audio.sampleRate = { ideal: audioSampleRate };
   if (audioChannels > 0) audio.channelCount = { ideal: audioChannels };
   if (useDeviceIds && micId && micId !== 'default') audio.deviceId = { exact: micId };
@@ -56,9 +52,55 @@ function buildConstraints(opts, useDeviceIds) {
   return { video, audio: audioConstraints(opts, useDeviceIds) };
 }
 
+const dbToGain = db => 10 ** (db / 20);
+
+// Ganancia de entrada por software (con limitador para no saturar). Solo se crea si la ganancia > 0 dB.
+function createGainPipeline(rawTrack, gainDb) {
+  const Ctx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+  if (!Ctx || !rawTrack) return null;
+  try {
+    const ctx = new Ctx();
+    const source = ctx.createMediaStreamSource(new MediaStream([rawTrack]));
+    const gain = ctx.createGain();
+    gain.gain.value = dbToGain(gainDb);
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -2;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.25;
+    const dest = ctx.createMediaStreamDestination();
+    source.connect(gain);
+    gain.connect(limiter);
+    limiter.connect(dest);
+    ctx.resume?.().catch(() => {});
+    return {
+      track: dest.stream.getAudioTracks()[0],
+      setGain(db) {
+        gain.gain.value = dbToGain(db);
+      },
+      close() {
+        try {
+          source.disconnect();
+          limiter.disconnect();
+        } catch {
+          // ya desconectado
+        }
+        ctx.close().catch(() => {});
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+const audioKeyOf = o =>
+  [o.micId, o.echoCancellation, o.noiseSuppression, o.autoGainControl, o.audioSampleRate, o.audioChannels, o.micGain > 0].join('|');
+
 // Abre la cámara y el micrófono elegidos y mantiene la lista de dispositivos
 export function useCamera(settings, enabled) {
   const [stream, setStream] = useState(null);
+  const [micTrack, setMicTrack] = useState(null);
   const [error, setError] = useState('');
   const [devices, setDevices] = useState({ video: [], audio: [] });
 
@@ -74,19 +116,29 @@ export function useCamera(settings, enabled) {
     }
   }, []);
 
-  const { cameraSource, resolution, fps, micId, voiceProcessing, audioSampleRate, audioChannels } = settings;
+  const { cameraSource, resolution, fps } = settings;
   const streamRef = useRef(null);
-  const audioKeyRef = useRef('');
-  const audioKey = `${micId}|${voiceProcessing}|${audioSampleRate}|${audioChannels}`;
+  const rawAudioRef = useRef(null);
+  const pipelineRef = useRef(null);
   const audioOptsRef = useRef({});
-  audioOptsRef.current = { micId, voiceProcessing, audioSampleRate, audioChannels };
+  audioOptsRef.current = {
+    micId: settings.micId,
+    echoCancellation: settings.echoCancellation,
+    noiseSuppression: settings.noiseSuppression,
+    autoGainControl: settings.autoGainControl,
+    audioSampleRate: settings.audioSampleRate,
+    audioChannels: settings.audioChannels,
+    micGain: settings.micGain,
+  };
+  const audioKey = audioKeyOf(audioOptsRef.current);
+  const audioKeyRef = useRef('');
 
   // Abre cámara y micrófono. Solo se repite si cambia la cámara, la resolución o los fps:
-  // cambiar el micrófono o el procesado de voz no debe tocar el vídeo (evita saltos de tamaño).
+  // cambiar el micrófono o sus ajustes no debe tocar el vídeo (evita saltos de tamaño).
   useEffect(() => {
     if (!enabled || !hasMediaDevices()) return undefined;
     let cancelled = false;
-    let current = null;
+    let raw = null;
     const opts = { cameraSource, resolution, fps, ...audioOptsRef.current };
 
     (async () => {
@@ -103,10 +155,16 @@ export function useCamera(settings, enabled) {
           stopStream(s);
           return;
         }
-        current = s;
-        streamRef.current = s;
-        audioKeyRef.current = `${opts.micId}|${opts.voiceProcessing}|${opts.audioSampleRate}|${opts.audioChannels}`;
-        setStream(s);
+        raw = s;
+        const rawAudio = s.getAudioTracks()[0] || null;
+        const pipeline = opts.micGain > 0 ? createGainPipeline(rawAudio, opts.micGain) : null;
+        pipelineRef.current = pipeline;
+        rawAudioRef.current = rawAudio;
+        const final = pipeline ? new MediaStream([...s.getVideoTracks(), pipeline.track]) : s;
+        streamRef.current = final;
+        audioKeyRef.current = audioKeyOf(opts);
+        setMicTrack(rawAudio);
+        setStream(final);
         setError('');
         refreshDevices();
       } catch (err) {
@@ -116,19 +174,24 @@ export function useCamera(settings, enabled) {
 
     return () => {
       cancelled = true;
-      stopStream(current);
+      pipelineRef.current?.close();
+      pipelineRef.current = null;
+      rawAudioRef.current = null;
+      stopStream(raw);
       streamRef.current = null;
       setStream(null);
+      setMicTrack(null);
     };
   }, [enabled, cameraSource, resolution, fps, refreshDevices]);
 
-  // Cambio de micrófono o de procesado de voz: se sustituye solo la pista de audio
+  // Cambio de micrófono, procesado o ganancia: se sustituye solo la pista de audio
   useEffect(() => {
     const base = streamRef.current;
     if (!base || audioKeyRef.current === audioKey) return undefined;
     let cancelled = false;
     (async () => {
-      const audio = audioConstraints(audioOptsRef.current, true);
+      const o = audioOptsRef.current;
+      const audio = audioConstraints(o, true);
       try {
         let a;
         try {
@@ -142,10 +205,16 @@ export function useCamera(settings, enabled) {
           stopStream(a);
           return;
         }
-        base.getAudioTracks().forEach(t => t.stop());
-        const next = new MediaStream([...base.getVideoTracks(), ...a.getAudioTracks()]);
+        rawAudioRef.current?.stop();
+        pipelineRef.current?.close();
+        const rawAudio = a.getAudioTracks()[0] || null;
+        const pipeline = o.micGain > 0 ? createGainPipeline(rawAudio, o.micGain) : null;
+        pipelineRef.current = pipeline;
+        rawAudioRef.current = rawAudio;
+        const next = new MediaStream([...base.getVideoTracks(), ...(pipeline ? [pipeline.track] : a.getAudioTracks())]);
         streamRef.current = next;
         audioKeyRef.current = audioKey;
+        setMicTrack(rawAudio);
         setStream(next);
         setError('');
         refreshDevices();
@@ -158,6 +227,11 @@ export function useCamera(settings, enabled) {
     };
   }, [audioKey, refreshDevices]);
 
+  // La cantidad de ganancia se aplica al instante, sin reabrir nada
+  useEffect(() => {
+    if (settings.micGain > 0) pipelineRef.current?.setGain(settings.micGain);
+  }, [settings.micGain]);
+
   useEffect(() => {
     if (!hasMediaDevices()) return undefined;
     refreshDevices();
@@ -165,7 +239,7 @@ export function useCamera(settings, enabled) {
     return () => navigator.mediaDevices.removeEventListener?.('devicechange', refreshDevices);
   }, [refreshDevices]);
 
-  return { stream, error, devices };
+  return { stream, micTrack, error, devices };
 }
 
 // Safari (iPhone, iPad y Mac) tiene su propio MediaRecorder con particularidades

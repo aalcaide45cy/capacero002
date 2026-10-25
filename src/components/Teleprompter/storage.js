@@ -51,7 +51,10 @@ export const DEFAULT_SETTINGS = {
   cameraMirror: true,
   cameraDim: 0.35,
   micId: 'default',
-  voiceProcessing: false,
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+  micGain: 0,
 };
 
 export const SAMPLE_SCRIPT = `# Bienvenido al Teleprompter
@@ -95,13 +98,20 @@ export function saveJSON(key, value) {
 }
 
 // Versión 2: el procesado de voz pasa a estar desactivado por defecto (se reinicia una sola vez)
-const SETTINGS_VERSION = 4;
+const SETTINGS_VERSION = 5;
 
 export function loadSettings() {
   const saved = loadJSON(TP_KEYS.settings, {});
   const merged = { ...DEFAULT_SETTINGS, ...(saved && typeof saved === 'object' ? saved : {}) };
   const v = saved?.settingsVersion || 1;
   if (v < 2) merged.voiceProcessing = false;
+  // Versión 5: el procesado de voz se divide en eco, ruido y ganancia automática (todo apagado)
+  if (v < 5) {
+    merged.echoCancellation = false;
+    merged.noiseSuppression = false;
+    merged.autoGainControl = false;
+  }
+  delete merged.voiceProcessing;
   // Versión 3: el audio del vídeo pasa a 320 kbps por defecto
   if (v < 3) merged.audioBitrate = DEFAULT_SETTINGS.audioBitrate;
   // Versión 4: se quita la opción de 96 kHz

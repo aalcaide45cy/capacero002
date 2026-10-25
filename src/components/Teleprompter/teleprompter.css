@@ -378,44 +378,39 @@ body.tp-active {
 }
 
 .tp-status {
-  position: absolute;
-  top: calc(10px + var(--tp-safe-top));
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  max-width: calc(100% - 24px);
-  pointer-events: none;
-  z-index: 5;
-}
-.tp-rec-badge {
+  align-self: center;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 12px;
+  max-width: calc(100% - 24px);
+  margin-bottom: 4px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.tp-status-meter { width: 140px; padding: 3px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); }
-.tp-status-meter .tp-meter { margin: 0; }
-.tp-status-mic {
-  max-width: 100%;
-  padding: 1px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.55);
   font-size: 11px;
   color: #d4d4d8;
+  pointer-events: none;
+}
+.tp-rec-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.tp-status-meter { flex-shrink: 0; width: 64px; }
+.tp-status-meter .tp-meter { height: 5px; margin: 0; }
+.tp-status-mic {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .tp-rec-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--tp-danger);
   animation: tp-blink 1s steps(2, start) infinite;
@@ -424,7 +419,7 @@ body.tp-active {
 
 .tp-toast {
   position: absolute;
-  top: calc(90px + var(--tp-safe-top));
+  top: calc(16px + var(--tp-safe-top));
   left: 16px;
   right: 16px;
   margin: 0 auto;
@@ -436,11 +431,18 @@ body.tp-active {
 }
 
 /* Controles */
-.tp-controls {
+.tp-bottom {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+  transition: padding 0.3s;
+}
+.tp-prompter.is-idle .tp-bottom { padding-bottom: calc(6px + var(--tp-safe-bottom)); }
+.tp-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -448,9 +450,12 @@ body.tp-active {
   gap: 8px 16px;
   padding: 10px max(12px, var(--tp-safe-right)) calc(10px + var(--tp-safe-bottom)) max(12px, var(--tp-safe-left));
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.55) 70%, transparent);
-  transition: opacity 0.3s, transform 0.3s;
+  max-height: 300px;
+  overflow: hidden;
+  pointer-events: auto;
+  transition: opacity 0.3s, max-height 0.3s, padding 0.3s;
 }
-.tp-prompter.is-idle .tp-controls { opacity: 0; transform: translateY(20px); pointer-events: none; }
+.tp-prompter.is-idle .tp-controls { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; pointer-events: none; }
 .tp-prompter.is-idle .tp-stage { cursor: none; }
 .tp-controls-group { display: flex; align-items: center; gap: 6px; }
 

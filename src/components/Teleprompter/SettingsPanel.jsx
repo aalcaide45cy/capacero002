@@ -113,7 +113,7 @@ const videoLevelName = m => (m <= 4 ? 'ligero' : m <= 8 ? 'buena' : m <= 16 ? 'a
 function CameraSection({ settings, update, camera, recording }) {
   const { stream, devices, error } = camera;
   const videoTrack = stream?.getVideoTracks()[0];
-  const audioTrack = stream?.getAudioTracks()[0];
+  const audioTrack = camera.micTrack || stream?.getAudioTracks()[0];
   const trackSettings = videoTrack?.getSettings?.() || {};
   const caps = videoTrack?.getCapabilities?.() || {};
   const [zoom, setZoom] = useState(null);
@@ -289,15 +289,22 @@ function CameraSection({ settings, update, camera, recording }) {
               <p className="tp-hint">En uso: {audioTrack.label || 'micrófono'}</p>
             </>
           )}
-          <Toggle
-            label="Procesado de voz (reduce ruido y eco)"
-            checked={settings.voiceProcessing}
-            disabled={recording}
-            onChange={v => update({ voiceProcessing: v })}
+          <Range
+            label="Ganancia de entrada (por software)"
+            value={settings.micGain}
+            min={0}
+            max={24}
+            step={1}
+            format={v => (v === 0 ? 'Sin ganancia' : `+${v} dB`)}
+            onChange={v => update({ micGain: v })}
           />
+          <Toggle label="Control automático de ganancia" checked={settings.autoGainControl} disabled={recording} onChange={v => update({ autoGainControl: v })} />
+          <Toggle label="Reducción de ruido" checked={settings.noiseSuppression} disabled={recording} onChange={v => update({ noiseSuppression: v })} />
+          <Toggle label="Cancelación de eco" checked={settings.echoCancellation} disabled={recording} onChange={v => update({ echoCancellation: v })} />
           <p className="tp-hint">
-            Con un micro externo (USB-C, Lightning o receptor inalámbrico) suele sonar mejor sin procesado. Los
-            auriculares Bluetooth graban en calidad de llamada.
+            Si la voz se graba baja con todo apagado, sube la ganancia de entrada (con limitador contra saturación)
+            o activa el control automático de ganancia. Con un micro externo suele sonar mejor sin reducción de
+            ruido ni eco. La ganancia por software puede dejar el vídeo mudo en algunos iPhone: si pasa, ponla en 0.
           </p>
         </>
       )}

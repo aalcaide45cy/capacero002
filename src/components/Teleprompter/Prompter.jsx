@@ -261,7 +261,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     if (!camera.stream) wav.stop();
   }, [camera.stream]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const audioTrack = camera.stream?.getAudioTracks()[0];
+  const audioTrack = camera.micTrack || camera.stream?.getAudioTracks()[0];
   const micLabel = audioTrack?.label || '';
   const micSettings = audioTrack?.getSettings?.() || {};
   const micInfo = [
@@ -545,30 +545,27 @@ export default function Prompter({ script, settings, update, onExit }) {
 
       {countdown > 0 && <div className="tp-countdown" aria-live="assertive">{countdown}</div>}
 
-      {cameraActive && (
-        <div className="tp-status" aria-live="polite">
-          {recorder.recording && (
-            <div className="tp-rec-badge">
-              <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
-            </div>
-          )}
-          {settings.showMicMeter && camera.stream && (
-            <div className="tp-status-meter">
-              <MicMeter stream={camera.stream} />
-            </div>
-          )}
-          <div className="tp-status-mic">
-            {micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}
-            {micInfo && ` · ${micInfo}`}
-          </div>
-        </div>
-      )}
-
       {settings.cameraOn && !panelOpen && (camera.error || micIssue) && (
         <div className="tp-toast">{camera.error || micIssue}</div>
       )}
 
-      <div className="tp-controls" role="toolbar" aria-label="Controles del teleprompter">
+      <div className="tp-bottom">
+        {cameraActive && (
+          <div className="tp-status" aria-live="polite">
+            {recorder.recording && (
+              <span className="tp-rec-badge">
+                <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
+              </span>
+            )}
+            {settings.showMicMeter && camera.stream && (
+              <span className="tp-status-meter">
+                <MicMeter stream={camera.stream} />
+              </span>
+            )}
+            <span className="tp-status-mic" title={micInfo}>{micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}</span>
+          </div>
+        )}
+        <div className="tp-controls" role="toolbar" aria-label="Controles del teleprompter">
         <div className="tp-controls-group">
           <button type="button" className="tp-ctrl" onClick={exit} aria-label="Volver al editor" title="Volver al editor (Esc)">
             <ArrowLeft size={22} />
@@ -652,6 +649,7 @@ export default function Prompter({ script, settings, update, onExit }) {
             <Settings2 size={20} />
           </button>
         </div>
+      </div>
       </div>
 
       {panelOpen && (
