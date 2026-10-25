@@ -5,7 +5,7 @@ import {
   Download, Share2, Trash2, Pin, PinOff,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
-import SettingsPanel from './SettingsPanel';
+import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
 import { useWavRecorder } from './useWavRecorder';
 import { loadPosition, savePosition } from './storage';
@@ -260,6 +260,14 @@ export default function Prompter({ script, settings, update, onExit }) {
   useEffect(() => {
     if (!camera.stream) wav.stop();
   }, [camera.stream]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const audioTrack = camera.stream?.getAudioTracks()[0];
+  const micLabel = audioTrack?.label || '';
+  const micSettings = audioTrack?.getSettings?.() || {};
+  const micInfo = [
+    micSettings.sampleRate ? `${(micSettings.sampleRate / 1000).toFixed(1)} kHz` : '',
+    micSettings.channelCount === 2 ? 'estéreo' : micSettings.channelCount === 1 ? 'mono' : '',
+  ].filter(Boolean).join(' · ');
 
   // Vídeo de la cámara
   useEffect(() => {
@@ -537,9 +545,22 @@ export default function Prompter({ script, settings, update, onExit }) {
 
       {countdown > 0 && <div className="tp-countdown" aria-live="assertive">{countdown}</div>}
 
-      {recorder.recording && (
-        <div className="tp-rec-badge" aria-live="polite">
-          <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
+      {cameraActive && (
+        <div className="tp-status" aria-live="polite">
+          {recorder.recording && (
+            <div className="tp-rec-badge">
+              <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
+            </div>
+          )}
+          {settings.showMicMeter && camera.stream && (
+            <div className="tp-status-meter">
+              <MicMeter stream={camera.stream} />
+            </div>
+          )}
+          <div className="tp-status-mic">
+            {micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}
+            {micInfo && ` · ${micInfo}`}
+          </div>
         </div>
       )}
 

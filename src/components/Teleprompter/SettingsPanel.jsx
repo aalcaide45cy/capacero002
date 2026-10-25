@@ -218,6 +218,11 @@ function CameraSection({ settings, update, camera, recording }) {
             </p>
           )}
           <Toggle
+            label="Mostrar el nivel del micrófono en pantalla"
+            checked={settings.showMicMeter}
+            onChange={v => update({ showMicMeter: v })}
+          />
+          <Toggle
             label="Grabar también audio sin comprimir (WAV)"
             checked={settings.wavRecord}
             disabled={recording}
@@ -241,7 +246,8 @@ function CameraSection({ settings, update, camera, recording }) {
             {settings.wavRecord && ` Más ${wavPerMin} MB por minuto del WAV, que se guarda aparte.`} El audio del
             vídeo siempre va comprimido (AAC): para conservar la calidad de tu micro, activa el WAV y sincronízalo
             en tu editor. El WAV se guarda en la memoria del dispositivo hasta que lo descargues: en grabaciones
-            largas, mejor 16 o 24 bits. Cierra el panel antes de grabar.
+            largas, mejor 16 o 24 bits. Cierra el panel antes de grabar. Si en tu iPhone el vídeo se graba sin
+            sonido, desactiva el nivel del micrófono y el WAV.
           </p>
           {caps.zoom && zoom != null && (
             <Range

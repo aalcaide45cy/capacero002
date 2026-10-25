@@ -377,22 +377,42 @@ body.tp-active {
   pointer-events: none;
 }
 
-.tp-rec-badge {
+.tp-status {
   position: absolute;
-  top: calc(12px + var(--tp-safe-top));
+  top: calc(10px + var(--tp-safe-top));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+  z-index: 5;
+}
+.tp-rec-badge {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.6);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  pointer-events: none;
 }
-.tp-rec-badge .tp-meter { width: 60px; margin: 0; }
+.tp-status-meter { width: 140px; padding: 3px; border-radius: 999px; background: rgba(0, 0, 0, 0.6); }
+.tp-status-meter .tp-meter { margin: 0; }
+.tp-status-mic {
+  max-width: 100%;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 11px;
+  color: #d4d4d8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tp-rec-dot {
   width: 10px;
   height: 10px;
@@ -404,7 +424,7 @@ body.tp-active {
 
 .tp-toast {
   position: absolute;
-  top: calc(60px + var(--tp-safe-top));
+  top: calc(90px + var(--tp-safe-top));
   left: 16px;
   right: 16px;
   margin: 0 auto;

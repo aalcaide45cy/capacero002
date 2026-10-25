@@ -45,6 +45,7 @@ export const DEFAULT_SETTINGS = {
   audioBitrate: 320,
   audioSampleRate: 0,
   audioChannels: 0,
+  showMicMeter: true,
   wavRecord: false,
   wavBitDepth: 24,
   cameraMirror: true,
