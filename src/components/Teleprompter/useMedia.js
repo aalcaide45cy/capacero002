@@ -115,8 +115,17 @@ export function useCamera(settings, enabled) {
   return { stream, error, devices };
 }
 
+// Safari (iPhone, iPad y Mac) tiene su propio MediaRecorder con particularidades
+export const isAppleSafari = () =>
+  typeof navigator !== 'undefined' &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+    /^((?!chrome|chromium|crios|fxios|android|edg).)*safari/i.test(navigator.userAgent));
+
 function pickMimeType() {
   if (typeof MediaRecorder === 'undefined') return '';
+  // En Safari se usa el MP4 por defecto (H.264 + AAC): forzar la lista de códecs puede dejar el audio fuera
+  if (isAppleSafari()) return MediaRecorder.isTypeSupported?.('video/mp4') ? 'video/mp4' : '';
   const candidates = [
     'video/mp4;codecs=avc1,mp4a.40.2',
     'video/mp4',
@@ -159,6 +168,7 @@ export function useRecorder(stream, bitrate) {
     } catch {
       rec = new MediaRecorder(stream);
     }
+    const hasAudio = stream.getAudioTracks().some(t => t.readyState === 'live');
     const chunks = [];
     rec.ondataavailable = e => {
       if (e.data && e.data.size) chunks.push(e.data);
@@ -172,10 +182,13 @@ export function useRecorder(stream, bitrate) {
         url: URL.createObjectURL(blob),
         type,
         name: `teleprompter-${fileStamp()}.${ext}`,
+        hasAudio,
       });
       setRecording(false);
     };
-    rec.start(1000);
+    // Safari genera mejor el MP4 de una sola pieza; el resto, por trozos de 1 s
+    if (isAppleSafari()) rec.start();
+    else rec.start(1000);
     recorderRef.current = rec;
     setStartedAt(Date.now());
     setRecording(true);

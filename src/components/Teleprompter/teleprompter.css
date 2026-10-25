@@ -404,7 +404,7 @@ body.tp-active {
 
 .tp-toast {
   position: absolute;
-  top: calc(16px + var(--tp-safe-top));
+  top: calc(60px + var(--tp-safe-top));
   left: 16px;
   right: 16px;
   margin: 0 auto;

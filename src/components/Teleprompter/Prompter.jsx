@@ -5,7 +5,7 @@ import {
   Download, Share2, Trash2,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
-import SettingsPanel, { MicMeter } from './SettingsPanel';
+import SettingsPanel from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
 import { loadPosition, savePosition } from './storage';
 
@@ -97,6 +97,7 @@ function RecordingResult({ result, onDiscard }) {
           {(result.blob.size / 1048576).toFixed(1)} MB · {result.type.split(';')[0]}. El vídeo solo está en este
           dispositivo: guárdalo antes de salir.
         </p>
+        {!result.hasAudio && <p className="tp-error">Esta grabación no tiene audio: no llegaba sonido del micrófono.</p>}
         <div className="tp-modal-actions">
           {canShare && (
             <button type="button" className="tp-btn tp-btn-primary" onClick={share}>
@@ -211,6 +212,31 @@ export default function Prompter({ script, settings, update, onExit }) {
   // Guardar posición al salir
   useEffect(() => () => savePosition(posRef.current, script.text.length), [script.text.length]);
 
+  // Estado del micrófono: el sistema puede silenciarlo (llamada, otra app, Siri...)
+  const [micIssue, setMicIssue] = useState('');
+  useEffect(() => {
+    const track = camera.stream?.getAudioTracks()[0];
+    if (!camera.stream) {
+      setMicIssue('');
+      return undefined;
+    }
+    if (!track) {
+      setMicIssue('No llega audio del micrófono: el vídeo se grabará sin sonido.');
+      return undefined;
+    }
+    const check = () =>
+      setMicIssue(track.readyState === 'ended' || track.muted ? 'El sistema ha silenciado el micrófono: el vídeo puede quedar sin sonido.' : '');
+    check();
+    track.addEventListener('mute', check);
+    track.addEventListener('unmute', check);
+    track.addEventListener('ended', check);
+    return () => {
+      track.removeEventListener('mute', check);
+      track.removeEventListener('unmute', check);
+      track.removeEventListener('ended', check);
+    };
+  }, [camera.stream]);
+
   // Vídeo de la cámara
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = camera.stream || null;
@@ -274,11 +300,13 @@ export default function Prompter({ script, settings, update, onExit }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Se cierra el panel (y su medidor de audio) antes de grabar: en iPhone, tener Web Audio
+  // escuchando el micrófono a la vez que MediaRecorder puede dejar el vídeo sin sonido
   const startRecording = useCallback(() => {
-    if (recorder.start()) {
-      setPanelOpen(false);
-      start(true);
-    }
+    setPanelOpen(false);
+    setTimeout(() => {
+      if (recorder.start()) start(true);
+    }, 250);
   }, [recorder, start]);
 
   const stopRecording = useCallback(() => {
@@ -477,11 +505,12 @@ export default function Prompter({ script, settings, update, onExit }) {
       {recorder.recording && (
         <div className="tp-rec-badge" aria-live="polite">
           <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
-          {camera.stream && <MicMeter stream={camera.stream} />}
         </div>
       )}
 
-      {camera.error && settings.cameraOn && !panelOpen && <div className="tp-toast">{camera.error}</div>}
+      {settings.cameraOn && !panelOpen && (camera.error || micIssue) && (
+        <div className="tp-toast">{camera.error || micIssue}</div>
+      )}
 
       <div className="tp-controls" role="toolbar" aria-label="Controles del teleprompter">
         <div className="tp-controls-group">
