@@ -57,13 +57,23 @@ function buildConstraints(opts, useDeviceIds) {
 const dbToGain = db => 10 ** (db / 20);
 
 // Ganancia de entrada por software (con limitador para no saturar). Solo se crea si la ganancia > 0 dB.
-function createGainPipeline(rawTrack, gainDb) {
+function createGainPipeline(rawTrack, gainDb, compressor) {
   const ctx = getAudioContext();
   if (!ctx || !rawTrack) return null;
   try {
     const source = ctx.createMediaStreamSource(new MediaStream([rawTrack]));
     const gain = ctx.createGain();
     gain.gain.value = dbToGain(gainDb);
+    // Compresor suave opcional: iguala el volumen (voz fuerte y flojas más parecidas) antes de la ganancia
+    let comp = null;
+    if (compressor) {
+      comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -28;
+      comp.knee.value = 14;
+      comp.ratio.value = 3;
+      comp.attack.value = 0.006;
+      comp.release.value = 0.25;
+    }
     const limiter = ctx.createDynamicsCompressor();
     limiter.threshold.value = -2;
     limiter.knee.value = 0;
@@ -71,7 +81,12 @@ function createGainPipeline(rawTrack, gainDb) {
     limiter.attack.value = 0.003;
     limiter.release.value = 0.25;
     const dest = ctx.createMediaStreamDestination();
-    source.connect(gain);
+    if (comp) {
+      source.connect(comp);
+      comp.connect(gain);
+    } else {
+      source.connect(gain);
+    }
     gain.connect(limiter);
     limiter.connect(dest);
     ctx.resume?.().catch(() => {});
@@ -84,6 +99,7 @@ function createGainPipeline(rawTrack, gainDb) {
       close() {
         try {
           source.disconnect();
+          comp?.disconnect();
           gain.disconnect();
           limiter.disconnect();
         } catch {
@@ -97,7 +113,7 @@ function createGainPipeline(rawTrack, gainDb) {
 }
 
 const audioKeyOf = o =>
-  [o.micId, o.echoCancellation, o.noiseSuppression, o.autoGainControl, o.audioSampleRate, o.audioChannels, o.micGain > 0].join('|');
+  [o.micId, o.echoCancellation, o.noiseSuppression, o.autoGainControl, o.audioSampleRate, o.audioChannels, o.micGain > 0 || o.micCompressor].join('|');
 
 // Abre la cámara y el micrófono elegidos y mantiene la lista de dispositivos
 export function useCamera(settings, enabled) {
@@ -132,6 +148,7 @@ export function useCamera(settings, enabled) {
     audioSampleRate: settings.audioSampleRate,
     audioChannels: settings.audioChannels,
     micGain: settings.micGain,
+    micCompressor: settings.micCompressor,
   };
   const audioKey = audioKeyOf(audioOptsRef.current);
   const audioKeyRef = useRef('');
@@ -160,7 +177,7 @@ export function useCamera(settings, enabled) {
         }
         raw = s;
         const rawAudio = s.getAudioTracks()[0] || null;
-        const pipeline = opts.micGain > 0 ? createGainPipeline(rawAudio, opts.micGain) : null;
+        const pipeline = opts.micGain > 0 || opts.micCompressor ? createGainPipeline(rawAudio, opts.micGain, opts.micCompressor) : null;
         pipelineRef.current = pipeline;
         rawAudioRef.current = rawAudio;
         const final = pipeline ? new MediaStream([...s.getVideoTracks(), pipeline.track]) : s;
@@ -213,7 +230,7 @@ export function useCamera(settings, enabled) {
         rawAudioRef.current?.stop();
         pipelineRef.current?.close();
         const rawAudio = a.getAudioTracks()[0] || null;
-        const pipeline = o.micGain > 0 ? createGainPipeline(rawAudio, o.micGain) : null;
+        const pipeline = o.micGain > 0 || o.micCompressor ? createGainPipeline(rawAudio, o.micGain, o.micCompressor) : null;
         pipelineRef.current = pipeline;
         rawAudioRef.current = rawAudio;
         const next = new MediaStream([...base.getVideoTracks(), ...(pipeline ? [pipeline.track] : a.getAudioTracks())]);
@@ -234,7 +251,7 @@ export function useCamera(settings, enabled) {
 
   // La cantidad de ganancia se aplica al instante, sin reabrir nada
   useEffect(() => {
-    if (settings.micGain > 0) pipelineRef.current?.setGain(settings.micGain);
+    pipelineRef.current?.setGain(settings.micGain);
   }, [settings.micGain]);
 
   useEffect(() => {

@@ -66,6 +66,7 @@ export const DEFAULT_SETTINGS = {
   noiseSuppression: false,
   autoGainControl: false,
   micGain: 0,
+  micCompressor: false,
 };
 
 export const SAMPLE_SCRIPT = `# Bienvenido al Teleprompter

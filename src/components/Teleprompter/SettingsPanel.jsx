@@ -530,7 +530,13 @@ function CameraSection({ settings, update, camera, recording }) {
             format={v => (v === 0 ? 'Sin ganancia' : `+${v} dB`)}
             onChange={v => update({ micGain: v })}
           />
-          <GainState active={settings.micGain > 0} />
+          <Toggle
+            label="Compresor de voz suave (volumen más uniforme)"
+            checked={settings.micCompressor}
+            disabled={recording}
+            onChange={v => update({ micCompressor: v })}
+          />
+          <GainState active={settings.micGain > 0 || settings.micCompressor} />
           <AutoGain micTrack={camera.micTrack} update={update} disabled={recording} />
           <p className="tp-hint">
             El medidor muestra el nivel en decibelios: la barra debe llegar a la zona amarilla al hablar (≈ −15 dB de media),
