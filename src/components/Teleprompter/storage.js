@@ -49,6 +49,7 @@ export const DEFAULT_SETTINGS = {
   wavRecord: false,
   wavBitDepth: 24,
   cameraMirror: true,
+  cameraFit: 'cover',
   cameraDim: 0.35,
   micId: 'default',
   echoCancellation: false,

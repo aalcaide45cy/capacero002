@@ -101,6 +101,7 @@ const audioKeyOf = o =>
 export function useCamera(settings, enabled) {
   const [stream, setStream] = useState(null);
   const [micTrack, setMicTrack] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [devices, setDevices] = useState({ video: [], audio: [] });
 
@@ -164,6 +165,7 @@ export function useCamera(settings, enabled) {
         streamRef.current = final;
         audioKeyRef.current = audioKeyOf(opts);
         setMicTrack(rawAudio);
+        setPreview(new MediaStream(s.getVideoTracks()));
         setStream(final);
         setError('');
         refreshDevices();
@@ -180,6 +182,7 @@ export function useCamera(settings, enabled) {
       stopStream(raw);
       streamRef.current = null;
       setStream(null);
+      setPreview(null);
       setMicTrack(null);
     };
   }, [enabled, cameraSource, resolution, fps, refreshDevices]);
@@ -239,7 +242,7 @@ export function useCamera(settings, enabled) {
     return () => navigator.mediaDevices.removeEventListener?.('devicechange', refreshDevices);
   }, [refreshDevices]);
 
-  return { stream, micTrack, error, devices };
+  return { stream, preview, micTrack, error, devices };
 }
 
 // Safari (iPhone, iPad y Mac) tiene su propio MediaRecorder con particularidades

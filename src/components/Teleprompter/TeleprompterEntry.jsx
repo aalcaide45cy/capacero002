@@ -29,7 +29,7 @@ function useTeleprompterHead() {
 
     setAttr('meta[name="robots"]', { tag: 'meta', attrs: { name: 'robots' } }, 'content', 'noindex, nofollow');
     setAttr('meta[name="viewport"]', { tag: 'meta', attrs: { name: 'viewport' } }, 'content',
-      'width=device-width, initial-scale=1.0, viewport-fit=cover');
+      'width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover');
     setAttr('link[rel="manifest"]', { tag: 'link', attrs: { rel: 'manifest' } }, 'href', '/tp.webmanifest');
     setAttr('meta[name="apple-mobile-web-app-title"]', { tag: 'meta', attrs: { name: 'apple-mobile-web-app-title' } }, 'content', 'Teleprompter');
 

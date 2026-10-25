@@ -267,6 +267,16 @@ function CameraSection({ settings, update, camera, recording }) {
             </p>
           )}
           <Toggle label="Ver la cámara en espejo" checked={settings.cameraMirror} onChange={v => update({ cameraMirror: v })} />
+          <Segmented
+            label="Vista de la cámara"
+            value={settings.cameraFit}
+            onChange={v => update({ cameraFit: v })}
+            options={[{ value: 'cover', label: 'Llenar pantalla' }, { value: 'contain', label: 'Imagen completa' }]}
+          />
+          <p className="tp-hint">
+            «Llenar pantalla» recorta los bordes de la imagen para cubrir la pantalla. «Imagen completa» muestra el encuadre
+            entero que se graba, con franjas negras si hace falta.
+          </p>
           <Range
             label="Oscurecer la imagen"
             value={settings.cameraDim}

@@ -24,7 +24,7 @@ const replacements = [
   [/<link\s+rel="manifest"[^>]*>/i, '<link rel="manifest" href="/tp.webmanifest" />'],
   [/<meta\s+name="apple-mobile-web-app-title"[^>]*>/i, '<meta name="apple-mobile-web-app-title" content="Teleprompter" />'],
   [/<meta\s+name="robots"[^>]*>/i, '<meta name="robots" content="noindex, nofollow" />'],
-  [/<meta\s+name="viewport"[^>]*>/i, '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />'],
+  [/<meta\s+name="viewport"[^>]*>/i, '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />'],
   [/<meta\s+name="description"[\s\S]*?>/i, '<meta name="description" content="Teleprompter para leer guiones y grabarte a la vez." />'],
   [/<link\s+rel="canonical"[^>]*>\s*/i, ''],
   [/<script\s+type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>\s*/gi, ''],

@@ -271,8 +271,12 @@ export default function Prompter({ script, settings, update, onExit }) {
 
   // Vídeo de la cámara
   useEffect(() => {
-    if (videoRef.current) videoRef.current.srcObject = camera.stream || null;
-  }, [camera.stream]);
+    const v = videoRef.current;
+    if (!v) return;
+    // El vídeo de la vista previa solo se reasigna si cambia la cámara, no al cambiar el audio
+    if (v.srcObject !== (camera.preview || null)) v.srcObject = camera.preview || null;
+    if (camera.preview) v.play?.().catch(() => {});
+  }, [camera.preview, settings.cameraOn]);
 
   // ── Cuenta atrás y reproducción ──
   useEffect(() => {
@@ -509,7 +513,10 @@ export default function Prompter({ script, settings, update, onExit }) {
             autoPlay
             playsInline
             muted
-            style={{ transform: settings.cameraMirror ? 'scaleX(-1)' : 'none' }}
+            style={{
+              transform: settings.cameraMirror ? 'scaleX(-1)' : 'none',
+              objectFit: settings.cameraFit === 'contain' ? 'contain' : 'cover',
+            }}
           />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>

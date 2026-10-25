@@ -44,6 +44,12 @@ body.tp-active {
   font: inherit;
   color: inherit;
 }
+/* iOS Safari amplía la página al enfocar campos con letra menor de 16 px y no vuelve atrás */
+.tp-root select,
+.tp-root input,
+.tp-root textarea {
+  font-size: 16px;
+}
 
 /* ── Botones ───────────────────────────────────────────── */
 .tp-btn {
@@ -297,7 +303,15 @@ body.tp-active {
 }
 
 .tp-camera { position: absolute; inset: 0; background: #000; }
-.tp-camera video { width: 100%; height: 100%; object-fit: cover; }
+.tp-camera video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: cover;
+}
 .tp-camera-dim { position: absolute; inset: 0; background: #000; }
 
 .tp-stage {
