@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS = {
   cameraMirror: true,
   cameraDim: 0.35,
   micId: 'default',
-  voiceProcessing: true,
+  voiceProcessing: false,
 };
 
 export const SAMPLE_SCRIPT = `# Bienvenido al Teleprompter
@@ -89,9 +89,15 @@ export function saveJSON(key, value) {
   }
 }
 
+// Versión 2: el procesado de voz pasa a estar desactivado por defecto (se reinicia una sola vez)
+const SETTINGS_VERSION = 2;
+
 export function loadSettings() {
   const saved = loadJSON(TP_KEYS.settings, {});
-  return { ...DEFAULT_SETTINGS, ...(saved && typeof saved === 'object' ? saved : {}) };
+  const merged = { ...DEFAULT_SETTINGS, ...(saved && typeof saved === 'object' ? saved : {}) };
+  if ((saved?.settingsVersion || 1) < SETTINGS_VERSION) merged.voiceProcessing = false;
+  merged.settingsVersion = SETTINGS_VERSION;
+  return merged;
 }
 
 export function loadScript() {

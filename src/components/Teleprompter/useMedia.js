@@ -68,12 +68,19 @@ export function useCamera(settings, enabled) {
   }, []);
 
   const { cameraSource, resolution, fps, micId, voiceProcessing } = settings;
+  const streamRef = useRef(null);
+  const audioKeyRef = useRef('');
+  const audioKey = `${micId}|${voiceProcessing}`;
+  const audioOptsRef = useRef({ micId, voiceProcessing });
+  audioOptsRef.current = { micId, voiceProcessing };
 
+  // Abre cámara y micrófono. Solo se repite si cambia la cámara, la resolución o los fps:
+  // cambiar el micrófono o el procesado de voz no debe tocar el vídeo (evita saltos de tamaño).
   useEffect(() => {
     if (!enabled || !hasMediaDevices()) return undefined;
     let cancelled = false;
     let current = null;
-    const opts = { cameraSource, resolution, fps, micId, voiceProcessing };
+    const opts = { cameraSource, resolution, fps, ...audioOptsRef.current };
 
     (async () => {
       try {
@@ -90,6 +97,8 @@ export function useCamera(settings, enabled) {
           return;
         }
         current = s;
+        streamRef.current = s;
+        audioKeyRef.current = `${opts.micId}|${opts.voiceProcessing}`;
         setStream(s);
         setError('');
         refreshDevices();
@@ -101,9 +110,48 @@ export function useCamera(settings, enabled) {
     return () => {
       cancelled = true;
       stopStream(current);
+      streamRef.current = null;
       setStream(null);
     };
-  }, [enabled, cameraSource, resolution, fps, micId, voiceProcessing, refreshDevices]);
+  }, [enabled, cameraSource, resolution, fps, refreshDevices]);
+
+  // Cambio de micrófono o de procesado de voz: se sustituye solo la pista de audio
+  useEffect(() => {
+    const base = streamRef.current;
+    if (!base || audioKeyRef.current === audioKey) return undefined;
+    let cancelled = false;
+    (async () => {
+      const { micId: id, voiceProcessing: vp } = audioOptsRef.current;
+      const audio = { echoCancellation: vp, noiseSuppression: vp, autoGainControl: vp };
+      if (id && id !== 'default') audio.deviceId = { exact: id };
+      try {
+        let a;
+        try {
+          a = await navigator.mediaDevices.getUserMedia({ audio });
+        } catch (err) {
+          if (err?.name !== 'OverconstrainedError' && err?.name !== 'NotFoundError') throw err;
+          delete audio.deviceId;
+          a = await navigator.mediaDevices.getUserMedia({ audio });
+        }
+        if (cancelled || streamRef.current !== base) {
+          stopStream(a);
+          return;
+        }
+        base.getAudioTracks().forEach(t => t.stop());
+        const next = new MediaStream([...base.getVideoTracks(), ...a.getAudioTracks()]);
+        streamRef.current = next;
+        audioKeyRef.current = audioKey;
+        setStream(next);
+        setError('');
+        refreshDevices();
+      } catch (err) {
+        if (!cancelled) setError(describeError(err));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [audioKey, refreshDevices]);
 
   useEffect(() => {
     if (!hasMediaDevices()) return undefined;
