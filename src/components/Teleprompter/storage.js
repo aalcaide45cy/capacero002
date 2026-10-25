@@ -95,7 +95,7 @@ export function saveJSON(key, value) {
 }
 
 // Versión 2: el procesado de voz pasa a estar desactivado por defecto (se reinicia una sola vez)
-const SETTINGS_VERSION = 3;
+const SETTINGS_VERSION = 4;
 
 export function loadSettings() {
   const saved = loadJSON(TP_KEYS.settings, {});
@@ -104,6 +104,8 @@ export function loadSettings() {
   if (v < 2) merged.voiceProcessing = false;
   // Versión 3: el audio del vídeo pasa a 320 kbps por defecto
   if (v < 3) merged.audioBitrate = DEFAULT_SETTINGS.audioBitrate;
+  // Versión 4: se quita la opción de 96 kHz
+  if (merged.audioSampleRate > 48000) merged.audioSampleRate = 0;
   merged.settingsVersion = SETTINGS_VERSION;
   return merged;
 }

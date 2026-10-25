@@ -196,7 +196,6 @@ function CameraSection({ settings, update, camera, recording }) {
               { value: '0', label: 'Automática del micrófono' },
               { value: '44100', label: '44.100 Hz' },
               { value: '48000', label: '48.000 Hz · estándar de vídeo' },
-              { value: '96000', label: '96.000 Hz (si el micro lo admite)' },
             ]}
           />
           <Select
