@@ -93,7 +93,9 @@ export function MicMeter({ stream }) {
         const v = (data[i] - 128) / 128;
         sum += v * v;
       }
-      const level = Math.min(1, Math.sqrt(sum / data.length) * 4);
+      const rms = Math.sqrt(sum / data.length);
+      const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+      const level = Math.min(1, Math.max(0, (db + 50) / 50));
       if (barRef.current) barRef.current.style.transform = `scaleX(${level})`;
     };
     ctx.resume?.().catch(() => {});
@@ -114,6 +116,53 @@ export function MicMeter({ stream }) {
 
 const VIDEO_LEVELS = [2, 4, 6, 8, 12, 16, 20, 25, 35, 50, 80, 100];
 const videoLevelName = m => (m <= 4 ? 'ligero' : m <= 8 ? 'buena' : m <= 16 ? 'alta' : m <= 35 ? 'muy alta' : 'máxima, archivos enormes');
+
+// Mide el pico de tu voz durante unos segundos y calcula la ganancia para llegar a -6 dBFS
+function AutoGain({ micTrack, update, disabled }) {
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!micTrack || !Ctx || busy) return;
+    setBusy(true);
+    setMsg('Habla con normalidad durante 6 segundos…');
+    const ctx = new Ctx();
+    const source = ctx.createMediaStreamSource(new MediaStream([micTrack]));
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    ctx.resume?.().catch(() => {});
+    const data = new Float32Array(analyser.fftSize);
+    let peak = 0;
+    const id = setInterval(() => {
+      analyser.getFloatTimeDomainData(data);
+      for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+    }, 40);
+    await new Promise(r => setTimeout(r, 6000));
+    clearInterval(id);
+    source.disconnect();
+    ctx.close().catch(() => {});
+    const peakDb = peak > 0 ? 20 * Math.log10(peak) : -100;
+    if (peakDb < -60) {
+      setMsg('No se ha oído nada. Comprueba que el micrófono está encendido y habla más cerca.');
+    } else {
+      const gain = Math.max(0, Math.min(24, Math.round(-6 - peakDb)));
+      update({ micGain: gain });
+      setMsg(`Pico de tu voz: ${peakDb.toFixed(0)} dBFS → ganancia puesta en ${gain === 0 ? '0 dB (ya llega fuerte)' : `+${gain} dB`}.`);
+    }
+    setBusy(false);
+  };
+
+  return (
+    <>
+      <button type="button" className="tp-btn" onClick={run} disabled={disabled || busy || !micTrack} style={{ marginBottom: 8 }}>
+        {busy ? 'Midiendo…' : 'Ajustar ganancia con mi voz'}
+      </button>
+      {msg && <p className="tp-hint">{msg}</p>}
+    </>
+  );
+}
 
 function CameraSection({ settings, update, camera, recording }) {
   const { stream, devices, error } = camera;
@@ -323,6 +372,11 @@ function CameraSection({ settings, update, camera, recording }) {
             format={v => (v === 0 ? 'Sin ganancia' : `+${v} dB`)}
             onChange={v => update({ micGain: v })}
           />
+          <AutoGain micTrack={camera.micTrack} update={update} disabled={recording} />
+          <p className="tp-hint">
+            El medidor muestra el nivel en decibelios: la barra debe llegar a la zona amarilla al hablar (≈ −15 dB de media),
+            sin tocar el rojo. Si apenas se mueve, sube la ganancia.
+          </p>
           <Toggle label="Control automático de ganancia" checked={settings.autoGainControl} disabled={recording} onChange={v => update({ autoGainControl: v })} />
           <Toggle label="Reducción de ruido" checked={settings.noiseSuppression} disabled={recording} onChange={v => update({ noiseSuppression: v })} />
           <Toggle label="Cancelación de eco" checked={settings.echoCancellation} disabled={recording} onChange={v => update({ echoCancellation: v })} />
