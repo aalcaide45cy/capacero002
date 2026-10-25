@@ -42,7 +42,11 @@ export const DEFAULT_SETTINGS = {
   resolution: '1080',
   fps: 30,
   videoBitrate: 0,
-  audioBitrate: 192,
+  audioBitrate: 320,
+  audioSampleRate: 0,
+  audioChannels: 0,
+  wavRecord: false,
+  wavBitDepth: 24,
   cameraMirror: true,
   cameraDim: 0.35,
   micId: 'default',
@@ -90,12 +94,15 @@ export function saveJSON(key, value) {
 }
 
 // Versión 2: el procesado de voz pasa a estar desactivado por defecto (se reinicia una sola vez)
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 
 export function loadSettings() {
   const saved = loadJSON(TP_KEYS.settings, {});
   const merged = { ...DEFAULT_SETTINGS, ...(saved && typeof saved === 'object' ? saved : {}) };
-  if ((saved?.settingsVersion || 1) < SETTINGS_VERSION) merged.voiceProcessing = false;
+  const v = saved?.settingsVersion || 1;
+  if (v < 2) merged.voiceProcessing = false;
+  // Versión 3: el audio del vídeo pasa a 320 kbps por defecto
+  if (v < 3) merged.audioBitrate = DEFAULT_SETTINGS.audioBitrate;
   merged.settingsVersion = SETTINGS_VERSION;
   return merged;
 }

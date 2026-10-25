@@ -107,6 +107,9 @@ export function MicMeter({ stream }) {
   );
 }
 
+const VIDEO_LEVELS = [2, 4, 6, 8, 12, 16, 20, 25, 35, 50, 80, 100];
+const videoLevelName = m => (m <= 4 ? 'ligero' : m <= 8 ? 'buena' : m <= 16 ? 'alta' : m <= 35 ? 'muy alta' : 'máxima, archivos enormes');
+
 function CameraSection({ settings, update, camera, recording }) {
   const { stream, devices, error } = camera;
   const videoTrack = stream?.getVideoTracks()[0];
@@ -126,6 +129,10 @@ function CameraSection({ settings, update, camera, recording }) {
 
   const autoMbps = (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate / 1_000_000;
   const mbps = settings.videoBitrate > 0 ? settings.videoBitrate : autoMbps;
+  const audioSettings = audioTrack?.getSettings?.() || {};
+  const wavPerMin = Math.round(
+    ((audioSettings.sampleRate || 48000) * (audioSettings.channelCount === 2 ? 2 : 1) * (settings.wavBitDepth / 8) * 60) / 1_048_576
+  );
   const sizePerMin = Math.round(((mbps * 1_000_000 + settings.audioBitrate * 1000) * 60) / 8 / 1_048_576);
 
   const cameraOptions = [
@@ -160,31 +167,81 @@ function CameraSection({ settings, update, camera, recording }) {
             onChange={v => !recording && update({ fps: v })}
             options={[{ value: 24, label: '24' }, { value: 30, label: '30' }, { value: 60, label: '60' }]}
           />
-          <Range
+          <Select
             label="Calidad de vídeo (bitrate)"
-            value={settings.videoBitrate}
-            min={0}
-            max={60}
-            step={1}
-            format={v => (v === 0 ? `Auto (${autoMbps} Mbps)` : `${v} Mbps`)}
-            onChange={v => !recording && update({ videoBitrate: v })}
+            value={String(settings.videoBitrate)}
+            disabled={recording}
+            onChange={v => update({ videoBitrate: Number(v) })}
+            options={[
+              { value: '0', label: `Automático · ${autoMbps} Mbps` },
+              ...VIDEO_LEVELS.map(m => ({ value: String(m), label: `${m} Mbps · ${videoLevelName(m)}` })),
+            ]}
           />
           <Select
-            label="Calidad de audio"
+            label="Audio del vídeo (AAC)"
             value={String(settings.audioBitrate)}
             disabled={recording}
             onChange={v => update({ audioBitrate: Number(v) })}
+            options={[64, 96, 128, 160, 192, 256, 320].map(k => ({
+              value: String(k),
+              label: `${k} kbps${k === 320 ? ' · máximo' : k === 128 ? ' · normal' : ''}`,
+            }))}
+          />
+          <Select
+            label="Frecuencia de muestreo (Hz)"
+            value={String(settings.audioSampleRate)}
+            disabled={recording}
+            onChange={v => update({ audioSampleRate: Number(v) })}
             options={[
-              { value: '64', label: 'Baja · 64 kbps' },
-              { value: '128', label: 'Normal · 128 kbps' },
-              { value: '192', label: 'Alta · 192 kbps' },
-              { value: '256', label: 'Muy alta · 256 kbps' },
-              { value: '320', label: 'Máxima · 320 kbps' },
+              { value: '0', label: 'Automática del micrófono' },
+              { value: '44100', label: '44.100 Hz' },
+              { value: '48000', label: '48.000 Hz · estándar de vídeo' },
+              { value: '96000', label: '96.000 Hz (si el micro lo admite)' },
             ]}
           />
+          <Select
+            label="Canales"
+            value={String(settings.audioChannels)}
+            disabled={recording}
+            onChange={v => update({ audioChannels: Number(v) })}
+            options={[
+              { value: '0', label: 'Automático' },
+              { value: '1', label: 'Mono' },
+              { value: '2', label: 'Estéreo' },
+            ]}
+          />
+          {audioTrack && (
+            <p className="tp-hint">
+              Micrófono entregando: {audioSettings.sampleRate ? `${(audioSettings.sampleRate / 1000).toFixed(1)} kHz` : '—'} ·{' '}
+              {audioSettings.channelCount === 2 ? 'estéreo' : audioSettings.channelCount === 1 ? 'mono' : '—'}.
+              El navegador puede ignorar lo que pidas si el micro no lo ofrece.
+            </p>
+          )}
+          <Toggle
+            label="Grabar también audio sin comprimir (WAV)"
+            checked={settings.wavRecord}
+            disabled={recording}
+            onChange={v => update({ wavRecord: v })}
+          />
+          {settings.wavRecord && (
+            <Select
+              label="Profundidad de bits del WAV"
+              value={String(settings.wavBitDepth)}
+              disabled={recording}
+              onChange={v => update({ wavBitDepth: Number(v) })}
+              options={[
+                { value: '16', label: '16 bits (calidad CD)' },
+                { value: '24', label: '24 bits (profesional)' },
+                { value: '32', label: '32 bits flotante (máxima)' },
+              ]}
+            />
+          )}
           <p className="tp-hint">
-            Tamaño aproximado: {sizePerMin} MB por minuto. El navegador puede ajustar el bitrate real, sobre todo
-            en iPhone, y el vídeo grabado puede pesar algo menos o más.
+            Tamaño aproximado del vídeo: {sizePerMin} MB por minuto.
+            {settings.wavRecord && ` Más ${wavPerMin} MB por minuto del WAV, que se guarda aparte.`} El audio del
+            vídeo siempre va comprimido (AAC): para conservar la calidad de tu micro, activa el WAV y sincronízalo
+            en tu editor. El WAV se guarda en la memoria del dispositivo hasta que lo descargues: en grabaciones
+            largas, mejor 16 o 24 bits. Cierra el panel antes de grabar.
           </p>
           {caps.zoom && zoom != null && (
             <Range

@@ -28,7 +28,20 @@ function describeError(err) {
   }
 }
 
-function buildConstraints({ cameraSource, resolution, fps, micId, voiceProcessing }, useDeviceIds) {
+function audioConstraints({ micId, voiceProcessing, audioSampleRate, audioChannels }, useDeviceIds) {
+  const audio = {
+    echoCancellation: voiceProcessing,
+    noiseSuppression: voiceProcessing,
+    autoGainControl: voiceProcessing,
+  };
+  if (audioSampleRate > 0) audio.sampleRate = { ideal: audioSampleRate };
+  if (audioChannels > 0) audio.channelCount = { ideal: audioChannels };
+  if (useDeviceIds && micId && micId !== 'default') audio.deviceId = { exact: micId };
+  return audio;
+}
+
+function buildConstraints(opts, useDeviceIds) {
+  const { cameraSource, resolution, fps } = opts;
   const res = RESOLUTIONS[resolution] || RESOLUTIONS['1080'];
   const video = {
     width: { ideal: res.width },
@@ -40,13 +53,7 @@ function buildConstraints({ cameraSource, resolution, fps, micId, voiceProcessin
   } else {
     video.deviceId = { exact: cameraSource };
   }
-  const audio = {
-    echoCancellation: voiceProcessing,
-    noiseSuppression: voiceProcessing,
-    autoGainControl: voiceProcessing,
-  };
-  if (useDeviceIds && micId && micId !== 'default') audio.deviceId = { exact: micId };
-  return { video, audio };
+  return { video, audio: audioConstraints(opts, useDeviceIds) };
 }
 
 // Abre la cámara y el micrófono elegidos y mantiene la lista de dispositivos
@@ -67,12 +74,12 @@ export function useCamera(settings, enabled) {
     }
   }, []);
 
-  const { cameraSource, resolution, fps, micId, voiceProcessing } = settings;
+  const { cameraSource, resolution, fps, micId, voiceProcessing, audioSampleRate, audioChannels } = settings;
   const streamRef = useRef(null);
   const audioKeyRef = useRef('');
-  const audioKey = `${micId}|${voiceProcessing}`;
-  const audioOptsRef = useRef({ micId, voiceProcessing });
-  audioOptsRef.current = { micId, voiceProcessing };
+  const audioKey = `${micId}|${voiceProcessing}|${audioSampleRate}|${audioChannels}`;
+  const audioOptsRef = useRef({});
+  audioOptsRef.current = { micId, voiceProcessing, audioSampleRate, audioChannels };
 
   // Abre cámara y micrófono. Solo se repite si cambia la cámara, la resolución o los fps:
   // cambiar el micrófono o el procesado de voz no debe tocar el vídeo (evita saltos de tamaño).
@@ -98,7 +105,7 @@ export function useCamera(settings, enabled) {
         }
         current = s;
         streamRef.current = s;
-        audioKeyRef.current = `${opts.micId}|${opts.voiceProcessing}`;
+        audioKeyRef.current = `${opts.micId}|${opts.voiceProcessing}|${opts.audioSampleRate}|${opts.audioChannels}`;
         setStream(s);
         setError('');
         refreshDevices();
@@ -121,9 +128,7 @@ export function useCamera(settings, enabled) {
     if (!base || audioKeyRef.current === audioKey) return undefined;
     let cancelled = false;
     (async () => {
-      const { micId: id, voiceProcessing: vp } = audioOptsRef.current;
-      const audio = { echoCancellation: vp, noiseSuppression: vp, autoGainControl: vp };
-      if (id && id !== 'default') audio.deviceId = { exact: id };
+      const audio = audioConstraints(audioOptsRef.current, true);
       try {
         let a;
         try {

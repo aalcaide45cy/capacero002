@@ -7,6 +7,7 @@ import {
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
+import { useWavRecorder } from './useWavRecorder';
 import { loadPosition, savePosition } from './storage';
 
 const FONT_STACKS = {
@@ -76,7 +77,7 @@ function useFullscreen() {
   return { supported, active, toggle };
 }
 
-function RecordingResult({ result, onDiscard }) {
+function RecordingResult({ result, wav, onDiscard }) {
   const file = useMemo(() => new File([result.blob], result.name, { type: result.type }), [result]);
   const canShare = typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] });
 
@@ -97,6 +98,13 @@ function RecordingResult({ result, onDiscard }) {
           {(result.blob.size / 1048576).toFixed(1)} MB · {result.type.split(';')[0]}. El vídeo solo está en este
           dispositivo: guárdalo antes de salir.
         </p>
+        {wav && (
+          <p className="tp-hint">
+            Audio sin comprimir: {wav.bitDepth === 32 ? '32 bits flotante' : `${wav.bitDepth} bits`} ·{' '}
+            {(wav.sampleRate / 1000).toFixed(1)} kHz · {wav.channels === 2 ? 'estéreo' : 'mono'} ·{' '}
+            {(wav.blob.size / 1048576).toFixed(0)} MB. Sincronízalo con el vídeo en tu editor.
+          </p>
+        )}
         {!result.hasAudio && <p className="tp-error">Esta grabación no tiene audio: no llegaba sonido del micrófono.</p>}
         <div className="tp-modal-actions">
           {canShare && (
@@ -107,6 +115,11 @@ function RecordingResult({ result, onDiscard }) {
           <a className={`tp-btn${canShare ? '' : ' tp-btn-primary'}`} href={result.url} download={result.name}>
             <Download size={18} /> Descargar
           </a>
+          {wav && (
+            <a className="tp-btn" href={wav.url} download={wav.name}>
+              <Download size={18} /> Audio WAV
+            </a>
+          )}
           <button
             type="button"
             className="tp-btn tp-btn-danger"
@@ -151,6 +164,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     ? settings.videoBitrate * 1_000_000
     : (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate;
   const recorder = useRecorder(camera.stream, videoBps, settings.audioBitrate * 1000);
+  const wav = useWavRecorder(camera.stream, settings.wavBitDepth);
   const fullscreen = useFullscreen();
   useWakeLock();
 
@@ -242,6 +256,11 @@ export default function Prompter({ script, settings, update, onExit }) {
     };
   }, [camera.stream]);
 
+  // Si la cámara se apaga durante la grabación, el WAV se cierra con el vídeo
+  useEffect(() => {
+    if (!camera.stream) wav.stop();
+  }, [camera.stream]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Vídeo de la cámara
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = camera.stream || null;
@@ -310,25 +329,31 @@ export default function Prompter({ script, settings, update, onExit }) {
   const startRecording = useCallback(() => {
     setPanelOpen(false);
     setTimeout(() => {
-      if (recorder.start()) start(true);
+      if (recorder.start()) {
+        if (settingsRef.current.wavRecord) wav.start();
+        start(true);
+      }
     }, 250);
-  }, [recorder, start]);
+  }, [recorder, wav, start]);
 
   const stopRecording = useCallback(() => {
     recorder.stop();
+    wav.stop();
     setCountdown(0);
     setPlaying(false);
-  }, [recorder, setPlaying]);
+  }, [recorder, wav, setPlaying]);
 
   const exit = useCallback(() => {
     if (recorder.recording && !window.confirm('Se está grabando. ¿Parar la grabación y salir?')) return;
     if (recorder.result && !window.confirm('Tienes una grabación sin guardar. ¿Salir y descartarla?')) return;
-    recorder.discard();
+    wav.stop();
     recorder.stop();
+    wav.discard();
+    recorder.discard();
     setPlaying(false);
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     onExit();
-  }, [recorder, setPlaying, onExit]);
+  }, [recorder, wav, setPlaying, onExit]);
 
   // ── Teclado (también pedales y mandos Bluetooth, que envían teclas) ──
   useEffect(() => {
@@ -618,7 +643,16 @@ export default function Prompter({ script, settings, update, onExit }) {
         />
       )}
 
-      {recorder.result && <RecordingResult result={recorder.result} onDiscard={recorder.discard} />}
+      {recorder.result && (
+        <RecordingResult
+          result={recorder.result}
+          wav={wav.result}
+          onDiscard={() => {
+            recorder.discard();
+            wav.discard();
+          }}
+        />
+      )}
     </div>
   );
 }
