@@ -113,7 +113,7 @@ function LogBox({ text }) {
   );
 }
 
-function RecordingResult({ result, wav, backup, onDiscard }) {
+function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
   // El tipo se limpia (sin la lista de códecs): iOS puede rechazar «video/mp4;codecs=...» al compartir
   const file = useMemo(() => new File([result.blob], result.name, { type: result.type.split(';')[0] }), [result]);
   const canShare = typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] });
@@ -166,6 +166,11 @@ function RecordingResult({ result, wav, backup, onDiscard }) {
             <a className="tp-btn" href={wav.url} download={wav.name}>
               <Download size={18} /> Audio WAV
             </a>
+          )}
+          {backup === 'ok' && (
+            <button type="button" className="tp-btn" onClick={onClose} title="Cierra esta ventana; la copia sigue en «Grabaciones»">
+              Cerrar y seguir
+            </button>
           )}
           <button
             type="button"
@@ -431,6 +436,40 @@ export default function Prompter({ script, settings, update, onExit }) {
     document.body.classList.add('tp-reading');
     return () => document.body.classList.remove('tp-reading');
   }, [settings.hideNotices]);
+
+  // Al terminar de grabar se apaga la cámara y el micrófono: con el micrófono abierto, iOS manda el sonido
+  // al altavoz del auricular y el reproductor de la grabación suena bajo (el archivo en sí está bien)
+  const restoreCameraRef = useRef(false);
+  useEffect(() => {
+    if (!recorder.result) return;
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch {
+      // Safari anterior a 16.4
+    }
+    if (settingsRef.current.cameraOn) {
+      restoreCameraRef.current = true;
+      update({ cameraOn: false });
+    }
+  }, [recorder.result]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const finishResult = useCallback(
+    deleteBackup => {
+      if (deleteBackup && recorder.result) deleteRecording(recorder.result.name);
+      recorder.discard();
+      wav.discard();
+      try {
+        if (navigator.audioSession) navigator.audioSession.type = 'auto';
+      } catch {
+        // sin soporte
+      }
+      if (restoreCameraRef.current) {
+        restoreCameraRef.current = false;
+        update({ cameraOn: true });
+      }
+    },
+    [recorder, wav, update]
+  );
 
   // Copia de seguridad de la grabación terminada (IndexedDB, solo en este dispositivo)
   useEffect(() => {
@@ -1011,11 +1050,8 @@ export default function Prompter({ script, settings, update, onExit }) {
           result={recorder.result}
           wav={wav.result}
           backup={backupState}
-          onDiscard={() => {
-            if (recorder.result) deleteRecording(recorder.result.name);
-            recorder.discard();
-            wav.discard();
-          }}
+          onDiscard={() => finishResult(true)}
+          onClose={() => finishResult(false)}
         />
       )}
     </div>
