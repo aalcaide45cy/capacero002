@@ -241,7 +241,10 @@ export default function Prompter({ script, settings, update, onExit }) {
     lang: settings.voiceLang,
     getIndex: () => indexRef.current,
     onMatch: (found, index) => {
-      followTargetRef.current = index.tops[found];
+      const s = settingsRef.current;
+      // «Frase»: la guía muestra el principio de la frase; «línea»: la línea de la palabra, con adelanto
+      const i = s.voiceAlign === 'frase' ? index.starts[found] : Math.min(index.tops.length - 1, found + s.voiceLookahead);
+      followTargetRef.current = index.tops[i];
     },
   });
   // Si el reconocimiento falla (permisos, sin soporte, grabando en iPhone) se usa el avance por nivel de voz
@@ -324,8 +327,9 @@ export default function Prompter({ script, settings, update, onExit }) {
           const target = followTargetRef.current;
           if (target != null) {
             const diff = target - posRef.current;
-            const maxStep = lh * 12 * dt;
-            posRef.current += clamp(diff * (1 - Math.exp(-dt * 4)), -maxStep, maxStep);
+            const rate = s.voiceFollowSpeed;
+            const maxStep = lh * rate * 2 * dt;
+            posRef.current += clamp(diff * (1 - Math.exp(-dt * rate)), -maxStep, maxStep);
           }
         } else if (vm !== 'talk' || speakingRef.current) {
           posRef.current += speedRef.current * dt;
@@ -371,7 +375,8 @@ export default function Prompter({ script, settings, update, onExit }) {
     const rebuild = () => {
       clearTimeout(indexTimer);
       indexTimer = setTimeout(() => {
-        indexRef.current = buildContentIndex(contentRef.current);
+        const st = settingsRef.current;
+        indexRef.current = buildContentIndex(contentRef.current, st.fontSize * st.lineHeight);
       }, 200);
     };
     const measureAndIndex = () => {

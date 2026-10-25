@@ -774,6 +774,39 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
             />
           )}
           {settings.voiceMode === 'follow' && (
+            <>
+              <Select
+                label="Velocidad de seguimiento"
+                value={String(settings.voiceFollowSpeed)}
+                onChange={v => update({ voiceFollowSpeed: Number(v) })}
+                options={[
+                  { value: '4', label: 'Suave' },
+                  { value: '8', label: 'Rápida' },
+                  { value: '14', label: 'Muy rápida (leo deprisa)' },
+                ]}
+              />
+              <Range
+                label="Adelanto"
+                value={settings.voiceLookahead}
+                min={0}
+                max={10}
+                format={v => `${v} palabras`}
+                onChange={v => update({ voiceLookahead: v })}
+              />
+              <Segmented
+                label="Dónde colocar el texto"
+                value={settings.voiceAlign}
+                onChange={v => update({ voiceAlign: v })}
+                options={[{ value: 'linea', label: 'Línea de mi palabra' }, { value: 'frase', label: 'Inicio de la frase' }]}
+              />
+              <p className="tp-hint">
+                El reconocimiento tarda una fracción de segundo en entender lo que dices. El «adelanto» compensa ese retraso
+                poniendo en la guía unas palabras por delante de donde vas. Si lees deprisa, sube el adelanto y usa «Muy
+                rápida». «Inicio de la frase» mueve el texto de frase en frase, con menos saltos.
+              </p>
+            </>
+          )}
+          {settings.voiceMode === 'follow' && (
             <Select
               label="Idioma del reconocimiento"
               value={settings.voiceLang}

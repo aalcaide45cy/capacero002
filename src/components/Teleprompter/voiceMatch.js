@@ -55,6 +55,14 @@ export function similar(a, b) {
 export function findPosition(scriptWords, cursor, spoken, { back = 6, ahead = 80 } = {}) {
   const tail = spoken.slice(-6);
   const k = tail.length;
+  if (k === 1) {
+    const w = tail[0];
+    if (w.length < 5) return -1;
+    for (let e = cursor + 1; e <= Math.min(scriptWords.length - 1, cursor + 4); e++) {
+      if (similar(scriptWords[e], w)) return e;
+    }
+    return -1;
+  }
   if (k < 2) return -1;
   const start = Math.max(k - 1, cursor - back);
   const end = Math.min(scriptWords.length - 1, cursor + ahead);

@@ -2,12 +2,13 @@ import { normalizeWord } from './voiceMatch';
 
 // Recorre el guion ya pintado y devuelve: las palabras (normalizadas) con su altura en el texto,
 // los títulos para el índice y los marcadores [PAUSA] donde se detiene la lectura.
-export function buildContentIndex(contentEl) {
+export function buildContentIndex(contentEl, lineH = 0) {
   const words = [];
   const tops = [];
+  const starts = [];
   const headings = [];
   const pauses = [];
-  if (!contentEl) return { words, tops, headings, pauses };
+  if (!contentEl) return { words, tops, starts, headings, pauses };
 
   const base = contentEl.getBoundingClientRect().top;
 
@@ -27,6 +28,8 @@ export function buildContentIndex(contentEl) {
     },
   });
   const range = document.createRange();
+  let lastBlock = null;
+  let newSentence = true;
   let node = walker.nextNode();
   while (node) {
     const text = node.nodeValue;
@@ -38,12 +41,20 @@ export function buildContentIndex(contentEl) {
         range.setStart(node, m.index);
         range.setEnd(node, m.index + m[0].length);
         const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+        // La altura se guarda como la parte de arriba de la línea ocupada, centrando el texto en ella,
+        // para que quede en medio de la franja de la guía de lectura
+        const center = rect.top + rect.height / 2 - base;
+        const block = node.parentElement.closest('p, li, h1, h2, h3, h4, blockquote, td, th') || node.parentElement;
+        if (block !== lastBlock) newSentence = true;
+        lastBlock = block;
+        starts.push(newSentence ? words.length : starts[words.length - 1]);
+        newSentence = /[.!?…:;]["')\]»”]*$/.test(m[0]);
         words.push(word);
-        tops.push(rect.top - base);
+        tops.push(lineH ? center - lineH / 2 : rect.top - base);
       }
       m = re.exec(text);
     }
     node = walker.nextNode();
   }
-  return { words, tops, headings, pauses };
+  return { words, tops, starts, headings, pauses };
 }
