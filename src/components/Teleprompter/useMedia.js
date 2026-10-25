@@ -143,7 +143,7 @@ function fileStamp() {
 }
 
 // Graba el stream de la cámara con MediaRecorder; el vídeo queda solo en el dispositivo
-export function useRecorder(stream, bitrate) {
+export function useRecorder(stream, videoBps, audioBps) {
   const [recording, setRecording] = useState(false);
   const [startedAt, setStartedAt] = useState(0);
   const [result, setResult] = useState(null);
@@ -160,7 +160,7 @@ export function useRecorder(stream, bitrate) {
     if (!stream || typeof MediaRecorder === 'undefined') return false;
     discard();
     const mimeType = pickMimeType();
-    const options = { videoBitsPerSecond: bitrate };
+    const options = { videoBitsPerSecond: videoBps, audioBitsPerSecond: audioBps };
     if (mimeType) options.mimeType = mimeType;
     let rec;
     try {
@@ -193,7 +193,7 @@ export function useRecorder(stream, bitrate) {
     setStartedAt(Date.now());
     setRecording(true);
     return true;
-  }, [stream, bitrate, discard]);
+  }, [stream, videoBps, audioBps, discard]);
 
   const stop = useCallback(() => {
     const rec = recorderRef.current;

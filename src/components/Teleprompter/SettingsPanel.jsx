@@ -124,6 +124,10 @@ function CameraSection({ settings, update, camera, recording }) {
     videoTrack?.applyConstraints({ advanced: [{ zoom: v }] }).catch(() => {});
   };
 
+  const autoMbps = (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate / 1_000_000;
+  const mbps = settings.videoBitrate > 0 ? settings.videoBitrate : autoMbps;
+  const sizePerMin = Math.round(((mbps * 1_000_000 + settings.audioBitrate * 1000) * 60) / 8 / 1_048_576);
+
   const cameraOptions = [
     { value: 'user', label: 'Frontal' },
     { value: 'environment', label: 'Trasera' },
@@ -156,6 +160,32 @@ function CameraSection({ settings, update, camera, recording }) {
             onChange={v => !recording && update({ fps: v })}
             options={[{ value: 24, label: '24' }, { value: 30, label: '30' }, { value: 60, label: '60' }]}
           />
+          <Range
+            label="Calidad de vídeo (bitrate)"
+            value={settings.videoBitrate}
+            min={0}
+            max={60}
+            step={1}
+            format={v => (v === 0 ? `Auto (${autoMbps} Mbps)` : `${v} Mbps`)}
+            onChange={v => !recording && update({ videoBitrate: v })}
+          />
+          <Select
+            label="Calidad de audio"
+            value={String(settings.audioBitrate)}
+            disabled={recording}
+            onChange={v => update({ audioBitrate: Number(v) })}
+            options={[
+              { value: '64', label: 'Baja · 64 kbps' },
+              { value: '128', label: 'Normal · 128 kbps' },
+              { value: '192', label: 'Alta · 192 kbps' },
+              { value: '256', label: 'Muy alta · 256 kbps' },
+              { value: '320', label: 'Máxima · 320 kbps' },
+            ]}
+          />
+          <p className="tp-hint">
+            Tamaño aproximado: {sizePerMin} MB por minuto. El navegador puede ajustar el bitrate real, sobre todo
+            en iPhone, y el vídeo grabado puede pesar algo menos o más.
+          </p>
           {caps.zoom && zoom != null && (
             <Range
               label="Zoom"

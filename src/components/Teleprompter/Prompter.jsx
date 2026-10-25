@@ -147,7 +147,10 @@ export default function Prompter({ script, settings, update, onExit }) {
   speedRef.current = pxPerSec;
 
   const camera = useCamera(settings, settings.cameraOn);
-  const recorder = useRecorder(camera.stream, (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate);
+  const videoBps = settings.videoBitrate > 0
+    ? settings.videoBitrate * 1_000_000
+    : (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate;
+  const recorder = useRecorder(camera.stream, videoBps, settings.audioBitrate * 1000);
   const fullscreen = useFullscreen();
   useWakeLock();
 

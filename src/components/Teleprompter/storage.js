@@ -41,6 +41,8 @@ export const DEFAULT_SETTINGS = {
   cameraSource: 'user',
   resolution: '1080',
   fps: 30,
+  videoBitrate: 0,
+  audioBitrate: 192,
   cameraMirror: true,
   cameraDim: 0.35,
   micId: 'default',
