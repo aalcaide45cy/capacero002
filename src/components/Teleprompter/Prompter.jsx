@@ -317,6 +317,13 @@ export default function Prompter({ script, settings, update, onExit }) {
     micSettings.channelCount === 2 ? 'estéreo' : micSettings.channelCount === 1 ? 'mono' : '',
   ].filter(Boolean).join(' · ');
 
+  // En lectura se oculta el banner de cookies de la web (vuelve al salir al editor)
+  useEffect(() => {
+    if (!settings.hideNotices) return undefined;
+    document.body.classList.add('tp-reading');
+    return () => document.body.classList.remove('tp-reading');
+  }, [settings.hideNotices]);
+
   // Copia de seguridad de la grabación terminada (IndexedDB, solo en este dispositivo)
   useEffect(() => {
     const r = recorder.result;
@@ -713,7 +720,7 @@ export default function Prompter({ script, settings, update, onExit }) {
 
       {countdown > 0 && <div className="tp-countdown" aria-live="assertive">{countdown}</div>}
 
-      {settings.cameraOn && !panelOpen && (camera.error || micIssue) && (
+      {settings.cameraOn && !panelOpen && (camera.error || micIssue) && !(settings.hideNotices && (playing || recorder.recording || countdown > 0)) && (
         <div className="tp-toast">{camera.error || micIssue}</div>
       )}
 

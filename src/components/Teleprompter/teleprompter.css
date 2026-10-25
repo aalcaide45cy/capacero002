@@ -720,3 +720,6 @@ body.tp-active {
 .tp-saved-list li { padding: 10px; border: 1px solid var(--tp-border); border-radius: 10px; }
 .tp-saved-list strong { display: block; word-break: break-all; }
 .tp-saved-list small { display: block; margin: 2px 0 8px; color: var(--tp-muted); }
+
+/* Lectura sin distracciones: oculta el banner de cookies global de la web (solo en /tp) */
+body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }

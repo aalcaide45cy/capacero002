@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { RESOLUTIONS } from './useMedia';
 import { recLog } from './recLog';
@@ -281,6 +281,15 @@ function CameraSection({ settings, update, camera, recording }) {
             potencia al teléfono y que el vídeo no se congele. Si grabas en 4K o a 60 fps, mejor déjalo activado.
           </p>
           <Toggle
+            label="Ocultar avisos mientras leo o grabo"
+            checked={settings.hideNotices}
+            onChange={v => update({ hideNotices: v })}
+          />
+          <p className="tp-hint">
+            Oculta los avisos de la app y el banner de cookies de la web mientras estás en la pantalla de lectura. Las
+            notificaciones del iPhone (de otras apps o de esta web) no las controla la web: usa «No molestar» o un Foco.
+          </p>
+          <Toggle
             label="Guardar copia de la grabación en este dispositivo"
             checked={settings.backupRecordings}
             onChange={v => update({ backupRecordings: v })}
@@ -422,7 +431,26 @@ function LastLog() {
   );
 }
 
+// La posición de desplazamiento se recuerda entre aperturas del panel
+let savedScroll = 0;
+
 export default function SettingsPanel({ settings, update, onClose, camera, recording }) {
+  const bodyRef = useRef(null);
+  const restoringUntil = useRef(0);
+
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    // El contenido (cámara, micrófono) termina de cargar un instante después: se reaplica unos 800 ms
+    restoringUntil.current = Date.now() + 800;
+    el.scrollTop = savedScroll;
+    const id = setInterval(() => {
+      if (Date.now() > restoringUntil.current) clearInterval(id);
+      else if (Math.abs(el.scrollTop - savedScroll) > 1) el.scrollTop = savedScroll;
+    }, 40);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <aside className="tp-panel" aria-label="Ajustes del teleprompter">
       <header className="tp-panel-header">
@@ -432,7 +460,13 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
         </button>
       </header>
 
-      <div className="tp-panel-body">
+      <div
+        className="tp-panel-body"
+        ref={bodyRef}
+        onScroll={e => {
+          if (Date.now() > restoringUntil.current) savedScroll = e.currentTarget.scrollTop;
+        }}
+      >
         <section className="tp-panel-section">
           <h3>Desplazamiento</h3>
           <Range label="Velocidad" value={settings.speed} min={1} max={40} onChange={v => update({ speed: v })} />
