@@ -15,10 +15,27 @@ function stopStream(stream) {
   stream?.getTracks().forEach(t => t.stop());
 }
 
+export const isIOS = () =>
+  typeof navigator !== 'undefined' &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+export const isChromeIOS = () => isIOS() && /CriOS/.test(navigator.userAgent);
+export const isStandalone = () =>
+  typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true);
+
+export function permissionHelp() {
+  if (isChromeIOS()) {
+    return 'En Chrome para iPhone: Ajustes del iPhone → Chrome → activa Cámara y Micrófono. Si no aparecen, usa Safari.';
+  }
+  if (isIOS()) {
+    return 'En iPhone: toca «aA» en la barra de direcciones → Ajustes del sitio web → Cámara y Micrófono en «Permitir». También en Ajustes → Safari → Cámara y Micrófono.';
+  }
+  return 'Pulsa el candado de la barra de direcciones y permite la cámara y el micrófono para esta web.';
+}
+
 function describeError(err) {
   switch (err?.name) {
     case 'NotAllowedError':
-      return 'Permiso de cámara o micrófono denegado. Actívalo en los ajustes del navegador.';
+      return `Permiso de cámara o micrófono denegado. ${permissionHelp()}`;
     case 'NotFoundError':
       return 'No se ha encontrado ninguna cámara o micrófono.';
     case 'NotReadableError':

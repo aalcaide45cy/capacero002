@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { RESOLUTIONS } from './useMedia';
+import { RESOLUTIONS, hasMediaDevices, isIOS, isChromeIOS, isStandalone, permissionHelp } from './useMedia';
+import { speechRecognitionSupported } from './useVoice';
 import { recLog } from './recLog';
 import { getAudioContext, unlockAudio } from './audioCtx';
 
@@ -288,6 +289,97 @@ function MicTest({ settings, update, recording }) {
   );
 }
 
+// Comprueba en este dispositivo si el reconocimiento de voz funciona y por qué no
+function VoiceTest() {
+  const [state, setState] = useState({ running: false, heard: '', error: '', started: false });
+
+  const run = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    unlockAudio();
+    setState({ running: true, heard: '', error: '', started: false });
+    const rec = new SR();
+    rec.lang = 'es-ES';
+    rec.interimResults = true;
+    rec.continuous = false;
+    let got = false;
+    rec.onstart = () => setState(s => ({ ...s, started: true }));
+    rec.onresult = e => {
+      got = true;
+      let t = '';
+      for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript + ' ';
+      setState(s => ({ ...s, heard: t.trim() }));
+    };
+    rec.onerror = e => setState(s => ({ ...s, error: e.error }));
+    rec.onend = () => setState(s => ({ ...s, running: false, error: s.error || (got ? '' : s.started ? 'no-speech' : 'cerrado-al-instante') }));
+    try {
+      rec.start();
+    } catch (err) {
+      setState({ running: false, heard: '', error: String(err?.name || err), started: false });
+    }
+    setTimeout(() => { try { rec.stop(); } catch { /* ya parado */ } }, 7000);
+  };
+
+  const supported = speechRecognitionSupported();
+  const hints = {
+    'not-allowed': 'Permiso denegado. ' + permissionHelp(),
+    'service-not-allowed': 'El sistema no deja usar el reconocimiento. En iPhone: Ajustes → General → Teclado → activa «Dictado» y Ajustes → Siri → activa «Escuchar/Siri». Si usas la app instalada en pantalla de inicio, ábrelo desde Safari: iOS no permite el reconocimiento en apps web instaladas.',
+    'cerrado-al-instante': 'Se cerró al instante. Causas habituales en iPhone: Dictado apagado (Ajustes → General → Teclado), o abierto desde el icono de pantalla de inicio (no lo admite).',
+    'no-speech': 'Funciona, pero no te ha oído: habla más cerca o más alto.',
+    'audio-capture': 'No ha podido abrir el micrófono; puede estar ocupado por la cámara.',
+    network: 'Sin conexión con el servicio de reconocimiento (necesita internet).',
+  };
+
+  return (
+    <>
+      <p className="tp-hint">
+        Reconocimiento de voz: {supported ? 'el navegador lo tiene' : 'este navegador NO lo tiene (usa Safari o Chrome)'} ·{' '}
+        {isStandalone() ? 'abierto como app instalada' : 'abierto en el navegador'} · {isChromeIOS() ? 'Chrome en iPhone' : isIOS() ? 'Safari en iPhone' : 'ordenador/Android'}.
+      </p>
+      <button type="button" className="tp-btn" onClick={run} disabled={!supported || state.running} style={{ marginBottom: 8 }}>
+        {state.running ? 'Escuchando 7 s… di una frase' : 'Probar el reconocimiento de voz'}
+      </button>
+      {state.heard && <p className="tp-hint">He oído: «{state.heard}» ✓</p>}
+      {state.error && (
+        <p className={state.error === 'no-speech' ? 'tp-hint' : 'tp-error'}>
+          {hints[state.error] || `Error: ${state.error}`}
+        </p>
+      )}
+    </>
+  );
+}
+
+// Pide el permiso de cámara y micrófono y dice qué ha pasado
+function PermissionsHelper() {
+  const [msg, setMsg] = useState('');
+  const [ok, setOk] = useState(null);
+  const run = async () => {
+    setMsg('');
+    setOk(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      s.getTracks().forEach(t => t.stop());
+      setOk(true);
+      setMsg('Permisos concedidos ✓');
+    } catch (err) {
+      setOk(false);
+      setMsg(
+        err?.name === 'NotAllowedError'
+          ? `Permiso denegado. ${permissionHelp()}`
+          : `${err?.name || 'Error'}: ${err?.message || err}`
+      );
+    }
+  };
+  return (
+    <>
+      <button type="button" className="tp-btn" onClick={run} style={{ marginBottom: 8 }}>
+        Dar permisos de cámara y micrófono
+      </button>
+      {msg && <p className={ok ? 'tp-hint' : 'tp-error'}>{msg}</p>}
+    </>
+  );
+}
+
 function GainState({ active }) {
   const [state, setState] = useState('');
   useEffect(() => {
@@ -344,6 +436,7 @@ function CameraSection({ settings, update, camera, recording }) {
   return (
     <section className="tp-panel-section">
       <h3>Cámara y grabación</h3>
+      <PermissionsHelper />
       <Toggle label="Cámara de fondo" checked={settings.cameraOn} disabled={recording} onChange={v => update({ cameraOn: v })} />
       {error && <p className="tp-error">{error}</p>}
       {settings.cameraOn && (
@@ -669,6 +762,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
             (en Chrome lo procesa Google). En iPhone no puede usarse a la vez que grabas vídeo: al grabar pasa solo a «Avanza
             si hablo».
           </p>
+          <VoiceTest />
           {settings.voiceMode !== 'off' && (
             <Range
               label="Sensibilidad al hablar"
@@ -779,6 +873,15 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
 
         {camera && <CameraSection settings={settings} update={update} camera={camera} recording={recording} />}
         {camera && <LastLog />}
+        {camera === null && !hasMediaDevices() && (
+          <section className="tp-panel-section">
+            <h3>Cámara y grabación</h3>
+            <p className="tp-error">
+              Este navegador no da acceso a la cámara ni al micrófono a las webs{isChromeIOS() ? ' (Chrome en iPhone lo limita)' : ''}. Abre capacero3d.com/tp
+              en Safari para grabar. {permissionHelp()}
+            </p>
+          </section>
+        )}
       </div>
     </aside>
   );

@@ -72,6 +72,8 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch }) {
     let stopped = false;
     let rec = null;
     let restartTimer = null;
+    let quickEnds = 0;
+    let startedAt = 0;
 
     const begin = () => {
       if (stopped) return;
@@ -81,6 +83,7 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch }) {
       rec.interimResults = true;
       rec.maxAlternatives = 1;
       rec.onstart = () => {
+        startedAt = Date.now();
         setState(s => ({ ...s, listening: true, error: '' }));
         recLog.add('voz: reconocimiento iniciado');
       };
@@ -108,6 +111,14 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch }) {
         }
       };
       rec.onend = () => {
+        // Si se cierra enseguida varias veces seguidas, el sistema no deja usarlo (Dictado apagado, app instalada...)
+        quickEnds = Date.now() - startedAt < 1200 ? quickEnds + 1 : 0;
+        if (quickEnds >= 3 && !stopped) {
+          stopped = true;
+          recLog.add('voz: el reconocimiento se cierra solo');
+          setState({ listening: false, error: 'El iPhone cierra el reconocimiento al instante (mira el diagnóstico en Ajustes → Voz).', heard: '' });
+          return;
+        }
         setState(s => ({ ...s, listening: false }));
         // El reconocimiento se corta solo tras unos segundos: se reinicia mientras siga activo
         if (!stopped) restartTimer = setTimeout(begin, 250);

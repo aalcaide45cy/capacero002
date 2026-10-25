@@ -896,7 +896,9 @@ export default function Prompter({ script, settings, update, onExit }) {
             {requestedVoice !== 'off' && (
               <span className="tp-status-voice">
                 {effectiveVoice === 'follow' ? (follow.listening ? '🎤 siguiendo' : '🎤 esperando') : speaking ? '🎤 hablando' : '🎤 en silencio'}
-                {requestedVoice === 'follow' && effectiveVoice === 'talk' ? ' (modo avance)' : ''}
+                {requestedVoice === 'follow' && effectiveVoice === 'talk'
+                  ? ` (modo avance: ${!srSupported ? 'sin reconocimiento en este navegador' : srBlocked ? 'no se puede a la vez que grabas en iPhone' : follow.error || 'reconocimiento no disponible'})`
+                  : ''}
               </span>
             )}
             {cameraActive && <span className="tp-status-mic" title={micInfo}>{micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}</span>}
