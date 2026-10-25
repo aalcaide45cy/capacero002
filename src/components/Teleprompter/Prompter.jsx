@@ -229,12 +229,13 @@ export default function Prompter({ script, settings, update, onExit }) {
   const followTargetRef = useRef(null);
   const lastPauseRef = useRef(-1);
   const voiceModeRef = useRef('off');
+  const pxPerWordRef = useRef(0);
   const [indexOpen, setIndexOpen] = useState(false);
   const [ownTrack, setOwnTrack] = useState(null);
 
   const requestedVoice = settings.voiceMode;
   const srSupported = speechRecognitionSupported();
-  const srBlocked = recorder.recording && isAppleSafari();
+  const srBlocked = recorder.recording && isAppleSafari() && !settings.voiceFollowWhileRecording;
   const wantsFollow = requestedVoice === 'follow' && srSupported && !srBlocked;
   const follow = useSpeechFollow({
     active: wantsFollow && playing,
@@ -277,7 +278,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       setOwnTrack(null);
     };
   }, [needsOwnMic]);
-  const { speakingRef, speaking } = useSpeechLevel({
+  const { speakingRef, rateRef, speaking } = useSpeechLevel({
     active: effectiveVoice === 'talk',
     track: camera.micTrack || ownTrack,
     sensitivity: settings.voiceSensitivity,
@@ -332,7 +333,13 @@ export default function Prompter({ script, settings, update, onExit }) {
             posRef.current += clamp(diff * (1 - Math.exp(-dt * rate)), -maxStep, maxStep);
           }
         } else if (vm !== 'talk' || speakingRef.current) {
-          posRef.current += speedRef.current * dt;
+          // En «Avanza si hablo» la velocidad se adapta a tu ritmo de habla si hay estimación
+          let speed = speedRef.current;
+          if (vm === 'talk' && s.voicePace && rateRef.current > 0 && pxPerWordRef.current > 0) {
+            const wordsPerSec = (rateRef.current / 2.3) * s.voicePaceFactor;
+            speed = clamp(wordsPerSec * pxPerWordRef.current, speedRef.current * 0.3, speedRef.current * 4);
+          }
+          posRef.current += speed * dt;
         }
         // Los marcadores [PAUSA] detienen la lectura al llegar a la guía
         if (s.pauseOnMarkers && vm !== 'follow') {
@@ -361,7 +368,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [setPlaying, speakingRef]);
+  }, [setPlaying, speakingRef, rateRef]);
 
   // Medidas del escenario y del texto
   useEffect(() => {
@@ -377,6 +384,8 @@ export default function Prompter({ script, settings, update, onExit }) {
       indexTimer = setTimeout(() => {
         const st = settingsRef.current;
         indexRef.current = buildContentIndex(contentRef.current, st.fontSize * st.lineHeight);
+        const ix = indexRef.current;
+        pxPerWordRef.current = ix.tops.length > 20 ? (ix.tops[ix.tops.length - 1] - ix.tops[0]) / ix.tops.length : 0;
       }, 200);
     };
     const measureAndIndex = () => {
@@ -900,7 +909,7 @@ export default function Prompter({ script, settings, update, onExit }) {
             {frozen && <span className="tp-status-warn">⚠ La cámara no entrega imagen: para y baja resolución o fps</span>}
             {requestedVoice !== 'off' && (
               <span className="tp-status-voice">
-                {effectiveVoice === 'follow' ? (follow.listening ? '🎤 siguiendo' : '🎤 esperando') : speaking ? '🎤 hablando' : '🎤 en silencio'}
+                {effectiveVoice === 'follow' ? (follow.listening ? '🎤 siguiendo' : '🎤 esperando') : speaking ? `🎤 hablando${settings.voicePace && rateRef.current ? ` · ~${Math.round((rateRef.current / 2.3) * 60 * settings.voicePaceFactor)} pal/min` : ''}` : '🎤 en silencio'}
                 {requestedVoice === 'follow' && effectiveVoice === 'talk'
                   ? ` (modo avance: ${!srSupported ? 'sin reconocimiento en este navegador' : srBlocked ? 'no se puede a la vez que grabas en iPhone' : follow.error || 'reconocimiento no disponible'})`
                   : ''}

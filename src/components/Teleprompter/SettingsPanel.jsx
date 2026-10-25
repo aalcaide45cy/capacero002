@@ -773,6 +773,38 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
               onChange={v => update({ voiceSensitivity: v })}
             />
           )}
+          {settings.voiceMode !== 'off' && (
+            <>
+              <Toggle
+                label="Adaptar la velocidad a mi ritmo al hablar"
+                checked={settings.voicePace}
+                onChange={v => update({ voicePace: v })}
+              />
+              {settings.voicePace && (
+                <Range
+                  label="Ajuste de ritmo"
+                  value={settings.voicePaceFactor}
+                  min={0.5}
+                  max={1.6}
+                  step={0.05}
+                  format={v => `${Math.round(v * 100)} %`}
+                  onChange={v => update({ voicePaceFactor: v })}
+                />
+              )}
+              <p className="tp-hint">
+                En «Avanza si hablo» el texto va al ritmo al que hablas: cuenta tus sílabas por segundo y las pasa a palabras
+                por minuto (aprox., se ve en la barra). Si va más lento o más rápido que tú, sube o baja el «ajuste de ritmo».
+                Funciona mientras grabas.
+              </p>
+            </>
+          )}
+          {settings.voiceMode === 'follow' && (
+            <Toggle
+              label="Intentar «Sigue mi voz» también al grabar (experimental)"
+              checked={settings.voiceFollowWhileRecording}
+              onChange={v => update({ voiceFollowWhileRecording: v })}
+            />
+          )}
           {settings.voiceMode === 'follow' && (
             <>
               <Select
