@@ -5,6 +5,8 @@ export const TP_KEYS = {
   script: 'capacero_tp_script',
   settings: 'capacero_tp_settings',
   position: 'capacero_tp_position',
+  library: 'capacero_tp_library',
+  current: 'capacero_tp_current',
 };
 
 function defaultFontSize() {
@@ -47,6 +49,11 @@ export const DEFAULT_SETTINGS = {
   audioChannels: 0,
   showMicMeter: true,
   hideNotices: true,
+  voiceMode: 'off',
+  voiceLast: 'talk',
+  voiceSensitivity: 10,
+  voiceLang: 'es-ES',
+  pauseOnMarkers: true,
   backupRecordings: true,
   liteWhileRecording: true,
   wavRecord: false,
@@ -133,14 +140,32 @@ export function loadScript() {
 }
 
 // La posición de lectura solo se recupera si el guion no ha cambiado de longitud
-export function loadPosition(textLength) {
-  const saved = loadJSON(TP_KEYS.position, null);
+const newId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+export function createScriptItem({ name, text, format = 'md' }) {
+  return { id: newId(), name, text, format: format === 'txt' ? 'txt' : 'md', updatedAt: Date.now() };
+}
+
+// Biblioteca de guiones. La primera vez recoge el guion único de versiones anteriores.
+export function loadLibrary() {
+  const saved = loadJSON(TP_KEYS.library, null);
+  let items = Array.isArray(saved) ? saved.filter(i => i && typeof i.text === 'string' && i.id) : [];
+  if (!items.length) {
+    const old = loadScript();
+    items = [createScriptItem({ name: old.name || 'Guion 1', text: old.text, format: old.format })];
+  }
+  const currentId = loadJSON(TP_KEYS.current, null);
+  return { items, currentId: items.some(i => i.id === currentId) ? currentId : items[0].id };
+}
+
+export function loadPosition(textLength, id = '') {
+  const saved = loadJSON(id ? `${TP_KEYS.position}_${id}` : TP_KEYS.position, null);
   if (saved && saved.len === textLength && typeof saved.pos === 'number') return saved.pos;
   return 0;
 }
 
-export function savePosition(pos, textLength) {
-  saveJSON(TP_KEYS.position, { pos: Math.max(0, Math.round(pos)), len: textLength });
+export function savePosition(pos, textLength, id = '') {
+  saveJSON(id ? `${TP_KEYS.position}_${id}` : TP_KEYS.position, { pos: Math.max(0, Math.round(pos)), len: textLength });
 }
 
 // Documentos abiertos en el Editor MD (/editor), solo lectura

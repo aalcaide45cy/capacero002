@@ -645,6 +645,58 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
         </section>
 
         <section className="tp-panel-section">
+          <h3>Voz y marcadores</h3>
+          <Segmented
+            label="Control por voz"
+            value={settings.voiceMode}
+            onChange={v => update({ voiceMode: v, ...(v !== 'off' ? { voiceLast: v } : {}) })}
+            options={[
+              { value: 'off', label: 'No' },
+              { value: 'talk', label: 'Avanza si hablo' },
+              { value: 'follow', label: 'Sigue mi voz' },
+            ]}
+          />
+          <p className="tp-hint">
+            <strong>Avanza si hablo:</strong> el texto avanza a tu velocidad mientras hablas y se detiene cuando callas.
+            Funciona en cualquier navegador y no envía nada. <strong>Sigue mi voz:</strong> escucha lo que lees y pone el
+            texto en la palabra en la que vas; si te saltas una frase, te sigue. Usa el reconocimiento de voz del navegador
+            (en Chrome lo procesa Google). En iPhone no puede usarse a la vez que grabas vídeo: al grabar pasa solo a «Avanza
+            si hablo».
+          </p>
+          {settings.voiceMode !== 'off' && (
+            <Range
+              label="Sensibilidad al hablar"
+              value={settings.voiceSensitivity}
+              min={4}
+              max={24}
+              format={v => `${v} dB sobre el ruido`}
+              onChange={v => update({ voiceSensitivity: v })}
+            />
+          )}
+          {settings.voiceMode === 'follow' && (
+            <Select
+              label="Idioma del reconocimiento"
+              value={settings.voiceLang}
+              onChange={v => update({ voiceLang: v })}
+              options={[
+                { value: 'es-ES', label: 'Español (España)' },
+                { value: 'es-MX', label: 'Español (México)' },
+                { value: 'es-US', label: 'Español (EE. UU.)' },
+                { value: 'en-US', label: 'English (US)' },
+                { value: 'en-GB', label: 'English (UK)' },
+                { value: 'ca-ES', label: 'Català' },
+                { value: 'fr-FR', label: 'Français' },
+              ]}
+            />
+          )}
+          <Toggle label="Pausar en los marcadores [PAUSA]" checked={settings.pauseOnMarkers} onChange={v => update({ pauseOnMarkers: v })} />
+          <p className="tp-hint">
+            Escribe notas de dirección en mayúsculas entre corchetes, por ejemplo [PAUSA], [MIRA A CÁMARA] o [B-ROLL]. Se
+            ven como etiquetas de color, no se leen, y [PAUSA] detiene el texto hasta que lo reanudes.
+          </p>
+        </section>
+
+        <section className="tp-panel-section">
           <h3>Barra de herramientas</h3>
           <Toggle label="Fijar la barra (no se oculta)" checked={settings.controlsPinned} onChange={v => update({ controlsPinned: v })} />
           <Range
@@ -692,6 +744,24 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
               <input type="color" value={settings.bgColor} onChange={e => update({ bgColor: e.target.value })} />
             </label>
           </div>
+        </section>
+
+        <section className="tp-panel-section">
+          <h3>Atajos de teclado, pedal y mando</h3>
+          <p className="tp-hint">
+            Los pedales y mandos Bluetooth de fotos o presentaciones envían estas teclas, así que sirven sin configurar nada:
+          </p>
+          <table className="tp-mic-table">
+            <tbody>
+              <tr><td>Espacio · Intro · K</td><td>Reproducir / pausar</td></tr>
+              <tr><td>↓ → / ↑ ←</td><td>Más rápido / más lento</td></tr>
+              <tr><td>AvPág / RePág</td><td>Sección siguiente / anterior</td></tr>
+              <tr><td>Inicio</td><td>Volver al principio</td></tr>
+              <tr><td>+ / −</td><td>Letra más grande / pequeña</td></tr>
+              <tr><td>M</td><td>Espejo horizontal</td></tr>
+              <tr><td>Esc</td><td>Cerrar panel o salir</td></tr>
+            </tbody>
+          </table>
         </section>
 
         <section className="tp-panel-section">

@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone } from 'lucide-react';
+import { BookOpen, FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
 import { unlockAudio } from './audioCtx';
 import SavedRecordings, { useSavedRecordings } from './SavedRecordings';
+import ScriptLibrary from './ScriptLibrary';
 import { loadEditorMdFiles } from './storage';
 
 const ACCEPTED = '.md,.markdown,.txt,.text,text/plain,text/markdown';
@@ -46,7 +47,7 @@ function ImportEditorModal({ files, onPick, onClose }) {
   );
 }
 
-export default function ScriptEditor({ script, setScript, settings, update, onStart, install }) {
+export default function ScriptEditor({ script, setScript, settings, update, onStart, install, library }) {
   const fileInput = useRef(null);
   const [tab, setTab] = useState('write');
   const [panelOpen, setPanelOpen] = useState(false);
@@ -54,6 +55,7 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
   const [importOpen, setImportOpen] = useState(false);
   const [installTip, setInstallTip] = useState(false);
   const [recsOpen, setRecsOpen] = useState(false);
+  const [libOpen, setLibOpen] = useState(false);
   const saved = useSavedRecordings();
   const editorFiles = useMemo(() => loadEditorMdFiles(), []);
 
@@ -84,7 +86,7 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
 
   const clearScript = () => {
     if (!script.text || window.confirm('¿Borrar el guion actual? Descárgalo antes si quieres conservarlo.')) {
-      setScript({ text: '', format: script.format, name: '' });
+      setScript({ text: '', format: script.format });
     }
   };
 
@@ -118,6 +120,9 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
           </div>
         </div>
         <div className="tp-topbar-actions">
+          <button type="button" className="tp-btn" onClick={() => setLibOpen(true)} title="Mis guiones">
+            <BookOpen size={18} /> <span>Guiones</span>
+          </button>
           <button type="button" className="tp-btn" onClick={() => fileInput.current?.click()} title="Abrir .md o .txt">
             <FolderOpen size={18} /> <span>Abrir</span>
           </button>
@@ -216,6 +221,25 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
       {dragging && <div className="tp-drop">Suelta el archivo .md o .txt</div>}
 
       {panelOpen && <SettingsPanel settings={settings} update={update} onClose={() => setPanelOpen(false)} />}
+
+      {libOpen && (
+        <ScriptLibrary
+          items={library.items}
+          currentId={library.currentId}
+          onOpen={id => {
+            library.open(id);
+            setLibOpen(false);
+          }}
+          onNew={() => {
+            library.create();
+            setLibOpen(false);
+          }}
+          onRename={library.rename}
+          onDuplicate={library.duplicate}
+          onDelete={library.remove}
+          onClose={() => setLibOpen(false)}
+        />
+      )}
 
       {recsOpen && <SavedRecordings items={saved.items} refresh={saved.refresh} onClose={() => setRecsOpen(false)} />}
 

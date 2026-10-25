@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ScriptEditor from './ScriptEditor';
 import Prompter from './Prompter';
-import { TP_KEYS, loadScript, loadSettings, saveJSON } from './storage';
+import { TP_KEYS, createScriptItem, loadLibrary, loadSettings, saveJSON } from './storage';
 import './teleprompter.css';
 
 // Ajusta <head> solo mientras /tp está montado y deja todo como estaba al salir:
@@ -77,7 +77,7 @@ export default function TeleprompterEntry() {
   useTeleprompterHead();
   const install = useInstall();
   const [mode, setMode] = useState('edit');
-  const [script, setScript] = useState(loadScript);
+  const [lib, setLib] = useState(loadLibrary);
   const [settings, setSettings] = useState(loadSettings);
 
   const update = useCallback(partial => setSettings(prev => ({ ...prev, ...partial })), []);
@@ -86,13 +86,60 @@ export default function TeleprompterEntry() {
     saveJSON(TP_KEYS.settings, settings);
   }, [settings]);
 
-  // Guardado del guion con un pequeño retardo para no escribir en cada tecla
+  const script = lib.items.find(i => i.id === lib.currentId) || lib.items[0];
+
+  // El guion abierto se edita dentro de la biblioteca
+  const setScript = useCallback(
+    next =>
+      setLib(l => ({
+        ...l,
+        items: l.items.map(i => (i.id === l.currentId ? { ...i, ...next, updatedAt: Date.now() } : i)),
+      })),
+    []
+  );
+
+  // Guardado de la biblioteca con un pequeño retardo para no escribir en cada tecla
   const saveTimer = useRef(null);
   useEffect(() => {
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => saveJSON(TP_KEYS.script, script), 400);
+    saveTimer.current = setTimeout(() => {
+      saveJSON(TP_KEYS.library, lib.items);
+      saveJSON(TP_KEYS.current, lib.currentId);
+    }, 400);
     return () => clearTimeout(saveTimer.current);
-  }, [script]);
+  }, [lib]);
+
+  const library = {
+    items: lib.items,
+    currentId: lib.currentId,
+    open: id => setLib(l => ({ ...l, currentId: id })),
+    create: () =>
+      setLib(l => {
+        const item = createScriptItem({ name: `Guion ${l.items.length + 1}`, text: '', format: 'md' });
+        return { items: [...l.items, item], currentId: item.id };
+      }),
+    rename: id => {
+      const item = lib.items.find(i => i.id === id);
+      const name = window.prompt('Nombre del guion', item?.name || '');
+      if (name !== null && name.trim()) setLib(l => ({ ...l, items: l.items.map(i => (i.id === id ? { ...i, name: name.trim() } : i)) }));
+    },
+    duplicate: id =>
+      setLib(l => {
+        const src = l.items.find(i => i.id === id);
+        if (!src) return l;
+        const item = createScriptItem({ name: `${src.name} (copia)`, text: src.text, format: src.format });
+        return { items: [...l.items, item], currentId: item.id };
+      }),
+    remove: id => {
+      const item = lib.items.find(i => i.id === id);
+      if (!window.confirm(`¿Borrar «${item?.name || 'este guion'}»? No se puede recuperar.`)) return;
+      setLib(l => {
+        let items = l.items.filter(i => i.id !== id);
+        if (!items.length) items = [createScriptItem({ name: 'Guion 1', text: '', format: 'md' })];
+        return { items, currentId: l.currentId === id ? items[0].id : l.currentId };
+      });
+    },
+  };
 
   if (mode === 'read') {
     return (
@@ -110,8 +157,10 @@ export default function TeleprompterEntry() {
         settings={settings}
         update={update}
         install={install}
+        library={library}
         onStart={() => {
-          saveJSON(TP_KEYS.script, script);
+          saveJSON(TP_KEYS.library, lib.items);
+          saveJSON(TP_KEYS.current, lib.currentId);
           setMode('read');
         }}
       />

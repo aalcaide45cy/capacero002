@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, ChevronUp, ChevronDown,
   FlipHorizontal2, Settings2, Camera, CameraOff, Circle, Square, Maximize, Minimize,
-  Download, Share2, Trash2, Pin, PinOff,
+  Download, Share2, Trash2, Pin, PinOff, Mic, MicOff, ListOrdered, X,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel, { MicMeter } from './SettingsPanel';
-import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
+import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } from './useMedia';
+import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
+import { buildContentIndex } from './domIndex';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
 import { unlockAudio } from './audioCtx';
@@ -184,7 +186,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const stageRef = useRef(null);
   const contentRef = useRef(null);
   const videoRef = useRef(null);
-  const posRef = useRef(loadPosition(script.text.length));
+  const posRef = useRef(loadPosition(script.text.length, script.id));
   const playingRef = useRef(false);
   const metricsRef = useRef({ stageH: 0, contentH: 0 });
   const settingsRef = useRef(settings);
@@ -217,6 +219,76 @@ export default function Prompter({ script, settings, update, onExit }) {
   const fullscreen = useFullscreen();
   useWakeLock();
 
+  // ── Voz: avanzar mientras hablo / seguir mi voz ──
+  const indexRef = useRef({ words: [], tops: [], headings: [], pauses: [] });
+  const followTargetRef = useRef(null);
+  const lastPauseRef = useRef(-1);
+  const voiceModeRef = useRef('off');
+  const [indexOpen, setIndexOpen] = useState(false);
+  const [ownTrack, setOwnTrack] = useState(null);
+
+  const requestedVoice = settings.voiceMode;
+  const srSupported = speechRecognitionSupported();
+  const srBlocked = recorder.recording && isAppleSafari();
+  const wantsFollow = requestedVoice === 'follow' && srSupported && !srBlocked;
+  const follow = useSpeechFollow({
+    active: wantsFollow && playing,
+    lang: settings.voiceLang,
+    getIndex: () => indexRef.current,
+    onMatch: (found, index) => {
+      followTargetRef.current = index.tops[found];
+    },
+  });
+  // Si el reconocimiento falla (permisos, sin soporte, grabando en iPhone) se usa el avance por nivel de voz
+  const effectiveVoice = requestedVoice === 'follow' ? (wantsFollow && !follow.error ? 'follow' : 'talk') : requestedVoice;
+  voiceModeRef.current = effectiveVoice;
+
+  // Micrófono para medir el nivel: el de la cámara si está encendida, si no uno propio
+  const needsOwnMic = effectiveVoice === 'talk' && !camera.micTrack;
+  useEffect(() => {
+    if (!needsOwnMic || !hasMediaDevices()) {
+      setOwnTrack(null);
+      return undefined;
+    }
+    let cancelled = false;
+    let stream = null;
+    const s = settingsRef.current;
+    navigator.mediaDevices
+      .getUserMedia({ audio: { echoCancellation: s.echoCancellation, noiseSuppression: s.noiseSuppression, autoGainControl: s.autoGainControl } })
+      .then(st => {
+        if (cancelled) st.getTracks().forEach(t => t.stop());
+        else {
+          stream = st;
+          setOwnTrack(st.getAudioTracks()[0]);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      stream?.getTracks().forEach(t => t.stop());
+      setOwnTrack(null);
+    };
+  }, [needsOwnMic]);
+  const { speakingRef, speaking } = useSpeechLevel({
+    active: effectiveVoice === 'talk',
+    track: camera.micTrack || ownTrack,
+    sensitivity: settings.voiceSensitivity,
+  });
+
+  // Coloca el cursor del reconocimiento en la palabra que está en la guía de lectura
+  const syncCursor = useCallback(() => {
+    const { tops } = indexRef.current;
+    if (!tops.length) return;
+    let i = tops.findIndex(t => t >= posRef.current - 2);
+    if (i < 0) i = tops.length - 1;
+    follow.cursorRef.current = i;
+    followTargetRef.current = null;
+  }, [follow.cursorRef]);
+  useEffect(() => {
+    if (effectiveVoice === 'follow' && playing) syncCursor();
+    else followTargetRef.current = null;
+  }, [effectiveVoice, playing, syncCursor]);
+
   const maxPos = () => {
     const s = settingsRef.current;
     return Math.max(0, metricsRef.current.contentH - s.fontSize * s.lineHeight);
@@ -225,8 +297,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   const setPlaying = useCallback(value => {
     playingRef.current = value;
     setPlayingState(value);
-    if (!value) savePosition(posRef.current, script.text.length);
-  }, [script.text.length]);
+    if (!value) savePosition(posRef.current, script.text.length, script.id);
+  }, [script.text.length, script.id]);
 
   // ── Motor de desplazamiento: requestAnimationFrame + transform (sin re-render por fotograma) ──
   useEffect(() => {
@@ -240,8 +312,28 @@ export default function Prompter({ script, settings, update, onExit }) {
       const s = settingsRef.current;
       const lh = s.fontSize * s.lineHeight;
       const max = Math.max(0, contentH - lh);
+      const vm = voiceModeRef.current;
+      if (posRef.current < lastPauseRef.current - 5) lastPauseRef.current = -1;
       if (playingRef.current) {
-        posRef.current += speedRef.current * dt;
+        if (vm === 'follow') {
+          const target = followTargetRef.current;
+          if (target != null) {
+            const diff = target - posRef.current;
+            const maxStep = lh * 12 * dt;
+            posRef.current += clamp(diff * (1 - Math.exp(-dt * 4)), -maxStep, maxStep);
+          }
+        } else if (vm !== 'talk' || speakingRef.current) {
+          posRef.current += speedRef.current * dt;
+        }
+        // Los marcadores [PAUSA] detienen la lectura al llegar a la guía
+        if (s.pauseOnMarkers && vm !== 'follow') {
+          const p = indexRef.current.pauses.find(t => t > lastPauseRef.current + 2 && posRef.current >= t - 1);
+          if (p !== undefined) {
+            posRef.current = p;
+            lastPauseRef.current = p;
+            setPlaying(false);
+          }
+        }
         if (posRef.current >= max) {
           posRef.current = max;
           setPlaying(false);
@@ -260,7 +352,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [setPlaying]);
+  }, [setPlaying, speakingRef]);
 
   // Medidas del escenario y del texto
   useEffect(() => {
@@ -270,15 +362,30 @@ export default function Prompter({ script, settings, update, onExit }) {
         contentH: contentRef.current?.scrollHeight || 0,
       };
     };
-    measure();
-    const ro = new ResizeObserver(measure);
+    let indexTimer = null;
+    const rebuild = () => {
+      clearTimeout(indexTimer);
+      indexTimer = setTimeout(() => {
+        indexRef.current = buildContentIndex(contentRef.current);
+      }, 200);
+    };
+    const measureAndIndex = () => {
+      measure();
+      rebuild();
+    };
+    measureAndIndex();
+    document.fonts?.ready.then(measureAndIndex).catch(() => {});
+    const ro = new ResizeObserver(measureAndIndex);
     if (stageRef.current) ro.observe(stageRef.current);
     if (contentRef.current) ro.observe(contentRef.current);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      clearTimeout(indexTimer);
+    };
   }, []);
 
   // Guardar posición al salir
-  useEffect(() => () => savePosition(posRef.current, script.text.length), [script.text.length]);
+  useEffect(() => () => savePosition(posRef.current, script.text.length, script.id), [script.text.length, script.id]);
 
   // Estado del micrófono: el sistema puede silenciarlo (llamada, otra app, Siri...)
   const [micIssue, setMicIssue] = useState('');
@@ -470,6 +577,8 @@ export default function Prompter({ script, settings, update, onExit }) {
     setCountdown(0);
     setPlaying(false);
     posRef.current = 0;
+    lastPauseRef.current = -1;
+    followTargetRef.current = null;
   }, [setPlaying]);
 
   const changeSpeed = useCallback(delta => update({ speed: clamp(settingsRef.current.speed + delta, 1, 40) }), [update]);
@@ -490,6 +599,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       const prev = tops.filter(t => t < pos - slack).pop();
       posRef.current = prev ?? 0;
     }
+    followTargetRef.current = null;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Se cierra el panel (y su medidor de audio) antes de grabar: en iPhone, tener Web Audio
@@ -627,6 +737,10 @@ export default function Prompter({ script, settings, update, onExit }) {
   const onPointerUp = () => {
     const drag = dragRef.current;
     dragRef.current = null;
+    if (drag && drag.moved) {
+      lastPauseRef.current = -1;
+      syncCursor();
+    }
     if (drag && !drag.moved) {
       // Con la barra oculta, el primer toque solo la muestra; el segundo pausa o reanuda
       if (!controlsVisibleRef.current && settingsRef.current.tapWakesControls) {
@@ -727,20 +841,26 @@ export default function Prompter({ script, settings, update, onExit }) {
       )}
 
       <div className="tp-bottom">
-        {cameraActive && (
+        {(cameraActive || requestedVoice !== 'off') && (
           <div className="tp-status" aria-live="polite">
             {recorder.recording && (
               <span className="tp-rec-badge">
                 <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
               </span>
             )}
-            {settings.showMicMeter && camera.stream && (
+            {cameraActive && settings.showMicMeter && camera.stream && (
               <span className="tp-status-meter">
                 <MicMeter stream={camera.stream} />
               </span>
             )}
             {frozen && <span className="tp-status-warn">⚠ La cámara no entrega imagen: para y baja resolución o fps</span>}
-            <span className="tp-status-mic" title={micInfo}>{micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}</span>
+            {requestedVoice !== 'off' && (
+              <span className="tp-status-voice">
+                {effectiveVoice === 'follow' ? (follow.listening ? '🎤 siguiendo' : '🎤 esperando') : speaking ? '🎤 hablando' : '🎤 en silencio'}
+                {requestedVoice === 'follow' && effectiveVoice === 'talk' ? ' (modo avance)' : ''}
+              </span>
+            )}
+            {cameraActive && <span className="tp-status-mic" title={micInfo}>{micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}</span>}
           </div>
         )}
         <div className="tp-controls" role="toolbar" aria-label="Controles del teleprompter">
@@ -760,6 +880,9 @@ export default function Prompter({ script, settings, update, onExit }) {
           <button type="button" className="tp-ctrl" onClick={() => jumpSection(1)} aria-label="Sección siguiente" title="Sección siguiente (AvPág)">
             <ChevronDown size={22} />
           </button>
+          <button type="button" className={`tp-ctrl${indexOpen ? ' is-on' : ''}`} onClick={() => setIndexOpen(o => !o)} aria-label="Índice de secciones" title="Índice de secciones">
+            <ListOrdered size={20} />
+          </button>
         </div>
 
         <div className="tp-controls-group">
@@ -777,6 +900,18 @@ export default function Prompter({ script, settings, update, onExit }) {
         </div>
 
         <div className="tp-controls-group">
+          <button
+            type="button"
+            className={`tp-ctrl${requestedVoice !== 'off' ? ' is-on' : ''}`}
+            onClick={() => {
+              unlockAudio();
+              update({ voiceMode: requestedVoice === 'off' ? settings.voiceLast || 'talk' : 'off' });
+            }}
+            aria-label={requestedVoice === 'off' ? 'Activar control por voz' : 'Desactivar control por voz'}
+            title="Control por voz"
+          >
+            {requestedVoice === 'off' ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
           <button
             type="button"
             className={`tp-ctrl${settings.mirrorH ? ' is-on' : ''}`}
@@ -832,6 +967,34 @@ export default function Prompter({ script, settings, update, onExit }) {
         </div>
       </div>
       </div>
+
+      {indexOpen && (
+        <div className="tp-index" role="dialog" aria-label="Índice de secciones">
+          <header className="tp-panel-header">
+            <h2>Secciones</h2>
+            <button type="button" className="tp-icon-btn" onClick={() => setIndexOpen(false)} aria-label="Cerrar índice"><X size={18} /></button>
+          </header>
+          {indexRef.current.headings.length === 0 && <p className="tp-hint" style={{ padding: 12 }}>Añade títulos con # o ## para tener un índice.</p>}
+          <ul>
+            {indexRef.current.headings.map((h, i) => (
+              <li key={i} style={{ paddingLeft: (h.level - 1) * 14 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    posRef.current = h.top;
+                    lastPauseRef.current = -1;
+                    followTargetRef.current = null;
+                    syncCursor();
+                    setIndexOpen(false);
+                  }}
+                >
+                  {h.text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {panelOpen && (
         <SettingsPanel
