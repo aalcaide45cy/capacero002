@@ -90,11 +90,13 @@ export const speechRecognitionSupported = () =>
   typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
 // Reconocimiento de voz del navegador: coloca el texto donde vas leyendo.
-export function useSpeechFollow({ active, lang, getIndex, onMatch }) {
+export function useSpeechFollow({ active, lang, getIndex, onMatch, track }) {
   const [state, setState] = useState({ listening: false, error: '', heard: '' });
   const cursorRef = useRef(0);
   const callbacks = useRef({});
   callbacks.current = { getIndex, onMatch };
+  const trackRef = useRef(null);
+  trackRef.current = track || null;
 
   useEffect(() => {
     if (!active || !speechRecognitionSupported()) return undefined;
@@ -154,8 +156,14 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch }) {
         if (!stopped) restartTimer = setTimeout(begin, 250);
       };
       try {
-        rec.start();
-      } catch {
+        // Con una pista de audio el reconocimiento escucha ese mismo micrófono (si el navegador lo admite)
+        const t = trackRef.current;
+        if (t) {
+          recLog.add('voz: start(pista de audio)');
+          rec.start(t);
+        } else rec.start();
+      } catch (err) {
+        recLog.add(`voz: start falló ${err?.name} ${err?.message}`);
         restartTimer = setTimeout(begin, 500);
       }
     };

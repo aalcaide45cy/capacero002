@@ -57,6 +57,7 @@ export const DEFAULT_SETTINGS = {
   voiceLookahead: 2,
   voiceAlign: 'linea',
   voiceFollowWhileRecording: false,
+  voiceUseTrack: false,
   voicePace: true,
   voicePaceFactor: 1,
   pauseOnMarkers: true,

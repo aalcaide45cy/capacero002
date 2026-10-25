@@ -293,10 +293,21 @@ function MicTest({ settings, update, recording }) {
 function VoiceTest() {
   const [state, setState] = useState({ running: false, heard: '', error: '', started: false });
 
-  const run = () => {
+  const run = async (useTrack = false) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     unlockAudio();
+    let micStream = null;
+    let track = null;
+    if (useTrack) {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        track = micStream.getAudioTracks()[0];
+      } catch (err) {
+        setState({ running: false, heard: '', error: err?.name === 'NotAllowedError' ? 'not-allowed' : String(err?.name || err), started: false });
+        return;
+      }
+    }
     setState({ running: true, heard: '', error: '', started: false });
     const rec = new SR();
     rec.lang = 'es-ES';
@@ -311,9 +322,13 @@ function VoiceTest() {
       setState(s => ({ ...s, heard: t.trim() }));
     };
     rec.onerror = e => setState(s => ({ ...s, error: e.error }));
-    rec.onend = () => setState(s => ({ ...s, running: false, error: s.error || (got ? '' : s.started ? 'no-speech' : 'cerrado-al-instante') }));
+    rec.onend = () => {
+      micStream?.getTracks().forEach(t => t.stop());
+      setState(s => ({ ...s, running: false, error: s.error || (got ? '' : s.started ? 'no-speech' : 'cerrado-al-instante') }));
+    };
     try {
-      rec.start();
+      if (track) rec.start(track);
+      else rec.start();
     } catch (err) {
       setState({ running: false, heard: '', error: String(err?.name || err), started: false });
     }
@@ -336,9 +351,16 @@ function VoiceTest() {
         Reconocimiento de voz: {supported ? 'el navegador lo tiene' : 'este navegador NO lo tiene (usa Safari o Chrome)'} ·{' '}
         {isStandalone() ? 'abierto como app instalada' : 'abierto en el navegador'} · {isChromeIOS() ? 'Chrome en iPhone' : isIOS() ? 'Safari en iPhone' : 'ordenador/Android'}.
       </p>
-      <button type="button" className="tp-btn" onClick={run} disabled={!supported || state.running} style={{ marginBottom: 8 }}>
+      <button type="button" className="tp-btn" onClick={() => run(false)} disabled={!supported || state.running} style={{ marginBottom: 8 }}>
         {state.running ? 'Escuchando 7 s… di una frase' : 'Probar el reconocimiento de voz'}
       </button>
+      <button type="button" className="tp-btn" onClick={() => run(true)} disabled={!supported || state.running} style={{ marginBottom: 8 }}>
+        Probar sobre la pista del micrófono (experimental)
+      </button>
+      <p className="tp-hint">
+        La segunda prueba abre tu micrófono y se lo da al reconocimiento. Si funciona en tu navegador, el reconocimiento y la
+        grabación podrían compartir el micrófono.
+      </p>
       {state.heard && <p className="tp-hint">He oído: «{state.heard}» ✓</p>}
       {state.error && (
         <p className={state.error === 'no-speech' ? 'tp-hint' : 'tp-error'}>
@@ -797,6 +819,13 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
                 Funciona mientras grabas.
               </p>
             </>
+          )}
+          {settings.voiceMode === 'follow' && (
+            <Toggle
+              label="Dar al reconocimiento la pista del micrófono (experimental)"
+              checked={settings.voiceUseTrack}
+              onChange={v => update({ voiceUseTrack: v })}
+            />
           )}
           {settings.voiceMode === 'follow' && (
             <Toggle

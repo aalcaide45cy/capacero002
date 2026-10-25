@@ -240,6 +240,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const follow = useSpeechFollow({
     active: wantsFollow && playing,
     lang: settings.voiceLang,
+    track: settings.voiceUseTrack ? camera.micTrack : null,
     getIndex: () => indexRef.current,
     onMatch: (found, index) => {
       const s = settingsRef.current;
