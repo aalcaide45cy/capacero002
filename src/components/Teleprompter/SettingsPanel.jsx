@@ -185,6 +185,12 @@ function CameraSection({ settings, update, camera, recording }) {
             onChange={v => update({ cameraDim: v })}
           />
           <Select label="Micrófono" value={settings.micId} disabled={recording} options={micOptions} onChange={v => update({ micId: v })} />
+          {stream && !audioTrack && (
+            <p className="tp-error">
+              No llega audio. Comprueba el permiso del micrófono en los ajustes de Safari para esta web y vuelve a
+              encender la cámara.
+            </p>
+          )}
           {audioTrack && (
             <>
               <MicMeter stream={stream} />
@@ -251,6 +257,25 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
             options={[{ value: 'none', label: 'Ninguna' }, { value: 'line', label: 'Flechas' }, { value: 'band', label: 'Franja' }]}
           />
           <Toggle label="Atenuar el texto ya leído" checked={settings.fadeRead} onChange={v => update({ fadeRead: v })} />
+        </section>
+
+        <section className="tp-panel-section">
+          <h3>Barra de herramientas</h3>
+          <Toggle label="Fijar la barra (no se oculta)" checked={settings.controlsPinned} onChange={v => update({ controlsPinned: v })} />
+          <Range
+            label="Ocultar tras"
+            value={settings.controlsHideDelay}
+            min={1}
+            max={15}
+            format={v => `${v} s`}
+            onChange={v => update({ controlsHideDelay: v })}
+          />
+          <Toggle
+            label="Con la barra oculta, el primer toque solo la muestra"
+            checked={settings.tapWakesControls}
+            onChange={v => update({ tapWakesControls: v })}
+          />
+          <p className="tp-hint">Así no pausas sin querer: toca una vez para ver la barra y otra para pausar o reanudar.</p>
         </section>
 
         <section className="tp-panel-section">

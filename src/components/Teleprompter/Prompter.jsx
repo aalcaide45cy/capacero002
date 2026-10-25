@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, ChevronUp, ChevronDown,
   FlipHorizontal2, Settings2, Camera, CameraOff, Circle, Square, Maximize, Minimize,
-  Download, Share2, Trash2,
+  Download, Share2, Trash2, Pin, PinOff,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
@@ -137,6 +137,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   const [progress, setProgress] = useState({ pos: 0, max: 1 });
   const [panelOpen, setPanelOpen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsVisibleRef = useRef(true);
+  controlsVisibleRef.current = controlsVisible;
   const [now, setNow] = useState(Date.now());
 
   const lineH = settings.fontSize * settings.lineHeight;
@@ -379,14 +381,14 @@ export default function Prompter({ script, settings, update, onExit }) {
 
   // Controles que se ocultan solos mientras se lee
   useEffect(() => {
-    if (!playing || panelOpen) {
+    if (!playing || panelOpen || settings.controlsPinned) {
       setControlsVisible(true);
       return undefined;
     }
     if (!controlsVisible) return undefined;
-    const id = setTimeout(() => setControlsVisible(false), 2500);
+    const id = setTimeout(() => setControlsVisible(false), settings.controlsHideDelay * 1000);
     return () => clearTimeout(id);
-  }, [playing, panelOpen, controlsVisible]);
+  }, [playing, panelOpen, controlsVisible, settings.controlsPinned, settings.controlsHideDelay]);
 
   // Reloj de la grabación
   useEffect(() => {
@@ -419,6 +421,11 @@ export default function Prompter({ script, settings, update, onExit }) {
     const drag = dragRef.current;
     dragRef.current = null;
     if (drag && !drag.moved) {
+      // Con la barra oculta, el primer toque solo la muestra; el segundo pausa o reanuda
+      if (!controlsVisibleRef.current && settingsRef.current.tapWakesControls) {
+        setControlsVisible(true);
+        return;
+      }
       setControlsVisible(true);
       togglePlay();
     }
@@ -582,6 +589,16 @@ export default function Prompter({ script, settings, update, onExit }) {
               {fullscreen.active ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
           )}
+          <button
+            type="button"
+            className={`tp-ctrl${settings.controlsPinned ? ' is-on' : ''}`}
+            onClick={() => update({ controlsPinned: !settings.controlsPinned })}
+            aria-label={settings.controlsPinned ? 'Soltar la barra de herramientas' : 'Fijar la barra de herramientas'}
+            aria-pressed={settings.controlsPinned}
+            title={settings.controlsPinned ? 'Barra fija (pulsa para que se oculte sola)' : 'Fijar la barra para que no se oculte'}
+          >
+            {settings.controlsPinned ? <Pin size={20} /> : <PinOff size={20} />}
+          </button>
           <button type="button" className={`tp-ctrl${panelOpen ? ' is-on' : ''}`} onClick={() => setPanelOpen(o => !o)} aria-label="Ajustes" title="Ajustes">
             <Settings2 size={20} />
           </button>
