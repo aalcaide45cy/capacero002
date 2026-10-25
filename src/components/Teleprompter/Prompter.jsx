@@ -1,0 +1,573 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, ChevronUp, ChevronDown,
+  FlipHorizontal2, Settings2, Camera, CameraOff, Circle, Square, Maximize, Minimize,
+  Download, Share2, Trash2,
+} from 'lucide-react';
+import ScriptView from './ScriptView';
+import SettingsPanel, { MicMeter } from './SettingsPanel';
+import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
+import { loadPosition, savePosition } from './storage';
+
+const FONT_STACKS = {
+  sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+  serif: "Georgia, 'Times New Roman', serif",
+  mono: "'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+};
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+function formatTime(seconds) {
+  if (!isFinite(seconds) || seconds < 0) seconds = 0;
+  const s = Math.round(seconds);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function isTypingTarget(el) {
+  return el && (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+}
+
+// Mantiene la pantalla encendida mientras se lee (Screen Wake Lock API)
+function useWakeLock() {
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return undefined;
+    let lock = null;
+    let released = false;
+    const request = async () => {
+      try {
+        lock = await navigator.wakeLock.request('screen');
+      } catch {
+        // Sin soporte o batería baja: no es crítico
+      }
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && !released) request();
+    };
+    request();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      lock?.release().catch(() => {});
+    };
+  }, []);
+}
+
+function useFullscreen() {
+  const el = typeof document !== 'undefined' ? document.documentElement : null;
+  const supported = !!(el && (el.requestFullscreen || el.webkitRequestFullscreen));
+  const [active, setActive] = useState(false);
+  useEffect(() => {
+    const onChange = () => setActive(!!(document.fullscreenElement || document.webkitFullscreenElement));
+    document.addEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('webkitfullscreenchange', onChange);
+    };
+  }, []);
+  const toggle = useCallback(() => {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+    } else {
+      (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el)?.catch?.(() => {});
+    }
+  }, [el]);
+  return { supported, active, toggle };
+}
+
+function RecordingResult({ result, onDiscard }) {
+  const file = useMemo(() => new File([result.blob], result.name, { type: result.type }), [result]);
+  const canShare = typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] });
+
+  const share = async () => {
+    try {
+      await navigator.share({ files: [file], title: 'Grabación del teleprompter' });
+    } catch {
+      // El usuario canceló el menú de compartir
+    }
+  };
+
+  return (
+    <div className="tp-modal-backdrop">
+      <div className="tp-modal tp-result" role="dialog" aria-label="Grabación terminada">
+        <h2>Grabación terminada</h2>
+        <video src={result.url} controls playsInline className="tp-result-video" />
+        <p className="tp-hint">
+          {(result.blob.size / 1048576).toFixed(1)} MB · {result.type.split(';')[0]}. El vídeo solo está en este
+          dispositivo: guárdalo antes de salir.
+        </p>
+        <div className="tp-modal-actions">
+          {canShare && (
+            <button type="button" className="tp-btn tp-btn-primary" onClick={share}>
+              <Share2 size={18} /> Guardar en Fotos / Compartir
+            </button>
+          )}
+          <a className={`tp-btn${canShare ? '' : ' tp-btn-primary'}`} href={result.url} download={result.name}>
+            <Download size={18} /> Descargar
+          </a>
+          <button
+            type="button"
+            className="tp-btn tp-btn-danger"
+            onClick={() => {
+              if (window.confirm('¿Descartar esta grabación? No se puede recuperar.')) onDiscard();
+            }}
+          >
+            <Trash2 size={18} /> Descartar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Prompter({ script, settings, update, onExit }) {
+  const stageRef = useRef(null);
+  const contentRef = useRef(null);
+  const videoRef = useRef(null);
+  const posRef = useRef(loadPosition(script.text.length));
+  const playingRef = useRef(false);
+  const metricsRef = useRef({ stageH: 0, contentH: 0 });
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+
+  const [playing, setPlayingState] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [progress, setProgress] = useState({ pos: 0, max: 1 });
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [now, setNow] = useState(Date.now());
+
+  const lineH = settings.fontSize * settings.lineHeight;
+  const pxPerSec = (settings.speed / 10) * settings.fontSize;
+  const speedRef = useRef(pxPerSec);
+  speedRef.current = pxPerSec;
+
+  const camera = useCamera(settings, settings.cameraOn);
+  const recorder = useRecorder(camera.stream, (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate);
+  const fullscreen = useFullscreen();
+  useWakeLock();
+
+  const maxPos = () => {
+    const s = settingsRef.current;
+    return Math.max(0, metricsRef.current.contentH - s.fontSize * s.lineHeight);
+  };
+
+  const setPlaying = useCallback(value => {
+    playingRef.current = value;
+    setPlayingState(value);
+    if (!value) savePosition(posRef.current, script.text.length);
+  }, [script.text.length]);
+
+  // ── Motor de desplazamiento: requestAnimationFrame + transform (sin re-render por fotograma) ──
+  useEffect(() => {
+    let raf;
+    let last = performance.now();
+    let lastUi = 0;
+    const tick = t => {
+      const dt = Math.min(0.1, (t - last) / 1000);
+      last = t;
+      const { stageH, contentH } = metricsRef.current;
+      const s = settingsRef.current;
+      const lh = s.fontSize * s.lineHeight;
+      const max = Math.max(0, contentH - lh);
+      if (playingRef.current) {
+        posRef.current += speedRef.current * dt;
+        if (posRef.current >= max) {
+          posRef.current = max;
+          setPlaying(false);
+        }
+      }
+      posRef.current = clamp(posRef.current, 0, max);
+      if (contentRef.current) {
+        const guideY = (stageH * s.guidePos) / 100;
+        contentRef.current.style.transform = `translate3d(0, ${guideY - lh / 2 - posRef.current}px, 0)`;
+      }
+      if (t - lastUi > 250) {
+        lastUi = t;
+        setProgress(prev => (Math.abs(prev.pos - posRef.current) < 1 && prev.max === max ? prev : { pos: posRef.current, max }));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [setPlaying]);
+
+  // Medidas del escenario y del texto
+  useEffect(() => {
+    const measure = () => {
+      metricsRef.current = {
+        stageH: stageRef.current?.clientHeight || 0,
+        contentH: contentRef.current?.scrollHeight || 0,
+      };
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (stageRef.current) ro.observe(stageRef.current);
+    if (contentRef.current) ro.observe(contentRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Guardar posición al salir
+  useEffect(() => () => savePosition(posRef.current, script.text.length), [script.text.length]);
+
+  // Vídeo de la cámara
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = camera.stream || null;
+  }, [camera.stream]);
+
+  // ── Cuenta atrás y reproducción ──
+  useEffect(() => {
+    if (countdown <= 0) return undefined;
+    const id = setTimeout(() => {
+      if (countdown === 1) {
+        setCountdown(0);
+        setPlaying(true);
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [countdown, setPlaying]);
+
+  const start = useCallback(() => {
+    if (posRef.current >= maxPos() - 1) posRef.current = 0;
+    const secs = settingsRef.current.countdown;
+    if (secs > 0) setCountdown(secs);
+    else setPlaying(true);
+  }, [setPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const togglePlay = useCallback(() => {
+    if (countdown > 0) {
+      setCountdown(0);
+      return;
+    }
+    if (playingRef.current) setPlaying(false);
+    else start();
+  }, [countdown, setPlaying, start]);
+
+  const restart = useCallback(() => {
+    setCountdown(0);
+    setPlaying(false);
+    posRef.current = 0;
+  }, [setPlaying]);
+
+  const changeSpeed = useCallback(delta => update({ speed: clamp(settingsRef.current.speed + delta, 1, 40) }), [update]);
+  const changeFont = useCallback(delta => update({ fontSize: clamp(settingsRef.current.fontSize + delta, 18, 160) }), [update]);
+
+  // Saltos entre secciones (títulos y separadores del guion)
+  const jumpSection = useCallback(dir => {
+    const content = contentRef.current;
+    if (!content) return;
+    const tops = Array.from(content.querySelectorAll('h1, h2, h3, hr')).map(el => el.offsetTop);
+    const s = settingsRef.current;
+    const slack = (s.fontSize * s.lineHeight) / 2;
+    const pos = posRef.current;
+    if (dir > 0) {
+      const next = tops.find(t => t > pos + slack);
+      posRef.current = next ?? maxPos();
+    } else {
+      const prev = tops.filter(t => t < pos - slack).pop();
+      posRef.current = prev ?? 0;
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startRecording = useCallback(() => {
+    if (recorder.start()) {
+      setPanelOpen(false);
+      start();
+    }
+  }, [recorder, start]);
+
+  const stopRecording = useCallback(() => {
+    recorder.stop();
+    setCountdown(0);
+    setPlaying(false);
+  }, [recorder, setPlaying]);
+
+  const exit = useCallback(() => {
+    if (recorder.recording && !window.confirm('Se está grabando. ¿Parar la grabación y salir?')) return;
+    if (recorder.result && !window.confirm('Tienes una grabación sin guardar. ¿Salir y descartarla?')) return;
+    recorder.discard();
+    recorder.stop();
+    setPlaying(false);
+    if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    onExit();
+  }, [recorder, setPlaying, onExit]);
+
+  // ── Teclado (también pedales y mandos Bluetooth, que envían teclas) ──
+  useEffect(() => {
+    const onKey = e => {
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+      switch (e.key) {
+        case ' ':
+        case 'Enter':
+        case 'k':
+          togglePlay();
+          break;
+        case 'ArrowDown':
+        case 'ArrowRight':
+          changeSpeed(1);
+          break;
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          changeSpeed(-1);
+          break;
+        case 'PageDown':
+          jumpSection(1);
+          break;
+        case 'PageUp':
+          jumpSection(-1);
+          break;
+        case 'Home':
+          restart();
+          break;
+        case '+':
+        case '=':
+          changeFont(4);
+          break;
+        case '-':
+        case '_':
+          changeFont(-4);
+          break;
+        case 'm':
+          update({ mirrorH: !settingsRef.current.mirrorH });
+          break;
+        case 'Escape':
+          if (panelOpen) setPanelOpen(false);
+          else if (!document.fullscreenElement) exit();
+          return;
+        default:
+          return;
+      }
+      e.preventDefault();
+      setControlsVisible(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [togglePlay, changeSpeed, jumpSection, restart, changeFont, update, exit, panelOpen]);
+
+  // Controles que se ocultan solos mientras se lee
+  useEffect(() => {
+    if (!playing || panelOpen) {
+      setControlsVisible(true);
+      return undefined;
+    }
+    if (!controlsVisible) return undefined;
+    const id = setTimeout(() => setControlsVisible(false), 2500);
+    return () => clearTimeout(id);
+  }, [playing, panelOpen, controlsVisible]);
+
+  // Reloj de la grabación
+  useEffect(() => {
+    if (!recorder.recording) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [recorder.recording]);
+
+  // ── Arrastre y rueda para mover el texto a mano; un toque pausa o reanuda ──
+  const dragRef = useRef(null);
+  const onPointerDown = e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragRef.current = { y: e.clientY, startPos: posRef.current, moved: false };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = e => {
+    const drag = dragRef.current;
+    if (!drag) {
+      if (e.pointerType === 'mouse') setControlsVisible(true);
+      return;
+    }
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dy) > 6) drag.moved = true;
+    if (drag.moved) {
+      const sign = settingsRef.current.mirrorV ? -1 : 1;
+      posRef.current = clamp(drag.startPos - dy * sign, 0, maxPos());
+    }
+  };
+  const onPointerUp = () => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (drag && !drag.moved) {
+      setControlsVisible(true);
+      togglePlay();
+    }
+  };
+  const onWheel = e => {
+    const sign = settingsRef.current.mirrorV ? -1 : 1;
+    posRef.current = clamp(posRef.current + e.deltaY * sign, 0, maxPos());
+  };
+
+  const remaining = (progress.max - progress.pos) / pxPerSec;
+  const pct = progress.max > 0 ? (progress.pos / progress.max) * 100 : 0;
+  const guideTop = `calc(${settings.guidePos}% - ${lineH / 2}px)`;
+  const cameraActive = settings.cameraOn && !!camera.stream;
+
+  const stageStyle = {
+    '--tp-text': settings.textColor,
+    backgroundColor: cameraActive ? 'transparent' : settings.bgColor,
+  };
+  const mirrorStyle = {
+    transform: `scale(${settings.mirrorH ? -1 : 1}, ${settings.mirrorV ? -1 : 1})`,
+  };
+  if (settings.fadeRead) {
+    const g = `${settings.guidePos}%`;
+    const mask = `linear-gradient(to bottom, rgba(0,0,0,.28) 0, rgba(0,0,0,.28) calc(${g} - ${lineH * 1.2}px), #000 calc(${g} - ${lineH * 0.5}px), #000 100%)`;
+    mirrorStyle.WebkitMaskImage = mask;
+    mirrorStyle.maskImage = mask;
+  }
+  const contentStyle = {
+    width: `${settings.width}%`,
+    fontSize: `${settings.fontSize}px`,
+    lineHeight: settings.lineHeight,
+    fontFamily: FONT_STACKS[settings.fontFamily] || FONT_STACKS.sans,
+    textAlign: settings.align,
+    color: settings.textColor,
+    textTransform: settings.uppercase ? 'uppercase' : 'none',
+    textShadow: settings.textShadow ? '0 2px 4px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.6)' : 'none',
+  };
+
+  return (
+    <div className={`tp-prompter${controlsVisible ? '' : ' is-idle'}`} style={stageStyle}>
+      {settings.cameraOn && (
+        <div className="tp-camera">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{ transform: settings.cameraMirror ? 'scaleX(-1)' : 'none' }}
+          />
+          <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
+        </div>
+      )}
+
+      <div
+        className="tp-stage"
+        ref={stageRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => { dragRef.current = null; }}
+        onWheel={onWheel}
+      >
+        <div className="tp-mirror" style={mirrorStyle}>
+          <div className="tp-content" ref={contentRef} style={contentStyle}>
+            <ScriptView text={script.text} format={script.format} />
+            <div className="tp-end">— Fin —</div>
+          </div>
+          {settings.guideStyle === 'band' && <div className="tp-guide-band" style={{ top: guideTop, height: lineH }} />}
+          {settings.guideStyle === 'line' && (
+            <div className="tp-guide-arrows" style={{ top: guideTop, height: lineH }}>
+              <span className="tp-arrow-left" />
+              <span className="tp-arrow-right" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="tp-progress" aria-hidden="true">
+        <div className="tp-progress-bar" style={{ width: `${pct}%` }} />
+      </div>
+
+      {countdown > 0 && <div className="tp-countdown" aria-live="assertive">{countdown}</div>}
+
+      {recorder.recording && (
+        <div className="tp-rec-badge" aria-live="polite">
+          <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}
+          {camera.stream && <MicMeter stream={camera.stream} />}
+        </div>
+      )}
+
+      {camera.error && settings.cameraOn && !panelOpen && <div className="tp-toast">{camera.error}</div>}
+
+      <div className="tp-controls" role="toolbar" aria-label="Controles del teleprompter">
+        <div className="tp-controls-group">
+          <button type="button" className="tp-ctrl" onClick={exit} aria-label="Volver al editor" title="Volver al editor (Esc)">
+            <ArrowLeft size={22} />
+          </button>
+          <button type="button" className="tp-ctrl" onClick={restart} aria-label="Volver al inicio" title="Al inicio (Inicio)">
+            <RotateCcw size={20} />
+          </button>
+          <button type="button" className="tp-ctrl" onClick={() => jumpSection(-1)} aria-label="Sección anterior" title="Sección anterior (RePág)">
+            <ChevronUp size={22} />
+          </button>
+          <button type="button" className="tp-ctrl tp-ctrl-play" onClick={togglePlay} aria-label={playing ? 'Pausar' : 'Reproducir'} title="Reproducir / pausar (espacio)">
+            {playing || countdown > 0 ? <Pause size={28} /> : <Play size={28} />}
+          </button>
+          <button type="button" className="tp-ctrl" onClick={() => jumpSection(1)} aria-label="Sección siguiente" title="Sección siguiente (AvPág)">
+            <ChevronDown size={22} />
+          </button>
+        </div>
+
+        <div className="tp-controls-group">
+          <div className="tp-stepper" title="Velocidad (flechas arriba y abajo)">
+            <button type="button" className="tp-ctrl" onClick={() => changeSpeed(-1)} aria-label="Más lento"><Minus size={18} /></button>
+            <span className="tp-stepper-value"><small>Vel.</small>{settings.speed}</span>
+            <button type="button" className="tp-ctrl" onClick={() => changeSpeed(1)} aria-label="Más rápido"><Plus size={18} /></button>
+          </div>
+          <div className="tp-stepper" title="Tamaño de letra (+ y −)">
+            <button type="button" className="tp-ctrl" onClick={() => changeFont(-4)} aria-label="Letra más pequeña"><Minus size={18} /></button>
+            <span className="tp-stepper-value"><small>Letra</small>{settings.fontSize}</span>
+            <button type="button" className="tp-ctrl" onClick={() => changeFont(4)} aria-label="Letra más grande"><Plus size={18} /></button>
+          </div>
+          <span className="tp-time" title="Tiempo restante a esta velocidad">−{formatTime(remaining)}</span>
+        </div>
+
+        <div className="tp-controls-group">
+          <button
+            type="button"
+            className={`tp-ctrl${settings.mirrorH ? ' is-on' : ''}`}
+            onClick={() => update({ mirrorH: !settings.mirrorH })}
+            aria-label="Espejo horizontal"
+            title="Espejo (M)"
+          >
+            <FlipHorizontal2 size={20} />
+          </button>
+          {hasMediaDevices() && (
+            <button
+              type="button"
+              className={`tp-ctrl${settings.cameraOn ? ' is-on' : ''}`}
+              onClick={() => !recorder.recording && update({ cameraOn: !settings.cameraOn })}
+              aria-label={settings.cameraOn ? 'Apagar cámara' : 'Encender cámara'}
+              title="Cámara"
+            >
+              {settings.cameraOn ? <Camera size={20} /> : <CameraOff size={20} />}
+            </button>
+          )}
+          {cameraActive && recorder.supported && (
+            recorder.recording ? (
+              <button type="button" className="tp-ctrl tp-ctrl-rec is-recording" onClick={stopRecording} aria-label="Parar grabación" title="Parar grabación">
+                <Square size={18} fill="currentColor" />
+              </button>
+            ) : (
+              <button type="button" className="tp-ctrl tp-ctrl-rec" onClick={startRecording} aria-label="Grabar" title="Grabar (empieza la cuenta atrás)">
+                <Circle size={20} fill="currentColor" />
+              </button>
+            )
+          )}
+          {fullscreen.supported && (
+            <button type="button" className="tp-ctrl" onClick={fullscreen.toggle} aria-label="Pantalla completa" title="Pantalla completa">
+              {fullscreen.active ? <Minimize size={20} /> : <Maximize size={20} />}
+            </button>
+          )}
+          <button type="button" className={`tp-ctrl${panelOpen ? ' is-on' : ''}`} onClick={() => setPanelOpen(o => !o)} aria-label="Ajustes" title="Ajustes">
+            <Settings2 size={20} />
+          </button>
+        </div>
+      </div>
+
+      {panelOpen && (
+        <SettingsPanel
+          settings={settings}
+          update={update}
+          onClose={() => setPanelOpen(false)}
+          camera={hasMediaDevices() ? camera : null}
+          recording={recorder.recording}
+        />
+      )}
+
+      {recorder.result && <RecordingResult result={recorder.result} onDiscard={recorder.discard} />}
+    </div>
+  );
+}

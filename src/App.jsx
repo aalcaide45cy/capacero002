@@ -7,6 +7,7 @@ const Header = lazy(() => import('./components/Header'));
 const PrivacyCookies = lazy(() => import('./components/PrivacyCookies'));
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
+const LazyTeleprompter = lazy(() => import('./components/Teleprompter/TeleprompterEntry'));
 const V4VideoPage = lazy(() => import('./components/V4/V4VideoPage'));
 
 function RouteLoadingFallback() {
@@ -52,6 +53,15 @@ function App() {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
                 <LazyEditor />
+            </Suspense>
+        );
+    }
+
+    // 4b. Intercepción de ruta para el Teleprompter (herramienta oculta, todo en localStorage)
+    if (currentPath === '/tp' || currentPath === '/tp/') {
+        return (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <LazyTeleprompter />
             </Suspense>
         );
     }

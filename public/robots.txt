@@ -3,6 +3,7 @@ User-agent: *
 Allow: /
 Disallow: /estadisticas
 Disallow: /editor
+Disallow: /tp
 
 User-agent: Googlebot
 Allow: /

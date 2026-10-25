@@ -1,0 +1,35 @@
+{
+  "name": "Teleprompter · Capa Cero 3D",
+  "short_name": "Teleprompter",
+  "description": "Teleprompter para leer guiones y grabarte a la vez. Todo se guarda solo en tu dispositivo.",
+  "id": "/tp",
+  "start_url": "/tp",
+  "scope": "/tp",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "es-ES",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
