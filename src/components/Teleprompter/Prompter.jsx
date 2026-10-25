@@ -9,6 +9,7 @@ import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
+import { unlockAudio } from './audioCtx';
 import { saveRecording, deleteRecording } from './recStore';
 import { loadPosition, savePosition } from './storage';
 
@@ -494,6 +495,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   // Se cierra el panel (y su medidor de audio) antes de grabar: en iPhone, tener Web Audio
   // escuchando el micrófono a la vez que MediaRecorder puede dejar el vídeo sin sonido
   const startRecording = useCallback(() => {
+    unlockAudio();
     setPanelOpen(false);
     setTimeout(() => {
       const s = settingsRef.current;
@@ -788,7 +790,10 @@ export default function Prompter({ script, settings, update, onExit }) {
             <button
               type="button"
               className={`tp-ctrl${settings.cameraOn ? ' is-on' : ''}`}
-              onClick={() => !recorder.recording && update({ cameraOn: !settings.cameraOn })}
+              onClick={() => {
+                unlockAudio();
+                if (!recorder.recording) update({ cameraOn: !settings.cameraOn });
+              }}
               aria-label={settings.cameraOn ? 'Apagar cámara' : 'Encender cámara'}
               title="Cámara"
             >

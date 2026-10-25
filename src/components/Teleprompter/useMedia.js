@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { recLog, describeTrack } from './recLog';
+import { getAudioContext } from './audioCtx';
 
 export const RESOLUTIONS = {
   '720': { label: '720p', width: 1280, height: 720, bitrate: 5_000_000 },
@@ -57,10 +58,9 @@ const dbToGain = db => 10 ** (db / 20);
 
 // Ganancia de entrada por software (con limitador para no saturar). Solo se crea si la ganancia > 0 dB.
 function createGainPipeline(rawTrack, gainDb) {
-  const Ctx = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
-  if (!Ctx || !rawTrack) return null;
+  const ctx = getAudioContext();
+  if (!ctx || !rawTrack) return null;
   try {
-    const ctx = new Ctx();
     const source = ctx.createMediaStreamSource(new MediaStream([rawTrack]));
     const gain = ctx.createGain();
     gain.gain.value = dbToGain(gainDb);
@@ -75,7 +75,7 @@ function createGainPipeline(rawTrack, gainDb) {
     gain.connect(limiter);
     limiter.connect(dest);
     ctx.resume?.().catch(() => {});
-    ctx.onstatechange = () => recLog.add(`ganancia: AudioContext estado=${ctx.state}`);
+    recLog.add(`ganancia: pipeline creado, AudioContext estado=${ctx.state} ${ctx.sampleRate}Hz, +${gainDb} dB`);
     return {
       track: dest.stream.getAudioTracks()[0],
       setGain(db) {
@@ -84,11 +84,11 @@ function createGainPipeline(rawTrack, gainDb) {
       close() {
         try {
           source.disconnect();
+          gain.disconnect();
           limiter.disconnect();
         } catch {
           // ya desconectado
         }
-        ctx.close().catch(() => {});
       },
     };
   } catch {

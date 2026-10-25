@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { RESOLUTIONS } from './useMedia';
 import { recLog } from './recLog';
+import { getAudioContext, unlockAudio } from './audioCtx';
 
 function Range({ label, value, min, max, step = 1, onChange, format }) {
   return (
@@ -72,9 +73,8 @@ export function MicMeter({ stream }) {
   const barRef = useRef(null);
   useEffect(() => {
     const track = stream?.getAudioTracks()[0];
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!track || !Ctx) return undefined;
-    const ctx = new Ctx();
+    const ctx = getAudioContext();
+    if (!track || !ctx) return undefined;
     const source = ctx.createMediaStreamSource(new MediaStream([track]));
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
@@ -103,7 +103,7 @@ export function MicMeter({ stream }) {
     return () => {
       cancelAnimationFrame(raf);
       source.disconnect();
-      ctx.close().catch(() => {});
+      analyser.disconnect();
     };
   }, [stream]);
 
@@ -123,16 +123,14 @@ function AutoGain({ micTrack, update, disabled }) {
   const [busy, setBusy] = useState(false);
 
   const run = async () => {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!micTrack || !Ctx || busy) return;
+    const ctx = unlockAudio();
+    if (!micTrack || !ctx || busy) return;
     setBusy(true);
     setMsg('Habla con normalidad durante 6 segundos…');
-    const ctx = new Ctx();
     const source = ctx.createMediaStreamSource(new MediaStream([micTrack]));
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 2048;
     source.connect(analyser);
-    ctx.resume?.().catch(() => {});
     const data = new Float32Array(analyser.fftSize);
     let peak = 0;
     const id = setInterval(() => {
@@ -142,7 +140,7 @@ function AutoGain({ micTrack, update, disabled }) {
     await new Promise(r => setTimeout(r, 6000));
     clearInterval(id);
     source.disconnect();
-    ctx.close().catch(() => {});
+    analyser.disconnect();
     const peakDb = peak > 0 ? 20 * Math.log10(peak) : -100;
     if (peakDb < -60) {
       setMsg('No se ha oído nada. Comprueba que el micrófono está encendido y habla más cerca.');
@@ -161,6 +159,148 @@ function AutoGain({ micTrack, update, disabled }) {
       </button>
       {msg && <p className="tp-hint">{msg}</p>}
     </>
+  );
+}
+
+const MIC_MODES = [
+  { name: 'Todo apagado', c: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+  { name: 'Solo eco', c: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } },
+  { name: 'Solo ruido', c: { echoCancellation: false, noiseSuppression: true, autoGainControl: false } },
+  { name: 'Solo ganancia auto.', c: { echoCancellation: false, noiseSuppression: false, autoGainControl: true } },
+  { name: 'Todo activado', c: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } },
+];
+
+const percentile = (arr, p) => {
+  const sorted = [...arr].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+};
+
+// Mide, con cada combinación de ajustes de voz, cuánto suena tu voz y cuánto ruido de fondo hay
+function MicTest({ settings, update, recording }) {
+  const [rows, setRows] = useState([]);
+  const [status, setStatus] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const run = async () => {
+    const ctx = unlockAudio();
+    if (!ctx || busy) return;
+    setBusy(true);
+    setRows([]);
+    const cameraWasOn = settings.cameraOn;
+    // iOS no admite capturar con y sin cancelación de eco a la vez: se apaga la cámara durante la prueba
+    if (cameraWasOn) {
+      update({ cameraOn: false });
+      await new Promise(r => setTimeout(r, 700));
+    }
+    const out = [];
+    for (let i = 0; i < MIC_MODES.length; i++) {
+      const mode = MIC_MODES[i];
+      setStatus(`Prueba ${i + 1} de ${MIC_MODES.length} («${mode.name}»): lee una frase y haz pausas de un segundo durante 6 s…`);
+      let stream;
+      try {
+        const audio = { ...mode.c };
+        if (settings.micId && settings.micId !== 'default') audio.deviceId = { exact: settings.micId };
+        if (settings.audioChannels > 0) audio.channelCount = { ideal: settings.audioChannels };
+        stream = await navigator.mediaDevices.getUserMedia({ audio });
+      } catch (err) {
+        setStatus(`No se pudo abrir el micrófono: ${err?.name || err}`);
+        break;
+      }
+      const track = stream.getAudioTracks()[0];
+      const source = ctx.createMediaStreamSource(new MediaStream([track]));
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 4096;
+      source.connect(analyser);
+      const data = new Float32Array(analyser.fftSize);
+      const windows = [];
+      let peak = 0;
+      const t0 = Date.now();
+      await new Promise(resolve => {
+        const id = setInterval(() => {
+          analyser.getFloatTimeDomainData(data);
+          let sum = 0;
+          for (let k = 0; k < data.length; k++) {
+            sum += data[k] * data[k];
+            peak = Math.max(peak, Math.abs(data[k]));
+          }
+          // La primera décima de segundo se descarta: el sistema aún está ajustando el micrófono
+          if (Date.now() - t0 > 700) windows.push(20 * Math.log10(Math.sqrt(sum / data.length) || 1e-6));
+          if (Date.now() - t0 > 6000) {
+            clearInterval(id);
+            resolve();
+          }
+        }, 100);
+      });
+      source.disconnect();
+      analyser.disconnect();
+      const s = track.getSettings?.() || {};
+      stream.getTracks().forEach(t => t.stop());
+      const voice = percentile(windows, 0.9);
+      const noise = percentile(windows, 0.1);
+      out.push({
+        name: mode.name,
+        voice: Math.round(voice),
+        noise: Math.round(noise),
+        diff: Math.round(voice - noise),
+        peak: Math.round(20 * Math.log10(peak || 1e-6)),
+        applied: `eco ${s.echoCancellation} · ruido ${s.noiseSuppression} · ganancia ${s.autoGainControl}`,
+      });
+      setRows([...out]);
+      await new Promise(r => setTimeout(r, 400));
+    }
+    if (cameraWasOn) update({ cameraOn: true });
+    setStatus(out.length ? 'Listo. Interpreta la tabla debajo.' : status);
+    recLog.add(`prueba de micrófono: ${JSON.stringify(out)}`);
+    setBusy(false);
+  };
+
+  const best = rows.length ? [...rows].sort((a, b) => b.diff - a.diff)[0] : null;
+  const loudest = rows.length ? [...rows].sort((a, b) => b.voice - a.voice)[0] : null;
+
+  return (
+    <>
+      <button type="button" className="tp-btn" onClick={run} disabled={busy || recording} style={{ marginBottom: 8 }}>
+        {busy ? 'Probando…' : 'Probar micrófono con 5 combinaciones'}
+      </button>
+      {status && <p className="tp-hint">{status}</p>}
+      {rows.length > 0 && (
+        <>
+          <table className="tp-mic-table">
+            <thead>
+              <tr><th>Ajuste</th><th>Voz</th><th>Ruido</th><th>Dif.</th><th>Pico</th></tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.name} title={r.applied}>
+                  <td>{r.name}</td><td>{r.voice}</td><td>{r.noise}</td><td>{r.diff}</td><td>{r.peak}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="tp-hint">
+            Valores en dB (0 es el máximo; −20 suena fuerte, −50 muy bajo). «Dif.» es voz menos ruido: cuanto mayor,
+            más limpia queda la voz. Más fuerte: <strong>{loudest.name}</strong>. Más limpia: <strong>{best.name}</strong>.
+            Si los números de las filas son casi iguales entre sí, el iPhone está ignorando esos interruptores.
+          </p>
+        </>
+      )}
+    </>
+  );
+}
+
+function GainState({ active }) {
+  const [state, setState] = useState('');
+  useEffect(() => {
+    const id = setInterval(() => setState(getAudioContext()?.state || ''), 500);
+    return () => clearInterval(id);
+  }, []);
+  if (!active) return null;
+  return (
+    <p className={state === 'running' ? 'tp-hint' : 'tp-error'}>
+      {state === 'running'
+        ? 'Ganancia por software activa.'
+        : 'La ganancia por software está en pausa: iOS no deja procesar el audio hasta que toques la pantalla. Toca «Probar micrófono» o enciende la cámara de nuevo.'}
+    </p>
   );
 }
 
@@ -390,6 +530,7 @@ function CameraSection({ settings, update, camera, recording }) {
             format={v => (v === 0 ? 'Sin ganancia' : `+${v} dB`)}
             onChange={v => update({ micGain: v })}
           />
+          <GainState active={settings.micGain > 0} />
           <AutoGain micTrack={camera.micTrack} update={update} disabled={recording} />
           <p className="tp-hint">
             El medidor muestra el nivel en decibelios: la barra debe llegar a la zona amarilla al hablar (≈ −15 dB de media),
@@ -405,6 +546,7 @@ function CameraSection({ settings, update, camera, recording }) {
           </p>
         </>
       )}
+      <MicTest settings={settings} update={update} recording={recording} />
     </section>
   );
 }

@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
+import { unlockAudio } from './audioCtx';
 import SavedRecordings, { useSavedRecordings } from './SavedRecordings';
 import { loadEditorMdFiles } from './storage';
 
@@ -136,7 +137,7 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
           <button type="button" className={`tp-btn${panelOpen ? ' is-on' : ''}`} onClick={() => setPanelOpen(o => !o)} title="Ajustes">
             <Settings2 size={18} /> <span>Ajustes</span>
           </button>
-          <button type="button" className="tp-btn tp-btn-primary" onClick={onStart} disabled={!script.text.trim()}>
+          <button type="button" className="tp-btn tp-btn-primary" onClick={() => { unlockAudio(); onStart(); }} disabled={!script.text.trim()}>
             <Play size={18} /> Leer
           </button>
         </div>

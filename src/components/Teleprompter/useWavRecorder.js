@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { recLog } from './recLog';
+import { getAudioContext } from './audioCtx';
 
 // Grabador de audio sin comprimir (WAV PCM de 16 o 24 bits, o 32 bits flotante) a la frecuencia
 // de muestreo nativa del micrófono. Va en paralelo a la grabación de vídeo (que siempre comprime
@@ -77,14 +78,9 @@ export function useWavRecorder(stream, bitDepth) {
     const track = stream?.getAudioTracks()[0];
     if (!supported || !track || stateRef.current) return false;
     discard();
-    const Ctx = window.AudioContext || window.webkitAudioContext;
     const trackSettings = track.getSettings?.() || {};
-    let ctx;
-    try {
-      ctx = trackSettings.sampleRate ? new Ctx({ sampleRate: trackSettings.sampleRate }) : new Ctx();
-    } catch {
-      ctx = new Ctx();
-    }
+    const ctx = getAudioContext();
+    if (!ctx) return false;
     const channels = Math.min(2, Math.max(1, trackSettings.channelCount || 1));
     const source = ctx.createMediaStreamSource(new MediaStream([track]));
     const processor = ctx.createScriptProcessor(4096, channels, channels);
@@ -104,7 +100,6 @@ export function useWavRecorder(stream, bitDepth) {
     mute.connect(ctx.destination);
     ctx.resume?.().catch(() => {});
     recLog.add(`WAV: AudioContext ${ctx.sampleRate}Hz estado=${ctx.state} canales=${channels} ${bitDepth}bits`);
-    ctx.onstatechange = () => recLog.add(`WAV: AudioContext estado=${ctx.state}`);
     stateRef.current = { ctx, source, processor, mute, chunks, getBytes: () => bytes, channels, bitDepth };
     return true;
   }, [stream, supported, bitDepth, discard]);
@@ -118,7 +113,6 @@ export function useWavRecorder(stream, bitDepth) {
     st.processor.disconnect();
     st.mute.disconnect();
     const sampleRate = st.ctx.sampleRate;
-    st.ctx.close().catch(() => {});
     const dataBytes = st.getBytes();
     recLog.add(`WAV: parado, ${(dataBytes / 1048576).toFixed(1)} MB`);
     const blob = new Blob([wavHeader(dataBytes, sampleRate, st.channels, st.bitDepth), ...st.chunks], { type: 'audio/wav' });
@@ -138,7 +132,13 @@ export function useWavRecorder(stream, bitDepth) {
     if (st) {
       stateRef.current = null;
       st.processor.onaudioprocess = null;
-      st.ctx.close().catch(() => {});
+      try {
+        st.source.disconnect();
+        st.processor.disconnect();
+        st.mute.disconnect();
+      } catch {
+        // ya desconectado
+      }
     }
   }, []);
 

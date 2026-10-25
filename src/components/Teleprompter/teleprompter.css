@@ -723,3 +723,7 @@ body.tp-active {
 
 /* Lectura sin distracciones: oculta el banner de cookies global de la web (solo en /tp) */
 body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
+
+.tp-mic-table { width: 100%; margin: 4px 0 8px; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.tp-mic-table th, .tp-mic-table td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--tp-border); }
+.tp-mic-table th:first-child, .tp-mic-table td:first-child { text-align: left; }
