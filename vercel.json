@@ -42,6 +42,10 @@
             "destination": "/video/:slug/index.html"
         },
         {
+            "source": "/tp",
+            "destination": "/tp/index.html"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

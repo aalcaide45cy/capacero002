@@ -229,6 +229,13 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
             format={v => (v ? `${v} s` : 'No')}
             onChange={v => update({ countdown: v })}
           />
+          <Toggle
+            label="Cuenta atrás también al reanudar"
+            checked={settings.countdownOnResume}
+            disabled={!settings.countdown}
+            onChange={v => update({ countdownOnResume: v })}
+          />
+          <p className="tp-hint">Siempre hay cuenta atrás al empezar desde el principio y al pulsar grabar.</p>
           <Range
             label="Altura de la guía de lectura"
             value={settings.guidePos}

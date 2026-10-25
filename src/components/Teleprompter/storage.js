@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   // Desplazamiento
   speed: 8,
   countdown: 3,
+  countdownOnResume: false,
   guidePos: 30,
   guideStyle: 'band',
   fadeRead: true,

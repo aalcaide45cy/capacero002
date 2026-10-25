@@ -230,10 +230,12 @@ export default function Prompter({ script, settings, update, onExit }) {
     return () => clearTimeout(id);
   }, [countdown, setPlaying]);
 
-  const start = useCallback(() => {
+  // La cuenta atrás se usa al empezar desde el principio y al grabar; al reanudar, solo si se pide
+  const start = useCallback((withCountdown = false) => {
     if (posRef.current >= maxPos() - 1) posRef.current = 0;
-    const secs = settingsRef.current.countdown;
-    if (secs > 0) setCountdown(secs);
+    const s = settingsRef.current;
+    const useCountdown = withCountdown || posRef.current < 1 || s.countdownOnResume;
+    if (useCountdown && s.countdown > 0) setCountdown(s.countdown);
     else setPlaying(true);
   }, [setPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -275,7 +277,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const startRecording = useCallback(() => {
     if (recorder.start()) {
       setPanelOpen(false);
-      start();
+      start(true);
     }
   }, [recorder, start]);
 
