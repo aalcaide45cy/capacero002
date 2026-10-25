@@ -698,3 +698,20 @@ body.tp-active {
 }
 .tp-prompter.is-lite .tp-guide-band { background: none; }
 .tp-status-warn { color: #fca5a5; font-weight: 700; white-space: normal; }
+
+.tp-log { margin: 10px 0; font-size: 13px; }
+.tp-log summary { cursor: pointer; color: var(--tp-accent); font-weight: 600; }
+.tp-log textarea {
+  width: 100%;
+  height: 160px;
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--tp-border);
+  border-radius: 8px;
+  background: var(--tp-bg);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: pre;
+  resize: vertical;
+}

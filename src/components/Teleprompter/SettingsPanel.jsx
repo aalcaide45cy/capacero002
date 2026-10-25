@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { RESOLUTIONS } from './useMedia';
+import { recLog } from './recLog';
 
 function Range({ label, value, min, max, step = 1, onChange, format }) {
   return (
@@ -336,6 +337,28 @@ function CameraSection({ settings, update, camera, recording }) {
   );
 }
 
+function LastLog() {
+  const saved = recLog.loadSaved();
+  const [copied, setCopied] = useState(false);
+  if (!saved) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(saved.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // se puede seleccionar a mano
+    }
+  };
+  return (
+    <details className="tp-log">
+      <summary>Registro de la última grabación ({new Date(saved.at).toLocaleString('es-ES')})</summary>
+      <textarea readOnly value={saved.text} onFocus={e => e.target.select()} />
+      <button type="button" className="tp-btn" onClick={copy}>{copied ? '¡Copiado!' : 'Copiar registro'}</button>
+    </details>
+  );
+}
+
 export default function SettingsPanel({ settings, update, onClose, camera, recording }) {
   return (
     <aside className="tp-panel" aria-label="Ajustes del teleprompter">
@@ -440,6 +463,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
         </section>
 
         {camera && <CameraSection settings={settings} update={update} camera={camera} recording={recording} />}
+        {camera && <LastLog />}
       </div>
     </aside>
   );

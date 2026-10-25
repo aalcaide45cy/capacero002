@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { recLog, describeTrack } from './recLog';
 
 export const RESOLUTIONS = {
   '720': { label: '720p', width: 1280, height: 720, bitrate: 5_000_000 },
@@ -74,6 +75,7 @@ function createGainPipeline(rawTrack, gainDb) {
     gain.connect(limiter);
     limiter.connect(dest);
     ctx.resume?.().catch(() => {});
+    ctx.onstatechange = () => recLog.add(`ganancia: AudioContext estado=${ctx.state}`);
     return {
       track: dest.stream.getAudioTracks()[0],
       setGain(db) {
@@ -300,10 +302,24 @@ export function useRecorder(stream, videoBps, audioBps) {
     }
     const hasAudio = stream.getAudioTracks().some(t => t.readyState === 'live');
     const chunks = [];
+    let totalBytes = 0;
+    recLog.add(`MediaRecorder creado: mime=${rec.mimeType || mimeType || '(por defecto)'} pedido=${mimeType || '(ninguno)'} vídeo=${Math.round(videoBps / 1000)}kbps audio=${Math.round(audioBps / 1000)}kbps`);
+    recLog.add(`pista vídeo: ${describeTrack(stream.getVideoTracks()[0])}`);
+    recLog.add(`pista audio: ${describeTrack(stream.getAudioTracks()[0])}`);
     rec.ondataavailable = e => {
-      if (e.data && e.data.size) chunks.push(e.data);
+      if (e.data && e.data.size) {
+        chunks.push(e.data);
+        totalBytes += e.data.size;
+      }
+      recLog.add(`trozo #${chunks.length} ${e.data ? e.data.size : 0} B (total ${(totalBytes / 1048576).toFixed(2)} MB) estado=${rec.state}`);
     };
+    rec.onstart = () => recLog.add('recorder: start');
+    rec.onpause = () => recLog.add('recorder: PAUSA');
+    rec.onresume = () => recLog.add('recorder: reanudado');
+    rec.onerror = e => recLog.add(`recorder: ERROR ${e.error?.name || ''} ${e.error?.message || ''}`);
     rec.onstop = () => {
+      recLog.add(`recorder: stop (${chunks.length} trozos, ${(totalBytes / 1048576).toFixed(2)} MB)`);
+      recLog.save();
       const type = rec.mimeType || mimeType || 'video/webm';
       const blob = new Blob(chunks, { type });
       const ext = type.includes('mp4') ? 'mp4' : 'webm';
@@ -316,9 +332,7 @@ export function useRecorder(stream, videoBps, audioBps) {
       });
       setRecording(false);
     };
-    // Safari genera mejor el MP4 de una sola pieza; el resto, por trozos de 1 s
-    if (isAppleSafari()) rec.start();
-    else rec.start(1000);
+    rec.start(1000);
     recorderRef.current = rec;
     setStartedAt(Date.now());
     setRecording(true);

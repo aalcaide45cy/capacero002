@@ -8,6 +8,7 @@ import ScriptView from './ScriptView';
 import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS } from './useMedia';
 import { useWavRecorder } from './useWavRecorder';
+import { recLog, describeTrack } from './recLog';
 import { loadPosition, savePosition } from './storage';
 
 const FONT_STACKS = {
@@ -77,6 +78,37 @@ function useFullscreen() {
   return { supported, active, toggle };
 }
 
+function LogBox({ text }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Si el portapapeles no está permitido, el texto se puede seleccionar a mano
+    }
+  };
+  const download = () => {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'teleprompter-registro.txt';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  return (
+    <details className="tp-log">
+      <summary>Registro de la grabación (para diagnóstico)</summary>
+      <textarea readOnly value={text} onFocus={e => e.target.select()} />
+      <div className="tp-modal-actions">
+        <button type="button" className="tp-btn" onClick={copy}>{copied ? '¡Copiado!' : 'Copiar registro'}</button>
+        <button type="button" className="tp-btn" onClick={download}>Descargar .txt</button>
+      </div>
+    </details>
+  );
+}
+
 function RecordingResult({ result, wav, onDiscard }) {
   const file = useMemo(() => new File([result.blob], result.name, { type: result.type }), [result]);
   const canShare = typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] });
@@ -105,6 +137,7 @@ function RecordingResult({ result, wav, onDiscard }) {
             {(wav.blob.size / 1048576).toFixed(0)} MB. Sincronízalo con el vídeo en tu editor.
           </p>
         )}
+        {recLog.hasData() && <LogBox text={recLog.text()} />}
         {!result.hasAudio && <p className="tp-error">Esta grabación no tiene audio: no llegaba sonido del micrófono.</p>}
         <div className="tp-modal-actions">
           {canShare && (
@@ -155,6 +188,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const [now, setNow] = useState(Date.now());
   const [frozen, setFrozen] = useState(false);
   const lastFrameRef = useRef(0);
+  const frameCountRef = useRef(0);
 
   const lineH = settings.fontSize * settings.lineHeight;
   const pxPerSec = (settings.speed / 10) * settings.fontSize;
@@ -278,6 +312,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     let stopped = false;
     let handle;
     const onFrame = () => {
+      frameCountRef.current += 1;
       lastFrameRef.current = Date.now();
       if (!stopped) handle = v.requestVideoFrameCallback(onFrame);
     };
@@ -295,9 +330,56 @@ export default function Prompter({ script, settings, update, onExit }) {
       return undefined;
     }
     lastFrameRef.current = Date.now();
-    const id = setInterval(() => setFrozen(Date.now() - lastFrameRef.current > 2000), 1000);
-    return () => clearInterval(id);
-  }, [recorder.recording]);
+    frameCountRef.current = 0;
+    const v = videoRef.current;
+    const stream = camera.stream;
+    const vt = stream?.getVideoTracks()[0];
+    const at = stream?.getAudioTracks()[0];
+    const events = [];
+    const listen = (target, name, label) => {
+      if (!target) return;
+      const fn = () => recLog.add(`EVENTO ${label}: ${name} | ${target.readyState ? 'estado=' + target.readyState : ''} ${target.muted !== undefined ? 'muted=' + target.muted : ''}`);
+      target.addEventListener(name, fn);
+      events.push(() => target.removeEventListener(name, fn));
+    };
+    ['mute', 'unmute', 'ended'].forEach(n => {
+      listen(vt, n, 'pista vídeo');
+      listen(at, n, 'pista audio');
+    });
+    const onVis = () => recLog.add(`EVENTO página: visibilidad=${document.visibilityState}`);
+    const onHide = () => recLog.add('EVENTO página: pagehide');
+    const onErr = e => recLog.add(`ERROR página: ${e.message || e.reason}`);
+    const onFs = () => recLog.add(`EVENTO pantalla completa: ${!!document.fullscreenElement}`);
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', onHide);
+    window.addEventListener('error', onErr);
+    window.addEventListener('unhandledrejection', onErr);
+    document.addEventListener('fullscreenchange', onFs);
+    let sec = 0;
+    let lastFrames = 0;
+    const id = setInterval(() => {
+      sec += 1;
+      const stalled = Date.now() - lastFrameRef.current > 2000;
+      setFrozen(stalled);
+      const q = v?.getVideoPlaybackQuality?.();
+      const frames = frameCountRef.current;
+      recLog.add(
+        `seg ${sec}: fotogramas=${frames - lastFrames}/s${stalled ? ' ¡SIN IMAGEN!' : ''} vídeo=${vt?.readyState}${vt?.muted ? '(muted)' : ''} audio=${at?.readyState}${at?.muted ? '(muted)' : ''} ` +
+          `preview t=${v ? v.currentTime.toFixed(1) : '-'} rs=${v?.readyState ?? '-'} perdidos=${q ? q.droppedVideoFrames : '-'} ` +
+          `controles=${controlsVisibleRef.current ? 'visibles' : 'ocultos'} panel=${panelOpen ? 'abierto' : 'cerrado'}`
+      );
+      lastFrames = frames;
+    }, 1000);
+    return () => {
+      clearInterval(id);
+      events.forEach(fn => fn());
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('error', onErr);
+      window.removeEventListener('unhandledrejection', onErr);
+      document.removeEventListener('fullscreenchange', onFs);
+    };
+  }, [recorder.recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Vídeo de la cámara
   useEffect(() => {
@@ -371,14 +453,24 @@ export default function Prompter({ script, settings, update, onExit }) {
   const startRecording = useCallback(() => {
     setPanelOpen(false);
     setTimeout(() => {
+      const s = settingsRef.current;
+      recLog.start('--- registro de grabación ---');
+      recLog.add(`navegador: ${navigator.userAgent}`);
+      recLog.add(`pantalla: ${window.innerWidth}x${window.innerHeight} @${window.devicePixelRatio}x, visibilidad=${document.visibilityState}`);
+      recLog.add(`ajustes: res=${s.resolution} fps=${s.fps} cámara=${s.cameraSource} vídeoMbps=${s.videoBitrate || 'auto'} audioKbps=${s.audioBitrate} Hz=${s.audioSampleRate || 'auto'} canales=${s.audioChannels || 'auto'}`);
+      recLog.add(`audio: ganancia=${s.micGain}dB agc=${s.autoGainControl} ruido=${s.noiseSuppression} eco=${s.echoCancellation} WAV=${s.wavRecord ? s.wavBitDepth + 'bits' : 'no'} medidor=${s.showMicMeter} modoLigero=${s.liteWhileRecording} velocidad=${s.speed}`);
       if (recorder.start()) {
-        if (settingsRef.current.wavRecord) wav.start();
+        if (s.wavRecord) {
+          const ok = wav.start();
+          recLog.add(`WAV iniciado: ${ok}`);
+        }
         start(true);
       }
     }, 250);
   }, [recorder, wav, start]);
 
   const stopRecording = useCallback(() => {
+    recLog.add('el usuario pulsa parar');
     recorder.stop();
     wav.stop();
     setCountdown(0);

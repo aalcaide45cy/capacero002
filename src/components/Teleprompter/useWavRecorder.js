@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { recLog } from './recLog';
 
 // Grabador de audio sin comprimir (WAV PCM de 16 o 24 bits, o 32 bits flotante) a la frecuencia
 // de muestreo nativa del micrófono. Va en paralelo a la grabación de vídeo (que siempre comprime
@@ -102,6 +103,8 @@ export function useWavRecorder(stream, bitDepth) {
     processor.connect(mute);
     mute.connect(ctx.destination);
     ctx.resume?.().catch(() => {});
+    recLog.add(`WAV: AudioContext ${ctx.sampleRate}Hz estado=${ctx.state} canales=${channels} ${bitDepth}bits`);
+    ctx.onstatechange = () => recLog.add(`WAV: AudioContext estado=${ctx.state}`);
     stateRef.current = { ctx, source, processor, mute, chunks, getBytes: () => bytes, channels, bitDepth };
     return true;
   }, [stream, supported, bitDepth, discard]);
@@ -117,6 +120,7 @@ export function useWavRecorder(stream, bitDepth) {
     const sampleRate = st.ctx.sampleRate;
     st.ctx.close().catch(() => {});
     const dataBytes = st.getBytes();
+    recLog.add(`WAV: parado, ${(dataBytes / 1048576).toFixed(1)} MB`);
     const blob = new Blob([wavHeader(dataBytes, sampleRate, st.channels, st.bitDepth), ...st.chunks], { type: 'audio/wav' });
     setResult({
       blob,
