@@ -80,7 +80,12 @@ export function MicMeter({ stream }) {
     source.connect(analyser);
     const data = new Uint8Array(analyser.fftSize);
     let raf;
-    const tick = () => {
+    let lastDraw = 0;
+    const tick = t => {
+      raf = requestAnimationFrame(tick);
+      // El medidor se actualiza ~15 veces por segundo: menos trabajo mientras se graba
+      if (t - lastDraw < 66) return;
+      lastDraw = t;
       analyser.getByteTimeDomainData(data);
       let sum = 0;
       for (let i = 0; i < data.length; i++) {
@@ -89,10 +94,9 @@ export function MicMeter({ stream }) {
       }
       const level = Math.min(1, Math.sqrt(sum / data.length) * 4);
       if (barRef.current) barRef.current.style.transform = `scaleX(${level})`;
-      raf = requestAnimationFrame(tick);
     };
     ctx.resume?.().catch(() => {});
-    tick();
+    raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       source.disconnect();
@@ -216,6 +220,16 @@ function CameraSection({ settings, update, camera, recording }) {
               El navegador puede ignorar lo que pidas si el micro no lo ofrece.
             </p>
           )}
+          <Toggle
+            label="Modo ligero al grabar (menos efectos)"
+            checked={settings.liteWhileRecording}
+            disabled={recording}
+            onChange={v => update({ liteWhileRecording: v })}
+          />
+          <p className="tp-hint">
+            Mientras grabas quita el degradado del texto leído, las sombras grandes y los desenfoques para dejar más
+            potencia al teléfono y que el vídeo no se congele. Si grabas en 4K o a 60 fps, mejor déjalo activado.
+          </p>
           <Toggle
             label="Mostrar el nivel del micrófono en pantalla"
             checked={settings.showMicMeter}

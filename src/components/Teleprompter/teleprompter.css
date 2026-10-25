@@ -684,3 +684,17 @@ body.tp-active {
 .tp-file-list button:hover { background: var(--tp-surface-2); }
 .tp-file-list span { flex: 1; font-weight: 600; }
 .tp-file-list small { color: var(--tp-muted); }
+
+/* Modo ligero al grabar: quita los efectos que más cuestan al procesador y a la gráfica */
+.tp-prompter.is-lite .tp-mirror {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+.tp-prompter.is-lite .tp-content { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9) !important; }
+.tp-prompter.is-lite .tp-controls {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  transition: none;
+}
+.tp-prompter.is-lite .tp-guide-band { background: none; }
+.tp-status-warn { color: #fca5a5; font-weight: 700; white-space: normal; }

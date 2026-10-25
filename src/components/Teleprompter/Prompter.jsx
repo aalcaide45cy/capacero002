@@ -153,6 +153,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   const controlsVisibleRef = useRef(true);
   controlsVisibleRef.current = controlsVisible;
   const [now, setNow] = useState(Date.now());
+  const [frozen, setFrozen] = useState(false);
+  const lastFrameRef = useRef(0);
 
   const lineH = settings.fontSize * settings.lineHeight;
   const pxPerSec = (settings.speed / 10) * settings.fontSize;
@@ -268,6 +270,34 @@ export default function Prompter({ script, settings, update, onExit }) {
     micSettings.sampleRate ? `${(micSettings.sampleRate / 1000).toFixed(1)} kHz` : '',
     micSettings.channelCount === 2 ? 'estéreo' : micSettings.channelCount === 1 ? 'mono' : '',
   ].filter(Boolean).join(' · ');
+
+  // Vigilante de imagen: avisa si la cámara deja de entregar fotogramas mientras se graba
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!camera.preview || !v || !v.requestVideoFrameCallback) return undefined;
+    let stopped = false;
+    let handle;
+    const onFrame = () => {
+      lastFrameRef.current = Date.now();
+      if (!stopped) handle = v.requestVideoFrameCallback(onFrame);
+    };
+    lastFrameRef.current = Date.now();
+    handle = v.requestVideoFrameCallback(onFrame);
+    return () => {
+      stopped = true;
+      v.cancelVideoFrameCallback?.(handle);
+    };
+  }, [camera.preview]);
+
+  useEffect(() => {
+    if (!recorder.recording) {
+      setFrozen(false);
+      return undefined;
+    }
+    lastFrameRef.current = Date.now();
+    const id = setInterval(() => setFrozen(Date.now() - lastFrameRef.current > 2000), 1000);
+    return () => clearInterval(id);
+  }, [recorder.recording]);
 
   // Vídeo de la cámara
   useEffect(() => {
@@ -505,7 +535,10 @@ export default function Prompter({ script, settings, update, onExit }) {
   };
 
   return (
-    <div className={`tp-prompter${controlsVisible ? '' : ' is-idle'}`} style={stageStyle}>
+    <div
+      className={`tp-prompter${controlsVisible ? '' : ' is-idle'}${recorder.recording && settings.liteWhileRecording ? ' is-lite' : ''}`}
+      style={stageStyle}
+    >
       {settings.cameraOn && (
         <div className="tp-camera">
           <video
@@ -569,6 +602,7 @@ export default function Prompter({ script, settings, update, onExit }) {
                 <MicMeter stream={camera.stream} />
               </span>
             )}
+            {frozen && <span className="tp-status-warn">⚠ La cámara no entrega imagen: para y baja resolución o fps</span>}
             <span className="tp-status-mic" title={micInfo}>{micLabel ? `🎙 ${micLabel}` : '🎙 sin micrófono'}</span>
           </div>
         )}
