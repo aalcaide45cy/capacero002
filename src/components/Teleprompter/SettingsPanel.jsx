@@ -3,7 +3,7 @@ import {
   AudioLines, Bookmark, Camera, Circle, Info, Mic, Play, RotateCcw, Search, SlidersHorizontal, Sparkles, Type, X,
 } from 'lucide-react';
 import PresetsView from './PresetsView';
-import { KARAOKE_STYLES, KARAOKE_UNITS, karaokeSupported, karaokeVars } from './karaoke';
+import { KARAOKE_STYLES, KARAOKE_UNITS, karaokeVars } from './karaoke';
 import { RESOLUTIONS, hasMediaDevices, isIOS, isChromeIOS, isStandalone, permissionHelp } from './useMedia';
 import { speechRecognitionSupported } from './useVoice';
 import { recLog } from './recLog';
@@ -731,17 +731,9 @@ function KaraokePreview({ settings }) {
 }
 
 function KaraokeGroup({ settings, update }) {
-  const supported = karaokeSupported();
   return (
     <>
       <Toggle label="Activar el modo karaoke" keywords="resaltar palabra" checked={settings.karaokeOn} onChange={v => update({ karaokeOn: v })} />
-      {!supported && (
-        <Row label="Karaoke no disponible">
-          <p className="tp-error">
-            Este navegador no admite el resaltado karaoke (hace falta Safari 17.2 o Chrome 105 o más nuevos).
-          </p>
-        </Row>
-      )}
       <Row label="Vista previa del karaoke">
         <KaraokePreview settings={settings} />
       </Row>

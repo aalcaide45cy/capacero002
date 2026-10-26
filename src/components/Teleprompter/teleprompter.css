@@ -952,13 +952,16 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-advanced > div { padding-bottom: 6px; }
 .tp-advanced-flat { border-left: 2px dashed var(--tp-border); padding-left: 8px; }
 
-/* Modo karaoke: estilos del resaltado (API de resaltado de CSS) */
-::highlight(tp-read) { color: var(--kr); }
-::highlight(tp-current) {
+/* Modo karaoke: cada palabra es un <span class="tp-w">; el resaltado son clases normales de CSS */
+.tp-w.is-read { color: var(--kr); }
+.tp-w.is-cur {
   color: var(--kc);
   background-color: var(--kb);
   text-decoration: var(--kd);
   text-shadow: var(--kts);
+  border-radius: 0.14em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .tp-kpreview {
   padding: 10px 12px;

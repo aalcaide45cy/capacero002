@@ -7,9 +7,10 @@ export function buildContentIndex(contentEl, lineH = 0) {
   const tops = [];
   const starts = [];
   const ranges = [];
+  const els = [];
   const headings = [];
   const pauses = [];
-  if (!contentEl) return { words, tops, starts, ranges, lines: [], sentEnd: [], headings, pauses };
+  if (!contentEl) return { words, tops, starts, ranges, els, lines: [], sentEnd: [], headings, pauses };
 
   const base = contentEl.getBoundingClientRect().top;
 
@@ -52,6 +53,7 @@ export function buildContentIndex(contentEl, lineH = 0) {
         newSentence = /[.!?…:;]["')\]»”]*$/.test(m[0]);
         words.push(word);
         ranges.push(range.cloneRange());
+        els.push(node.parentElement.closest('.tp-w'));
         tops.push(lineH ? center - lineH / 2 : rect.top - base);
       }
       m = re.exec(text);
@@ -70,5 +72,5 @@ export function buildContentIndex(contentEl, lineH = 0) {
   for (let i = words.length - 1; i >= 0; i--) {
     sentEnd[i] = i === words.length - 1 || starts[i + 1] !== starts[i] ? i : sentEnd[i + 1];
   }
-  return { words, tops, starts, ranges, lines, sentEnd, headings, pauses };
+  return { words, tops, starts, ranges, els, lines, sentEnd, headings, pauses };
 }

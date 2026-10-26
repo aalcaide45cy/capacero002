@@ -9,7 +9,7 @@ import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } from './useMedia';
 import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
 import { buildContentIndex } from './domIndex';
-import { createKaraoke, karaokeSupported, karaokeVars, wordAtPos } from './karaoke';
+import { createKaraoke, karaokeVars, wordAtPos } from './karaoke';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
 import { unlockAudio } from './audioCtx';
@@ -280,6 +280,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const voiceModeRef = useRef('off');
   const pxPerWordRef = useRef(0);
   const karaokeRef = useRef(null);
+  const rebuildRef = useRef(() => {});
   const followCursorRef = useRef(null);
   const [indexOpen, setIndexOpen] = useState(false);
   const [ownTrack, setOwnTrack] = useState(null);
@@ -338,7 +339,7 @@ export default function Prompter({ script, settings, update, onExit }) {
 
   followCursorRef.current = follow.cursorRef;
   useEffect(() => {
-    if (!settings.karaokeOn || !karaokeSupported()) return undefined;
+    if (!settings.karaokeOn) return undefined;
     const k = createKaraoke();
     karaokeRef.current = k;
     return () => {
@@ -440,6 +441,12 @@ export default function Prompter({ script, settings, update, onExit }) {
     return () => cancelAnimationFrame(raf);
   }, [setPlaying, speakingRef, rateRef]);
 
+  // Al activar o desactivar el karaoke cambia el HTML del guion: se rehace el índice de palabras
+  useEffect(() => {
+    const id = setTimeout(() => rebuildRef.current(), 300);
+    return () => clearTimeout(id);
+  }, [settings.karaokeOn]);
+
   // Medidas del escenario y del texto
   useEffect(() => {
     const measure = () => {
@@ -449,7 +456,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       };
     };
     let indexTimer = null;
-    const rebuild = () => {
+    rebuildRef.current = () => {
       clearTimeout(indexTimer);
       indexTimer = setTimeout(() => {
         const st = settingsRef.current;
@@ -458,6 +465,7 @@ export default function Prompter({ script, settings, update, onExit }) {
         pxPerWordRef.current = ix.tops.length > 20 ? (ix.tops[ix.tops.length - 1] - ix.tops[0]) / ix.tops.length : 0;
       }, 200);
     };
+    const rebuild = () => rebuildRef.current();
     const measureAndIndex = () => {
       measure();
       rebuild();
@@ -940,7 +948,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       >
         <div className="tp-mirror" style={mirrorStyle}>
           <div className="tp-content" ref={contentRef} style={contentStyle}>
-            <ScriptView text={script.text} format={script.format} />
+            <ScriptView text={script.text} format={script.format} wrapWords={settings.karaokeOn} />
             <div className="tp-end">— Fin —</div>
           </div>
           {settings.guideStyle === 'band' && <div className="tp-guide-band" style={{ top: guideTop, height: lineH }} />}
