@@ -113,6 +113,53 @@ function LogBox({ text }) {
   );
 }
 
+// Coloca el vídeo de la cámara cubriendo (o conteniendo) el escenario calculando el tamaño a mano.
+// Safari en iPhone a veces no actualiza object-fit al cambiar el tamaño de la imagen y la deja pequeña.
+function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source) {
+  useEffect(() => {
+    const v = videoRef.current;
+    const box = boxRef.current;
+    if (!enabled || !v || !box) return undefined;
+    const flip = mirror ? ' scaleX(-1)' : '';
+    const apply = () => {
+      const cw = box.clientWidth;
+      const ch = box.clientHeight;
+      if (!cw || !ch) return;
+      const vw = v.videoWidth;
+      const vh = v.videoHeight;
+      v.style.position = 'absolute';
+      v.style.left = '50%';
+      v.style.top = '50%';
+      v.style.transform = `translate(-50%, -50%)${flip}`;
+      if (!vw || !vh) {
+        v.style.width = '100%';
+        v.style.height = '100%';
+        v.style.objectFit = fit === 'contain' ? 'contain' : 'cover';
+        return;
+      }
+      const scale = fit === 'contain' ? Math.min(cw / vw, ch / vh) : Math.max(cw / vw, ch / vh);
+      v.style.objectFit = 'fill';
+      v.style.width = `${Math.round(vw * scale)}px`;
+      v.style.height = `${Math.round(vh * scale)}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(box);
+    const events = ['loadedmetadata', 'resize', 'playing', 'canplay'];
+    events.forEach(e => v.addEventListener(e, apply));
+    window.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', apply);
+    const timer = setInterval(apply, 1000);
+    return () => {
+      ro.disconnect();
+      events.forEach(e => v.removeEventListener(e, apply));
+      window.removeEventListener('resize', apply);
+      window.removeEventListener('orientationchange', apply);
+      clearInterval(timer);
+    };
+  }, [videoRef, boxRef, enabled, fit, mirror, source]);
+}
+
 function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
   // El tipo se limpia (sin la lista de códecs): iOS puede rechazar «video/mp4;codecs=...» al compartir
   const file = useMemo(() => new File([result.blob], result.name, { type: result.type.split(';')[0] }), [result]);
@@ -191,6 +238,7 @@ export default function Prompter({ script, settings, update, onExit }) {
   const stageRef = useRef(null);
   const contentRef = useRef(null);
   const videoRef = useRef(null);
+  const camBoxRef = useRef(null);
   const posRef = useRef(loadPosition(script.text.length, script.id));
   const playingRef = useRef(false);
   const metricsRef = useRef({ stageH: 0, contentH: 0 });
@@ -245,7 +293,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     onMatch: (found, index) => {
       const s = settingsRef.current;
       // «Frase»: la guía muestra el principio de la frase; «línea»: la línea de la palabra, con adelanto
-      const i = s.voiceAlign === 'frase' ? index.starts[found] : Math.min(index.tops.length - 1, found + s.voiceLookahead);
+      const i = s.voiceAlign === 'frase' ? index.starts[found] : clamp(found + s.voiceLookahead, 0, index.tops.length - 1);
       followTargetRef.current = index.tops[i];
     },
   });
@@ -586,6 +634,8 @@ export default function Prompter({ script, settings, update, onExit }) {
     };
   }, [recorder.recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useVideoFit(videoRef, camBoxRef, settings.cameraOn, settings.cameraFit, settings.cameraMirror, camera.preview);
+
   // Vídeo de la cámara
   useEffect(() => {
     const v = videoRef.current;
@@ -845,17 +895,8 @@ export default function Prompter({ script, settings, update, onExit }) {
       style={stageStyle}
     >
       {settings.cameraOn && (
-        <div className="tp-camera">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{
-              transform: settings.cameraMirror ? 'scaleX(-1)' : 'none',
-              objectFit: settings.cameraFit === 'contain' ? 'contain' : 'cover',
-            }}
-          />
+        <div className="tp-camera" ref={camBoxRef}>
+          <video ref={videoRef} autoPlay playsInline muted />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
       )}

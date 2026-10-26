@@ -858,11 +858,11 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
                 ]}
               />
               <Range
-                label="Adelanto"
+                label="Adelanto (+) o retraso (−)"
                 value={settings.voiceLookahead}
-                min={0}
+                min={-10}
                 max={10}
-                format={v => `${v} palabras`}
+                format={v => (v === 0 ? 'justo en tu palabra' : v > 0 ? `${v} palabras por delante` : `${-v} palabras por detrás`)}
                 onChange={v => update({ voiceLookahead: v })}
               />
               <Segmented
