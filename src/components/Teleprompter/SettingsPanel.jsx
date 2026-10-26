@@ -640,7 +640,7 @@ function TextoGroup({ settings, update }) {
     <>
       <Range label="Tamaño de letra" keywords="fuente" value={settings.fontSize} min={18} max={160} format={v => `${v} px`} onChange={v => update({ fontSize: v })} />
       <Range label="Interlineado" value={settings.lineHeight} min={1} max={2.2} step={0.05} format={v => v.toFixed(2)} onChange={v => update({ lineHeight: v })} />
-      <Range label="Ancho de columna" keywords="márgenes ajuste de línea" value={settings.width} min={40} max={100} format={v => `${v} %`} onChange={v => update({ width: v })} />
+      <Range label="Ancho de columna" keywords="márgenes ajuste de línea" value={settings.width} min={10} max={100} format={v => `${v} %`} onChange={v => update({ width: v })} />
       <Segmented
         label="Alineación"
         value={settings.align}

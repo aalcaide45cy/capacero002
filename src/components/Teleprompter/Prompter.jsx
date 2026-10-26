@@ -901,6 +901,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   }
   const contentStyle = {
     width: `${settings.width}%`,
+    // Con columnas estrechas el margen lateral lo da la propia columna centrada, no un relleno fijo
+    ...(settings.width < 92 ? { paddingLeft: 0, paddingRight: 0 } : {}),
     fontSize: `${settings.fontSize}px`,
     lineHeight: settings.lineHeight,
     fontFamily: FONT_STACKS[settings.fontFamily] || FONT_STACKS.sans,
