@@ -772,3 +772,13 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-index li button:hover { background: var(--tp-surface-2); }
 
 .tp-saved-list li.is-current { border-color: var(--tp-accent); }
+
+/* Panel de ajustes: nunca debe desplazarse en horizontal, ni en pantallas estrechas */
+.tp-panel-body { overflow-x: hidden; }
+.tp-panel-body * { min-width: 0; }
+.tp-panel .tp-btn { white-space: normal; max-width: 100%; height: auto; min-height: 40px; padding-top: 8px; padding-bottom: 8px; text-align: left; line-height: 1.25; }
+.tp-panel .tp-segmented { max-width: 100%; }
+.tp-panel .tp-segmented button { white-space: normal; padding: 6px 8px; line-height: 1.2; }
+.tp-panel .tp-field select, .tp-panel .tp-field input[type='range'] { max-width: 100%; }
+.tp-panel .tp-hint, .tp-panel .tp-error, .tp-panel .tp-toggle span { overflow-wrap: anywhere; }
+.tp-panel .tp-log textarea { max-width: 100%; }
