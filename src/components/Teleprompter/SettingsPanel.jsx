@@ -530,7 +530,7 @@ const GROUPS = [
   {
     id: 'texto', label: 'Texto', icon: Type, color: '#a78bfa', soft: 'rgba(167, 139, 250, 0.16)',
     desc: 'Letra, colores y espejo',
-    keys: ['fontSize', 'lineHeight', 'width', 'textOffset', 'align', 'fontFamily', 'uppercase', 'textShadow', 'textColor', 'bgColor', 'mirrorH', 'mirrorV'],
+    keys: ['fontSize', 'lineHeight', 'width', 'textOffset', 'guidePos', 'align', 'fontFamily', 'uppercase', 'textShadow', 'textColor', 'bgColor', 'mirrorH', 'mirrorV'],
   },
   {
     id: 'karaoke', label: 'Karaoke', icon: Sparkles, color: '#e879f9', soft: 'rgba(232, 121, 249, 0.16)',
@@ -659,6 +659,15 @@ function TextoGroup({ settings, update }) {
           <button type="button" className="tp-btn" onClick={() => update({ textOffset: Math.min(100, settings.textOffset + 10) })} aria-label="Mover a la derecha">Derecha ▶</button>
         </div>
       </Row>
+      <Range
+        label="Altura de la guía"
+        keywords="guía de lectura posición vertical"
+        value={settings.guidePos}
+        min={10}
+        max={80}
+        format={v => `${v} %`}
+        onChange={v => update({ guidePos: v })}
+      />
       <Segmented
         label="Alineación"
         value={settings.align}
