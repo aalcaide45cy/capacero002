@@ -222,6 +222,7 @@ export function normalizeVideoRow(raw, index = 0) {
     title: title || `Tutorial #${index + 1}`,
     youtubeUrl: rawUrl || `https://www.youtube.com/@CapaCero0`,
     youtubeId: videoId,
+    slug: raw.slug || baked?.slug || undefined,
     thumbnail,
     category: category || 'Bambu Studio',
     description: description || baked?.description || '',
