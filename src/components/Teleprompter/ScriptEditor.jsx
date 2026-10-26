@@ -126,9 +126,12 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
           <button type="button" className="tp-btn" onClick={() => fileInput.current?.click()} title="Abrir .md o .txt">
             <FolderOpen size={18} /> <span>Abrir</span>
           </button>
+          <a className="tp-btn" href="/editor" title="Ir al Editor MD">
+            <PenLine size={18} /> <span>Editor MD</span>
+          </a>
           {editorFiles.length > 0 && (
-            <button type="button" className="tp-btn" onClick={() => setImportOpen(true)} title="Importar un documento del Editor MD">
-              <FileText size={18} /> <span>Editor MD</span>
+            <button type="button" className="tp-btn" onClick={() => setImportOpen(true)} title="Importar un documento abierto en el Editor MD">
+              <FileText size={18} /> <span>Importar</span>
             </button>
           )}
           <button type="button" className="tp-btn" onClick={downloadScript} title="Descargar el guion">

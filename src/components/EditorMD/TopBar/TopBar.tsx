@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, FileText, Save, Download, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight, Pencil, Check } from 'lucide-react';
+import { Sun, Moon, FileText, Save, Download, FolderOpen, File, Plus, PanelLeftClose, PanelLeft, Home, Hand, ArrowLeft, ArrowRight, Pencil, Check, ScrollText } from 'lucide-react';
 import { useEditor } from '@/context/EditorContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useScale } from '@/context/ScaleContext';
@@ -119,6 +119,12 @@ export function TopBar() {
       <a href="/" className="topbar-btn" title="Volver al Inicio (Capa Cero)" id="btn-home" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
         <Home />
         <span>Inicio</span>
+      </a>
+
+      {/* Ir al Teleprompter */}
+      <a href="/tp" className="topbar-btn" title="Ir al Teleprompter" id="btn-teleprompter" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <ScrollText />
+        <span>Teleprompter</span>
       </a>
 
       <div className="topbar-divider" />
