@@ -350,6 +350,28 @@ function prerender() {
     const outputFile = path.resolve(videoDistDir, 'index.html');
     fs.writeFileSync(outputFile, outputHtml, 'utf-8');
     createdCount++;
+
+    // Alias antiguos o de respaldo (/video/<codigo-youtube> y /video/<video-N>): redirigen a la URL con slug
+    // para que nunca queden como soft 404 en Google.
+    const aliasHtml = `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(video.title)} | Capa Cero 3D</title>
+  <link rel="canonical" href="${videoUrl}" />
+  <meta http-equiv="refresh" content="0; url=${videoUrl}" />
+  <script>window.location.replace(${JSON.stringify(videoUrl)});</script>
+</head>
+<body><a href="${videoUrl}">${escapeHtml(video.title)}</a></body>
+</html>
+`;
+    const aliases = new Set([video.youtubeId, video.id].filter(a => a && a !== slug));
+    aliases.forEach(alias => {
+      const aliasDir = path.resolve(DIST_DIR, 'video', alias);
+      if (fs.existsSync(path.join(aliasDir, 'index.html'))) return;
+      fs.mkdirSync(aliasDir, { recursive: true });
+      fs.writeFileSync(path.join(aliasDir, 'index.html'), aliasHtml, 'utf-8');
+    });
   });
 
   console.log(`✅ Prerenderizados con éxito ${createdCount} vídeos en dist/video/<slug>/index.html`);
