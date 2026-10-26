@@ -360,7 +360,7 @@ function prerender() {
   <title>${escapeHtml(video.title)} | Capa Cero 3D</title>
   <link rel="canonical" href="${videoUrl}" />
   <meta http-equiv="refresh" content="0; url=${videoUrl}" />
-  <script>window.location.replace(${JSON.stringify(videoUrl)});</script>
+  <script>window.location.replace(${JSON.stringify('/video/' + slug)});</script>
 </head>
 <body><a href="${videoUrl}">${escapeHtml(video.title)}</a></body>
 </html>
