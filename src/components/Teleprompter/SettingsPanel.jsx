@@ -290,7 +290,7 @@ function MicTest({ settings, update, recording }) {
 }
 
 // Comprueba en este dispositivo si el reconocimiento de voz funciona y por qué no
-function VoiceTest() {
+function VoiceTest({ update }) {
   const [state, setState] = useState({ running: false, heard: '', error: '', started: false });
 
   const run = async (useTrack = false) => {
@@ -324,6 +324,11 @@ function VoiceTest() {
     rec.onerror = e => setState(s => ({ ...s, error: e.error }));
     rec.onend = () => {
       micStream?.getTracks().forEach(t => t.stop());
+      // Si entiende lo que dices usando la pista del micrófono, se activa para poder seguir tu voz también al grabar
+      if (track && got) {
+        update({ voiceUseTrack: true, voiceFollowWhileRecording: true, voiceMode: 'follow', voiceLast: 'follow' });
+        setState(s => ({ ...s, activated: true }));
+      }
       setState(s => ({ ...s, running: false, error: s.error || (got ? '' : s.started ? 'no-speech' : 'cerrado-al-instante') }));
     };
     try {
@@ -362,6 +367,12 @@ function VoiceTest() {
         grabación podrían compartir el micrófono.
       </p>
       {state.heard && <p className="tp-hint">He oído: «{state.heard}» ✓</p>}
+      {state.activated && (
+        <p className="tp-hint">
+          ✓ Funciona con la pista del micrófono. He activado «Sigue mi voz» también al grabar. Si al grabar el vídeo se queda sin
+          sonido, desactiva las dos opciones experimentales de abajo.
+        </p>
+      )}
       {state.error && (
         <p className={state.error === 'no-speech' ? 'tp-hint' : 'tp-error'}>
           {hints[state.error] || `Error: ${state.error}`}
@@ -784,7 +795,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
             (en Chrome lo procesa Google). En iPhone no puede usarse a la vez que grabas vídeo: al grabar pasa solo a «Avanza
             si hablo».
           </p>
-          <VoiceTest />
+          <VoiceTest update={update} />
           {settings.voiceMode !== 'off' && (
             <Range
               label="Sensibilidad al hablar"

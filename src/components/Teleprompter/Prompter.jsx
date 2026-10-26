@@ -235,7 +235,7 @@ export default function Prompter({ script, settings, update, onExit }) {
 
   const requestedVoice = settings.voiceMode;
   const srSupported = speechRecognitionSupported();
-  const srBlocked = recorder.recording && isAppleSafari() && !settings.voiceFollowWhileRecording;
+  const srBlocked = recorder.recording && isAppleSafari() && !(settings.voiceFollowWhileRecording || settings.voiceUseTrack);
   const wantsFollow = requestedVoice === 'follow' && srSupported && !srBlocked;
   const follow = useSpeechFollow({
     active: wantsFollow && playing,
