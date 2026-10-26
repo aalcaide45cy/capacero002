@@ -105,21 +105,40 @@ export default function V4VideoPage() {
     if (!videos || videos.length === 0 || !pathSlug) return null;
     return videos.find((v) => {
       if (v.slug && v.slug.toLowerCase() === pathSlug) return true;
-      if (v.youtubeId && v.youtubeId === pathSlug) return true;
+      if (v.youtubeId && v.youtubeId.toLowerCase() === pathSlug) return true;
+      if (v.id && String(v.id).toLowerCase() === pathSlug) return true;
       return false;
     }) || null;
   }, [videos, pathSlug]);
+
+  // Si se entró por el código de YouTube o por el número interno, pasar a la URL con slug
+  useEffect(() => {
+    if (video && video.slug && video.slug.toLowerCase() !== pathSlug) {
+      window.history.replaceState({}, '', `/video/${video.slug}`);
+    }
+  }, [video, pathSlug]);
 
   // Actualizar título y metadatos en cliente
   useEffect(() => {
     if (video) {
       document.title = `${video.title} | Capa Cero 3D`;
+      const prevRobots = document.querySelector('meta[name="robots"]');
+      if (prevRobots && /noindex/i.test(prevRobots.getAttribute('content') || '')) {
+        prevRobots.setAttribute('content', 'index, follow');
+      }
       const descMeta = document.querySelector('meta[name="description"]');
       if (descMeta && video.description) {
         descMeta.setAttribute('content', video.description.slice(0, 160));
       }
     } else {
       document.title = 'Vídeo no encontrado | Capa Cero 3D';
+      let robotsMeta = document.querySelector('meta[name="robots"]');
+      if (!robotsMeta) {
+        robotsMeta = document.createElement('meta');
+        robotsMeta.setAttribute('name', 'robots');
+        document.head.appendChild(robotsMeta);
+      }
+      robotsMeta.setAttribute('content', 'noindex, follow');
     }
   }, [video]);
 
