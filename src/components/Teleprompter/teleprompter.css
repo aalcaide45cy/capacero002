@@ -971,3 +971,67 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 
 .tp-nudge { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .tp-nudge .tp-btn { justify-content: center; text-align: center; padding-left: 6px; padding-right: 6px; }
+
+/* Presets */
+.tp-header-actions { display: flex; align-items: center; gap: 6px; }
+.tp-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid var(--tp-border);
+  border-radius: 8px;
+  background: var(--tp-surface);
+  color: var(--tp-fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tp-preset-btn:hover { border-color: var(--tp-accent); color: var(--tp-accent); }
+.tp-presets { padding: 12px 14px 8px; }
+.tp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--tp-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.tp-preset-new { padding: 12px; border: 1px solid var(--tp-border); border-radius: 12px; background: rgba(255, 255, 255, 0.03); }
+.tp-presets h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--tp-accent); }
+.tp-preset-title { margin-top: 18px !important; }
+.tp-preset-name input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--tp-border);
+  border-radius: 8px;
+  background: var(--tp-bg);
+}
+.tp-preset-name input:focus { outline: 0; border-color: var(--tp-accent); }
+.tp-preset-groups { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.tp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border: 1px solid var(--tp-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tp-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tp-chip.is-on { background: var(--g-soft); border-color: var(--g); color: var(--g); }
+.tp-chip.is-small { padding: 3px 6px; cursor: default; }
+.tp-preset-msg { margin-top: 10px; color: var(--tp-accent); }
+.tp-preset-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tp-preset-list li { padding: 10px; border: 1px solid var(--tp-border); border-radius: 10px; }
+.tp-preset-info strong { display: block; word-break: break-word; }
+.tp-preset-info small { color: var(--tp-muted); }
+.tp-preset-list .tp-preset-groups { margin: 4px 0; }

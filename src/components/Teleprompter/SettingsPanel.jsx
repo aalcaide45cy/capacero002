@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  AudioLines, Camera, Circle, Info, Mic, Play, RotateCcw, Search, SlidersHorizontal, Sparkles, Type, X,
+  AudioLines, Bookmark, Camera, Circle, Info, Mic, Play, RotateCcw, Search, SlidersHorizontal, Sparkles, Type, X,
 } from 'lucide-react';
+import PresetsView from './PresetsView';
 import { KARAOKE_STYLES, KARAOKE_UNITS, karaokeSupported, karaokeVars } from './karaoke';
 import { RESOLUTIONS, hasMediaDevices, isIOS, isChromeIOS, isStandalone, permissionHelp } from './useMedia';
 import { speechRecognitionSupported } from './useVoice';
@@ -1257,6 +1258,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
   const [tab, setTabState] = useState(savedTab);
   const [query, setQuery] = useState('');
   const [noResults, setNoResults] = useState(false);
+  const [view, setView] = useState('groups');
   const q = norm(query.trim());
 
   const setTab = id => {
@@ -1316,11 +1318,25 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
   return (
     <aside className="tp-panel" aria-label="Ajustes del teleprompter" ref={panelRef}>
       <header className="tp-panel-header">
-        <h2>Ajustes</h2>
-        <button type="button" className="tp-icon-btn" onClick={onClose} aria-label="Cerrar ajustes">
-          <X size={20} />
-        </button>
+        <h2>{view === 'presets' ? 'Presets' : 'Ajustes'}</h2>
+        <div className="tp-header-actions">
+          {view === 'groups' && (
+            <button type="button" className="tp-preset-btn" onClick={() => setView('presets')} aria-label="Presets de ajustes" title="Guardar y aplicar presets de ajustes">
+              <Bookmark size={16} /> Presets
+            </button>
+          )}
+          <button type="button" className="tp-icon-btn" onClick={onClose} aria-label="Cerrar ajustes">
+            <X size={20} />
+          </button>
+        </div>
       </header>
+
+      {view === 'presets' ? (
+        <div className="tp-panel-body">
+          <PresetsView groups={GROUPS} settings={settings} update={update} recording={recording} onBack={() => setView('groups')} />
+        </div>
+      ) : (
+      <>
 
       <div className="tp-panel-nav">
         <label className="tp-search">
@@ -1379,6 +1395,8 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
           {noResults && <p className="tp-hint" style={{ padding: 16 }}>No hay ningún ajuste con ese nombre.</p>}
         </PanelCtx.Provider>
       </div>
+      </>
+      )}
     </aside>
   );
 }
