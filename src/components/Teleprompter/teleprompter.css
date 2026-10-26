@@ -968,3 +968,6 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
   font-weight: 700;
   line-height: 1.4;
 }
+
+.tp-nudge { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.tp-nudge .tp-btn { justify-content: center; text-align: center; padding-left: 6px; padding-right: 6px; }

@@ -529,7 +529,7 @@ const GROUPS = [
   {
     id: 'texto', label: 'Texto', icon: Type, color: '#a78bfa', soft: 'rgba(167, 139, 250, 0.16)',
     desc: 'Letra, colores y espejo',
-    keys: ['fontSize', 'lineHeight', 'width', 'align', 'fontFamily', 'uppercase', 'textShadow', 'textColor', 'bgColor', 'mirrorH', 'mirrorV'],
+    keys: ['fontSize', 'lineHeight', 'width', 'textOffset', 'align', 'fontFamily', 'uppercase', 'textShadow', 'textColor', 'bgColor', 'mirrorH', 'mirrorV'],
   },
   {
     id: 'karaoke', label: 'Karaoke', icon: Sparkles, color: '#e879f9', soft: 'rgba(232, 121, 249, 0.16)',
@@ -641,6 +641,23 @@ function TextoGroup({ settings, update }) {
       <Range label="Tamaño de letra" keywords="fuente" value={settings.fontSize} min={18} max={160} format={v => `${v} px`} onChange={v => update({ fontSize: v })} />
       <Range label="Interlineado" value={settings.lineHeight} min={1} max={2.2} step={0.05} format={v => v.toFixed(2)} onChange={v => update({ lineHeight: v })} />
       <Range label="Ancho de columna" keywords="márgenes ajuste de línea" value={settings.width} min={10} max={100} format={v => `${v} %`} onChange={v => update({ width: v })} />
+      <Range
+        label="Posición horizontal del bloque"
+        keywords="mover izquierda derecha centrar desplazar columna"
+        value={settings.textOffset}
+        min={-100}
+        max={100}
+        step={1}
+        format={v => (settings.width >= 98 ? 'reduce el ancho para moverlo' : v === 0 ? 'centrado' : `${Math.abs(v)} % a la ${v < 0 ? 'izquierda' : 'derecha'}`)}
+        onChange={v => update({ textOffset: v })}
+      />
+      <Row label="Mover el bloque de texto a la izquierda, centrar o a la derecha" keywords="centrar izquierda derecha desplazar">
+        <div className="tp-nudge">
+          <button type="button" className="tp-btn" onClick={() => update({ textOffset: Math.max(-100, settings.textOffset - 10) })} aria-label="Mover a la izquierda">◀ Izquierda</button>
+          <button type="button" className={`tp-btn${settings.textOffset === 0 ? ' is-on' : ''}`} onClick={() => update({ textOffset: 0 })}>Centrar</button>
+          <button type="button" className="tp-btn" onClick={() => update({ textOffset: Math.min(100, settings.textOffset + 10) })} aria-label="Mover a la derecha">Derecha ▶</button>
+        </div>
+      </Row>
       <Segmented
         label="Alineación"
         value={settings.align}

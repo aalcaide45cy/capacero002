@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   fontSize: defaultFontSize(),
   lineHeight: 1.35,
   width: 88,
+  textOffset: 0,
   align: 'left',
   fontFamily: 'sans',
   textColor: '#ffffff',

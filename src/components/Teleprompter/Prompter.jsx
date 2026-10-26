@@ -901,6 +901,10 @@ export default function Prompter({ script, settings, update, onExit }) {
   }
   const contentStyle = {
     width: `${settings.width}%`,
+    // Posición horizontal del bloque: -100 pegado a la izquierda, 0 centrado, +100 pegado a la derecha
+    // (con el espejo horizontal activo se invierte para que «izquierda» siga siendo la izquierda de la pantalla)
+    left: `${((settings.mirrorH ? -1 : 1) * settings.textOffset / 100) * ((100 - settings.width) / 2)}%`,
+    right: `${-((settings.mirrorH ? -1 : 1) * settings.textOffset / 100) * ((100 - settings.width) / 2)}%`,
     // Con columnas estrechas el margen lateral lo da la propia columna centrada, no un relleno fijo
     ...(settings.width < 92 ? { paddingLeft: 0, paddingRight: 0 } : {}),
     fontSize: `${settings.fontSize}px`,
