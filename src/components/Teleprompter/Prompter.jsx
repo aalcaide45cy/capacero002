@@ -9,6 +9,7 @@ import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } from './useMedia';
 import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
 import { buildContentIndex } from './domIndex';
+import { createKaraoke, karaokeSupported, karaokeVars, wordAtPos } from './karaoke';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
 import { unlockAudio } from './audioCtx';
@@ -278,6 +279,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   const lastPauseRef = useRef(-1);
   const voiceModeRef = useRef('off');
   const pxPerWordRef = useRef(0);
+  const karaokeRef = useRef(null);
+  const followCursorRef = useRef(null);
   const [indexOpen, setIndexOpen] = useState(false);
   const [ownTrack, setOwnTrack] = useState(null);
 
@@ -332,6 +335,17 @@ export default function Prompter({ script, settings, update, onExit }) {
     track: camera.micTrack || ownTrack,
     sensitivity: settings.voiceSensitivity,
   });
+
+  followCursorRef.current = follow.cursorRef;
+  useEffect(() => {
+    if (!settings.karaokeOn || !karaokeSupported()) return undefined;
+    const k = createKaraoke();
+    karaokeRef.current = k;
+    return () => {
+      k.destroy();
+      karaokeRef.current = null;
+    };
+  }, [settings.karaokeOn]);
 
   // Coloca el cursor del reconocimiento en la palabra que está en la guía de lectura
   const syncCursor = useCallback(() => {
@@ -405,6 +419,13 @@ export default function Prompter({ script, settings, update, onExit }) {
         }
       }
       posRef.current = clamp(posRef.current, 0, max);
+      if (karaokeRef.current && s.karaokeOn) {
+        const ix = indexRef.current;
+        let wi = -1;
+        if (vm === 'follow' && followTargetRef.current != null) wi = followCursorRef.current?.current ?? -1;
+        if (wi < 0) wi = wordAtPos(ix, posRef.current, lh);
+        if (wi >= 0) karaokeRef.current.update(ix, wi, s.karaokeUnit, s.karaokeRead !== 'none');
+      }
       if (contentRef.current) {
         const guideY = (stageH * s.guidePos) / 100;
         contentRef.current.style.transform = `translate3d(0, ${guideY - lh / 2 - posRef.current}px, 0)`;
@@ -887,6 +908,7 @@ export default function Prompter({ script, settings, update, onExit }) {
     color: settings.textColor,
     textTransform: settings.uppercase ? 'uppercase' : 'none',
     textShadow: settings.textShadow ? '0 2px 4px rgba(0,0,0,.9), 0 0 18px rgba(0,0,0,.6)' : 'none',
+    ...(settings.karaokeOn ? karaokeVars(settings) : {}),
   };
 
   return (

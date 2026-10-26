@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  AudioLines, Camera, Circle, Info, Mic, Play, RotateCcw, Search, SlidersHorizontal, Type, X,
+  AudioLines, Camera, Circle, Info, Mic, Play, RotateCcw, Search, SlidersHorizontal, Sparkles, Type, X,
 } from 'lucide-react';
+import { KARAOKE_STYLES, KARAOKE_UNITS, karaokeSupported, karaokeVars } from './karaoke';
 import { RESOLUTIONS, hasMediaDevices, isIOS, isChromeIOS, isStandalone, permissionHelp } from './useMedia';
 import { speechRecognitionSupported } from './useVoice';
 import { recLog } from './recLog';
@@ -531,6 +532,11 @@ const GROUPS = [
     keys: ['fontSize', 'lineHeight', 'width', 'align', 'fontFamily', 'uppercase', 'textShadow', 'textColor', 'bgColor', 'mirrorH', 'mirrorV'],
   },
   {
+    id: 'karaoke', label: 'Karaoke', icon: Sparkles, color: '#e879f9', soft: 'rgba(232, 121, 249, 0.16)',
+    desc: 'Resalta lo que estás leyendo',
+    keys: ['karaokeOn', 'karaokeUnit', 'karaokeStyle', 'karaokeColor', 'karaokeText', 'karaokeRead', 'karaokeReadColor'],
+  },
+  {
     id: 'voz', label: 'Voz', icon: Mic, color: '#4ade80', soft: 'rgba(74, 222, 128, 0.16)',
     desc: 'Que el texto te siga al hablar',
     keys: ['voiceMode', 'voiceSensitivity', 'voicePace', 'voicePaceFactor', 'voiceFollowSpeed', 'voiceLookahead', 'voiceAlign', 'voiceLang', 'voiceUseTrack', 'voiceFollowWhileRecording'],
@@ -666,6 +672,90 @@ function TextoGroup({ settings, update }) {
       <Toggle label="Espejo horizontal" checked={settings.mirrorH} onChange={v => update({ mirrorH: v })} />
       <Toggle label="Espejo vertical" checked={settings.mirrorV} onChange={v => update({ mirrorV: v })} />
       <Help title="Para qué sirve el espejo">Para cristales de teleprompter, que reflejan el texto al revés.</Help>
+    </>
+  );
+}
+
+// Vista previa del estilo elegido (con spans; en la lectura real se usa la API de resaltado del navegador)
+function KaraokePreview({ settings }) {
+  const v = karaokeVars(settings);
+  const unit = settings.karaokeUnit;
+  const words = ['Hoy', 'vamos', 'a', 'montar', 'una', 'impresora', 'desde', 'cero'];
+  const current = unit === 'palabra' ? [3] : unit === 'linea' ? [3, 4, 5, 6] : [3, 4, 5, 6, 7];
+  const readUpTo = current[0];
+  return (
+    <div className="tp-kpreview" style={{ color: settings.textColor, background: settings.bgColor }}>
+      {words.map((w, i) => {
+        const isCur = current.includes(i);
+        const isRead = settings.karaokeRead !== 'none' && i < readUpTo;
+        const style = isCur
+          ? { color: v['--kc'], background: v['--kb'], textDecoration: v['--kd'] === 'none' ? 'none' : 'underline', textDecorationColor: settings.karaokeColor, textShadow: v['--kts'] }
+          : isRead
+            ? { color: v['--kr'] }
+            : {};
+        return (
+          <span key={i} style={style}>
+            {w}{' '}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function KaraokeGroup({ settings, update }) {
+  const supported = karaokeSupported();
+  return (
+    <>
+      <Toggle label="Activar el modo karaoke" keywords="resaltar palabra" checked={settings.karaokeOn} onChange={v => update({ karaokeOn: v })} />
+      {!supported && (
+        <Row label="Karaoke no disponible">
+          <p className="tp-error">
+            Este navegador no admite el resaltado karaoke (hace falta Safari 17.2 o Chrome 105 o más nuevos).
+          </p>
+        </Row>
+      )}
+      <Row label="Vista previa del karaoke">
+        <KaraokePreview settings={settings} />
+      </Row>
+      <Segmented label="Qué resaltar" keywords="palabra línea frase" value={settings.karaokeUnit} onChange={v => update({ karaokeUnit: v })} options={KARAOKE_UNITS} />
+      <Segmented label="Estilo del resaltado" keywords="marcador color subrayado neón" value={settings.karaokeStyle} onChange={v => update({ karaokeStyle: v })} options={KARAOKE_STYLES} />
+      <Row label="Colores del resaltado" keywords="color fondo">
+        <div className="tp-colors">
+          <label>
+            {settings.karaokeStyle === 'marcador' ? 'Marcador' : 'Resalte'}
+            <input type="color" value={settings.karaokeColor} onChange={e => update({ karaokeColor: e.target.value })} />
+          </label>
+          {settings.karaokeStyle === 'marcador' && (
+            <label>
+              Letra
+              <input type="color" value={settings.karaokeText} onChange={e => update({ karaokeText: e.target.value })} />
+            </label>
+          )}
+        </div>
+      </Row>
+      <Subtitle>Lo que ya has leído</Subtitle>
+      <Segmented
+        label="Palabras ya leídas"
+        value={settings.karaokeRead}
+        onChange={v => update({ karaokeRead: v })}
+        options={[{ value: 'none', label: 'Igual' }, { value: 'dim', label: 'Atenuadas' }, { value: 'color', label: 'De color' }]}
+      />
+      {settings.karaokeRead === 'color' && (
+        <Row label="Color de las palabras leídas" keywords="color">
+          <div className="tp-colors">
+            <label>
+              Leídas
+              <input type="color" value={settings.karaokeReadColor} onChange={e => update({ karaokeReadColor: e.target.value })} />
+            </label>
+          </div>
+        </Row>
+      )}
+      <Help title="Cómo sabe dónde vas">
+        Con «Sigue mi voz» se resalta la última palabra que reconoce tu voz. En los demás modos, dentro de cada línea el
+        resaltado avanza de izquierda a derecha a medida que la línea pasa por la guía, al ritmo del desplazamiento. «Línea» y
+        «Frase» resaltan todo el tramo a la vez.
+      </Help>
     </>
   );
 }
@@ -1198,6 +1288,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
   const bodies = {
     lectura: <LecturaGroup {...common} />,
     texto: <TextoGroup {...common} />,
+    karaoke: <KaraokeGroup {...common} />,
     voz: <VozGroup {...common} />,
     camara: <CamaraGroup {...common} />,
     audio: <AudioGroup {...common} />,

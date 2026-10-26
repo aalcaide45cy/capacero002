@@ -6,9 +6,10 @@ export function buildContentIndex(contentEl, lineH = 0) {
   const words = [];
   const tops = [];
   const starts = [];
+  const ranges = [];
   const headings = [];
   const pauses = [];
-  if (!contentEl) return { words, tops, starts, headings, pauses };
+  if (!contentEl) return { words, tops, starts, ranges, lines: [], sentEnd: [], headings, pauses };
 
   const base = contentEl.getBoundingClientRect().top;
 
@@ -50,11 +51,24 @@ export function buildContentIndex(contentEl, lineH = 0) {
         starts.push(newSentence ? words.length : starts[words.length - 1]);
         newSentence = /[.!?…:;]["')\]»”]*$/.test(m[0]);
         words.push(word);
+        ranges.push(range.cloneRange());
         tops.push(lineH ? center - lineH / 2 : rect.top - base);
       }
       m = re.exec(text);
     }
     node = walker.nextNode();
   }
-  return { words, tops, starts, headings, pauses };
+  // Líneas: palabras consecutivas a la misma altura
+  const lines = [];
+  tops.forEach((top, i) => {
+    const last = lines[lines.length - 1];
+    if (last && Math.abs(top - last.top) < 4) last.end = i;
+    else lines.push({ top, start: i, end: i });
+  });
+  // Final de cada frase
+  const sentEnd = new Array(words.length);
+  for (let i = words.length - 1; i >= 0; i--) {
+    sentEnd[i] = i === words.length - 1 || starts[i + 1] !== starts[i] ? i : sentEnd[i + 1];
+  }
+  return { words, tops, starts, ranges, lines, sentEnd, headings, pauses };
 }
