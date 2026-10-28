@@ -640,6 +640,65 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   };
 }
 
+// Lee de Neon los vídeos que no están en la hoja y los añade (y respeta los marcados como ocultos).
+// Es opcional: sin DATABASE_URL, o si falla la conexión, la compilación sigue solo con la hoja.
+async function mergeDbOnlyVideos(validVideos) {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) return;
+  let client;
+  try {
+    const { default: pg } = await import('pg');
+    client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000 });
+    await client.connect();
+    const { rows } = await client.query('SELECT * FROM videos ORDER BY published_at DESC');
+    const hidden = new Set(rows.filter(r => r.hidden).map(r => r.youtube_id));
+    for (let i = validVideos.length - 1; i >= 0; i--) {
+      if (hidden.has(validVideos[i].youtubeId)) validVideos.splice(i, 1);
+    }
+    const present = new Set(validVideos.map(v => v.youtubeId));
+    let added = 0;
+    for (const r of rows) {
+      if (r.hidden || r.is_short || present.has(r.youtube_id)) continue;
+      const views = Number(r.views) || 0;
+      const likes = Number(r.likes) || 0;
+      const downloads = Array.isArray(r.downloads) ? r.downloads : [];
+      validVideos.push({
+        id: `db-${r.youtube_id}`,
+        title: r.title,
+        youtubeUrl: `https://www.youtube.com/watch?v=${r.youtube_id}`,
+        youtubeId: r.youtube_id,
+        thumbnail: `https://img.youtube.com/vi/${r.youtube_id}/hqdefault.jpg`,
+        category: r.extra?.category || 'Bambu Studio',
+        description: r.description || '',
+        consejoClave: r.key_tip || '',
+        downloads,
+        isFeatured: Boolean(r.is_featured),
+        isScheduled: Boolean(r.is_scheduled),
+        scheduledDateFormatted: r.is_scheduled ? formatScheduledDate(r.scheduled_date || r.published_at) : null,
+        chapterNumber: r.extra?.chapterNumber || null,
+        popularityScore: (likes * 10) + Math.round(views / 10) + (r.is_featured ? 500 : 0),
+        publishedAt: r.published_at ? new Date(r.published_at).toISOString() : new Date().toISOString(),
+        duration: r.duration || null,
+        views,
+        likes,
+        comments: Number(r.comments) || 0,
+        hasDownloads: downloads.length > 0,
+        hasTip: Boolean(r.key_tip),
+        hasDescription: Boolean(r.description),
+        playlistId: r.playlist_id || null,
+        playlistTitle: r.playlist_title || null,
+        slug: r.slug
+      });
+      added++;
+    }
+    if (added > 0) console.log(`🗄️ Añadidos ${added} vídeo(s) desde Neon que no estaban en la hoja.`);
+  } catch (err) {
+    console.warn('⚠️ No se pudo leer Neon (se continúa solo con la hoja):', err.message);
+  } finally {
+    if (client) await client.end().catch(() => {});
+  }
+}
+
 function formatScheduledDate(rawDate) {
   if (!rawDate) return 'Estreno Próximamente';
   const str = String(rawDate).trim();
@@ -755,6 +814,9 @@ async function main() {
         }
 
         const validVideos = Array.from(videosMap.values());
+
+        // Vídeos que existen en Neon (alta automática desde YouTube) pero aún no están en la hoja
+        await mergeDbOnlyVideos(validVideos);
 
         // Orden cronológico estricto (más nuevo publicado primero)
         validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());

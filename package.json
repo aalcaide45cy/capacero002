@@ -10,7 +10,9 @@
     "update-data": "node scripts/update-videos.js",
     "update-seo": "node scripts/update-seo-sitemap.js",
     "prebuild": "npm run update-data && npm run update-seo",
-    "postbuild": "node scripts/prerender-videos.js && node scripts/prerender-tp.js"
+    "postbuild": "node scripts/prerender-videos.js && node scripts/prerender-tp.js",
+    "db:migrate": "node scripts/db/migrate.js",
+    "db:import": "node scripts/db/import-videos.js"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.2.0",
@@ -35,6 +37,7 @@
     "katex": "^0.17.0",
     "lucide-react": "^0.563.0",
     "papaparse": "^5.5.3",
+    "pg": "^8.23.1",
     "qrcode.react": "^4.2.0",
     "react-markdown": "^10.1.0",
     "read-excel-file": "^6.0.3",
