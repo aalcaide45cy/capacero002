@@ -3,7 +3,7 @@
  * Version: 2.0.0
  */
 
-const CACHE_NAME = 'capacero-pwa-v2.7';
+const CACHE_NAME = 'capacero-pwa-v2.8';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -51,6 +51,8 @@ self.addEventListener('fetch', (event) => {
   if (
     url.origin !== location.origin ||
     url.pathname.startsWith('/api') ||
+    url.pathname === '/admin' ||
+    url.pathname.startsWith('/admin/') ||
     url.search.includes('timestamp=')
   ) {
     return;
