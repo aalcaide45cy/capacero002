@@ -6,14 +6,16 @@ import pg from 'pg';
 
 const dir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../db/migrations');
 const url = process.env.DATABASE_URL_MIGRATIONS;
+// Con --soft (compilación en Vercel) un fallo o la falta de credenciales no impide publicar la web.
+const soft = process.argv.includes('--soft');
 if (!url) {
   console.error('Falta DATABASE_URL_MIGRATIONS');
-  process.exit(1);
+  process.exit(soft ? 0 : 1);
 }
 
-const client = new pg.Client({ connectionString: url });
-await client.connect();
+const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 8000 });
 try {
+  await client.connect();
   await client.query('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
   const done = new Set((await client.query('SELECT name FROM schema_migrations')).rows.map(r => r.name));
   for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort()) {
@@ -30,6 +32,9 @@ try {
     }
   }
   console.log('Migraciones al día');
+} catch (err) {
+  console.error('Migraciones:', err.message);
+  process.exitCode = soft ? 0 : 1;
 } finally {
-  await client.end();
+  await client.end().catch(() => {});
 }
