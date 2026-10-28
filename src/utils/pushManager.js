@@ -2,10 +2,21 @@
  * Capa Cero 3D - Web Push & PWA Manager (100% Self-Hosted / Zero 3rd Parties)
  */
 
-import { SHEETS_DB_URL, getGeoLocation } from './analytics';
+import { getGeoLocation } from './analytics';
 
-// Clave Pública VAPID oficial de Capa Cero 3D (rotada en Fase 02 de seguridad)
-export const VAPID_PUBLIC_KEY = 'BB1OXByPbiP9Y2ADikAImkmfqjNArnVUo6oQ_iRe1rHYF16thPUitNAArFTHVrtrP6rBpoU5Kh-4bvRfk7LlSo8';
+// Clave Pública VAPID de Capa Cero 3D (el servidor envía con la privada de Vercel; suscripciones en Neon)
+export const VAPID_PUBLIC_KEY = 'BNLvt9k8wzf45vxslR0tjKXLbUELsdzBHq2vAlGlj0J4BSEcSJfTLwSdPoqwxiwbqSMEqj2GIV6XjKf56vVtAu4';
+
+/** Guarda la suscripción en Neon a través de /api/push-subscribe. */
+async function saveSubscription(payload) {
+  const res = await fetch('/api/push-subscribe', {
+    method: 'POST',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error('No se pudo registrar la suscripción (' + res.status + ')');
+}
 
 const PUSH_STORAGE_KEY = 'capacero_push_subscribed_v1';
 const PUSH_VAPID_KEY_STORAGE = 'capacero_push_vapid_key';
@@ -221,24 +232,8 @@ export async function subscribeToPushNotifications() {
       isPwa: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     };
 
-    if (SHEETS_DB_URL && payload.endpoint) {
-      try {
-        const jsonPayload = JSON.stringify(payload);
-        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-          const blob = new Blob([jsonPayload], { type: 'text/plain;charset=utf-8' });
-          navigator.sendBeacon(SHEETS_DB_URL, blob);
-        } else {
-          await fetch(SHEETS_DB_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            keepalive: true,
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: jsonPayload
-          });
-        }
-      } catch (err) {
-        console.warn('Error enviando suscripción push a Google Sheets:', err);
-      }
+    if (payload.endpoint) {
+      await saveSubscription(payload);
     }
 
     localStorage.setItem(PUSH_STORAGE_KEY, 'true');
@@ -337,19 +332,8 @@ export async function checkAndRotatePushSubscriptionSilent() {
         isPwa: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
       };
 
-      if (SHEETS_DB_URL && payload.endpoint) {
-        const jsonPayload = JSON.stringify(payload);
-        if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-          navigator.sendBeacon(SHEETS_DB_URL, new Blob([jsonPayload], { type: 'text/plain;charset=utf-8' }));
-        } else {
-          await fetch(SHEETS_DB_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            keepalive: true,
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: jsonPayload
-          });
-        }
+      if (payload.endpoint) {
+        await saveSubscription(payload);
       }
 
       localStorage.setItem(PUSH_STORAGE_KEY, 'true');
