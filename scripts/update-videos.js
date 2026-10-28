@@ -60,12 +60,14 @@ async function notifyNewVideoInAppsScript(video) {
     const data = await res.json().catch(() => null);
     if (res.ok && data?.success) {
       console.log(`🔔 Notificación push enviada con éxito para: "${video.title}"`);
+      return true;
     } else {
       console.warn(`⚠️ Apps Script no procesó el aviso push (${res.status}):`, data?.message || 'Acción no reconocida');
     }
   } catch (err) {
     console.warn(`⚠️ Aviso: No se pudo enviar notificación push para "${video.title}":`, err.message);
   }
+  return false;
 }
 
 function generateSlug(title) {
@@ -957,12 +959,20 @@ async function processResults(results) {
         } else {
           // Ejecuciones posteriores: notificar vídeos nuevos publicados que no estén programados
           let newNotifiedCount = 0;
+          // Las vistas previas de Vercel nunca envían avisos reales a los suscriptores.
+          const isPreviewBuild = Boolean(process.env.VERCEL) && process.env.VERCEL_ENV !== 'production';
           for (const v of validVideos) {
             if (v.youtubeId && !v.isScheduled && !notifiedSet.has(v.youtubeId)) {
               console.log(`🆕 ¡Nuevo vídeo publicado detectado! ID: ${v.youtubeId} - "${v.title}"`);
-              await notifyNewVideoInAppsScript(v);
-              notifiedSet.add(v.youtubeId);
-              newNotifiedCount++;
+              if (isPreviewBuild) {
+                console.log('⏭️ Vista previa: no se envía el aviso push ni se marca como avisado.');
+                continue;
+              }
+              // Solo se marca como avisado si el aviso se envió; así un fallo se reintenta en la siguiente compilación.
+              if (await notifyNewVideoInAppsScript(v)) {
+                notifiedSet.add(v.youtubeId);
+                newNotifiedCount++;
+              }
             }
           }
           if (newNotifiedCount > 0) {
