@@ -716,7 +716,101 @@ function formatScheduledDate(rawDate) {
   return `Estreno el día ${str}`;
 }
 
+// Fuente de datos: Neon cuando settings.video_source = 'db'; si no (o si falla), la hoja de Google.
+let dataOrigin = 'sheet';
+
+async function loadRowsFromDb() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) return null;
+  let client;
+  try {
+    const { default: pg } = await import('pg');
+    client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000 });
+    await client.connect();
+    const src = await client.query("SELECT value FROM settings WHERE key = 'video_source'");
+    if (src.rows[0]?.value !== 'db') return null;
+    const { rows } = await client.query('SELECT * FROM videos WHERE NOT hidden AND NOT is_short ORDER BY published_at DESC');
+    if (rows.length === 0) return null;
+    return rows.map(r => {
+      const dl = Array.isArray(r.downloads) ? r.downloads : [];
+      return {
+        id: r.extra?.legacyId || `db-${r.youtube_id}`,
+        Titulo: r.title,
+        URL_Youtube: `https://www.youtube.com/watch?v=${r.youtube_id}`,
+        Categoria: r.extra?.category || '',
+        Descripcion: r.description || '',
+        Consejo_Clave: r.key_tip || '',
+        Enlace_Descarga: dl[0]?.url || '',
+        Enlace_Descarga2: dl[1]?.url || '',
+        Enlace_Descarga3: dl[2]?.url || '',
+        Destacado: r.is_featured ? 'SI' : '',
+        Fecha_Estreno: r.is_scheduled && r.scheduled_date ? new Date(r.scheduled_date).toISOString() : '',
+        Estado: r.is_scheduled ? 'programado' : '',
+        views: Number(r.views) || 0,
+        likes: Number(r.likes) || 0,
+        comments: Number(r.comments) || 0
+      };
+    });
+  } catch (err) {
+    console.warn('⚠️ No se pudo leer Neon (se usa la hoja):', err.message);
+    return null;
+  } finally {
+    if (client) await client.end().catch(() => {});
+  }
+}
+
+// Tras una compilación correcta desde la hoja, copia el catálogo completo a Neon y lo marca como fuente.
+async function persistCatalogToDb(videos) {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl || videos.length < 30) return;
+  let client;
+  try {
+    const { default: pg } = await import('pg');
+    client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000 });
+    await client.connect();
+    await client.query('BEGIN');
+    for (const v of videos) {
+      await client.query(
+        `INSERT INTO videos (youtube_id, slug, title, description, published_at, duration, views, likes, comments,
+           is_scheduled, is_featured, playlist_id, playlist_title, key_tip, downloads, extra, source)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'sheet')
+         ON CONFLICT (youtube_id) DO UPDATE SET
+           title = EXCLUDED.title, description = EXCLUDED.description, published_at = EXCLUDED.published_at,
+           duration = EXCLUDED.duration, views = GREATEST(videos.views, EXCLUDED.views),
+           likes = GREATEST(videos.likes, EXCLUDED.likes), comments = GREATEST(videos.comments, EXCLUDED.comments),
+           is_scheduled = EXCLUDED.is_scheduled, is_featured = EXCLUDED.is_featured, playlist_id = EXCLUDED.playlist_id,
+           playlist_title = EXCLUDED.playlist_title, key_tip = EXCLUDED.key_tip, downloads = EXCLUDED.downloads,
+           extra = EXCLUDED.extra, updated_at = now()`,
+        [
+          v.youtubeId, v.slug, v.title, v.description || '', v.publishedAt, v.duration,
+          v.views || 0, v.likes || 0, v.comments || 0, Boolean(v.isScheduled), Boolean(v.isFeatured),
+          v.playlistId, v.playlistTitle, v.consejoClave || null, JSON.stringify(v.downloads || []),
+          JSON.stringify({ category: v.category, chapterNumber: v.chapterNumber, legacyId: v.id })
+        ]
+      );
+    }
+    await client.query(
+      `INSERT INTO settings (key, value) VALUES ('video_source', '"db"'::jsonb)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`
+    );
+    await client.query('COMMIT');
+    console.log(`🗄️ Catálogo (${videos.length} vídeos) copiado a Neon. A partir de ahora la fuente es Neon.`);
+  } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    console.warn('⚠️ No se pudo copiar el catálogo a Neon (se sigue con la hoja):', err.message);
+  } finally {
+    if (client) await client.end().catch(() => {});
+  }
+}
+
 async function main() {
+  const dbRows = await loadRowsFromDb();
+  if (dbRows) {
+    dataOrigin = 'db';
+    console.log(`🚀 Iniciando Videoteca V4 desde Neon (${dbRows.length} vídeos)...`);
+    await processResults({ data: dbRows });
+    return;
+  }
   console.log('🚀 Iniciando descarga de Videoteca V4 desde Google Sheets...');
   try {
     const response = await fetch(SHEET_CSV_URL);
@@ -728,7 +822,18 @@ async function main() {
     Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true,
-      complete: async (results) => {
+      complete: processResults,
+      error: (err) => {
+        console.error('🔥 Error parseando CSV de vídeos:', err);
+      }
+    });
+  } catch (error) {
+    console.warn('⚠️ No se pudo descargar la hoja de vídeos (usando existente):', error.message);
+  }
+}
+
+async function processResults(results) {
+      {
         if (!results.data || !Array.isArray(results.data)) {
           console.error('❌ Formato de datos no válido');
           return;
@@ -822,7 +927,7 @@ async function main() {
         const validVideos = Array.from(videosMap.values());
 
         // Vídeos que existen en Neon (alta automática desde YouTube) pero aún no están en la hoja
-        await mergeDbOnlyVideos(validVideos);
+        if (dataOrigin === 'sheet') await mergeDbOnlyVideos(validVideos);
 
         // Orden cronológico estricto (más nuevo publicado primero)
         validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
@@ -833,6 +938,7 @@ async function main() {
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(validVideos, null, 2));
+        if (dataOrigin === 'sheet') await persistCatalogToDb(validVideos);
         console.log(`✨ Generados ${validVideos.length} vídeos ÚNICOS con estadísticas reales de YouTube en src/data/videos_v4.json`);
         console.log(`🎬 Vídeo #1: ${validVideos[0]?.title} [${validVideos[0]?.duration || 'N/A'}] (${validVideos[0]?.views} views | ${validVideos[0]?.likes} likes | ${validVideos[0]?.comments} comments)`);
         console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} [${validVideos[1]?.duration || 'N/A'}] (${validVideos[1]?.views} views | ${validVideos[1]?.likes} likes | ${validVideos[1]?.comments} comments)`);
@@ -864,14 +970,7 @@ async function main() {
             console.log(`💾 Actualizado src/data/notified.json con ${newNotifiedCount} nuevo(s) vídeo(s).`);
           }
         }
-      },
-      error: (err) => {
-        console.error('🔥 Error parseando CSV de vídeos:', err);
       }
-    });
-  } catch (error) {
-    console.warn('⚠️ No se pudo descargar la hoja de vídeos (usando existente):', error.message);
-  }
 }
 
 main();
