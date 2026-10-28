@@ -764,7 +764,10 @@ async function main() {
           const row = rows[idx];
           const rawUrl = String(row.URL_Youtube || row.url_youtube || row.Youtube || row.URL || '').trim();
           const videoId = extractYouTubeId(rawUrl);
-          if (!videoId) continue;
+          if (!videoId) {
+            console.log(`⏭️ Fila ${idx + 2} descartada: sin URL de YouTube válida (título: "${String(row.Titulo || row.titulo || '').trim()}", URL: "${rawUrl}")`);
+            continue;
+          }
 
           let apiStats = apiStatsMap.get(videoId) || null;
           let liveStats = null;
@@ -791,7 +794,10 @@ async function main() {
 
           const playlistInfo = playlistsMap.get(videoId) || null;
           const normalized = normalizeVideoRow(row, idx, apiStats, liveStats, existing, playlistInfo);
-          if (!normalized) continue;
+          if (!normalized) {
+            console.log(`⏭️ Fila ${idx + 2} descartada: ${videoId} "${String(row.Titulo || row.titulo || '').trim()}" detectado como Short (duración ${apiStats?.duration || liveStats?.lengthSeconds || '?'})`);
+            continue;
+          }
 
           if (!videosMap.has(videoId)) {
             videosMap.set(videoId, normalized);
