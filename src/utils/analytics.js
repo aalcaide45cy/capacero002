@@ -289,6 +289,22 @@ export const initAnalyticsSession = async () => {
     // Iniciar observador de scroll depth
     setupScrollTracker();
 
+    // Registrar la visita en Neon (una por sesión)
+    try {
+        if (!sessionStorage.getItem('capa_cero_visit_sent')) {
+            sessionStorage.setItem('capa_cero_visit_sent', '1');
+            fetch('/api/track', {
+                method: 'POST',
+                keepalive: true,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    visitorId: userId, path: location.pathname, referrer: document.referrer || origin,
+                    country: geo.country, city: geo.city, device: deviceDetails.device, os: deviceDetails.os, browser: deviceDetails.browser
+                })
+            }).catch(() => {});
+        }
+    } catch (e) {}
+
     // Sincronizar con Google Sheets en segundo plano sin retrasar el primer render
     if (typeof window !== 'undefined') {
         if ('requestIdleCallback' in window) {
