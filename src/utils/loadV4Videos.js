@@ -1,11 +1,4 @@
-import Papa from 'papaparse';
 import fallbackVideos from '../data/videos_v4.json';
-
-export const DEFAULT_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
-
-const CACHE_KEY_DATA = 'CAPACERO_VIDEOS_CACHE_V17';
-const CACHE_KEY_TIME = 'CAPACERO_VIDEOS_CACHE_TIME_V17';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos de caché inteligente (SWR)
 
 // Mapa de respaldo y estadísticas sincronizadas automáticamente desde videos_v4.json
 export const fallbackMap = {};
@@ -273,169 +266,17 @@ export function getInitialV4Videos() {
 }
 
 /**
- * Carga vídeos implementando una estrategia de Caché Inteligente (SWR).
+ * Los vídeos salen de Neon y se hornean en videos_v4.json en cada despliegue.
+ * Los cachés locales de versiones anteriores (que venían de Google Sheets) se borran.
  */
-export async function loadV4Videos(forceRefresh = false) {
-  const now = Date.now();
-
-  // Limpiar versiones anteriores de caché para forzar datos actualizados
+export async function loadV4Videos() {
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V13');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_TIME_V13');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V14');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_TIME_V14');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V15');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_TIME_V15');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_V16');
-      localStorage.removeItem('CAPACERO_VIDEOS_CACHE_TIME_V16');
+      for (let v = 13; v <= 17; v++) {
+        localStorage.removeItem(`CAPACERO_VIDEOS_CACHE_V${v}`);
+        localStorage.removeItem(`CAPACERO_VIDEOS_CACHE_TIME_V${v}`);
+      }
     } catch (e) {}
   }
-
-  // 1. Comprobar caché local válido de los últimos 5 minutos
-  if (!forceRefresh && typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
-      const cachedData = localStorage.getItem(CACHE_KEY_DATA);
-      const cachedTime = cachedTimeStr ? parseInt(cachedTimeStr, 10) : 0;
-
-      if (cachedData && cachedTime && (now - cachedTime < CACHE_TTL_MS)) {
-        const parsed = JSON.parse(cachedData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Re-normalizar para verificar si algún vídeo programado ya se estrenó
-          const refreshed = parsed.map((v, idx) => normalizeVideoRow(v, idx)).filter(Boolean);
-          refreshed.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-          
-          // Si el caché tiene algún vídeo no programado con 0 visualizaciones, saltar el caché para hidratar
-          const hasZeroViews = refreshed.some(v => (!v.views || v.views <= 0) && !v.isScheduled);
-          if (!hasZeroViews) {
-            return refreshed;
-          }
-        }
-      }
-
-    } catch (e) {
-      console.warn('Error leyendo caché local de vídeos:', e);
-    }
-  }
-
-  // 2. Si no hay caché o pasaron más de 5 minutos, consultar Google Sheets
-  try {
-    const targetUrl = DEFAULT_SHEET_CSV_URL;
-    if (!targetUrl) {
-      return getInitialV4Videos();
-    }
-
-    const response = await fetch(targetUrl);
-    if (!response.ok) {
-      console.warn(`Error al conectar con Google Sheets (${response.status}), usando datos locales.`);
-      return getInitialV4Videos();
-    }
-
-    const csvText = await response.text();
-    if (!csvText || !csvText.trim()) {
-      return getInitialV4Videos();
-    }
-
-    return new Promise((resolve) => {
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          try {
-            if (results.data && Array.isArray(results.data) && results.data.length > 0) {
-              const videoMap = new Map();
-
-              results.data
-                .filter(row => row && typeof row === 'object')
-                .filter(row => {
-                  const t = (row.Titulo || row.titulo || '').trim();
-                  const u = (row.URL_Youtube || row.url_youtube || '').trim();
-                  return t.length > 0 || u.length > 0;
-                })
-                .forEach((row, idx) => {
-                  const norm = normalizeVideoRow(row, idx);
-                  if (!norm || !norm.youtubeId) return;
-
-                  if (!videoMap.has(norm.youtubeId)) {
-                    videoMap.set(norm.youtubeId, norm);
-                  } else {
-                    // Fila duplicada en Google Sheets: combinar inteligentemente
-                    const prev = videoMap.get(norm.youtubeId);
-                    videoMap.set(norm.youtubeId, {
-                      ...prev,
-                      ...norm,
-                      downloads: (norm.downloads && norm.downloads.length > 0) ? norm.downloads : prev.downloads,
-                      description: norm.description || prev.description,
-                      consejoClave: norm.consejoClave || prev.consejoClave,
-                      views: Math.max(prev.views || 0, norm.views || 0),
-                      likes: Math.max(prev.likes || 0, norm.likes || 0),
-                      comments: Math.max(prev.comments || 0, norm.comments || 0),
-                      popularityScore: Math.max(prev.popularityScore || 0, norm.popularityScore || 0)
-                    });
-                  }
-                });
-
-              const formatted = Array.from(videoMap.values());
-
-              // Orden cronológico estricto (más nuevo publicado primero)
-              formatted.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-              // Hidratación en tiempo real para cualquier vídeo recién publicado con 0 visualizaciones
-              const unhydrated = formatted.filter(v => (!v.views || v.views <= 0) && !v.isScheduled);
-
-              const finish = () => {
-                if (formatted.length > 0) {
-                  try {
-                    localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
-                    localStorage.setItem(CACHE_KEY_TIME, Date.now().toString());
-                  } catch (err) {}
-                  resolve(formatted);
-                } else {
-                  resolve(getInitialV4Videos());
-                }
-              };
-
-              if (unhydrated.length > 0 && typeof window !== 'undefined') {
-                const idsParam = unhydrated.slice(0, 3).map(v => v.youtubeId).join(',');
-                fetch(`/api/video-stats?ids=${idsParam}`, { signal: AbortSignal.timeout(1800) })
-                  .then(r => r.ok ? r.json() : null)
-                  .then(data => {
-                    if (data) {
-                      const statsMap = data.results || (data.id ? { [data.id]: data } : {});
-                      for (const [vid, s] of Object.entries(statsMap)) {
-                        const target = formatted.find(v => v.youtubeId === vid);
-                        if (target && s) {
-                          if (s.views && s.views > 0) target.views = s.views;
-                          if (s.likes && s.likes > 0) target.likes = s.likes;
-                          if (s.comments !== undefined && s.comments !== null) target.comments = s.comments;
-                          if (s.duration) target.duration = s.duration;
-                          target.popularityScore = (target.likes * 10) + Math.round(target.views / 10) + (target.isFeatured ? 500 : 0);
-                        }
-                      }
-                    }
-                  })
-                  .catch(() => {})
-                  .finally(finish);
-              } else {
-                finish();
-              }
-            } else {
-              resolve(getInitialV4Videos());
-            }
-          } catch (err) {
-            console.error('Error parseando filas de Google Sheet:', err);
-            resolve(getInitialV4Videos());
-          }
-        },
-        error: (err) => {
-          console.warn('Error en PapaParse:', err);
-          resolve(getInitialV4Videos());
-        }
-      });
-    });
-  } catch (err) {
-    console.warn('Fallo cargando vídeos V4 desde Google Sheets:', err);
-    return getInitialV4Videos();
-  }
+  return getInitialV4Videos();
 }
