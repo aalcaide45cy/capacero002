@@ -54,3 +54,15 @@ export async function processDueNotifications(pool) {
   for (const r of rows) results.push(await sendNotification(pool, r.id).catch(e => ({ error: e.message })));
   return { processed: rows.length, results };
 }
+
+/** Avisa a los dispositivos del administrador (suscritos desde /admin/notifications). */
+export async function notifyAdmins(pool, { title, body, url }) {
+  configure();
+  const { rows } = await pool.query(`SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE status = 'active' AND device = 'admin'`);
+  const payload = JSON.stringify({ title, body, url: SITE + url, icon: '/favicon-192x192.png', badge: '/favicon-96x96.png' });
+  let sent = 0;
+  await Promise.all(rows.map(s => webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400, urgency: 'high' })
+    .then(() => { sent++; })
+    .catch(err => { if (err.statusCode === 404 || err.statusCode === 410) return pool.query(`UPDATE push_subscriptions SET status = 'expired' WHERE id = $1`, [s.id]); })));
+  return sent;
+}

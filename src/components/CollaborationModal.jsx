@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Mail, Send, CheckCircle2, Loader2, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
 
-const SHEETS_COLLAB_URL = "https://script.google.com/macros/s/AKfycbxMbJyogz6b4FlxrvJRFx1p1qp1a4RG5FYlw93omOJfEsuu8mFNonN-3F0h2AMf4pBY/exec";
 const PENDING_STORAGE_KEY = "capacero_pending_collabs";
 
-// Función utilitaria para enviar mensaje a Google Apps Script con reintentos y timeout
-async function sendToGoogleSheets(payload, maxRetries = 3) {
+// Envía el mensaje a /api/collab (se guarda en la base de datos) con reintentos y timeout.
+async function sendCollaboration(payload, maxRetries = 3) {
     let lastError = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -13,25 +12,23 @@ async function sendToGoogleSheets(payload, maxRetries = 3) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout por intento
 
-            await fetch(SHEETS_COLLAB_URL, {
+            const res = await fetch('/api/collab', {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
                 signal: controller.signal
             });
-
             clearTimeout(timeoutId);
-            return true; // Envío exitoso
+
+            if (res.ok) return true;
+            // Un rechazo por datos no válidos o por exceso de envíos no mejora reintentando.
+            if (res.status === 400 || res.status === 429) throw Object.assign(new Error('Rechazado ' + res.status), { final: true });
+            throw new Error('HTTP ' + res.status);
         } catch (err) {
             console.warn(`Intento ${attempt}/${maxRetries} fallido enviando colaboración:`, err);
             lastError = err;
-            if (attempt < maxRetries) {
-                // Esperar 1.5 segundos antes del siguiente reintento para dar tiempo a Apps Script
-                await new Promise((res) => setTimeout(res, 1500));
-            }
+            if (err.final) break;
+            if (attempt < maxRetries) await new Promise((r) => setTimeout(r, 1500));
         }
     }
     throw lastError || new Error("No se pudo conectar tras varios intentos");
@@ -55,13 +52,6 @@ export default function CollaborationModal({ onClose }) {
         return { n1, n2, answer: n1 + n2 };
     }, []);
 
-    // 1. DESPERTADOR (Pre-Warming): Enviar ping en segundo plano para despertar Apps Script nada más abrir el modal
-    useEffect(() => {
-        try {
-            fetch(SHEETS_COLLAB_URL, { method: 'GET', mode: 'no-cors' }).catch(() => {});
-        } catch (_) {}
-    }, []);
-
     // 2. RECUPERADOR DE COLA: Intentar enviar automáticamente mensajes que se hubieran quedado pendientes previamente
     const flushPendingMessages = useCallback(async () => {
         try {
@@ -72,9 +62,9 @@ export default function CollaborationModal({ onClose }) {
                 const remaining = [];
                 for (const item of pendingList) {
                     try {
-                        await sendToGoogleSheets(item, 2);
-                    } catch (_) {
-                        remaining.push(item);
+                        await sendCollaboration(item, 2);
+                    } catch (err) {
+                        if (!err.final) remaining.push(item);
                     }
                 }
                 if (remaining.length > 0) {
@@ -151,7 +141,7 @@ export default function CollaborationModal({ onClose }) {
 
         try {
             // Intentar envío con 3 reintentos automáticos
-            await sendToGoogleSheets(payload, 3);
+            await sendCollaboration(payload, 3);
 
             // Si tuvo éxito, eliminar de la cola de respaldo
             try {

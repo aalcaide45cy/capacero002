@@ -23,7 +23,7 @@ const asBool = (v) => v === true || v === 'true';
 
 // ---------- Respuesta HTML ----------
 function page(res, title, body, { nonce, session, status = 200, nav = true, script = '' } = {}) {
-  const links = [['', 'Inicio'], ['videos', 'Vídeos'], ['models', 'Modelos'], ['subscribers', 'Suscriptores'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
+  const links = [['', 'Inicio'], ['videos', 'Vídeos'], ['models', 'Modelos'], ['subscribers', 'Suscriptores'], ['collaborations', 'Colaboraciones'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
   const menu = nav && session ? `<nav>${links.map(([p, l]) => `<a href="/admin${p ? '/' + p : ''}">${l}</a>`).join('')}
     <form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="link">Salir</button></form></nav>` : '';
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -369,6 +369,23 @@ async function pageSubscribers(pool, ctx) {
   </table></div>`;
 }
 
+async function pageCollaborations(pool, ctx) {
+  const show = ['new', 'read', 'archived'].includes(ctx.query.s) ? ctx.query.s : 'new';
+  const [counts, list] = await Promise.all([
+    pool.query(`SELECT status, count(*)::int n FROM collaborations GROUP BY status`),
+    pool.query(`SELECT * FROM collaborations WHERE status = $1 ORDER BY created_at DESC, id DESC LIMIT 200`, [show])
+  ]);
+  const n = Object.fromEntries(counts.rows.map(r => [r.status, r.n]));
+  const csrf = esc(ctx.session.csrf);
+  const tab = (s, l) => `<a href="/admin/collaborations?s=${s}" style="color:${s === show ? 'var(--acc)' : 'var(--mut)'};margin-right:16px">${l} (${num(n[s])})</a>`;
+  const btn = (id, status, label) => `<form class="inline" method="post" action="/admin/collaborations/status"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${id}"><input type="hidden" name="status" value="${status}"><input type="hidden" name="s" value="${show}"><button class="sec">${label}</button></form>`;
+  return `<h1>Colaboraciones</h1>${flashBox(ctx.query)}<p>${tab('new', 'Nuevos')}${tab('read', 'Leídos')}${tab('archived', 'Archivados')}</p>
+  ${list.rows.map(r => `<div class="card"><div class="mut">${fmtDate(r.created_at)} · ${esc(r.kind || 'Sin tipo')}</div>
+    <h2>${esc(r.name)} · <a style="color:var(--acc)" href="mailto:${esc(r.email)}">${esc(r.email)}</a></h2>
+    <div style="white-space:pre-wrap;margin-bottom:12px">${esc(r.message)}</div>
+    ${r.status !== 'read' ? btn(r.id, 'read', 'Marcar leído') : ''} ${r.status !== 'new' ? btn(r.id, 'new', 'Marcar nuevo') : ''} ${r.status !== 'archived' ? btn(r.id, 'archived', 'Archivar') : ''}</div>`).join('') || '<div class="card mut">No hay mensajes.</div>'}`;
+}
+
 async function pageAudit(pool) {
   const { rows } = await pool.query(`SELECT * FROM audit_log ORDER BY id DESC LIMIT 100`);
   return `<h1>Auditoría</h1><div class="card scroll"><table><tr><th>Fecha</th><th>Acción</th><th>Detalle</th><th>IP</th></tr>
@@ -400,6 +417,13 @@ async function addVideo(pool, ctx) {
 }
 
 const POST_ACTIONS = {
+  async 'collaborations/status'(pool, ctx) {
+    const back = `/admin/collaborations?s=${['new', 'read', 'archived'].includes(ctx.body.s) ? ctx.body.s : 'new'}`;
+    const id = parseInt(ctx.body.id, 10);
+    if (!Number.isInteger(id) || !['new', 'read', 'archived'].includes(ctx.body.status)) return [back, 'e', 'Petición no válida.'];
+    await pool.query('UPDATE collaborations SET status = $2 WHERE id = $1', [id, ctx.body.status]);
+    return [back, 'm', 'Guardado.'];
+  },
   async 'videos/add'(pool, ctx) { return ['/admin/videos', ...(await addVideo(pool, ctx))]; },
   async 'videos/toggle'(pool, ctx) {
     const field = { hidden: 'hidden', is_featured: 'is_featured' }[ctx.body.field];
@@ -559,7 +583,7 @@ export default async function handler(req, res) {
       return res.status(200).send(csv);
     }
 
-    const views = { '': pageDashboard, videos: pageVideos, models: pageModels, subscribers: pageSubscribers, notifications: pageNotifications, stats: pageStats, settings: pageSettings, audit: pageAudit };
+    const views = { '': pageDashboard, videos: pageVideos, models: pageModels, subscribers: pageSubscribers, collaborations: pageCollaborations, notifications: pageNotifications, stats: pageStats, settings: pageSettings, audit: pageAudit };
     if (!(route in views)) return page(res, 'No encontrado', '<h1>No encontrado</h1>', { nonce, session, status: 404 });
     const body = await views[route](pool, ctx);
     const script = route === 'notifications' ? SUBSCRIBE_JS(session.csrf, process.env.VAPID_PUBLIC_KEY || '') : '';
