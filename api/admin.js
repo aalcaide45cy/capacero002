@@ -432,7 +432,7 @@ export default async function handler(req, res) {
     if (route === 'setup') return await handleSetup(pool, req, res, nonce);
 
     const session = await getSession(pool, req);
-    if (!session) return redirect(res, '/admin/login');
+    if (!session) return route === '' && req.method === 'GET' ? loginForm(nonce, res) : redirect(res, '/admin/login');
     const ctx = { session, query: req.query, body: req.body || {}, ip: clientIp(req) };
 
     if (req.method === 'POST') {
