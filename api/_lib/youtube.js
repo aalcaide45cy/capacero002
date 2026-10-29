@@ -3,6 +3,17 @@ export const CHANNEL_ID = 'UCWKLBuYTfVEDwsCFc5GyEOQ';
 const UPLOADS_PLAYLIST_ID = 'UU' + CHANNEL_ID.slice(2);
 const SHORT_MAX_SECONDS = 180;
 
+/** Un Short puede durar hasta 3 minutos, pero un vídeo largo de 3 minutos no lo es: /shorts/ID solo responde 200 si es un Short. */
+async function isShortVideo(id, seconds) {
+  if (!(seconds > 0 && seconds <= SHORT_MAX_SECONDS)) return false;
+  try {
+    const res = await fetch(`https://www.youtube.com/shorts/${id}`, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(5000) });
+    if (res.status === 200) return true;
+    if (res.status >= 300 && res.status < 400) return false;
+  } catch { /* sin respuesta: se decide por la duración */ }
+  return seconds <= 60;
+}
+
 export function generateSlug(title) {
   let s = String(title || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -33,7 +44,8 @@ export async function fetchCandidatesApi(apiKey) {
   const vidUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics,liveStreamingDetails&id=${ids.join(',')}&key=${apiKey}`;
   const vidRes = await fetch(vidUrl, { signal: AbortSignal.timeout(8000) });
   if (!vidRes.ok) throw new Error(`YouTube videos HTTP ${vidRes.status}`);
-  return ((await vidRes.json()).items || []).map(item => {
+  const items = (await vidRes.json()).items || [];
+  return Promise.all(items.map(async item => {
     const dur = parseIsoDuration(item.contentDetails?.duration);
     const live = item.liveStreamingDetails || {};
     const upcoming = item.snippet?.liveBroadcastContent === 'upcoming';
@@ -48,9 +60,9 @@ export async function fetchCandidatesApi(apiKey) {
       likes: parseInt(item.statistics?.likeCount || 0, 10),
       comments: parseInt(item.statistics?.commentCount || 0, 10),
       isScheduled: upcoming,
-      isShort: dur.seconds > 0 && dur.seconds <= SHORT_MAX_SECONDS
+      isShort: await isShortVideo(item.id, dur.seconds)
     };
-  });
+  }));
 }
 
 // Respaldo sin clave de API: feed RSS oficial (ya excluye los enlaces /shorts/).
@@ -106,7 +118,7 @@ export async function fetchVideoById(id) {
       duration: dur.label, durationSeconds: dur.seconds,
       views: parseInt(item.statistics?.viewCount || 0, 10), likes: parseInt(item.statistics?.likeCount || 0, 10),
       comments: parseInt(item.statistics?.commentCount || 0, 10), isScheduled: upcoming,
-      isShort: dur.seconds > 0 && dur.seconds <= SHORT_MAX_SECONDS
+      isShort: await isShortVideo(id, dur.seconds)
     };
   }
   const res = await fetch(`https://www.youtube.com/watch?v=${id}&hl=es`, { signal: AbortSignal.timeout(10000), headers: { 'Accept-Language': 'es-ES,es;q=0.9' } });
@@ -125,7 +137,7 @@ export async function fetchVideoById(id) {
   return {
     id, title, description, publishedAt: published ? new Date(published).toISOString() : new Date().toISOString(),
     duration: label, durationSeconds: seconds, views: parseInt(meta('interactionCount') || 0, 10) || 0, likes: 0, comments: 0,
-    isScheduled: /"isUpcoming":true/.test(html), isShort: seconds > 0 && seconds <= SHORT_MAX_SECONDS
+    isScheduled: /"isUpcoming":true/.test(html), isShort: await isShortVideo(id, seconds)
   };
 }
 

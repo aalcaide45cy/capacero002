@@ -383,7 +383,7 @@ async function addVideo(pool, ctx) {
   let meta;
   try { meta = await fetchVideoById(id); } catch (err) { return ['e', `No pude leer el vídeo en YouTube: ${err.message}`]; }
   if (!meta) return ['e', 'YouTube no devuelve datos de ese vídeo (¿es privado o no existe?).'];
-  if (meta.isShort) return ['e', 'Ese vídeo es un Short (3 minutos o menos); la web solo muestra vídeos largos.'];
+  if (meta.isShort) return ['e', 'Ese vídeo es un Short (un vídeo vertical de hasta 3 minutos); la web solo muestra vídeos largos.'];
   const slug = await insertVideo(pool, meta, { source: 'admin', category: String(ctx.body.category || '').slice(0, 80) || null, keyTip: String(ctx.body.tip || '').slice(0, 300) || null });
   if (!slug) return ['e', 'Ese vídeo ya estaba guardado.'];
   const deployed = await triggerDeploy();
