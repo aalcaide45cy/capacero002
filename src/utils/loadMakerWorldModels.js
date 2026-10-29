@@ -1,7 +1,5 @@
-import Papa from 'papaparse';
 import fallbackModels from '../data/models_makerworld.json';
 
-export const MAKERWORLD_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1321598922";
 
 const CACHE_KEY_DATA = 'CAPACERO_MAKERWORLD_CACHE_V4';
 const CACHE_KEY_TIME = 'CAPACERO_MAKERWORLD_CACHE_TIME_V4';
@@ -146,7 +144,7 @@ export function getInitialMakerWorldModels() {
 }
 
 /**
- * Carga modelos desde Google Sheets con estrategia de Caché SWR de Ultra Rendimiento (RAM L1 + LocalStorage L2)
+ * Carga modelos desde Neon (/api/models) con estrategia de Caché SWR de Ultra Rendimiento (RAM L1 + LocalStorage L2)
  */
 export async function loadMakerWorldModels(forceRefresh = false) {
   const now = Date.now();
@@ -181,66 +179,36 @@ export async function loadMakerWorldModels(forceRefresh = false) {
     }
   }
 
-  // 4. NIVEL 4: Descarga optimizada desde Google Sheets CSV
+  // 4. NIVEL 4: Descarga desde la API (Neon)
   activeInFlightPromise = (async () => {
     try {
-      const response = await fetch(MAKERWORLD_SHEET_CSV_URL);
+      const response = await fetch('/api/models');
       if (!response.ok) {
-        console.warn(`Error al conectar con hoja MakerWorld (${response.status})`);
+        console.warn(`Error al cargar los modelos de MakerWorld (${response.status})`);
         return inMemoryModelsCache || getInitialMakerWorldModels();
       }
+      const data = await response.json();
+      const formatted = (Array.isArray(data) ? data : [])
+        .map((row, idx) => normalizeMakerWorldRow(row, idx))
+        .filter(Boolean);
+      formatted.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      const csvText = await response.text();
-      if (!csvText || !csvText.trim()) return inMemoryModelsCache || getInitialMakerWorldModels();
+      if (formatted.length === 0) return inMemoryModelsCache || getInitialMakerWorldModels();
 
-      return new Promise((resolve) => {
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: 'greedy',
-          transformHeader: (h) => (h ? h.trim() : ''),
-          complete: (results) => {
-            try {
-              if (results.data && Array.isArray(results.data) && results.data.length > 0) {
-                const formatted = results.data
-                  .filter(row => row && typeof row === 'object')
-                  .map((row, idx) => normalizeMakerWorldRow(row, idx))
-                  .filter(Boolean);
-
-                formatted.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                if (formatted.length > 0) {
-                  inMemoryModelsCache = formatted;
-                  inMemoryModelsTime = Date.now();
-
-                  if (typeof window !== 'undefined' && window.localStorage) {
-                    try {
-                      localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
-                      localStorage.setItem(CACHE_KEY_TIME, inMemoryModelsTime.toString());
-                    } catch (err) {}
-                  }
-                }
-                resolve(formatted);
-              } else {
-                resolve(inMemoryModelsCache || getInitialMakerWorldModels());
-              }
-            } catch (err) {
-              console.error('Error parseando modelos MakerWorld:', err);
-              resolve(inMemoryModelsCache || getInitialMakerWorldModels());
-            } finally {
-              activeInFlightPromise = null;
-            }
-          },
-          error: (err) => {
-            console.warn('Error en PapaParse MakerWorld:', err);
-            activeInFlightPromise = null;
-            resolve(inMemoryModelsCache || getInitialMakerWorldModels());
-          }
-        });
-      });
+      inMemoryModelsCache = formatted;
+      inMemoryModelsTime = Date.now();
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          localStorage.setItem(CACHE_KEY_DATA, JSON.stringify(formatted));
+          localStorage.setItem(CACHE_KEY_TIME, inMemoryModelsTime.toString());
+        } catch (err) {}
+      }
+      return formatted;
     } catch (err) {
-      console.warn('Fallo cargando modelos MakerWorld desde Google Sheets:', err);
-      activeInFlightPromise = null;
+      console.warn('Fallo cargando los modelos de MakerWorld:', err);
       return inMemoryModelsCache || getInitialMakerWorldModels();
+    } finally {
+      activeInFlightPromise = null;
     }
   })();
 
