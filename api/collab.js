@@ -36,6 +36,14 @@ export default async function handler(req, res) {
       `INSERT INTO collaborations (name, email, kind, message, ip_hash, user_agent) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
       [name, email, kind || 'Otro', message, ipHash, String(req.headers['user-agent'] || '').slice(0, 300)]);
 
+    // Puente temporal: el Apps Script antiguo sigue mandando el email a colaboraciones@ hasta conectar un servicio de correo.
+    if (process.env.COLLAB_LEGACY_WEBHOOK) {
+      await fetch(process.env.COLLAB_LEGACY_WEBHOOK, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ nombre: name, email, tipo: kind, mensaje: message }), signal: AbortSignal.timeout(6000)
+      }).catch(err => console.error('collab legacy webhook error:', err.message));
+    }
+
     // El aviso es secundario: si falla, el mensaje ya está guardado.
     await notifyAdmins(pool, { title: 'Nuevo mensaje de colaboración', body: `${name}: ${message.slice(0, 120)}`, url: '/admin/collaborations' }).catch(err => console.error('collab push error:', err.message));
     return res.status(200).json({ ok: true, id: rows[0].id });
