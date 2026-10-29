@@ -23,7 +23,7 @@ const asBool = (v) => v === true || v === 'true';
 
 // ---------- Respuesta HTML ----------
 function page(res, title, body, { nonce, session, status = 200, nav = true, script = '' } = {}) {
-  const links = [['', 'Inicio'], ['videos', 'Vídeos'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
+  const links = [['', 'Inicio'], ['videos', 'Vídeos'], ['models', 'Modelos'], ['subscribers', 'Suscriptores'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
   const menu = nav && session ? `<nav>${links.map(([p, l]) => `<a href="/admin${p ? '/' + p : ''}">${l}</a>`).join('')}
     <form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="link">Salir</button></form></nav>` : '';
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -321,6 +321,54 @@ async function pageSettings(pool, ctx) {
     <form method="post" action="/admin/logout-all"><input type="hidden" name="csrf" value="${csrf}"><button class="danger">Cerrar todas las sesiones</button></form></div>`;
 }
 
+
+async function pageModels(pool, ctx) {
+  const { rows } = await pool.query('SELECT * FROM models ORDER BY sort_order, id');
+  const csrf = esc(ctx.session.csrf);
+  const editId = parseInt(ctx.query.edit, 10) || 0;
+  const m = rows.find(r => r.id == editId) || { id: '', sort_order: (rows.length ? Math.max(...rows.map(r => r.sort_order)) + 1 : 1), name: '', link: 'https://makerworld.com/es/models/', description: '', tag: '✨ NUEVO', button_text: 'IR A DISEÑO', price: '0', show_price: false, carousel_interval: 3500, images: [] };
+  return `<h1>Modelos de MakerWorld</h1>${flashBox(ctx.query)}
+  <div class="card"><h2>${m.id ? 'Editar modelo' : 'Añadir modelo'}</h2>
+  <form method="post" action="/admin/models/save"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${esc(m.id)}">
+    <div class="row"><div><label>Nombre</label><input name="name" required maxlength="150" value="${esc(m.name)}"></div><div><label>Orden</label><input name="sort_order" type="number" value="${esc(m.sort_order)}"></div></div>
+    <label>Enlace al modelo</label><input name="link" required maxlength="400" value="${esc(m.link)}">
+    <label>Descripción</label><textarea name="description" rows="3" maxlength="600">${esc(m.description)}</textarea>
+    <div class="row"><div><label>Etiqueta</label><input name="tag" maxlength="40" value="${esc(m.tag)}"></div><div><label>Texto del botón</label><input name="button_text" maxlength="40" value="${esc(m.button_text)}"></div>
+    <div><label>Precio</label><input name="price" maxlength="20" value="${esc(m.price)}"></div><div><label>Segundos por imagen</label><input name="interval" type="number" step="0.5" min="2.5" value="${esc(m.carousel_interval / 1000)}"></div></div>
+    <div class="chk"><input type="checkbox" name="show_price" id="sp" ${m.show_price ? 'checked' : ''}><label for="sp" style="margin:0;color:inherit">Mostrar precio</label></div>
+    <label>Imágenes (una URL por línea, máximo 10)</label><textarea name="images" rows="5">${esc((m.images || []).join('\n'))}</textarea>
+    <p><button>Guardar</button> ${m.id ? '<a href="/admin/models" style="color:var(--mut)">cancelar</a>' : ''}</p></form></div>
+  <div class="card scroll"><table><tr><th>#</th><th>Modelo</th><th></th></tr>
+  ${rows.map(r => `<tr><td>${r.sort_order}</td><td><b>${esc(r.name)}</b>${r.active ? '' : ' <span class="bad">(oculto)</span>'}<div class="mut">${(r.images || []).length} imágenes · ${esc(r.link)}</div></td><td style="white-space:nowrap">
+    <a href="/admin/models?edit=${r.id}" style="color:var(--acc)">Editar</a>
+    <form class="inline" method="post" action="/admin/models/toggle"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${r.id}"><button class="sec">${r.active ? 'Ocultar' : 'Mostrar'}</button></form>
+    <form class="inline" method="post" action="/admin/models/delete"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${r.id}"><button class="danger">Borrar</button></form></td></tr>`).join('') || '<tr><td colspan="3" class="mut">Sin modelos.</td></tr>'}
+  </table></div>`;
+}
+
+async function pageSubscribers(pool, ctx) {
+  const q = String(ctx.query.q || '').trim().slice(0, 80);
+  const [tot, list] = await Promise.all([
+    pool.query(`SELECT count(*) total, count(*) FILTER (WHERE status='active') active, count(*) FILTER (WHERE status='active' AND consent_marketing) consent, count(*) FILTER (WHERE status IN ('unsubscribed','bounced','invalid')) out FROM subscribers`),
+    pool.query(`SELECT * FROM subscribers WHERE ($1 = '' OR email ILIKE '%' || $1 || '%' OR coalesce(first_name,'') ILIKE '%' || $1 || '%' OR coalesce(last_name,'') ILIKE '%' || $1 || '%') ORDER BY created_at DESC, id DESC LIMIT 300`, [q])
+  ]);
+  const csrf = esc(ctx.session.csrf);
+  const t = tot.rows[0];
+  return `<h1>Suscriptores de email</h1>${flashBox(ctx.query)}
+  <div class="grid"><div class="card"><div class="mut">Total</div><div class="big">${num(t.total)}</div></div><div class="card"><div class="mut">Activos</div><div class="big">${num(t.active)}</div></div>
+  <div class="card"><div class="mut">Con consentimiento</div><div class="big">${num(t.consent)}</div></div><div class="card"><div class="mut">Baja / inválidos</div><div class="big">${num(t.out)}</div></div></div>
+  <div class="card"><h2>Añadir suscriptor</h2><form method="post" action="/admin/subscribers/add"><input type="hidden" name="csrf" value="${csrf}">
+    <div class="row"><div><label>Email</label><input name="email" type="email" required></div><div><label>Nombre</label><input name="first_name" maxlength="80"></div><div><label>Origen</label><input name="source" value="manual" maxlength="60"></div></div>
+    <div class="chk"><input type="checkbox" name="consent" id="c"><label for="c" style="margin:0;color:inherit">Ha dado su consentimiento para recibir emails</label></div><button>Añadir</button></form>
+    <p class="mut" style="margin-top:12px"><a style="color:var(--acc)" href="/admin/subscribers/export">Descargar CSV</a> (solo activos con consentimiento, para MailerLite u otro servicio).</p></div>
+  <div class="card scroll"><form method="get" action="/admin/subscribers" style="margin-bottom:10px"><input name="q" placeholder="Buscar por email o nombre" value="${esc(q)}"></form>
+  <table><tr><th>Email</th><th>Nombre</th><th>País</th><th>Origen</th><th>Estado</th><th></th></tr>
+  ${list.rows.map(r => `<tr><td>${esc(r.email)}</td><td>${esc([r.first_name, r.last_name].filter(Boolean).join(' '))}</td><td>${esc(r.country || '')}</td><td class="mut">${esc(r.source)}<div>${esc(r.consent_note || '')}</div></td>
+    <td>${esc(r.status)}${r.consent_marketing ? ' · <span class="ok">consentimiento</span>' : ' · <span class="mut">sin consentimiento marketing</span>'}</td>
+    <td style="white-space:nowrap"><form class="inline" method="post" action="/admin/subscribers/status"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="id" value="${r.id}"><input type="hidden" name="status" value="${r.status === 'active' ? 'unsubscribed' : 'active'}"><button class="sec">${r.status === 'active' ? 'Dar de baja' : 'Reactivar'}</button></form></td></tr>`).join('') || '<tr><td colspan="6" class="mut">Sin resultados.</td></tr>'}
+  </table></div>`;
+}
+
 async function pageAudit(pool) {
   const { rows } = await pool.query(`SELECT * FROM audit_log ORDER BY id DESC LIMIT 100`);
   return `<h1>Auditoría</h1><div class="card scroll"><table><tr><th>Fecha</th><th>Acción</th><th>Detalle</th><th>IP</th></tr>
@@ -389,6 +437,46 @@ const POST_ACTIONS = {
     await pool.query(`UPDATE notifications SET status = 'cancelled' WHERE id = $1 AND status = 'scheduled'`, [parseInt(ctx.body.id, 10) || 0]);
     await audit(pool, ctx.session, 'notification_cancelled', { id: ctx.body.id }, ctx.ip);
     return ['/admin/notifications', 'm', 'Aviso cancelado.'];
+  },
+  async 'models/save'(pool, ctx) {
+    const b = ctx.body;
+    const name = String(b.name || '').trim().slice(0, 150);
+    const link = String(b.link || '').trim().slice(0, 400);
+    if (!name || !/^https:\/\/(www\.)?makerworld\.com\/\S*$/.test(link)) return ['/admin/models', 'e', 'Falta el nombre o el enlace no es de makerworld.com.'];
+    const images = String(b.images || '').split(/\r?\n/).map(x => x.trim()).filter(x => /^https:\/\/\S+$/.test(x)).slice(0, 10);
+    const interval = Math.max(2500, Math.round((parseFloat(b.interval) || 3.5) * 1000));
+    const vals = [parseInt(b.sort_order, 10) || 0, name, link, String(b.description || '').slice(0, 600), String(b.tag || '').slice(0, 40), String(b.button_text || '').slice(0, 40) || 'IR A DISEÑO', String(b.price || '0').slice(0, 20), b.show_price === 'on', interval, JSON.stringify(images)];
+    const id = parseInt(b.id, 10) || 0;
+    if (id) await pool.query(`UPDATE models SET sort_order=$1, name=$2, link=$3, description=$4, tag=$5, button_text=$6, price=$7, show_price=$8, carousel_interval=$9, images=$10, updated_at=now() WHERE id=$11`, [...vals, id]);
+    else await pool.query(`INSERT INTO models (sort_order, name, link, description, tag, button_text, price, show_price, carousel_interval, images) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, vals);
+    await audit(pool, ctx.session, id ? 'model_updated' : 'model_created', { id, name }, ctx.ip);
+    return ['/admin/models', 'm', 'Modelo guardado. En la web se verá en un minuto.'];
+  },
+  async 'models/toggle'(pool, ctx) {
+    await pool.query('UPDATE models SET active = NOT active, updated_at = now() WHERE id = $1', [parseInt(ctx.body.id, 10) || 0]);
+    await audit(pool, ctx.session, 'model_toggle', { id: ctx.body.id }, ctx.ip);
+    return ['/admin/models', 'm', 'Guardado.'];
+  },
+  async 'models/delete'(pool, ctx) {
+    await pool.query('DELETE FROM models WHERE id = $1', [parseInt(ctx.body.id, 10) || 0]);
+    await audit(pool, ctx.session, 'model_deleted', { id: ctx.body.id }, ctx.ip);
+    return ['/admin/models', 'm', 'Modelo borrado.'];
+  },
+  async 'subscribers/add'(pool, ctx) {
+    const email = String(ctx.body.email || '').trim().toLowerCase().slice(0, 200);
+    if (!/^[a-z0-9][a-z0-9._%+'-]*@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) return ['/admin/subscribers', 'e', 'Email no válido.'];
+    const consent = ctx.body.consent === 'on';
+    const r = await pool.query(
+      `INSERT INTO subscribers (email, first_name, source, consent_marketing, consent_at, consent_note) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (lower(email)) DO NOTHING`,
+      [email, String(ctx.body.first_name || '').slice(0, 80) || null, String(ctx.body.source || 'manual').slice(0, 60), consent, consent ? new Date() : null, consent ? 'Marcado manualmente en el panel' : null]);
+    await audit(pool, ctx.session, 'subscriber_added', { added: r.rowCount }, ctx.ip);
+    return ['/admin/subscribers', r.rowCount ? 'm' : 'e', r.rowCount ? 'Suscriptor añadido.' : 'Ese email ya existe.'];
+  },
+  async 'subscribers/status'(pool, ctx) {
+    const status = ctx.body.status === 'active' ? 'active' : 'unsubscribed';
+    await pool.query(`UPDATE subscribers SET status = $2, unsubscribed_at = CASE WHEN $2 = 'unsubscribed' THEN now() ELSE NULL END WHERE id = $1`, [parseInt(ctx.body.id, 10) || 0, status]);
+    await audit(pool, ctx.session, 'subscriber_status', { id: ctx.body.id, status }, ctx.ip);
+    return ['/admin/subscribers', 'm', 'Guardado.'];
   },
   async settings(pool, ctx) {
     await setSetting(pool, 'notifications_enabled', ctx.body.notifications_enabled === 'on');
@@ -460,7 +548,18 @@ export default async function handler(req, res) {
       return redirect(res, to, kind, msg);
     }
 
-    const views = { '': pageDashboard, videos: pageVideos, notifications: pageNotifications, stats: pageStats, settings: pageSettings, audit: pageAudit };
+    if (route === 'subscribers/export' && req.method === 'GET') {
+      const { rows } = await pool.query(`SELECT email, first_name, last_name, country, source, consent_at FROM subscribers WHERE status = 'active' AND consent_marketing ORDER BY id`);
+      // Los campos que empiezan por = + - @ se neutralizan para que Excel no los ejecute como fórmulas.
+      const cell = (v) => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
+      const csv = ['email,first_name,last_name,country,source,consent_at', ...rows.map(r => [r.email, r.first_name, r.last_name, r.country, r.source, r.consent_at ? new Date(r.consent_at).toISOString() : ''].map(cell).join(','))].join('\n');
+      await audit(pool, session, 'subscribers_exported', { rows: rows.length }, ctx.ip);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="suscriptores.csv"');
+      return res.status(200).send(csv);
+    }
+
+    const views = { '': pageDashboard, videos: pageVideos, models: pageModels, subscribers: pageSubscribers, notifications: pageNotifications, stats: pageStats, settings: pageSettings, audit: pageAudit };
     if (!(route in views)) return page(res, 'No encontrado', '<h1>No encontrado</h1>', { nonce, session, status: 404 });
     const body = await views[route](pool, ctx);
     const script = route === 'notifications' ? SUBSCRIBE_JS(session.csrf, process.env.VAPID_PUBLIC_KEY || '') : '';
