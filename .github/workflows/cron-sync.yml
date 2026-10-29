@@ -1,4 +1,4 @@
-name: Buscar vídeos nuevos (cada hora)
+name: Buscar vídeos nuevos (frecuencia elegida en el panel)
 
 on:
   schedule:

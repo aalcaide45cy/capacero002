@@ -22,31 +22,96 @@ const num = (n) => Number(n || 0).toLocaleString('es-ES');
 const asBool = (v) => v === true || v === 'true';
 
 // ---------- Respuesta HTML ----------
-function page(res, title, body, { nonce, session, status = 200, nav = true, script = '' } = {}) {
-  const links = [['', 'Inicio'], ['videos', 'Vídeos'], ['models', 'Modelos'], ['subscribers', 'Suscriptores'], ['collaborations', 'Colaboraciones'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
-  const menu = nav && session ? `<nav>${links.map(([p, l]) => `<a href="/admin${p ? '/' + p : ''}">${l}</a>`).join('')}
-    <form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="link">Salir</button></form></nav>` : '';
+const ICONS = {
+  '': '<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  videos: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9.5 5 2.5-5 2.5z"/>',
+  models: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
+  subscribers: '<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20"/><circle cx="10" cy="8" r="3.5"/><path d="M20 20v-1.5a3.5 3.5 0 0 0-2.5-3.3M15.5 4.7a3.5 3.5 0 0 1 0 6.6"/>',
+  collaborations: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 5 8-5"/>',
+  notifications: '<path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  stats: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  audit: '<path d="M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
+};
+const icon = (k) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k] || ''}</svg>`;
+
+const ADMIN_CSS = `
+:root{color-scheme:dark;--bg:#0a0b10;--side:#0d0f16;--card:#13151e;--card2:#181b26;--line:#23263a;--text:#f3f4f8;--mut:#8d92a8;--acc:#38bdf8;--acc2:#6366f1;--ok:#34d399;--bad:#f87171;--warn:#fbbf24;--r:14px}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;
+  background-image:radial-gradient(900px 480px at 85% -10%,rgba(99,102,241,.13),transparent 60%),radial-gradient(700px 420px at -5% 0,rgba(56,189,248,.10),transparent 55%);background-attachment:fixed}
+a{color:var(--acc)}
+.shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+aside{background:var(--side);border-right:1px solid var(--line);padding:18px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 10px 18px;font-weight:700;font-size:16px;letter-spacing:.2px}
+.brand img{width:34px;height:34px;border-radius:9px}.brand small{display:block;color:var(--mut);font-weight:500;font-size:12px;letter-spacing:.3px}
+nav{display:flex;flex-direction:column;gap:3px;flex:1}
+nav a,nav button.link{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--mut);text-decoration:none;font-weight:500;transition:.15s;width:100%;text-align:left}
+nav a:hover,nav button.link:hover{background:rgba(255,255,255,.05);color:var(--text)}
+nav a.on{background:linear-gradient(135deg,rgba(56,189,248,.16),rgba(99,102,241,.16));color:#fff;box-shadow:inset 0 0 0 1px rgba(99,102,241,.35)}
+nav a.on .ic{color:var(--acc)}
+.ic{width:19px;height:19px;flex:none}
+nav form{margin:0;padding-top:10px;border-top:1px solid var(--line)}
+.content{min-width:0}
+main{max-width:1040px;margin:0 auto;padding:30px 28px 60px}
+h1{font-size:26px;margin:0 0 20px;letter-spacing:-.3px;font-weight:700}h2{font-size:16px;margin:0 0 12px;font-weight:650}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:18px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px rgba(0,0,0,.18)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:18px}.grid .card{margin:0;position:relative;overflow:hidden}
+.grid .card::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,.18),transparent 70%)}
+.big{font-size:30px;font-weight:750;letter-spacing:-.5px;line-height:1.15;margin:4px 0}.mut{color:var(--mut);font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+label{display:block;margin:14px 0 6px;color:var(--mut);font-size:13px;font-weight:500}
+input,select,textarea{width:100%;background:#0b0d14;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px 13px;font:inherit;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+input[type=checkbox]{width:18px;height:18px;margin-right:10px;accent-color:var(--acc)}.chk{display:flex;align-items:center;margin:14px 0;color:var(--text);font-size:15px}
+button{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer;transition:transform .1s,filter .15s,box-shadow .15s;box-shadow:0 4px 14px rgba(99,102,241,.28)}
+button:hover{filter:brightness(1.08)}button:active{transform:translateY(1px)}
+button.sec{background:#1d2030;color:var(--text);box-shadow:inset 0 0 0 1px var(--line)}button.sec:hover{background:#252941}
+button.link{background:none;box-shadow:none;padding:10px 12px;font-weight:500;color:var(--mut)}
+button.danger{background:linear-gradient(135deg,#b91c1c,#7f1d1d);box-shadow:none}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.6px}tr:last-child td{border-bottom:0}tbody tr:hover td,table tr:hover td{background:rgba(255,255,255,.02)}
+.scroll{overflow-x:auto}
+.flash{background:rgba(52,211,153,.10);border:1px solid rgba(52,211,153,.35);color:#c9f7e3;border-radius:12px;padding:12px 16px;margin-bottom:18px}
+.flash.err{background:rgba(248,113,113,.10);border-color:rgba(248,113,113,.4);color:#fecaca}
+form.inline{display:inline}.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 200px}
+.qr svg{width:200px;height:200px;background:#fff;padding:8px;border-radius:12px}
+code{background:#0b0d14;border:1px solid var(--line);padding:2px 7px;border-radius:6px;word-break:break-all;font-size:13px}
+.pw{position:relative}.pw input{padding-right:46px}.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;box-shadow:none;color:var(--mut);padding:8px;border-radius:8px;display:flex}
+.pw .eye:hover{color:var(--text);background:rgba(255,255,255,.06)}.pw .eye .ic{width:20px;height:20px}
+.auth{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
+.auth .brand{flex-direction:column;text-align:center;gap:10px;padding-bottom:22px;font-size:20px}.auth .brand img{width:62px;height:62px;border-radius:16px;box-shadow:0 10px 30px rgba(99,102,241,.35)}
+.auth .card{width:100%;max-width:420px;margin:0 auto!important;padding:28px}.auth h1{font-size:22px;margin-bottom:6px}.auth .card button[type=submit],.auth .card form>p>button,.auth .card button:not(.eye){width:100%}
+.auth .sub{color:var(--mut);margin:0 0 8px}
+@media(max-width:860px){
+ .shell{grid-template-columns:minmax(0,1fr)}aside,.content{min-width:0}
+ aside{position:static;height:auto;flex-direction:column;padding:10px 12px;border-right:0;border-bottom:1px solid var(--line);gap:0}
+ .brand{padding:4px 6px 10px}
+ nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+ nav a,nav button.link{white-space:nowrap;width:auto;padding:9px 13px;background:rgba(255,255,255,.04)}
+ nav form{border:0;padding:0;margin:0}
+ main{padding:20px 16px 50px}h1{font-size:22px}
+ .big{font-size:26px}
+}`;
+
+const EYE_JS = `(function(){var open='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',shut='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19C5.5 19 2 12 2 12a18.5 18.5 0 0 1 5.1-5.9M9.9 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2M1 1l22 22"/></svg>';
+document.querySelectorAll('input[type=password]').forEach(function(i){var w=document.createElement('div');w.className='pw';i.parentNode.insertBefore(w,i);w.appendChild(i);var b=document.createElement('button');b.type='button';b.className='eye';b.setAttribute('aria-label','Mostrar contraseña');b.innerHTML=open;b.onclick=function(){var s=i.type==='password';i.type=s?'text':'password';b.innerHTML=s?shut:open;b.setAttribute('aria-label',s?'Ocultar contraseña':'Mostrar contraseña');};w.appendChild(b);});})();`;
+
+const SYNC_INTERVALS = [[30, 'Cada 30 minutos'], [60, 'Cada hora'], [180, 'Cada 3 horas'], [360, 'Cada 6 horas'], [720, 'Cada 12 horas'], [1440, 'Una vez al día']];
+const NAV_LINKS = [['', 'Inicio'], ['videos', 'Vídeos'], ['models', 'Modelos'], ['subscribers', 'Suscriptores'], ['collaborations', 'Colaboraciones'], ['notifications', 'Notificaciones'], ['stats', 'Estadísticas'], ['settings', 'Ajustes'], ['audit', 'Auditoría']];
+
+function page(res, title, body, { nonce, session, status = 200, nav = true, script = '', route = '' } = {}) {
+  const shell = nav && session;
+  const links = NAV_LINKS.map(([p, l]) => `<a href="/admin${p ? '/' + p : ''}"${p === route ? ' class="on" aria-current="page"' : ''}>${icon(p)}<span>${l}</span></a>`).join('');
+  const layout = shell
+    ? `<div class="shell"><aside><div class="brand"><img src="/logo-emblem.png" alt=""><div>Capa Cero 3D<small>Panel de control</small></div></div>
+<nav>${links}<form method="post" action="/admin/logout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="link">${icon('logout')}<span>Salir</span></button></form></nav></aside>
+<div class="content"><main>${body}</main></div></div>`
+    : `<div class="auth"><div class="brand"><img src="/logo-emblem.png" alt=""><div>Capa Cero 3D</div></div>${body}</div>`;
+  const js = [shell ? '' : EYE_JS, script].filter(Boolean).join('\n');
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>${esc(title)} · Panel Capa Cero 3D</title>
-<style nonce="${nonce}">
-:root{color-scheme:dark;--bg:#09090b;--card:#18181b;--line:#27272a;--text:#fafafa;--mut:#a1a1aa;--acc:#38bdf8;--ok:#4ade80;--bad:#f87171}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,sans-serif}
-header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
-header b{font-size:16px}nav{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center}nav a{color:var(--mut);text-decoration:none}nav a:hover{color:var(--acc)}
-main{max-width:980px;margin:0 auto;padding:16px}h1{font-size:22px;margin:8px 0 16px}h2{font-size:16px;margin:0 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}.grid .card{margin:0}
-.big{font-size:26px;font-weight:700}.mut{color:var(--mut);font-size:13px}.ok{color:var(--ok)}.bad{color:var(--bad)}
-label{display:block;margin:10px 0 4px;color:var(--mut);font-size:13px}input,select,textarea{width:100%;background:#0c0c0f;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:10px;font:inherit}
-input[type=checkbox]{width:auto;margin-right:8px}.chk{display:flex;align-items:center;margin:10px 0;color:var(--text);font-size:15px}
-button{background:var(--acc);color:#04121a;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
-button.sec{background:#27272a;color:var(--text)}button.link{background:none;color:var(--mut);padding:0;font-weight:400}button.danger{background:#7f1d1d;color:#fff}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:500}
-.scroll{overflow-x:auto}.flash{background:#0c2a1a;border:1px solid #14532d;border-radius:8px;padding:10px 14px;margin-bottom:16px}.flash.err{background:#2a0c0c;border-color:#7f1d1d}
-form.inline{display:inline}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 200px}.qr svg{width:200px;height:200px;background:#fff;padding:8px;border-radius:8px}
-code{background:#0c0c0f;padding:2px 6px;border-radius:4px;word-break:break-all}
-</style></head><body>
-<header><b>Capa Cero 3D · Panel</b>${menu}</header><main>${body}</main>${script ? `<script nonce="${nonce}">${script}</script>` : ''}</body></html>`;
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0a0b10"><link rel="icon" href="/favicon-48x48.png"><title>${esc(title)} · Panel Capa Cero 3D</title>
+<style nonce="${nonce}">${ADMIN_CSS}</style></head><body>${layout}${js ? `<script nonce="${nonce}">${js}</script>` : ''}</body></html>`;
   res.status(status).setHeader('Content-Type', 'text/html; charset=utf-8').send(html);
 }
 
@@ -105,12 +170,12 @@ async function setSetting(pool, key, value) {
 
 // ---------- Login y alta ----------
 function loginForm(nonce, res, error) {
-  return page(res, 'Entrar', `<div class="card" style="max-width:420px;margin:40px auto"><h1>Entrar</h1>${error ? `<div class="flash err">${esc(error)}</div>` : ''}
+  return page(res, 'Entrar', `<div class="card"><h1>Bienvenido</h1><p class="sub">Entra con tu contraseña y el código de tu app de autenticación.</p>${error ? `<div class="flash err">${esc(error)}</div>` : ''}
     <form method="post" action="/admin/login" autocomplete="off">
     <label>Email</label><input name="email" type="email" required autocomplete="username">
     <label>Contraseña</label><input name="password" type="password" required autocomplete="current-password">
     <label>Código de la app de autenticación (6 dígitos)</label><input name="code" inputmode="numeric" pattern="[0-9 ]{6,7}" required autocomplete="one-time-code">
-    <p><button>Entrar</button></p></form></div>`, { nonce, nav: false, status: error ? 401 : 200 });
+    <p style="margin-top:20px"><button type="submit">Entrar</button></p></form></div>`, { nonce, nav: false, status: error ? 401 : 200 });
 }
 
 async function handleLogin(pool, req, res, nonce) {
@@ -308,13 +373,18 @@ async function pageStats(pool) {
 async function pageSettings(pool, ctx) {
   const notif = asBool(await getSetting(pool, 'notifications_enabled', false));
   const auto = asBool(await getSetting(pool, 'auto_notify_new_video', false));
+  const interval = Number(await getSetting(pool, 'sync_interval_minutes', 360)) || 360;
   const csrf = esc(ctx.session.csrf);
   return `<h1>Ajustes</h1>${flashBox(ctx.query)}
   <div class="card"><h2>Notificaciones</h2><form method="post" action="/admin/settings"><input type="hidden" name="csrf" value="${csrf}">
     <div class="chk"><input type="checkbox" name="notifications_enabled" id="a" ${notif ? 'checked' : ''}><label for="a" style="margin:0;color:inherit">Notificaciones activadas</label></div>
     <div class="chk"><input type="checkbox" name="auto_notify_new_video" id="b" ${auto ? 'checked' : ''}><label for="b" style="margin:0;color:inherit">Avisar automáticamente de cada vídeo nuevo que detecte la sincronización</label></div>
     <button>Guardar</button></form></div>
-  <div class="card"><h2>Sincronización</h2><p class="mut">Busca vídeos nuevos del canal y actualiza estadísticas. También se ejecuta sola cada hora.</p>
+  <div class="card"><h2>Sincronización</h2><p class="mut">Busca vídeos nuevos del canal y actualiza estadísticas de forma automática con la frecuencia que elijas.</p>
+    <form method="post" action="/admin/settings/sync-interval"><input type="hidden" name="csrf" value="${csrf}"><label>Frecuencia de la búsqueda automática</label>
+      <select name="minutes">${SYNC_INTERVALS.map(([m, l]) => `<option value="${m}"${m === interval ? ' selected' : ''}>${l}</option>`).join('')}</select>
+      <p style="margin-top:14px"><button>Guardar frecuencia</button></p></form>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <form method="post" action="/admin/sync"><input type="hidden" name="csrf" value="${csrf}"><button class="sec">Sincronizar ahora</button></form>
     <form method="post" action="/admin/deploy" style="margin-top:10px"><input type="hidden" name="csrf" value="${csrf}"><button class="sec">Regenerar la web ahora</button></form></div>
   <div class="card"><h2>Seguridad</h2><p class="mut">Sesión de ${esc(ctx.session.email)}. Las sesiones caducan a las ${SESSION_HOURS} horas.</p>
@@ -508,6 +578,13 @@ const POST_ACTIONS = {
     await audit(pool, ctx.session, 'settings_saved', { notifications: ctx.body.notifications_enabled === 'on', auto: ctx.body.auto_notify_new_video === 'on' }, ctx.ip);
     return ['/admin/settings', 'm', 'Ajustes guardados.'];
   },
+  async 'settings/sync-interval'(pool, ctx) {
+    const minutes = parseInt(ctx.body.minutes, 10);
+    if (!SYNC_INTERVALS.some(([m]) => m === minutes)) return ['/admin/settings', 'e', 'Frecuencia no válida.'];
+    await setSetting(pool, 'sync_interval_minutes', minutes);
+    await audit(pool, ctx.session, 'sync_interval_saved', { minutes }, ctx.ip);
+    return ['/admin/settings', 'm', 'Frecuencia guardada.'];
+  },
   async sync(pool, ctx) {
     const r = await runSync(pool, 'admin').catch(err => ({ error: err.message }));
     await audit(pool, ctx.session, 'sync_now', r, ctx.ip);
@@ -584,10 +661,10 @@ export default async function handler(req, res) {
     }
 
     const views = { '': pageDashboard, videos: pageVideos, models: pageModels, subscribers: pageSubscribers, collaborations: pageCollaborations, notifications: pageNotifications, stats: pageStats, settings: pageSettings, audit: pageAudit };
-    if (!(route in views)) return page(res, 'No encontrado', '<h1>No encontrado</h1>', { nonce, session, status: 404 });
+    if (!(route in views)) return page(res, 'No encontrado', '<h1>No encontrado</h1>', { nonce, session, status: 404, route });
     const body = await views[route](pool, ctx);
     const script = route === 'notifications' ? SUBSCRIBE_JS(session.csrf, process.env.VAPID_PUBLIC_KEY || '') : '';
-    return page(res, route || 'Inicio', body, { nonce, session, script });
+    return page(res, route || 'Inicio', body, { nonce, session, script, route });
   } catch (err) {
     console.error('admin error:', err);
     return page(res, 'Error', '<div class="card"><h1>Algo ha fallado</h1><p>Revisa los registros del servidor.</p></div>', { nonce, status: 500, nav: false });
