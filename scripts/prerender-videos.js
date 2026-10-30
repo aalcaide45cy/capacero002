@@ -51,6 +51,18 @@ function parseChapters(description) {
   return chapters;
 }
 
+/** "4:39" o "1:02:03" -> segundos (0 si no se puede leer). */
+function labelToSeconds(label) {
+  const m = String(label || '').match(/^(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+  return m ? (Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3])) : 0;
+}
+
+/** Segundos -> duración ISO 8601 (PT4M39S), el formato que exige schema.org. */
+function isoDuration(total) {
+  const h = Math.floor(total / 3600), m = Math.floor(total % 3600 / 60), sec = total % 60;
+  return `PT${h ? h + 'H' : ''}${m || h ? m + 'M' : ''}${sec}S`;
+}
+
 function prerender() {
   console.log('⚡ Iniciando prerenderizado estático de vídeos...');
 
@@ -80,20 +92,20 @@ function prerender() {
     const metaDesc = cleanDescriptionForMeta(video.description);
     const chapters = parseChapters(video.description || '');
 
-    // Generar Clips para Schema.org si hay capítulos
+    // Generar Clips para Schema.org si hay capítulos. Cada clip necesita endOffset: el último termina con el vídeo.
+    const totalSeconds = labelToSeconds(video.duration);
     const clips = chapters.map((ch, idx) => {
       const nextCh = chapters[idx + 1];
-      const clip = {
+      const end = nextCh ? nextCh.seconds : totalSeconds;
+      if (!(end > ch.seconds)) return null;
+      return {
         "@type": "Clip",
         "name": ch.title,
         "startOffset": ch.seconds,
+        "endOffset": end,
         "url": `${videoUrl}#t=${ch.seconds}`
       };
-      if (nextCh) {
-        clip.endOffset = nextCh.seconds;
-      }
-      return clip;
-    });
+    }).filter(Boolean);
 
     // Schema.org VideoObject + BreadcrumbList
     const videoLdJson = {
@@ -128,7 +140,7 @@ function prerender() {
           "description": video.description ? video.description.slice(0, 500) : video.title,
           "thumbnailUrl": [video.thumbnail],
           "uploadDate": video.publishedAt || "2024-01-01T00:00:00Z",
-          ...(video.duration ? { "duration": video.duration } : {}),
+          ...(totalSeconds ? { "duration": isoDuration(totalSeconds) } : {}),
           "embedUrl": `https://www.youtube-nocookie.com/embed/${video.youtubeId}`,
           "interactionStatistic": {
             "@type": "InteractionCounter",
