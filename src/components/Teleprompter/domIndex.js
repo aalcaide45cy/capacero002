@@ -1,8 +1,17 @@
 import { normalizeWord } from './voiceMatch';
 
+// Posición y alto, a lo largo del texto, de un rectángulo medido en pantalla respecto al rectángulo base.
+// Con la pantalla girada 90° o 270° (botón «Girar la pantalla») el texto corre en horizontal en la pantalla física:
+// la altura en el texto es entonces la distancia en horizontal, y los rectángulos del navegador vienen ya girados.
+export function frameBox(rect, baseRect, turn = 0) {
+  if (turn === 90) return { top: baseRect.right - rect.right, height: rect.width };
+  if (turn === 270) return { top: rect.left - baseRect.left, height: rect.width };
+  return { top: rect.top - baseRect.top, height: rect.height };
+}
+
 // Recorre el guion ya pintado y devuelve: las palabras (normalizadas) con su altura en el texto,
 // los títulos para el índice y los marcadores [PAUSA] donde se detiene la lectura.
-export function buildContentIndex(contentEl, lineH = 0) {
+export function buildContentIndex(contentEl, lineH = 0, turn = 0) {
   const words = [];
   const tops = [];
   const starts = [];
@@ -12,13 +21,13 @@ export function buildContentIndex(contentEl, lineH = 0) {
   const pauses = [];
   if (!contentEl) return { words, tops, starts, ranges, els, lines: [], sentEnd: [], headings, pauses };
 
-  const base = contentEl.getBoundingClientRect().top;
+  const baseRect = contentEl.getBoundingClientRect();
 
   contentEl.querySelectorAll('h1, h2, h3').forEach(el => {
-    headings.push({ text: el.textContent.trim(), top: el.getBoundingClientRect().top - base, level: Number(el.tagName[1]) });
+    headings.push({ text: el.textContent.trim(), top: frameBox(el.getBoundingClientRect(), baseRect, turn).top, level: Number(el.tagName[1]) });
   });
   contentEl.querySelectorAll('.tp-marker[data-pause]').forEach(el => {
-    pauses.push(el.getBoundingClientRect().top - base);
+    pauses.push(frameBox(el.getBoundingClientRect(), baseRect, turn).top);
   });
   pauses.sort((a, b) => a - b);
 
@@ -42,10 +51,10 @@ export function buildContentIndex(contentEl, lineH = 0) {
       if (word) {
         range.setStart(node, m.index);
         range.setEnd(node, m.index + m[0].length);
-        const rect = range.getClientRects()[0] || range.getBoundingClientRect();
+        const rect = frameBox(range.getClientRects()[0] || range.getBoundingClientRect(), baseRect, turn);
         // La altura se guarda como la parte de arriba de la línea ocupada, centrando el texto en ella,
         // para que quede en medio de la franja de la guía de lectura
-        const center = rect.top + rect.height / 2 - base;
+        const center = rect.top + rect.height / 2;
         const block = node.parentElement.closest('p, li, h1, h2, h3, h4, blockquote, td, th') || node.parentElement;
         if (block !== lastBlock) newSentence = true;
         lastBlock = block;
@@ -54,7 +63,7 @@ export function buildContentIndex(contentEl, lineH = 0) {
         words.push(word);
         ranges.push(range.cloneRange());
         els.push(node.parentElement.closest('.tp-w'));
-        tops.push(lineH ? center - lineH / 2 : rect.top - base);
+        tops.push(lineH ? center - lineH / 2 : rect.top);
       }
       m = re.exec(text);
     }

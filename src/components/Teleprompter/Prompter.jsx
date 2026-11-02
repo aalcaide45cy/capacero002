@@ -8,7 +8,7 @@ import ScriptView from './ScriptView';
 import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } from './useMedia';
 import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
-import { buildContentIndex } from './domIndex';
+import { buildContentIndex, frameBox } from './domIndex';
 import { createKaraoke, karaokeVars, wordAtPos, wordCoordAtPos } from './karaoke';
 import { useRemoteLink } from './remote/useRemoteLink';
 import { useOutputStream } from './useOutputStream';
@@ -523,7 +523,8 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
     if (el) {
       const boxRect = box.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
-      box.scrollTop += elRect.top - boxRect.top - (box.clientHeight - elRect.height) / 2;
+      const fb = frameBox(elRect, boxRect, settingsRef.current.uiRotation || 0);
+      box.scrollTop += fb.top - (box.clientHeight - fb.height) / 2;
     } else {
       box.scrollTop = 0;
     }
@@ -628,6 +629,12 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
     return () => clearTimeout(id);
   }, [settings.karaokeOn]);
 
+  // Al girar la pantalla (también entre 90° y 270°, que no cambia el tamaño) se rehace el índice: las medidas del navegador vienen giradas
+  useEffect(() => {
+    const id = setTimeout(() => rebuildRef.current(), 500);
+    return () => clearTimeout(id);
+  }, [settings.uiRotation]);
+
   // Medidas del escenario y del texto
   useEffect(() => {
     const measure = () => {
@@ -641,7 +648,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
       clearTimeout(indexTimer);
       indexTimer = setTimeout(() => {
         const st = settingsRef.current;
-        indexRef.current = buildContentIndex(contentRef.current, st.fontSize * st.lineHeight);
+        indexRef.current = buildContentIndex(contentRef.current, st.fontSize * st.lineHeight, st.uiRotation || 0);
         const ix = indexRef.current;
         pxPerWordRef.current = ix.tops.length > 20 ? (ix.tops[ix.tops.length - 1] - ix.tops[0]) / ix.tops.length : 0;
       }, 200);
