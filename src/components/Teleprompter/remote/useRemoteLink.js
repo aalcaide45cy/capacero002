@@ -19,12 +19,16 @@ export function useRemoteLink({ id, track, api, getState, script }) {
   getStateRef.current = getState;
   scriptRef.current = script;
   trackRef.current = track;
-  const hasTrack = !!track;
   const [attempt, setAttempt] = useState(0);
+  // La conexión se abre con la primera imagen y se mantiene aunque la cámara se apague o cambie
+  const [everTrack, setEverTrack] = useState(false);
+  useEffect(() => {
+    if (track) setEverTrack(true);
+  }, [track]);
 
   // La conexión se abre cuando hay cámara y se cierra al salir
   useEffect(() => {
-    if (!id || !hasTrack) return undefined;
+    if (!id || !everTrack) return undefined;
     let cancelled = false;
     let timer = null;
     let conn = null;
@@ -99,11 +103,11 @@ export function useRemoteLink({ id, track, api, getState, script }) {
       conn?.close();
       connRef.current = null;
     };
-  }, [id, hasTrack, attempt]);
+  }, [id, everTrack, attempt]);
 
   // Si la cámara se reinicia (otra pista), se cambia la imagen que se manda sin volver a conectar
   useEffect(() => {
-    if (track) connRef.current?.replaceTrack?.(track);
+    connRef.current?.replaceTrack?.(track || null);
   }, [track]);
 
   return { status };

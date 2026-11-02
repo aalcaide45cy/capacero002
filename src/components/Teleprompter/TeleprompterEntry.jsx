@@ -74,6 +74,8 @@ function useInstall() {
   return { installed, prompt };
 }
 
+const MONITOR_KEY = 'capacero_tp_monitor_id';
+
 export default function TeleprompterEntry() {
   useTeleprompterHead();
   const install = useInstall();
@@ -88,6 +90,28 @@ export default function TeleprompterEntry() {
     }
   });
   const [monitorActive, setMonitorActive] = useState(false);
+  // Monitor ya enlazado antes en este móvil: no hace falta volver a escanear el QR
+  useEffect(() => {
+    if (monitorId) return undefined;
+    let cancelled = false;
+    try {
+      const saved = localStorage.getItem(MONITOR_KEY);
+      if (saved && /^[a-z0-9]{10}$/.test(saved)) {
+        fetch(`/api/tp-rtc?id=${saved}`, { cache: 'no-store' })
+          .then(r => {
+            if (cancelled) return;
+            if (r.ok) setMonitorId(saved);
+            else if (r.status === 404) localStorage.removeItem(MONITOR_KEY);
+          })
+          .catch(() => {});
+      }
+    } catch {
+      // sin almacenamiento: hay que escanear el QR
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [lib, setLib] = useState(loadLibrary);
   const [settings, setSettings] = useState(loadSettings);
 
@@ -180,12 +204,24 @@ export default function TeleprompterEntry() {
         library={library}
         monitorId={monitorId}
         onConnectMonitor={() => {
+          try {
+            localStorage.setItem(MONITOR_KEY, monitorId);
+          } catch {
+            // sin almacenamiento
+          }
           unlockAudio();
           update({ cameraOn: true });
           setMonitorActive(true);
           setMode('read');
         }}
-        onDismissMonitor={() => setMonitorId(null)}
+        onDismissMonitor={() => {
+          try {
+            localStorage.removeItem(MONITOR_KEY);
+          } catch {
+            // sin almacenamiento
+          }
+          setMonitorId(null);
+        }}
         onStart={() => {
           saveJSON(TP_KEYS.library, lib.items);
           saveJSON(TP_KEYS.current, lib.currentId);

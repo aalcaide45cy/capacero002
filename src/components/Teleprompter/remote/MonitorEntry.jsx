@@ -17,6 +17,7 @@ const FONT_STACKS = {
   serif: "Georgia, 'Times New Roman', serif",
   mono: "'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
 };
+const ROOM_KEY = 'capacero_tp_monitor_room';
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -370,16 +371,20 @@ export default function MonitorEntry() {
     saveJSON(KEY, settings);
   }, [settings]);
 
-  const begin = useCallback(async () => {
-    sessionRef.current?.close();
+  // fresh=true: cerrar sesión y crear otro QR; si no, se retoma el QR guardado en este PC
+  const begin = useCallback(async (fresh = false) => {
+    sessionRef.current?.close({ keep: !fresh });
     sessionRef.current = null;
     setStatus('creando');
     setRoomId(null);
     setStream(null);
     setError('');
     setRemote({});
+    if (fresh) saveJSON(ROOM_KEY, null);
     try {
+      const saved = fresh ? null : loadJSON(ROOM_KEY, null);
       const session = await startMonitor({
+        resumeId: typeof saved === 'string' && /^[a-z0-9]{10}$/.test(saved) ? saved : null,
         onStream: s => setStream(new MediaStream(s.getTracks())),
         onStatus: setStatus,
         onMessage: m => {
@@ -392,6 +397,7 @@ export default function MonitorEntry() {
         },
       });
       sessionRef.current = session;
+      saveJSON(ROOM_KEY, session.id);
       setRoomId(session.id);
       setStatus(s => (s === 'creando' ? 'esperando' : s));
     } catch (err) {
@@ -401,9 +407,10 @@ export default function MonitorEntry() {
   }, []);
 
   useEffect(() => {
-    begin();
-    return () => sessionRef.current?.close();
+    begin(false);
+    return () => sessionRef.current?.close({ keep: true });
   }, [begin]);
+  const newSession = useCallback(() => begin(true), [begin]);
 
   const send = useCallback(obj => sessionRef.current?.send(obj), []);
   const connected = status === 'conectado';
@@ -419,7 +426,7 @@ export default function MonitorEntry() {
           {status === 'error' || status === 'caducado' ? (
             <>
               <p className="tp-error">{error || 'El código ha caducado.'}</p>
-              <button type="button" className="tp-btn tp-btn-primary" onClick={begin}>Crear un QR nuevo</button>
+              <button type="button" className="tp-btn tp-btn-primary" onClick={newSession}>Crear un QR nuevo</button>
             </>
           ) : roomId ? (
             <>
@@ -453,7 +460,7 @@ export default function MonitorEntry() {
       settings={settings}
       update={update}
       send={send}
-      onNew={begin}
+      onNew={newSession}
       connected={connected}
     />
   );

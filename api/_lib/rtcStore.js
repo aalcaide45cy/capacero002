@@ -3,20 +3,20 @@
 // Sin base de datos (solo en local, nunca en Vercel) usa memoria para poder probarlo.
 import { getPool } from './db.js';
 
-// La sala vive mientras el monitor del PC siga abierto (él la «renueva» cada pocos minutos) y se borra al cerrar sesión
-const TTL_HOURS = 12;
+// La sala vive hasta que el PC cierre sesión; si nadie la usa en 30 días se borra
+const TTL_HOURS = 24 * 30;
 const memory = new Map();
 
 const useMemory = () => !process.env.DATABASE_URL && !process.env.VERCEL;
 
 export async function createRoom(id, offer) {
   if (useMemory()) {
-    for (const [k, v] of memory) if (Date.now() - v.createdAt > 24 * 3600 * 1000) memory.delete(k);
+    for (const [k, v] of memory) if (Date.now() - v.createdAt > 2 * TTL_HOURS * 3600 * 1000) memory.delete(k);
     memory.set(id, { offer, answer: null, createdAt: Date.now() });
     return;
   }
   const pool = getPool();
-  await pool.query("DELETE FROM tp_remote_rooms WHERE created_at < now() - interval '24 hours'");
+  await pool.query(`DELETE FROM tp_remote_rooms WHERE created_at < now() - interval '${2 * TTL_HOURS} hours'`);
   await pool.query('INSERT INTO tp_remote_rooms (id, offer) VALUES ($1, $2)', [id, offer]);
 }
 

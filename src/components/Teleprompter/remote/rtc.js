@@ -93,9 +93,10 @@ function wrapChannel(dc, onMessage) {
 // ── PC (monitor): crea la sala, enseña el QR y espera al móvil ──
 // La sala (y el QR) dura mientras este monitor siga abierto: si el móvil se desconecta (apaga la cámara, pierde la wifi…)
 // el PC prepara una oferta nueva en la misma sala y el móvil vuelve a conectarse solo, sin otro QR.
-export async function startMonitor({ onStream, onMessage, onStatus }) {
+export async function startMonitor({ resumeId = null, onStream, onMessage, onStatus }) {
   let closed = false;
-  let roomId = null;
+  let roomId = resumeId;
+  let first = true;
   let round = 0;
   let pc = null;
   let channel = null;
@@ -143,8 +144,17 @@ export async function startMonitor({ onStream, onMessage, onStatus }) {
     await p.setLocalDescription(offer);
     await waitIce(p);
     if (!live()) return;
-    if (roomId) await apiPost({ a: 'offer', id: roomId, offer: p.localDescription.sdp });
-    else roomId = (await apiPost({ a: 'create', offer: p.localDescription.sdp })).id;
+    if (roomId) {
+      try {
+        await apiPost({ a: 'offer', id: roomId, offer: p.localDescription.sdp });
+      } catch (err) {
+        // Al retomar una sala guardada que ya no existe, se crea otra
+        if (!(first && resumeId && err?.status === 404)) throw err;
+        roomId = null;
+      }
+    }
+    if (!roomId) roomId = (await apiPost({ a: 'create', offer: p.localDescription.sdp })).id;
+    first = false;
     if (!live()) return;
 
     // Espera la respuesta del móvil
@@ -177,7 +187,8 @@ export async function startMonitor({ onStream, onMessage, onStatus }) {
   return {
     id: roomId,
     send: obj => (channel ? channel.send(obj) : false),
-    close() {
+    // keep: solo deja de usar la sala (el QR sigue valiendo); sin keep, cierra la sesión y la borra
+    close({ keep = false } = {}) {
       closed = true;
       clearInterval(pollTimer);
       clearInterval(pingTimer);
@@ -186,7 +197,7 @@ export async function startMonitor({ onStream, onMessage, onStatus }) {
       } catch {
         // ya cerrada
       }
-      if (roomId) apiPost({ a: 'close', id: roomId }).catch(() => {});
+      if (roomId && !keep) apiPost({ a: 'close', id: roomId }).catch(() => {});
     },
   };
 }
@@ -222,9 +233,10 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
 
   await pc.setRemoteDescription({ type: 'offer', sdp: room.offer });
   const transceiver = pc.getTransceivers().find(t => t.receiver.track.kind === 'video');
-  if (transceiver && track) {
+  if (transceiver) {
+    // Siempre «solo enviar»: la cámara puede estar apagada ahora y encenderse (o cambiar) después
     transceiver.direction = 'sendonly';
-    await transceiver.sender.replaceTrack(track);
+    if (track) await transceiver.sender.replaceTrack(track);
   }
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
@@ -233,13 +245,14 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
   await apiPost({ a: 'answer', id, answer: pc.localDescription.sdp, oid: /^o=\S+ (\d+)/m.exec(room.offer)?.[1] });
 
   // La copia que ve el PC es una vista previa: ~720p y poco bitrate para no cargar al móvil mientras graba
+  let current = track;
   const limitQuality = async () => {
     try {
       if (!transceiver) return;
       const p = transceiver.sender.getParameters();
       if (!p.encodings || !p.encodings.length) p.encodings = [{}];
-      const w = track?.getSettings?.().width || 1280;
-      const h = track?.getSettings?.().height || 720;
+      const w = current?.getSettings?.().width || 1280;
+      const h = current?.getSettings?.().height || 720;
       const longSide = Math.max(w, h);
       p.encodings[0].maxBitrate = 2_500_000;
       p.encodings[0].maxFramerate = 30;
@@ -253,7 +266,12 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
 
   return {
     send: obj => (channel ? channel.send(obj) : false),
-    replaceTrack: t => transceiver?.sender.replaceTrack(t).catch(() => {}),
+    // Otra cámara (o apagada): se cambia la imagen que se manda sin cortar la conexión
+    replaceTrack: async t => {
+      current = t;
+      await transceiver?.sender.replaceTrack(t).catch(() => {});
+      if (t) limitQuality();
+    },
     close() {
       closed = true;
       try {
