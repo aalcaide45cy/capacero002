@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS = {
   fps: 30,
   outputFormat: 'normal',
   cropY: 30,
+  cropPreview: 'recorded',
   cropGuide: true,
   cropShade: 0.25,
   outputScale: 'native',

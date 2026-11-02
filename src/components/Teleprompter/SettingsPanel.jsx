@@ -595,6 +595,24 @@ function OutputFormatControls({ settings, update, recording, withScale }) {
         />
       )}
       {settings.outputFormat === 'crop' && (
+        <Segmented
+          label="Vista previa en pantalla"
+          keywords="recorte encuadre ver"
+          value={settings.cropPreview}
+          onChange={v => update({ cropPreview: v })}
+          options={[{ value: 'recorded', label: 'Solo lo que se graba' }, { value: 'full', label: 'Encuadre completo' }]}
+        />
+      )}
+      {settings.outputFormat === 'crop' && settings.resolution !== '2160' && (
+        <Row label="Aviso: el recorte baja la resolución" keywords="4k nitidez calidad">
+          <p className="tp-hint">
+            Un recorte horizontal de la cámara vertical pierde resolución: con la cámara en {settings.resolution === '720' ? '720p' : '1080p'} el vídeo sale
+            de unos {settings.resolution === '720' ? '720 × 405' : '1080 × 608'}. Para un vídeo nítido pon la cámara en 4K.
+          </p>
+          <button type="button" className="tp-btn" disabled={recording} onClick={() => update({ resolution: '2160' })}>Poner la cámara en 4K</button>
+        </Row>
+      )}
+      {settings.outputFormat === 'crop' && settings.cropPreview === 'full' && (
         <>
           <Toggle label="Mostrar el recuadro del recorte" keywords="guía marco" checked={settings.cropGuide} onChange={v => update({ cropGuide: v })} />
           {settings.cropGuide && (
@@ -663,7 +681,7 @@ const GROUPS = [
   {
     id: 'grabacion', label: 'Grabar', icon: Circle, color: '#f87171', soft: 'rgba(248, 113, 113, 0.16)',
     desc: 'Calidad, copias y rendimiento',
-    keys: ['outputFormat', 'cropY', 'cropGuide', 'cropShade', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
+    keys: ['outputFormat', 'cropY', 'cropPreview', 'cropGuide', 'cropShade', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
   },
   {
     id: 'interfaz', label: 'Interfaz', icon: SlidersHorizontal, color: '#fbbf24', soft: 'rgba(251, 191, 36, 0.16)',

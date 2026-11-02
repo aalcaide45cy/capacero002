@@ -155,7 +155,7 @@ function CropGuide({ videoRef, boxRef, cropY, enabled, shade }) {
 
 // Coloca el vídeo de la cámara cubriendo (o conteniendo) el escenario calculando el tamaño a mano.
 // Safari en iPhone a veces no actualiza object-fit al cambiar el tamaño de la imagen y la deja pequeña.
-function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source) {
+function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30) {
   useEffect(() => {
     const v = videoRef.current;
     const box = boxRef.current;
@@ -177,6 +177,24 @@ function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source) {
         v.style.objectFit = fit === 'contain' ? 'contain' : 'cover';
         return;
       }
+      if (fit === 'crop') {
+        // Solo se ve lo que se graba: el recorte 16:9 ocupa el ancho de la pantalla y se centra; el resto se oculta
+        const wide = vw / vh > 16 / 9;
+        const sw = wide ? Math.round(vh * (16 / 9)) : vw;
+        const sh = wide ? vh : Math.round(vw * (9 / 16));
+        const sx = wide ? Math.round((vw - sw) / 2) : 0;
+        const sy = wide ? 0 : Math.round((vh - sh) * (cropY / 100));
+        const k = Math.min(cw / sw, ch / sh);
+        v.style.objectFit = 'fill';
+        v.style.width = `${Math.round(vw * k)}px`;
+        v.style.height = `${Math.round(vh * k)}px`;
+        const shiftX = -(sx + sw / 2 - vw / 2) * k;
+        const shiftY = -(sy + sh / 2 - vh / 2) * k;
+        v.style.transform = `translate(calc(-50% + ${shiftX}px), calc(-50% + ${shiftY}px))${flip}`;
+        v.style.clipPath = `inset(${sy * k}px ${(vw - sx - sw) * k}px ${(vh - sy - sh) * k}px ${sx * k}px)`;
+        return;
+      }
+      v.style.clipPath = '';
       const scale = fit === 'contain' ? Math.min(cw / vw, ch / vh) : Math.max(cw / vw, ch / vh);
       v.style.objectFit = 'fill';
       v.style.width = `${Math.round(vw * scale)}px`;
@@ -197,7 +215,7 @@ function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source) {
       window.removeEventListener('orientationchange', apply);
       clearInterval(timer);
     };
-  }, [videoRef, boxRef, enabled, fit, mirror, source]);
+  }, [videoRef, boxRef, enabled, fit, mirror, source, cropY]);
 }
 
 function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
@@ -747,7 +765,10 @@ export default function Prompter({ script, settings, update, onExit }) {
     };
   }, [recorder.recording]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useVideoFit(videoRef, camBoxRef, settings.cameraOn, settings.cameraFit, settings.cameraMirror, camera.preview);
+  // En horizontal (recorte o barras) la vista previa enseña lo que de verdad se graba, sin recortar los lados
+  const previewFit =
+    settings.outputFormat === 'crop' ? (settings.cropPreview === 'recorded' ? 'crop' : 'contain') : settings.outputFormat === 'bars' ? 'contain' : settings.cameraFit;
+  useVideoFit(videoRef, camBoxRef, settings.cameraOn, previewFit, settings.cameraMirror, camera.preview, settings.cropY);
 
   // Vídeo de la cámara
   useEffect(() => {
@@ -1017,7 +1038,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       {settings.cameraOn && (
         <div className="tp-camera" ref={camBoxRef}>
           <video ref={videoRef} autoPlay playsInline muted />
-          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropGuide} />
+          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropPreview === 'full' && settings.cropGuide} />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
       )}
