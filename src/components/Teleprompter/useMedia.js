@@ -55,7 +55,8 @@ function audioConstraints({ micId, echoCancellation, noiseSuppression, autoGainC
   return audio;
 }
 
-function buildConstraints(opts, useDeviceIds) {
+// videoIds / audioIds: pedir la cámara y el micrófono elegidos por su identificador; facing: forzar frontal o trasera
+function buildConstraints(opts, { videoIds = true, audioIds = true, facing = null } = {}) {
   const { cameraSource, resolution, fps } = opts;
   const res = RESOLUTIONS[resolution] || RESOLUTIONS['1080'];
   const video = {
@@ -63,12 +64,54 @@ function buildConstraints(opts, useDeviceIds) {
     height: { ideal: res.height },
     frameRate: { ideal: fps },
   };
-  if (cameraSource === 'user' || cameraSource === 'environment' || !useDeviceIds) {
+  if (facing) {
+    video.facingMode = { ideal: facing };
+  } else if (cameraSource === 'user' || cameraSource === 'environment' || !videoIds) {
     video.facingMode = { ideal: cameraSource === 'environment' ? 'environment' : 'user' };
   } else {
     video.deviceId = { exact: cameraSource };
   }
-  return { video, audio: audioConstraints(opts, useDeviceIds) };
+  return { video, audio: audioConstraints(opts, audioIds) };
+}
+
+const BACK_LABEL = /trasera|posterior|back|rear|environment/i;
+
+// Abre la cámara probando, por orden, lo más fiel a lo elegido. Antes, si fallaba el micrófono elegido, también se
+// perdía la cámara elegida y volvía la frontal sin avisar: ahora se quita solo lo que falla y se cuenta qué pasó.
+async function openMedia(opts) {
+  const gum = c => navigator.mediaDevices.getUserMedia(c);
+  const source = opts.cameraSource;
+  const byId = source !== 'user' && source !== 'environment';
+  const steps = [{ videoIds: true, audioIds: true }];
+  if (opts.micId && opts.micId !== 'default') steps.push({ videoIds: true, audioIds: false });
+  if (byId) {
+    let facing = 'user';
+    try {
+      const list = await navigator.mediaDevices.enumerateDevices();
+      const dev = list.find(d => d.kind === 'videoinput' && d.deviceId === source);
+      if (dev && BACK_LABEL.test(dev.label)) facing = 'environment';
+    } catch {
+      // sin lista de dispositivos
+    }
+    steps.push({ facing, audioIds: false });
+    if (facing !== 'user') steps.push({ facing: 'user', audioIds: false });
+  }
+  let firstError = null;
+  for (let i = 0; i < steps.length; i++) {
+    try {
+      const stream = await gum(buildConstraints(opts, steps[i]));
+      const micOnly = i === 1 && steps[1].videoIds;
+      const note = i === 0 ? '' : micOnly
+        ? 'El micrófono elegido no está disponible: se usa el predeterminado (la cámara elegida se mantiene).'
+        : `No se pudo abrir la cámara elegida (${firstError?.name || 'error'}): se usa otra. Elige otra en Ajustes → Cámara.`;
+      return { stream, note, step: i };
+    } catch (err) {
+      if (!firstError) firstError = err;
+      // Permiso denegado u otros fallos no se arreglan quitando identificadores
+      if (err?.name !== 'OverconstrainedError' && err?.name !== 'NotFoundError') throw err;
+    }
+  }
+  throw firstError;
 }
 
 const dbToGain = db => 10 ** (db / 20);
@@ -180,14 +223,9 @@ export function useCamera(settings, enabled) {
 
     (async () => {
       try {
-        let s;
-        try {
-          s = await navigator.mediaDevices.getUserMedia(buildConstraints(opts, true));
-        } catch (err) {
-          // Si el dispositivo elegido ya no está conectado, se usa el predeterminado
-          if (err?.name !== 'OverconstrainedError' && err?.name !== 'NotFoundError') throw err;
-          s = await navigator.mediaDevices.getUserMedia(buildConstraints(opts, false));
-        }
+        // Si el dispositivo elegido ya no está conectado, se usa otro (y se avisa)
+        const { stream: s, note, step } = await openMedia(opts);
+        recLog.add(`cámara abierta: pedida=${opts.cameraSource} paso=${step} obtenida=${s.getVideoTracks()[0]?.label || '?'} (${s.getVideoTracks()[0]?.getSettings?.().deviceId || ''})`);
         if (cancelled) {
           stopStream(s);
           return;
@@ -203,7 +241,7 @@ export function useCamera(settings, enabled) {
         setMicTrack(rawAudio);
         setPreview(new MediaStream(s.getVideoTracks()));
         setStream(final);
-        setError('');
+        setError(note);
         refreshDevices();
       } catch (err) {
         if (!cancelled) setError(describeError(err));
