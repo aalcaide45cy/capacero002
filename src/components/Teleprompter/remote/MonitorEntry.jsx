@@ -30,7 +30,7 @@ function loadMonitorSettings() {
     align: 'center',
     cameraMirror: true,
     cameraDim: 0.35,
-    cameraFit: 'cover',
+    cameraFit: 'contain',
     ...(saved && typeof saved === 'object' ? saved : {}),
   };
 }
