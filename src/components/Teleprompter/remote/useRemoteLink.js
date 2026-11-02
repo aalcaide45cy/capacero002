@@ -8,13 +8,17 @@ import { recLog } from '../recLog';
 //  api       { toggle, play, pause, record, stop, restart, faster, slower, next, prev }
 //  getState  () => estado de la lectura que se manda al PC unas 5 veces por segundo
 //  script    { id, name, text, format }
-export function useRemoteLink({ id, track, api, getState, script }) {
+//  light     enlace solo de imagen (pantalla de OBS): no manda guion ni estado
+//  getQuality  () => { v, mbps } calidad con la que arranca este enlace
+export function useRemoteLink({ id, track, api, getState, script, light = false, getQuality = null }) {
   const [status, setStatus] = useState(id ? 'esperando' : 'idle');
   const connRef = useRef(null);
   const apiRef = useRef(api);
   const getStateRef = useRef(getState);
   const scriptRef = useRef(script);
   const trackRef = useRef(track);
+  const getQualityRef = useRef(getQuality);
+  getQualityRef.current = getQuality;
   apiRef.current = api;
   getStateRef.current = getState;
   scriptRef.current = script;
@@ -43,6 +47,7 @@ export function useRemoteLink({ id, track, api, getState, script }) {
     const afterOpen = () => {
       if (!conn || !opened || cancelled) return;
       conn.send({ t: 'hello', v: 1 });
+      if (light) return;
       sendScript();
       clearInterval(timer);
       timer = setInterval(() => conn.send({ t: 'state', ...getStateRef.current() }), 200);
@@ -61,7 +66,9 @@ export function useRemoteLink({ id, track, api, getState, script }) {
       isCancelled: () => cancelled,
       onMessage: m => {
         if (m.t === 'cmd' && m.c === 'quality') {
-          conn?.setQuality?.(m.v, m.mbps);
+          // target «obs»: el monitor del PC elige la calidad de la pantalla de OBS, que es otro enlace
+          if (m.target === 'obs') apiRef.current.qualityObs?.(m.v, m.mbps);
+          else conn?.setQuality?.(m.v, m.mbps);
         } else if (m.t === 'cmd' && apiRef.current[m.c]) {
           recLog.add(`monitor remoto: orden «${m.c}»`);
           apiRef.current[m.c](m.v);
@@ -89,6 +96,8 @@ export function useRemoteLink({ id, track, api, getState, script }) {
         }
         conn = c;
         connRef.current = c;
+        const q = getQualityRef.current?.();
+        if (q) c.setQuality?.(q.v, q.mbps);
         afterOpen();
       })
       .catch(err => {
@@ -112,5 +121,5 @@ export function useRemoteLink({ id, track, api, getState, script }) {
     connRef.current?.replaceTrack?.(track || null);
   }, [track]);
 
-  return { status };
+  return { status, setQuality: (l, m) => connRef.current?.setQuality?.(l, m) };
 }

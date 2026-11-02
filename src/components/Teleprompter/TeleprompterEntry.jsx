@@ -74,44 +74,77 @@ function useInstall() {
   return { installed, prompt };
 }
 
-const MONITOR_KEY = 'capacero_tp_monitor_id';
+const MONITOR_KEY = 'capacero_tp_monitor_id'; // antiguo: un solo monitor
+const MONITORS_KEY = 'capacero_tp_monitors'; // { main, obs }
+const ID_RE = /^[a-z0-9]{10}$/;
+const NO_MONITORS = { main: null, obs: null };
+
+function readMonitors() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(MONITORS_KEY) || 'null') || {};
+    const old = localStorage.getItem(MONITOR_KEY);
+    return {
+      main: ID_RE.test(raw.main || '') ? raw.main : ID_RE.test(old || '') ? old : null,
+      obs: ID_RE.test(raw.obs || '') ? raw.obs : null,
+    };
+  } catch {
+    return { ...NO_MONITORS };
+  }
+}
+
+function writeMonitors(m) {
+  try {
+    localStorage.setItem(MONITORS_KEY, JSON.stringify(m));
+    localStorage.removeItem(MONITOR_KEY);
+  } catch {
+    // sin almacenamiento
+  }
+}
 
 export default function TeleprompterEntry() {
   useTeleprompterHead();
   const install = useInstall();
   const [mode, setMode] = useState('edit');
-  // Enlace del QR del monitor del PC: /tp?monitor=<código>
-  const [monitorId, setMonitorId] = useState(() => {
+  // Enlace de un QR: /tp?monitor=<código> (monitor del PC) o /tp?monitor=<código>&role=obs (pantalla limpia de OBS)
+  const [pending, setPending] = useState(() => {
     try {
-      const v = new URLSearchParams(window.location.search).get('monitor');
-      return v && /^[a-z0-9]{10}$/.test(v) ? v : null;
+      const q = new URLSearchParams(window.location.search);
+      const v = q.get('monitor');
+      return v && ID_RE.test(v) ? { id: v, role: q.get('role') === 'obs' ? 'obs' : 'main' } : null;
     } catch {
       return null;
     }
   });
   const [monitorActive, setMonitorActive] = useState(false);
-  // Monitor ya enlazado antes en este móvil: no hace falta volver a escanear el QR
+  // Monitores ya enlazados antes en este móvil: no hace falta volver a escanear los QR
+  const [monitors, setMonitors] = useState(NO_MONITORS);
   useEffect(() => {
-    if (monitorId) return undefined;
     let cancelled = false;
-    try {
-      const saved = localStorage.getItem(MONITOR_KEY);
-      if (saved && /^[a-z0-9]{10}$/.test(saved)) {
-        fetch(`/api/tp-rtc?id=${saved}`, { cache: 'no-store' })
-          .then(r => {
-            if (cancelled) return;
-            if (r.ok) setMonitorId(saved);
-            else if (r.status === 404) localStorage.removeItem(MONITOR_KEY);
-          })
-          .catch(() => {});
-      }
-    } catch {
-      // sin almacenamiento: hay que escanear el QR
-    }
+    const saved = readMonitors();
+    ['main', 'obs'].forEach(role => {
+      const id = saved[role];
+      if (!id) return;
+      fetch(`/api/tp-rtc?id=${id}`, { cache: 'no-store' })
+        .then(r => {
+          if (cancelled) return;
+          if (r.ok) setMonitors(m => ({ ...m, [role]: id }));
+          else if (r.status === 404) writeMonitors({ ...readMonitors(), [role]: null });
+        })
+        .catch(() => {});
+    });
     return () => {
       cancelled = true;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+  // Con un QR recién escaneado se conecta ese y los que ya estaban guardados
+  const withPending = pending ? { ...monitors, [pending.role]: pending.id } : monitors;
+  const hasMonitor = !!(withPending.main || withPending.obs);
+  const monitorTitle = pending ? (pending.role === 'obs' ? 'Pantalla de OBS detectada' : 'Monitor del PC detectado') : 'Monitor del PC guardado';
+  const monitorText = pending
+    ? pending.role === 'obs'
+      ? `Este móvil mandará la imagen limpia a OBS${withPending.main ? ' y seguirá conectado al monitor del PC' : ''}. Pide permiso para la cámara.`
+      : `Este móvil hará de cámara: grabará aquí y el PC verá la imagen y el guion${withPending.obs ? ' (y OBS también)' : ''}. Pide permiso para la cámara.`
+    : `Se volverá a conectar con ${withPending.main && withPending.obs ? 'el monitor del PC y OBS' : withPending.obs ? 'OBS' : 'el monitor del PC'}. Pide permiso para la cámara.`;
   const [lib, setLib] = useState(loadLibrary);
   const [settings, setSettings] = useState(loadSettings);
 
@@ -183,7 +216,7 @@ export default function TeleprompterEntry() {
           script={script}
           settings={settings}
           update={update}
-          monitorId={monitorActive ? monitorId : null}
+          monitors={monitorActive ? withPending : NO_MONITORS}
           onExit={() => {
             setMode('edit');
             setMonitorActive(false);
@@ -202,25 +235,25 @@ export default function TeleprompterEntry() {
         update={update}
         install={install}
         library={library}
-        monitorId={monitorId}
+        monitorId={hasMonitor}
+        monitorTitle={monitorTitle}
+        monitorText={monitorText}
         onConnectMonitor={() => {
-          try {
-            localStorage.setItem(MONITOR_KEY, monitorId);
-          } catch {
-            // sin almacenamiento
-          }
+          writeMonitors(withPending);
+          setMonitors(withPending);
+          setPending(null);
           unlockAudio();
           update({ cameraOn: true });
           setMonitorActive(true);
           setMode('read');
         }}
         onDismissMonitor={() => {
-          try {
-            localStorage.removeItem(MONITOR_KEY);
-          } catch {
-            // sin almacenamiento
+          // «Ahora no» con un QR nuevo lo descarta; sobre los guardados, los olvida
+          if (pending) setPending(null);
+          else {
+            writeMonitors(NO_MONITORS);
+            setMonitors(NO_MONITORS);
           }
-          setMonitorId(null);
         }}
         onStart={() => {
           saveJSON(TP_KEYS.library, lib.items);

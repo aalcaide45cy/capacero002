@@ -47,7 +47,7 @@ function ImportEditorModal({ files, onPick, onClose }) {
   );
 }
 
-export default function ScriptEditor({ script, setScript, settings, update, onStart, install, library, monitorId, onConnectMonitor, onDismissMonitor }) {
+export default function ScriptEditor({ script, setScript, settings, update, onStart, install, library, monitorId, monitorTitle, monitorText, onConnectMonitor, onDismissMonitor }) {
   const fileInput = useRef(null);
   const [tab, setTab] = useState('write');
   const [panelOpen, setPanelOpen] = useState(false);
@@ -164,8 +164,8 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
       {monitorId && (
         <div className="tp-monitor-banner">
           <div>
-            <strong>Monitor del PC detectado</strong>
-            <p>Este móvil hará de cámara: grabará aquí y el PC verá la imagen y el guion. Pide permiso para la cámara.</p>
+            <strong>{monitorTitle || 'Monitor del PC detectado'}</strong>
+            <p>{monitorText || 'Este móvil hará de cámara: grabará aquí y el PC verá la imagen y el guion. Pide permiso para la cámara.'}</p>
           </div>
           <div className="tp-modal-actions">
             <button type="button" className="tp-btn tp-btn-primary" onClick={onConnectMonitor}>Conectar con el monitor</button>

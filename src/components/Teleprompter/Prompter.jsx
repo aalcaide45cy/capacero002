@@ -17,7 +17,7 @@ import { recLog, describeTrack } from './recLog';
 import { unlockAudio, beep } from './audioCtx';
 import { parseVoiceCommand } from './voiceCommands';
 import { saveRecording, deleteRecording } from './recStore';
-import { loadPosition, savePosition } from './storage';
+import { loadPosition, savePosition, loadJSON, saveJSON } from './storage';
 
 const FONT_STACKS = {
   sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
@@ -294,7 +294,8 @@ function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
   );
 }
 
-export default function Prompter({ script, settings, update, onExit, monitorId = null }) {
+export default function Prompter({ script, settings, update, onExit, monitors = { main: null, obs: null } }) {
+  const monitorId = monitors.main;
   const stageRef = useRef(null);
   const contentRef = useRef(null);
   const videoRef = useRef(null);
@@ -355,6 +356,7 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
   const [ownTrack, setOwnTrack] = useState(null);
   const liveRef = useRef({});
   const remoteApi = useRef({});
+  const obsStatusRef = useRef(null);
 
   const requestedVoice = settings.voiceMode;
   const srSupported = speechRecognitionSupported();
@@ -1007,6 +1009,7 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
       speed: s.speed,
       w,
       idx: Math.floor(w),
+      obs: obsStatusRef.current,
       cams: camsRef.current.list,
       cam: camsRef.current.current,
       torch: torchRef.current.supported ? torchRef.current.on : null,
@@ -1027,6 +1030,23 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
     const current = list.find(([, l]) => t && l === t.label)?.[0] || t?.getSettings?.().deviceId || '';
     camsRef.current = { list, current };
   }
+  // Pantalla limpia de OBS: otro enlace que solo lleva la imagen. Su calidad la elige el monitor del PC
+  const obsQuality = useRef(loadJSON('capacero_tp_obs_quality', { v: 'alta', mbps: 0 }));
+  const obsLink = useRemoteLink({
+    id: monitors.obs,
+    track: camera.preview?.getVideoTracks()[0] || null,
+    api: {},
+    getState: () => ({}),
+    script,
+    light: true,
+    getQuality: () => obsQuality.current,
+  });
+  obsStatusRef.current = monitors.obs ? obsLink.status : null;
+  remoteApi.current.qualityObs = (v, m) => {
+    obsQuality.current = { v, mbps: m || 0 };
+    saveJSON('capacero_tp_obs_quality', obsQuality.current);
+    obsLink.setQuality(v, m);
+  };
   const remote = useRemoteLink({
     id: monitorId,
     track: camera.preview?.getVideoTracks()[0] || null,
@@ -1245,10 +1265,11 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
       )}
 
       <div className="tp-bottom">
-        {(cameraActive || requestedVoice !== 'off' || monitorId || settings.voiceCommands) && (
+        {(cameraActive || requestedVoice !== 'off' || monitorId || monitors.obs || settings.voiceCommands) && (
           <div className="tp-status" aria-live="polite">
             {settings.voiceCommands && <span className="tp-status-voice">🎤 órdenes de voz</span>}
             {monitorId && <span className="tp-status-voice">🖥 monitor: {remoteText}</span>}
+            {monitors.obs && <span className="tp-status-voice">📺 OBS: {{ esperando: 'esperando cámara', conectando: 'conectando…', conectado: 'conectado', cerrado: 'sin conexión', error: 'error de conexión', caducado: 'QR caducado: genera otro' }[obsLink.status] || ''}</span>}
             {recorder.recording && (
               <span className="tp-rec-badge">
                 <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}

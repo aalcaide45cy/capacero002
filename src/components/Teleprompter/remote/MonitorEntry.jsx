@@ -36,6 +36,8 @@ function loadMonitorSettings(clean = false) {
     cameraZoom: 1,
     monitorQuality: 'alta',
     monitorMbps: 0,
+    obsQuality: 'alta',
+    obsMbps: 0,
     ...(saved && typeof saved === 'object' ? saved : {}),
     // El monitor siempre enseña la imagen completa de la cámara del móvil
     cameraFit: 'contain',
@@ -359,6 +361,31 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
                 <option value={0} style={{ color: '#000' }}>Mbps: automático</option>
                 {[1, 2, 4, 6, 8, 12, 20, 30].map(m => <option key={m} value={m} style={{ color: '#000' }}>{m} Mbps</option>)}
               </select>
+              {remote.obs != null && (
+                <>
+                  <select
+                    className="tp-ctrl"
+                    style={{ width: 'auto', padding: '0 8px', background: 'transparent', color: 'inherit' }}
+                    value={settings.obsQuality}
+                    onChange={e => update({ obsQuality: e.target.value })}
+                    aria-label="Calidad de OBS"
+                    title={`Calidad de la imagen que va a /tp/monitor-obs (OBS: ${remote.obs})`}
+                  >
+                    {Object.entries(QUALITY_LABELS).map(([k, l]) => <option key={k} value={k} style={{ color: '#000' }}>OBS: {l}</option>)}
+                  </select>
+                  <select
+                    className="tp-ctrl"
+                    style={{ width: 'auto', padding: '0 8px', background: 'transparent', color: 'inherit' }}
+                    value={settings.obsMbps}
+                    onChange={e => update({ obsMbps: Number(e.target.value) })}
+                    aria-label="Mbps de OBS"
+                    title="Límite de Mbps de la imagen que va a /tp/monitor-obs"
+                  >
+                    <option value={0} style={{ color: '#000' }}>OBS: Mbps automático</option>
+                    {[1, 2, 4, 6, 8, 12, 20, 30].map(m => <option key={m} value={m} style={{ color: '#000' }}>OBS: {m} Mbps</option>)}
+                  </select>
+                </>
+              )}
               <label className="tp-ctrl" style={{ width: 'auto', padding: '0 10px', gap: 6, display: 'flex', alignItems: 'center' }} title="Zoom solo en este monitor (digital)">
                 <ZoomIn size={18} />
                 <input
@@ -507,9 +534,13 @@ export default function MonitorEntry({ clean = false }) {
   const connected = status === 'conectado';
   // El móvil manda la imagen con la calidad que se elige aquí (y se repite cada vez que se reconecta)
   useEffect(() => {
-    if (connected) send({ t: 'cmd', c: 'quality', v: settings.monitorQuality, mbps: settings.monitorMbps });
-  }, [connected, settings.monitorQuality, settings.monitorMbps, send]);
-  const link = useMemo(() => (roomId ? `${window.location.origin}/tp?monitor=${roomId}` : ''), [roomId]);
+    if (connected && !clean) send({ t: 'cmd', c: 'quality', v: settings.monitorQuality, mbps: settings.monitorMbps });
+  }, [connected, clean, settings.monitorQuality, settings.monitorMbps, send]);
+  // La calidad de la pantalla de OBS se elige aquí y la aplica el móvil a su enlace con OBS
+  useEffect(() => {
+    if (connected && !clean) send({ t: 'cmd', c: 'quality', target: 'obs', v: settings.obsQuality, mbps: settings.obsMbps });
+  }, [connected, clean, settings.obsQuality, settings.obsMbps, send]);
+  const link = useMemo(() => (roomId ? `${window.location.origin}/tp?monitor=${roomId}${clean ? '&role=obs' : ''}` : ''), [roomId, clean]);
 
   // Mientras no hay móvil conectado: el QR
   if (!connected && (!script || clean)) {
