@@ -789,7 +789,8 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-panel .tp-log textarea { max-width: 100%; }
 
 /* ───────── Panel de ajustes por grupos ───────── */
-.tp-panel { width: min(400px, 100%); }
+.tp-panel { width: min(400px, calc(100% - 40px)); }
+@media (max-width: 380px) { .tp-panel { width: calc(100% - 32px); } }
 .tp-panel-nav {
   padding: 10px 12px 8px;
   border-bottom: 1px solid var(--tp-border);
@@ -1057,3 +1058,8 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-ctrl.has-label { flex-direction: column; gap: 1px; width: 52px; }
 .tp-ctrl.has-label small { font-size: 9px; font-weight: 700; line-height: 1; }
 .tp-ctrl:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Un toque fuera del panel de ajustes lo cierra */
+.tp-panel-backdrop { position: absolute; inset: 0; z-index: 29; background: transparent; }
+/* Nada dentro de la pantalla de lectura puede desplazar el contenedor (scrollIntoView, foco...) */
+.tp-prompter, .tp-camera { overflow: clip; }

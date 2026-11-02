@@ -594,6 +594,23 @@ function OutputFormatControls({ settings, update, recording, withScale }) {
           onChange={v => update({ cropY: v })}
         />
       )}
+      {settings.outputFormat === 'crop' && (
+        <>
+          <Toggle label="Mostrar el recuadro del recorte" keywords="guía marco" checked={settings.cropGuide} onChange={v => update({ cropGuide: v })} />
+          {settings.cropGuide && (
+            <Range
+              label="Oscurecer lo que queda fuera del recorte"
+              keywords="sombra guía"
+              value={settings.cropShade}
+              min={0}
+              max={0.8}
+              step={0.05}
+              format={v => (v === 0 ? 'sin oscurecer' : `${Math.round(v * 100)} %`)}
+              onChange={v => update({ cropShade: v })}
+            />
+          )}
+        </>
+      )}
       {withScale && settings.outputFormat !== 'normal' && (
         <Select
           label="Tamaño del vídeo horizontal"
@@ -646,7 +663,7 @@ const GROUPS = [
   {
     id: 'grabacion', label: 'Grabar', icon: Circle, color: '#f87171', soft: 'rgba(248, 113, 113, 0.16)',
     desc: 'Calidad, copias y rendimiento',
-    keys: ['outputFormat', 'cropY', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
+    keys: ['outputFormat', 'cropY', 'cropGuide', 'cropShade', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
   },
   {
     id: 'interfaz', label: 'Interfaz', icon: SlidersHorizontal, color: '#fbbf24', soft: 'rgba(251, 191, 36, 0.16)',
@@ -1412,6 +1429,9 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
   };
 
   return (
+    <>
+    {/* Capa transparente: un toque fuera del panel lo cierra */}
+    <div className="tp-panel-backdrop" onClick={onClose} aria-hidden="true" />
     <aside className="tp-panel" aria-label="Ajustes del teleprompter" ref={panelRef}>
       <header className="tp-panel-header">
         <h2>{view === 'presets' ? 'Presets' : 'Ajustes'}</h2>
@@ -1494,5 +1514,6 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
       </>
       )}
     </aside>
+    </>
   );
 }

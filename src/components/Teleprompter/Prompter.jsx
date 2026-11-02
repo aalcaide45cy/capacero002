@@ -116,7 +116,7 @@ function LogBox({ text }) {
 }
 
 // Marca en la vista previa qué franja 16:9 del encuadre vertical es la que se graba
-function CropGuide({ videoRef, boxRef, cropY, enabled }) {
+function CropGuide({ videoRef, boxRef, cropY, enabled, shade }) {
   const ref = useRef(null);
   useEffect(() => {
     if (!enabled) return undefined;
@@ -150,7 +150,7 @@ function CropGuide({ videoRef, boxRef, cropY, enabled }) {
     };
   }, [videoRef, boxRef, cropY, enabled]);
   if (!enabled) return null;
-  return <div className="tp-crop-guide" ref={ref} aria-hidden="true" />;
+  return <div className="tp-crop-guide" ref={ref} aria-hidden="true" style={{ boxShadow: `0 0 0 9999px rgba(0, 0, 0, ${shade})` }} />;
 }
 
 // Coloca el vídeo de la cámara cubriendo (o conteniendo) el escenario calculando el tamaño a mano.
@@ -419,9 +419,17 @@ export default function Prompter({ script, settings, update, onExit }) {
   // Al abrir el índice, o al cambiar de sección con él abierto, la lista se coloca en la sección actual
   useEffect(() => {
     if (!indexOpen) return;
-    const el = indexPanelRef.current?.querySelector('[aria-current="true"]');
-    if (el) el.scrollIntoView({ block: 'center' });
-    else if (indexPanelRef.current) indexPanelRef.current.scrollTop = 0;
+    // Se desplaza solo la lista (scrollIntoView arrastraba también la pantalla de lectura entera)
+    const box = indexPanelRef.current;
+    if (!box) return;
+    const el = box.querySelector('[aria-current="true"]');
+    if (el) {
+      const boxRect = box.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      box.scrollTop += elRect.top - boxRect.top - (box.clientHeight - elRect.height) / 2;
+    } else {
+      box.scrollTop = 0;
+    }
   }, [indexOpen, curSection]);
 
   // Coloca el cursor del reconocimiento en la palabra que está en la guía de lectura
@@ -1009,7 +1017,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       {settings.cameraOn && (
         <div className="tp-camera" ref={camBoxRef}>
           <video ref={videoRef} autoPlay playsInline muted />
-          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} enabled={settings.outputFormat === 'crop'} />
+          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropGuide} />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
       )}
