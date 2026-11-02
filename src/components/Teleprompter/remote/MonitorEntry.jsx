@@ -290,9 +290,12 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
         {!connected && (
           <div className="tp-modal-backdrop">
             <div className="tp-modal" style={{ padding: 20, textAlign: 'center' }}>
-              <h2 style={{ marginTop: 0 }}>Sin conexión con el móvil</h2>
-              <p className="tp-hint">La conexión se ha cerrado. Genera un QR nuevo y escanéalo otra vez con el móvil.</p>
-              <button type="button" className="tp-btn tp-btn-primary" onClick={onNew}>Nuevo QR</button>
+              <h2 style={{ marginTop: 0 }}>Esperando al móvil…</h2>
+              <p className="tp-hint">
+                El móvil se ha desconectado (por ejemplo, al apagar la cámara). Se reconectará solo en cuanto vuelva a tener la cámara
+                activa, con el mismo QR. Este monitor sigue abierto hasta que cierres la sesión.
+              </p>
+              <button type="button" className="tp-btn" onClick={onNew}>Cerrar sesión y crear otro QR</button>
             </div>
           </div>
         )}
@@ -431,7 +434,7 @@ export default function MonitorEntry() {
                 <li>El iPhone graba y aquí verás su imagen y el guion.</li>
               </ol>
               <p className="tp-hint" style={{ wordBreak: 'break-all' }}>{link}</p>
-              <p className="tp-hint">El móvil y este ordenador deben estar en la misma red. El código caduca a los 15 minutos.</p>
+              <p className="tp-hint">El móvil y este ordenador deben estar en la misma red. El QR vale mientras no cierres esta página o la sesión.</p>
             </>
           ) : (
             <p>Creando la conexión…</p>

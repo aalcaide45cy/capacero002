@@ -91,66 +91,98 @@ function wrapChannel(dc, onMessage) {
 }
 
 // ── PC (monitor): crea la sala, enseña el QR y espera al móvil ──
+// La sala (y el QR) dura mientras este monitor siga abierto: si el móvil se desconecta (apaga la cámara, pierde la wifi…)
+// el PC prepara una oferta nueva en la misma sala y el móvil vuelve a conectarse solo, sin otro QR.
 export async function startMonitor({ onStream, onMessage, onStatus }) {
-  const pc = new RTCPeerConnection(ICE);
-  pc.addTransceiver('video', { direction: 'recvonly' });
-  const dc = pc.createDataChannel('tp', { ordered: true });
-  const channel = wrapChannel(dc, onMessage);
-  const stream = new MediaStream();
   let closed = false;
-  let pollTimer = null;
   let roomId = null;
+  let round = 0;
+  let pc = null;
+  let channel = null;
+  let pollTimer = null;
+  let pingTimer = null;
 
-  pc.ontrack = e => {
-    stream.addTrack(e.track);
-    onStream(stream);
-  };
-  dc.onopen = () => onStatus('conectado');
-  dc.onclose = () => !closed && onStatus('cerrado');
-  pc.onconnectionstatechange = () => {
-    if (closed) return;
-    if (pc.connectionState === 'failed') onStatus('error');
-    else if (pc.connectionState === 'disconnected') onStatus('cerrado');
-  };
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await waitIce(pc);
-  const { id } = await apiPost({ a: 'create', offer: pc.localDescription.sdp });
-  roomId = id;
-
-  // Espera la respuesta del móvil (la sala caduca a los 15 minutos)
-  const started = Date.now();
-  pollTimer = setInterval(async () => {
-    if (closed) return;
-    if (Date.now() - started > 15 * 60 * 1000) {
-      clearInterval(pollTimer);
-      onStatus('caducado');
-      return;
-    }
+  const makeRound = async () => {
+    const my = ++round;
+    clearInterval(pollTimer);
     try {
-      const room = await apiGet(id);
-      if (room.answer) {
-        clearInterval(pollTimer);
-        onStatus('conectando');
-        await pc.setRemoteDescription({ type: 'answer', sdp: room.answer });
-      }
-    } catch (err) {
-      if (err.status === 404) {
-        clearInterval(pollTimer);
-        onStatus('caducado');
-      }
+      pc?.close();
+    } catch {
+      // ya cerrada
     }
-  }, 1000);
+    const p = new RTCPeerConnection(ICE);
+    pc = p;
+    p.addTransceiver('video', { direction: 'recvonly' });
+    const dc = p.createDataChannel('tp', { ordered: true });
+    channel = wrapChannel(dc, onMessage);
+    const stream = new MediaStream();
+    const live = () => !closed && round === my;
+    let lost = false;
+    const lose = () => {
+      if (!live() || lost) return;
+      lost = true;
+      onStatus('cerrado');
+      setTimeout(() => {
+        if (live()) makeRound().catch(err => live() && onStatus(err?.status === 404 ? 'caducado' : 'error'));
+      }, 600);
+    };
+    p.ontrack = e => {
+      if (!live()) return;
+      stream.addTrack(e.track);
+      onStream(stream);
+    };
+    dc.onopen = () => live() && onStatus('conectado');
+    dc.onclose = lose;
+    p.onconnectionstatechange = () => {
+      if (!live()) return;
+      if (p.connectionState === 'failed' || p.connectionState === 'closed') lose();
+      else if (p.connectionState === 'disconnected') setTimeout(() => live() && p.connectionState !== 'connected' && lose(), 4000);
+    };
+
+    const offer = await p.createOffer();
+    await p.setLocalDescription(offer);
+    await waitIce(p);
+    if (!live()) return;
+    if (roomId) await apiPost({ a: 'offer', id: roomId, offer: p.localDescription.sdp });
+    else roomId = (await apiPost({ a: 'create', offer: p.localDescription.sdp })).id;
+    if (!live()) return;
+
+    // Espera la respuesta del móvil
+    pollTimer = setInterval(async () => {
+      if (!live()) {
+        clearInterval(pollTimer);
+        return;
+      }
+      try {
+        const room = await apiGet(roomId);
+        if (room.answer && live()) {
+          clearInterval(pollTimer);
+          onStatus('conectando');
+          await p.setRemoteDescription({ type: 'answer', sdp: room.answer });
+        }
+      } catch (err) {
+        if (err.status === 404) {
+          clearInterval(pollTimer);
+          onStatus('caducado');
+        }
+      }
+    }, 1000);
+  };
+
+  await makeRound();
+  pingTimer = setInterval(() => {
+    if (roomId) apiPost({ a: 'ping', id: roomId }).catch(err => err?.status === 404 && onStatus('caducado'));
+  }, 2 * 60 * 1000);
 
   return {
-    id,
-    send: obj => channel.send(obj),
+    id: roomId,
+    send: obj => (channel ? channel.send(obj) : false),
     close() {
       closed = true;
       clearInterval(pollTimer);
+      clearInterval(pingTimer);
       try {
-        pc.close();
+        pc?.close();
       } catch {
         // ya cerrada
       }
@@ -160,8 +192,14 @@ export async function startMonitor({ onStream, onMessage, onStatus }) {
 }
 
 // ── Móvil (cámara): lee la oferta del QR, responde y manda la imagen ──
-export async function connectCamera({ id, track, onMessage, onStatus }) {
-  const room = await apiGet(id);
+export async function connectCamera({ id, track, onMessage, onStatus, isCancelled = () => false }) {
+  // Si el PC aún tiene la oferta de la conexión anterior (ya contestada), espera a que prepare la nueva
+  let room = await apiGet(id);
+  while (room.answer) {
+    await new Promise(r => setTimeout(r, 1500));
+    if (isCancelled()) throw new Error('cancelado');
+    room = await apiGet(id);
+  }
   const pc = new RTCPeerConnection(ICE);
   let channel = null;
   let closed = false;
@@ -192,7 +230,7 @@ export async function connectCamera({ id, track, onMessage, onStatus }) {
   await pc.setLocalDescription(answer);
   await waitIce(pc);
   onStatus('conectando');
-  await apiPost({ a: 'answer', id, answer: pc.localDescription.sdp });
+  await apiPost({ a: 'answer', id, answer: pc.localDescription.sdp, oid: /^o=\S+ (\d+)/m.exec(room.offer)?.[1] });
 
   // La copia que ve el PC es una vista previa: ~720p y poco bitrate para no cargar al móvil mientras graba
   const limitQuality = async () => {

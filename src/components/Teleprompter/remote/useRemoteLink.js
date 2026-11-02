@@ -20,6 +20,7 @@ export function useRemoteLink({ id, track, api, getState, script }) {
   scriptRef.current = script;
   trackRef.current = track;
   const hasTrack = !!track;
+  const [attempt, setAttempt] = useState(0);
 
   // La conexión se abre cuando hay cámara y se cierra al salir
   useEffect(() => {
@@ -28,6 +29,12 @@ export function useRemoteLink({ id, track, api, getState, script }) {
     let timer = null;
     let conn = null;
     let opened = false;
+    let retryTimer = null;
+    // Si se corta (el PC prepara solo otra oferta en la misma sala), el móvil vuelve a intentarlo
+    const retry = ms => {
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => !cancelled && setAttempt(a => a + 1), ms);
+    };
 
     const afterOpen = () => {
       if (!conn || !opened || cancelled) return;
@@ -47,6 +54,7 @@ export function useRemoteLink({ id, track, api, getState, script }) {
     connectCamera({
       id,
       track: trackRef.current,
+      isCancelled: () => cancelled,
       onMessage: m => {
         if (m.t === 'cmd' && apiRef.current[m.c]) {
           recLog.add(`monitor remoto: orden «${m.c}»`);
@@ -62,7 +70,10 @@ export function useRemoteLink({ id, track, api, getState, script }) {
           opened = true;
           afterOpen();
         }
-        if (s === 'cerrado' || s === 'error') clearInterval(timer);
+        if (s === 'cerrado' || s === 'error') {
+          clearInterval(timer);
+          retry(2000);
+        }
       },
     })
       .then(c => {
@@ -78,15 +89,17 @@ export function useRemoteLink({ id, track, api, getState, script }) {
         if (cancelled) return;
         recLog.add(`monitor remoto: ERROR ${err?.message}`);
         setStatus(err?.status === 404 ? 'caducado' : 'error');
+        if (err?.status !== 404) retry(3000);
       });
 
     return () => {
       cancelled = true;
       clearInterval(timer);
+      clearTimeout(retryTimer);
       conn?.close();
       connRef.current = null;
     };
-  }, [id, hasTrack]);
+  }, [id, hasTrack, attempt]);
 
   // Si la cámara se reinicia (otra pista), se cambia la imagen que se manda sin volver a conectar
   useEffect(() => {
