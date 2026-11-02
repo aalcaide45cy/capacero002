@@ -197,7 +197,7 @@ function useQuarterTurn(rotation) {
   ];
 }
 
-function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30) {
+function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30, turn = 0) {
   useEffect(() => {
     const v = videoRef.current;
     const box = boxRef.current;
@@ -207,19 +207,22 @@ function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30)
       const cw = box.clientWidth;
       const ch = box.clientHeight;
       if (!cw || !ch) return;
-      const vw = v.videoWidth;
-      const vh = v.videoHeight;
+      const fw = v.videoWidth;
+      const fh = v.videoHeight;
+      // Con la pantalla girada el fotograma (vertical) se gira al revés que la interfaz para verse derecho y horizontal
+      const vw = turn ? fh : fw;
+      const vh = turn ? fw : fh;
       v.style.position = 'absolute';
       v.style.left = '50%';
       v.style.top = '50%';
-      v.style.transform = `translate(-50%, -50%)${flip}`;
+      v.style.transform = `translate(-50%, -50%)${flip}${turn ? ` rotate(${-turn}deg)` : ''}`;
       if (!vw || !vh) {
         v.style.width = '100%';
         v.style.height = '100%';
         v.style.objectFit = fit === 'contain' ? 'contain' : 'cover';
         return;
       }
-      if (fit === 'crop') {
+      if (fit === 'crop' && !turn) {
         // Solo se ve lo que se graba: el recorte 16:9 ocupa el ancho de la pantalla y se centra; el resto se oculta
         const wide = vw / vh > 16 / 9;
         const sw = wide ? Math.round(vh * (16 / 9)) : vw;
@@ -239,8 +242,8 @@ function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30)
       v.style.clipPath = '';
       const scale = fit === 'contain' ? Math.min(cw / vw, ch / vh) : Math.max(cw / vw, ch / vh);
       v.style.objectFit = 'fill';
-      v.style.width = `${Math.round(vw * scale)}px`;
-      v.style.height = `${Math.round(vh * scale)}px`;
+      v.style.width = `${Math.round(fw * scale)}px`;
+      v.style.height = `${Math.round(fh * scale)}px`;
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -257,7 +260,7 @@ function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30)
       window.removeEventListener('orientationchange', apply);
       clearInterval(timer);
     };
-  }, [videoRef, boxRef, enabled, fit, mirror, source, cropY]);
+  }, [videoRef, boxRef, enabled, fit, mirror, source, cropY, turn]);
 }
 
 function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
@@ -375,8 +378,9 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
     cropY: settings.cropY,
     scale: settings.outputScale,
     fps: settings.fps,
+    turn: settings.uiRotation,
   });
-  const recorder = useRecorder(settings.outputFormat !== 'normal' && outStream ? outStream : camera.stream, videoBps, settings.audioBitrate * 1000);
+  const recorder = useRecorder((settings.outputFormat !== 'normal' || settings.uiRotation) && outStream ? outStream : camera.stream, videoBps, settings.audioBitrate * 1000);
   const wav = useWavRecorder(camera.stream, settings.wavBitDepth);
   const fullscreen = useFullscreen();
   useWakeLock();
@@ -842,8 +846,8 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
 
   // En horizontal (recorte o barras) la vista previa enseña lo que de verdad se graba, sin recortar los lados
   const previewFit =
-    settings.outputFormat === 'crop' ? (settings.cropPreview === 'recorded' ? 'crop' : 'contain') : settings.outputFormat === 'bars' ? 'contain' : settings.cameraFit;
-  useVideoFit(videoRef, camBoxRef, settings.cameraOn, previewFit, settings.cameraMirror, camera.preview, settings.cropY);
+    settings.uiRotation ? settings.cameraFit : settings.outputFormat === 'crop' ? (settings.cropPreview === 'recorded' ? 'crop' : 'contain') : settings.outputFormat === 'bars' ? 'contain' : settings.cameraFit;
+  useVideoFit(videoRef, camBoxRef, settings.cameraOn, previewFit, settings.cameraMirror, camera.preview, settings.cropY, settings.uiRotation);
 
   // Cada cámara nueva usa un <video> nuevo: en iPhone, cambiar el origen del mismo elemento lo deja ampliado o descolocado
   const previewSeq = useRef({ stream: null, n: 0 });
@@ -1047,6 +1051,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
       countdown: l.countdown,
       resultOpen: l.resultOpen,
       speed: s.speed,
+      turn: s.uiRotation || 0,
       w,
       idx: Math.floor(w),
       obs: obsStatusRef.current,
@@ -1076,7 +1081,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
     id: monitors.obs,
     track: camera.preview?.getVideoTracks()[0] || null,
     api: {},
-    getState: () => ({}),
+    getState: () => ({ turn: settingsRef.current.uiRotation || 0 }),
     script,
     light: true,
     getQuality: () => obsQuality.current,
@@ -1267,7 +1272,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
       {settings.cameraOn && (
         <div className="tp-camera" ref={camBoxRef}>
           <video key={previewSeq.current.n} ref={videoRef} autoPlay playsInline muted />
-          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropPreview === 'full' && settings.cropGuide} />
+          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropPreview === 'full' && settings.cropGuide && !settings.uiRotation} />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
       )}

@@ -47,7 +47,12 @@ export function useRemoteLink({ id, track, api, getState, script, light = false,
     const afterOpen = () => {
       if (!conn || !opened || cancelled) return;
       conn.send({ t: 'hello', v: 1 });
-      if (light) return;
+      if (light) {
+        // OBS solo recibe la imagen: se le avisa del giro de la pantalla para que la muestre derecha
+        clearInterval(timer);
+        timer = setInterval(() => conn.send({ t: 'turn', v: getStateRef.current().turn || 0 }), 1000);
+        return;
+      }
       sendScript();
       clearInterval(timer);
       timer = setInterval(() => conn.send({ t: 'state', ...getStateRef.current() }), 200);

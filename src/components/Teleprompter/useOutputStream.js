@@ -72,11 +72,14 @@ export function outputGeometry(format, vw, vh, cropY, scale) {
   return { sx, sy, sw, sh, ow: even(ow), oh: even(oh), dx, dy, dw, dh };
 }
 
-export function useOutputStream({ stream, videoRef, format, cropY, scale, fps }) {
+// turn: giro de la pantalla (90 o 270). El iPhone con el giro bloqueado entrega el fotograma en vertical aunque el móvil
+// esté de lado: se gira el fotograma para grabarlo horizontal y derecho (90: antihorario, 270: horario).
+export function useOutputStream({ stream, videoRef, format: baseFormat, cropY, scale, fps, turn = 0 }) {
+  const format = turn ? 'turn' : baseFormat;
   const [out, setOut] = useState(null);
   const ctxRef = useRef(null);
   const settingsRef = useRef({});
-  settingsRef.current = { format, cropY, scale };
+  settingsRef.current = { format, cropY, scale, turn };
 
   useEffect(() => {
     if (format === 'normal' || !stream || !canvasOutputSupported()) {
@@ -106,6 +109,31 @@ export function useOutputStream({ stream, videoRef, format, cropY, scale, fps })
       const el = videoRef.current || v;
       if (el && el.videoWidth && el.videoHeight) {
         const s = settingsRef.current;
+        if (s.turn) {
+          const vw = el.videoWidth;
+          const vh = el.videoHeight;
+          const k = s.scale === '1080' ? 1920 / vh : s.scale === '2160' ? 3840 / vh : 1;
+          const ow = even(vh * k);
+          const oh = even(vw * k);
+          if (canvas.width !== ow || canvas.height !== oh) {
+            canvas.width = ow;
+            canvas.height = oh;
+          }
+          const key = `${ow}x${oh} giro ${s.turn}`;
+          if (key !== lastDims) {
+            lastDims = key;
+            recLog.add(`salida girada: ${ow}×${oh} desde ${vw}×${vh} (giro ${s.turn}°)`);
+          }
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          // 90: el fotograma gira en sentido antihorario; 270: horario
+          if (s.turn === 90) ctx.setTransform(0, -k, k, 0, 0, vw * k);
+          else ctx.setTransform(0, k, -k, 0, vh * k, 0);
+          ctx.drawImage(el, 0, 0, vw, vh);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          schedule();
+          return;
+        }
         const g = outputGeometry(s.format, el.videoWidth, el.videoHeight, s.cropY, s.scale);
         if (canvas.width !== g.ow || canvas.height !== g.oh) {
           canvas.width = g.ow;

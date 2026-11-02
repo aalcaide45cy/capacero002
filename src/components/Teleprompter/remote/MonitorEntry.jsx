@@ -108,13 +108,17 @@ function useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, onPlay, deps)
     const apply = () => {
       const cw = box.clientWidth;
       const ch = box.clientHeight;
-      const vw = v.videoWidth;
-      const vh = v.videoHeight;
+      const fw = v.videoWidth;
+      const fh = v.videoHeight;
       const s0 = settingsRef.current;
+      // Móvil con la pantalla girada: su fotograma llega vertical y de lado; aquí se gira para verlo derecho
+      const turn = s0.turn || 0;
+      const vw = turn ? fh : fw;
+      const vh = turn ? fw : fh;
       v.style.position = 'absolute';
       v.style.left = '50%';
       v.style.top = '50%';
-      v.style.transform = `translate(-50%, -50%) scale(${s0.cameraZoom || 1})${s0.cameraMirror ? ' scaleX(-1)' : ''}`;
+      v.style.transform = `translate(-50%, -50%) scale(${s0.cameraZoom || 1})${s0.cameraMirror ? ' scaleX(-1)' : ''}${turn ? ` rotate(${-turn}deg)` : ''}`;
       if (!cw || !ch || !vw || !vh) {
         v.style.width = '100%';
         v.style.height = '100%';
@@ -122,8 +126,8 @@ function useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, onPlay, deps)
       }
       const s = Math.min(cw / vw, ch / vh);
       v.style.objectFit = 'fill';
-      v.style.width = `${Math.round(vw * s)}px`;
-      v.style.height = `${Math.round(vh * s)}px`;
+      v.style.width = `${Math.round(fw * s)}px`;
+      v.style.height = `${Math.round(fh * s)}px`;
     };
     apply();
     const ro = new ResizeObserver(apply);
@@ -151,14 +155,14 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
   const posRef = useRef(0);
   const settingsRef = useRef(settings);
   const remoteRef = useRef(remote);
-  settingsRef.current = settings;
+  settingsRef.current = { ...settings, turn: remote.turn || 0 };
   remoteRef.current = remote;
   const [panelOpen, setPanelOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [hasVideo, setHasVideo] = useState(false);
 
-  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, setHasVideo, [settings.cameraMirror, settings.cameraZoom]);
+  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, setHasVideo, [settings.cameraMirror, settings.cameraZoom, remote.turn]);
 
   // Índice de palabras del guion en ESTE tamaño de pantalla
   const rebuildRef = useRef(() => {});
@@ -478,12 +482,12 @@ function CopyObsButton({ url }) {
 }
 
 // Vista limpia para OBS: solo la imagen de la cámara del móvil, sin guion ni mandos
-function CleanView({ stream, settings }) {
+function CleanView({ stream, settings, turn }) {
   const videoRef = useRef(null);
   const camBoxRef = useRef(null);
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
-  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, () => {}, [settings.cameraMirror, settings.cameraZoom]);
+  settingsRef.current = { ...settings, turn: turn || 0 };
+  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, () => {}, [settings.cameraMirror, settings.cameraZoom, turn]);
   return (
     <div className="tp-root">
       <div className="tp-prompter" style={{ backgroundColor: '#000', cursor: 'none' }}>
@@ -565,6 +569,9 @@ export default function MonitorEntry({ clean = false }) {
             setScript({ id: m.id, name: m.name, text: m.text, format: m.format });
           } else if (m.t === 'state') {
             setRemote(m);
+          } else if (m.t === 'turn') {
+            // OBS: solo recibe el giro de la pantalla del móvil
+            setRemote(r => (r.turn === m.v ? r : { ...r, turn: m.v }));
           }
         },
       });
@@ -657,7 +664,7 @@ export default function MonitorEntry({ clean = false }) {
     );
   }
 
-  if (clean) return <CleanView stream={stream} settings={settings} />;
+  if (clean) return <CleanView stream={stream} settings={settings} turn={remote.turn} />;
 
   return (
     <MonitorView
