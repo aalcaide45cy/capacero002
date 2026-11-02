@@ -803,6 +803,10 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
     settings.outputFormat === 'crop' ? (settings.cropPreview === 'recorded' ? 'crop' : 'contain') : settings.outputFormat === 'bars' ? 'contain' : settings.cameraFit;
   useVideoFit(videoRef, camBoxRef, settings.cameraOn, previewFit, settings.cameraMirror, camera.preview, settings.cropY);
 
+  // Cada cámara nueva usa un <video> nuevo: en iPhone, cambiar el origen del mismo elemento lo deja ampliado o descolocado
+  const previewSeq = useRef({ stream: null, n: 0 });
+  if (camera.preview && camera.preview !== previewSeq.current.stream) previewSeq.current = { stream: camera.preview, n: previewSeq.current.n + 1 };
+
   // Vídeo de la cámara
   useEffect(() => {
     const v = videoRef.current;
@@ -1126,7 +1130,7 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
     >
       {settings.cameraOn && (
         <div className="tp-camera" ref={camBoxRef}>
-          <video ref={videoRef} autoPlay playsInline muted />
+          <video key={previewSeq.current.n} ref={videoRef} autoPlay playsInline muted />
           <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} shade={settings.cropShade} enabled={settings.outputFormat === 'crop' && settings.cropPreview === 'full' && settings.cropGuide} />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
