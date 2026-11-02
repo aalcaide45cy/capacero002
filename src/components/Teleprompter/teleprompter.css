@@ -1048,3 +1048,8 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
   pointer-events: none;
 }
+
+/* Índice de secciones: la sección actual */
+.tp-index li button { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tp-index li button.is-current { background: rgba(34, 211, 238, 0.14); color: var(--tp-accent); box-shadow: inset 3px 0 0 var(--tp-accent); }
+.tp-here { flex-shrink: 0; padding: 1px 7px; border-radius: 999px; background: var(--tp-accent); color: var(--tp-accent-fg); font-size: 10.5px; font-style: normal; font-weight: 800; }

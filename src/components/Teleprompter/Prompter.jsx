@@ -330,6 +330,8 @@ export default function Prompter({ script, settings, update, onExit }) {
   const rebuildRef = useRef(() => {});
   const followCursorRef = useRef(null);
   const [indexOpen, setIndexOpen] = useState(false);
+  const [curSection, setCurSection] = useState(-1);
+  const indexPanelRef = useRef(null);
   const [ownTrack, setOwnTrack] = useState(null);
 
   const requestedVoice = settings.voiceMode;
@@ -394,6 +396,33 @@ export default function Prompter({ script, settings, update, onExit }) {
       karaokeRef.current = null;
     };
   }, [settings.karaokeOn]);
+
+  // Índice de secciones: marca la sección en la que estás (el último título que ya ha llegado a la guía)
+  useEffect(() => {
+    if (!indexOpen) return undefined;
+    const calc = () => {
+      const hs = indexRef.current.headings;
+      const lh = settingsRef.current.fontSize * settingsRef.current.lineHeight;
+      const pos = posRef.current + lh * 0.5;
+      let c = -1;
+      for (let i = 0; i < hs.length; i++) {
+        if (hs[i].top <= pos) c = i;
+        else break;
+      }
+      setCurSection(c);
+    };
+    calc();
+    const id = setInterval(calc, 400);
+    return () => clearInterval(id);
+  }, [indexOpen]);
+
+  // Al abrir el índice, o al cambiar de sección con él abierto, la lista se coloca en la sección actual
+  useEffect(() => {
+    if (!indexOpen) return;
+    const el = indexPanelRef.current?.querySelector('[aria-current="true"]');
+    if (el) el.scrollIntoView({ block: 'center' });
+    else if (indexPanelRef.current) indexPanelRef.current.scrollTop = 0;
+  }, [indexOpen, curSection]);
 
   // Coloca el cursor del reconocimiento en la palabra que está en la guía de lectura
   const syncCursor = useCallback(() => {
@@ -1150,7 +1179,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       </div>
 
       {indexOpen && (
-        <div className="tp-index" role="dialog" aria-label="Índice de secciones">
+        <div className="tp-index" role="dialog" aria-label="Índice de secciones" ref={indexPanelRef}>
           <header className="tp-panel-header">
             <h2>Secciones</h2>
             <button type="button" className="tp-icon-btn" onClick={() => setIndexOpen(false)} aria-label="Cerrar índice"><X size={18} /></button>
@@ -1161,6 +1190,8 @@ export default function Prompter({ script, settings, update, onExit }) {
               <li key={i} style={{ paddingLeft: (h.level - 1) * 14 }}>
                 <button
                   type="button"
+                  className={i === curSection ? 'is-current' : ''}
+                  aria-current={i === curSection ? 'true' : undefined}
                   onClick={() => {
                     posRef.current = h.top;
                     lastPauseRef.current = -1;
@@ -1170,6 +1201,7 @@ export default function Prompter({ script, settings, update, onExit }) {
                   }}
                 >
                   {h.text}
+                  {i === curSection && <em className="tp-here">estás aquí</em>}
                 </button>
               </li>
             ))}
