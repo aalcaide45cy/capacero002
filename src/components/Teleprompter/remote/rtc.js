@@ -3,6 +3,13 @@
 
 const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 const CHUNK = 14000;
+// Calidad de la imagen que ve el PC: lado largo máximo (px), bitrate y fotogramas
+export const QUALITY = {
+  baja: { side: 854, bitrate: 800_000, fps: 24 },
+  media: { side: 1280, bitrate: 2_500_000, fps: 30 },
+  alta: { side: 1920, bitrate: 6_000_000, fps: 30 },
+  maxima: { side: 0, bitrate: 12_000_000, fps: 30 },
+};
 
 async function apiPost(body) {
   const res = await fetch('/api/tp-rtc', {
@@ -246,6 +253,7 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
 
   // La copia que ve el PC es una vista previa: ~720p y poco bitrate para no cargar al móvil mientras graba
   let current = track;
+  let level = 'media';
   const limitQuality = async () => {
     try {
       if (!transceiver) return;
@@ -254,9 +262,10 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
       const w = current?.getSettings?.().width || 1280;
       const h = current?.getSettings?.().height || 720;
       const longSide = Math.max(w, h);
-      p.encodings[0].maxBitrate = 2_500_000;
-      p.encodings[0].maxFramerate = 30;
-      p.encodings[0].scaleResolutionDownBy = Math.max(1, longSide / 1280);
+      const q = QUALITY[level] || QUALITY.media;
+      p.encodings[0].maxBitrate = q.bitrate;
+      p.encodings[0].maxFramerate = q.fps;
+      p.encodings[0].scaleResolutionDownBy = q.side ? Math.max(1, longSide / q.side) : 1;
       await transceiver.sender.setParameters(p);
     } catch {
       // Safari antiguo: se manda con la calidad por defecto
@@ -266,6 +275,13 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
 
   return {
     send: obj => (channel ? channel.send(obj) : false),
+    // El PC elige con qué calidad le llega la imagen (la grabación del móvil no cambia)
+    setQuality: l => {
+      if (QUALITY[l]) {
+        level = l;
+        limitQuality();
+      }
+    },
     // Otra cámara (o apagada): se cambia la imagen que se manda sin cortar la conexión
     replaceTrack: async t => {
       current = t;

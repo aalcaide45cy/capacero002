@@ -67,6 +67,15 @@ function App() {
         );
     }
 
+    // 4a'. Monitor limpio para OBS (solo la imagen)
+    if (currentPath === '/tp/monitor-obs' || currentPath === '/tp/monitor-obs/') {
+        return (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <LazyMonitor clean />
+            </Suspense>
+        );
+    }
+
     // 4b. Intercepción de ruta para el Teleprompter (herramienta oculta, todo en localStorage)
     if (currentPath === '/tp' || currentPath === '/tp/') {
         return (

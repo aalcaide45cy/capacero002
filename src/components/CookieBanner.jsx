@@ -5,6 +5,9 @@ export default function CookieBanner() {
     const [showBanner, setShowBanner] = useState(false);
 
     useEffect(() => {
+        // El teleprompter (/tp, /tp/monitor, /tp/monitor-obs) no lleva aviso de cookies
+        const p = window.location.pathname;
+        if (p === '/tp' || p.startsWith('/tp/')) return;
         const consent = localStorage.getItem('cookieConsent_CapaCero');
         if (!consent) {
             setShowBanner(true);

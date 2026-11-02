@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone, Flashlight, FlashlightOff,
+  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone, Flashlight, FlashlightOff, ZoomIn,
 } from 'lucide-react';
 import ScriptView from '../ScriptView';
 import SettingsPanel from '../SettingsPanel';
@@ -18,11 +18,13 @@ const FONT_STACKS = {
   mono: "'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
 };
 const ROOM_KEY = 'capacero_tp_monitor_room';
+const ROOM_KEY_OBS = 'capacero_tp_monitor_obs_room';
+const QUALITY_LABELS = { baja: 'Baja (480p)', media: 'Media (720p)', alta: 'Alta (1080p)', maxima: 'Máxima (original)' };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 // Ajustes propios del monitor (se guardan en este PC): el tamaño de pantalla es otro que el del móvil
-function loadMonitorSettings() {
+function loadMonitorSettings(clean = false) {
   const saved = loadJSON(KEY, {});
   return {
     ...DEFAULT_SETTINGS,
@@ -31,9 +33,13 @@ function loadMonitorSettings() {
     align: 'center',
     cameraMirror: true,
     cameraDim: 0.35,
+    cameraZoom: 1,
+    monitorQuality: clean ? 'alta' : 'media',
     ...(saved && typeof saved === 'object' ? saved : {}),
     // El monitor siempre enseña la imagen completa de la cámara del móvil
     cameraFit: 'contain',
+    // En OBS la imagen sale como se graba, sin espejo
+    ...(clean ? { cameraMirror: false, cameraZoom: 1 } : {}),
   };
 }
 
@@ -78,36 +84,19 @@ function useMonitorHead() {
   }, []);
 }
 
-// ── Pantalla de lectura del PC: la imagen de la cámara del móvil, el guion y los botones ──
-function MonitorView({ stream, script, remote, settings, update, send, onNew, connected }) {
-  const videoRef = useRef(null);
-  const camBoxRef = useRef(null);
-  const stageRef = useRef(null);
-  const contentRef = useRef(null);
-  const indexRef = useRef(null);
-  const karaokeRef = useRef(null);
-  const posRef = useRef(0);
-  const settingsRef = useRef(settings);
-  const remoteRef = useRef(remote);
-  settingsRef.current = settings;
-  remoteRef.current = remote;
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [now, setNow] = useState(Date.now());
-  const [hasVideo, setHasVideo] = useState(false);
-
-  // Imagen de la cámara del móvil
+// Imagen de la cámara del móvil en su caja (cubrir/contener y zoom), compartida por el monitor y la vista limpia de OBS
+function useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, onPlay, deps) {
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return undefined;
     v.srcObject = stream || null;
-    const onPlaying = () => setHasVideo(true);
+    const onPlaying = () => onPlay(true);
     v.addEventListener('playing', onPlaying);
     v.play?.().catch(() => {});
     return () => v.removeEventListener('playing', onPlaying);
-  }, [stream]);
+  }, [stream]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ajusta el vídeo al escenario (cubrir o contener), con el mismo cálculo que en el móvil
+  // Se ve la imagen completa; el zoom es solo de esta pantalla (el móvil no cambia)
   useEffect(() => {
     const v = videoRef.current;
     const box = camBoxRef.current;
@@ -117,10 +106,11 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
       const ch = box.clientHeight;
       const vw = v.videoWidth;
       const vh = v.videoHeight;
+      const s0 = settingsRef.current;
       v.style.position = 'absolute';
       v.style.left = '50%';
       v.style.top = '50%';
-      v.style.transform = `translate(-50%, -50%)${settingsRef.current.cameraMirror ? ' scaleX(-1)' : ''}`;
+      v.style.transform = `translate(-50%, -50%) scale(${s0.cameraZoom || 1})${s0.cameraMirror ? ' scaleX(-1)' : ''}`;
       if (!cw || !ch || !vw || !vh) {
         v.style.width = '100%';
         v.style.height = '100%';
@@ -143,7 +133,28 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
       v.removeEventListener('resize', apply);
       clearInterval(t);
     };
-  }, [settings.cameraMirror]);
+  }, deps); // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// ── Pantalla de lectura del PC: la imagen de la cámara del móvil, el guion y los botones ──
+function MonitorView({ stream, script, remote, settings, update, send, onNew, connected }) {
+  const videoRef = useRef(null);
+  const camBoxRef = useRef(null);
+  const stageRef = useRef(null);
+  const contentRef = useRef(null);
+  const indexRef = useRef(null);
+  const karaokeRef = useRef(null);
+  const posRef = useRef(0);
+  const settingsRef = useRef(settings);
+  const remoteRef = useRef(remote);
+  settingsRef.current = settings;
+  remoteRef.current = remote;
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const [hasVideo, setHasVideo] = useState(false);
+
+  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, setHasVideo, [settings.cameraMirror, settings.cameraZoom]);
 
   // Índice de palabras del guion en ESTE tamaño de pantalla
   const rebuildRef = useRef(() => {});
@@ -326,6 +337,31 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
               </div>
             </div>
             <div className="tp-controls-group">
+              <select
+                className="tp-ctrl"
+                style={{ width: 'auto', padding: '0 8px', background: 'transparent', color: 'inherit' }}
+                value={settings.monitorQuality}
+                onChange={e => update({ monitorQuality: e.target.value })}
+                aria-label="Calidad de la imagen"
+                title="Calidad con la que llega la imagen a este PC (la grabación del móvil no cambia)"
+              >
+                {Object.entries(QUALITY_LABELS).map(([k, l]) => <option key={k} value={k} style={{ color: '#000' }}>{l}</option>)}
+              </select>
+              <label className="tp-ctrl" style={{ width: 'auto', padding: '0 10px', gap: 6, display: 'flex', alignItems: 'center' }} title="Zoom solo en este monitor (digital)">
+                <ZoomIn size={18} />
+                <input
+                  type="range"
+                  min="1"
+                  max="4"
+                  step="0.1"
+                  value={settings.cameraZoom}
+                  onChange={e => update({ cameraZoom: Number(e.target.value) })}
+                  onDoubleClick={() => update({ cameraZoom: 1 })}
+                  aria-label="Zoom"
+                  style={{ width: 90 }}
+                />
+                <small>{Number(settings.cameraZoom).toFixed(1)}×</small>
+              </label>
               {Array.isArray(remote.cams) && remote.cams.length > 1 && (
                 <select
                   className="tp-ctrl"
@@ -377,7 +413,25 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
   );
 }
 
-export default function MonitorEntry() {
+// Vista limpia para OBS: solo la imagen de la cámara del móvil, sin guion ni mandos
+function CleanView({ stream, settings }) {
+  const videoRef = useRef(null);
+  const camBoxRef = useRef(null);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, () => {}, [settings.cameraMirror, settings.cameraZoom]);
+  return (
+    <div className="tp-root">
+      <div className="tp-prompter" style={{ backgroundColor: '#000', cursor: 'none' }}>
+        <div className="tp-camera" ref={camBoxRef}>
+          <video ref={videoRef} autoPlay playsInline muted />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MonitorEntry({ clean = false }) {
   useMonitorHead();
   const [status, setStatus] = useState('creando');
   const [roomId, setRoomId] = useState(null);
@@ -385,13 +439,13 @@ export default function MonitorEntry() {
   const [script, setScript] = useState(null);
   const [remote, setRemote] = useState({});
   const [error, setError] = useState('');
-  const [settings, setSettings] = useState(loadMonitorSettings);
+  const [settings, setSettings] = useState(() => loadMonitorSettings(clean));
   const sessionRef = useRef(null);
   const scriptRef = useRef(null);
 
   const update = useCallback(partial => setSettings(prev => ({ ...prev, ...partial })), []);
   useEffect(() => {
-    saveJSON(KEY, settings);
+    if (!clean) saveJSON(KEY, settings);
   }, [settings]);
 
   // fresh=true: cerrar sesión y crear otro QR; si no, se retoma el QR guardado en este PC
@@ -403,9 +457,10 @@ export default function MonitorEntry() {
     setStream(null);
     setError('');
     setRemote({});
-    if (fresh) saveJSON(ROOM_KEY, null);
+    const roomKey = clean ? ROOM_KEY_OBS : ROOM_KEY;
+    if (fresh) saveJSON(roomKey, null);
     try {
-      const saved = fresh ? null : loadJSON(ROOM_KEY, null);
+      const saved = fresh ? null : loadJSON(roomKey, null);
       const session = await startMonitor({
         resumeId: typeof saved === 'string' && /^[a-z0-9]{10}$/.test(saved) ? saved : null,
         onStream: s => setStream(new MediaStream(s.getTracks())),
@@ -420,7 +475,7 @@ export default function MonitorEntry() {
         },
       });
       sessionRef.current = session;
-      saveJSON(ROOM_KEY, session.id);
+      saveJSON(roomKey, session.id);
       setRoomId(session.id);
       setStatus(s => (s === 'creando' ? 'esperando' : s));
     } catch (err) {
@@ -437,10 +492,14 @@ export default function MonitorEntry() {
 
   const send = useCallback(obj => sessionRef.current?.send(obj), []);
   const connected = status === 'conectado';
+  // El móvil manda la imagen con la calidad que se elige aquí (y se repite cada vez que se reconecta)
+  useEffect(() => {
+    if (connected) send({ t: 'cmd', c: 'quality', v: settings.monitorQuality });
+  }, [connected, settings.monitorQuality, send]);
   const link = useMemo(() => (roomId ? `${window.location.origin}/tp?monitor=${roomId}` : ''), [roomId]);
 
   // Mientras no hay móvil conectado: el QR
-  if (!connected && !script) {
+  if (!connected && (!script || clean)) {
     return (
       <div className="tp-root">
         <div className="tp-monitor-wait">
@@ -474,6 +533,8 @@ export default function MonitorEntry() {
       </div>
     );
   }
+
+  if (clean) return <CleanView stream={stream} settings={settings} />;
 
   return (
     <MonitorView

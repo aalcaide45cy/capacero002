@@ -60,7 +60,9 @@ export function useRemoteLink({ id, track, api, getState, script }) {
       track: trackRef.current,
       isCancelled: () => cancelled,
       onMessage: m => {
-        if (m.t === 'cmd' && apiRef.current[m.c]) {
+        if (m.t === 'cmd' && m.c === 'quality') {
+          conn?.setQuality?.(m.v);
+        } else if (m.t === 'cmd' && apiRef.current[m.c]) {
           recLog.add(`monitor remoto: orden «${m.c}»`);
           apiRef.current[m.c](m.v);
         } else if (m.t === 'need-script') {
