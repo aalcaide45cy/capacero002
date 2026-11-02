@@ -966,6 +966,7 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
       if (!t || !t.getCapabilities?.().torch) return;
       try {
         await t.applyConstraints({ advanced: [{ torch: on }] });
+        recLog.add(`linterna: ${on ? 'encendida' : 'apagada'} (la cámara dice torch=${t.getSettings?.().torch})`);
         setTorchOn(on);
       } catch (err) {
         recLog.add(`linterna: ERROR ${err?.name || ''} ${err?.message || ''}`);
@@ -977,6 +978,17 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
   useEffect(() => {
     setTorchOn(false);
   }, [camera.preview]);
+  // Cambiar la calidad de la imagen que va al PC puede hacer que el iPhone apague la linterna sin avisar: mientras deba estar
+  // encendida se vuelve a pedir cada par de segundos (si ya estaba encendida no hace nada)
+  useEffect(() => {
+    if (!torchOn) return undefined;
+    const id = setInterval(() => {
+      const t = camera.preview?.getVideoTracks()[0];
+      if (!t || t.readyState !== 'live') return;
+      t.applyConstraints({ advanced: [{ torch: true }] }).catch(() => {});
+    }, 2000);
+    return () => clearInterval(id);
+  }, [torchOn, camera.preview]);
   const remoteApiProxy = useMemo(() => new Proxy({}, { get: (_, k) => remoteApi.current[k] }), []);
   const getRemoteState = useCallback(() => {
     const s = settingsRef.current;
