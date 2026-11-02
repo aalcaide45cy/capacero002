@@ -41,6 +41,8 @@ export const DEFAULT_SETTINGS = {
   mirrorV: false,
   // Cámara y grabación
   cameraOn: false,
+  // Giro de la pantalla con el giro del móvil bloqueado: 0 normal, 90 / 270 = todo el grupo girado (se cambia con un botón)
+  uiRotation: 0,
   cameraSource: 'user',
   resolution: '1080',
   fps: 30,

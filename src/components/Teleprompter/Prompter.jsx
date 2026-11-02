@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, ChevronUp, ChevronDown,
+  ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, RotateCw, ChevronUp, ChevronDown,
   FlipHorizontal2, Settings2, RectangleVertical, RectangleHorizontal, Crop, Camera, CameraOff, Circle, Square, Maximize, Minimize,
   Download, Share2, Trash2, Pin, PinOff, Mic, MicOff, ListOrdered, X,
 } from 'lucide-react';
@@ -157,6 +157,46 @@ function CropGuide({ videoRef, boxRef, cropY, enabled, shade }) {
 
 // Coloca el vídeo de la cámara cubriendo (o conteniendo) el escenario calculando el tamaño a mano.
 // Safari en iPhone a veces no actualiza object-fit al cambiar el tamaño de la imagen y la deja pequeña.
+// Giro a mano de toda la pantalla (cuarto de vuelta) para usar el móvil en horizontal con el giro de iOS bloqueado:
+// así Safari no cambia de orientación ni enseña su barra de pestañas. Todo el grupo (cámara, texto y mandos) gira junto.
+function useQuarterTurn(rotation) {
+  const ref = useRef(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    if (!rotation) return undefined;
+    const parent = ref.current?.parentElement;
+    if (!parent) return undefined;
+    const measure = () => setBox({ w: parent.clientWidth, h: parent.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(parent);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [rotation]);
+  if (!rotation || !box.w || !box.h) return [ref, null];
+  const cw = rotation === 90;
+  return [
+    ref,
+    {
+      inset: 'auto',
+      left: 0,
+      top: 0,
+      width: box.h,
+      height: box.w,
+      transformOrigin: '0 0',
+      transform: cw ? `translateX(${box.w}px) rotate(90deg)` : `translateY(${box.h}px) rotate(-90deg)`,
+      // Las zonas seguras del iPhone (isla, barra de inicio) siguen en los bordes de la pantalla física: se reparten según el giro
+      '--tp-safe-top': cw ? 'env(safe-area-inset-right, 0px)' : 'env(safe-area-inset-left, 0px)',
+      '--tp-safe-bottom': cw ? 'env(safe-area-inset-left, 0px)' : 'env(safe-area-inset-right, 0px)',
+      '--tp-safe-left': cw ? 'env(safe-area-inset-top, 0px)' : 'env(safe-area-inset-bottom, 0px)',
+      '--tp-safe-right': cw ? 'env(safe-area-inset-bottom, 0px)' : 'env(safe-area-inset-top, 0px)',
+    },
+  ];
+}
+
 function useVideoFit(videoRef, boxRef, enabled, fit, mirror, source, cropY = 30) {
   useEffect(() => {
     const v = videoRef.current;
@@ -1185,9 +1225,11 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
   const guideTop = `calc(${settings.guidePos}% - ${lineH / 2}px)`;
   const cameraActive = settings.cameraOn && !!camera.stream;
 
+  const [turnRef, turnStyle] = useQuarterTurn(settings.uiRotation);
   const stageStyle = {
     '--tp-text': settings.textColor,
     backgroundColor: cameraActive ? 'transparent' : settings.bgColor,
+    ...(turnStyle || {}),
   };
   const mirrorStyle = {
     transform: `scale(${settings.mirrorH ? -1 : 1}, ${settings.mirrorV ? -1 : 1})`,
@@ -1218,6 +1260,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
 
   return (
     <div
+      ref={turnRef}
       className={`tp-prompter${controlsVisible ? '' : ' is-idle'}${recorder.recording && settings.liteWhileRecording ? ' is-lite' : ''}`}
       style={stageStyle}
     >
@@ -1364,6 +1407,15 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
             title="Espejo (M)"
           >
             <FlipHorizontal2 size={20} />
+          </button>
+          <button
+            type="button"
+            className={`tp-ctrl${settings.uiRotation ? ' is-on' : ''}`}
+            onClick={() => update({ uiRotation: settings.uiRotation === 0 ? 90 : settings.uiRotation === 90 ? 270 : 0 })}
+            aria-label="Girar la pantalla"
+            title={`Girar la pantalla (ahora ${settings.uiRotation ? settings.uiRotation + '°' : 'normal'}): para usar el móvil en horizontal con el giro bloqueado`}
+          >
+            <RotateCw size={20} />
           </button>
           {hasMediaDevices() && (
             <button
