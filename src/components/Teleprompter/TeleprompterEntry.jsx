@@ -109,8 +109,12 @@ export default function TeleprompterEntry() {
   const [pending, setPending] = useState(() => {
     try {
       const q = new URLSearchParams(window.location.search);
-      const v = q.get('monitor');
-      return v && ID_RE.test(v) ? { id: v, role: q.get('role') === 'obs' ? 'obs' : 'main' } : null;
+      const id = q.get('monitor');
+      const obs = q.get('obs');
+      const p = {};
+      if (id && ID_RE.test(id)) p[q.get('role') === 'obs' ? 'obs' : 'main'] = id;
+      if (obs && ID_RE.test(obs)) p.obs = obs;
+      return p.main || p.obs ? p : null;
     } catch {
       return null;
     }
@@ -137,13 +141,13 @@ export default function TeleprompterEntry() {
     };
   }, []);
   // Con un QR recién escaneado se conecta ese y los que ya estaban guardados
-  const withPending = pending ? { ...monitors, [pending.role]: pending.id } : monitors;
+  const withPending = pending ? { main: pending.main || monitors.main, obs: pending.obs || monitors.obs } : monitors;
   const hasMonitor = !!(withPending.main || withPending.obs);
-  const monitorTitle = pending ? (pending.role === 'obs' ? 'Pantalla de OBS detectada' : 'Monitor del PC detectado') : 'Monitor del PC guardado';
+  const monitorTitle = pending ? (pending.main ? 'Monitor del PC detectado' : 'Pantalla de OBS detectada') : 'Monitor del PC guardado';
   const monitorText = pending
-    ? pending.role === 'obs'
+    ? !pending.main
       ? `Este móvil mandará la imagen limpia a OBS${withPending.main ? ' y seguirá conectado al monitor del PC' : ''}. Pide permiso para la cámara.`
-      : `Este móvil hará de cámara: grabará aquí y el PC verá la imagen y el guion${withPending.obs ? ' (y OBS también)' : ''}. Pide permiso para la cámara.`
+      : `Este móvil hará de cámara: grabará aquí y el PC verá la imagen y el guion${withPending.obs ? ', y OBS recibirá la imagen limpia' : ''}. Pide permiso para la cámara.`
     : `Se volverá a conectar con ${withPending.main && withPending.obs ? 'el monitor del PC y OBS' : withPending.obs ? 'OBS' : 'el monitor del PC'}. Pide permiso para la cámara.`;
   const [lib, setLib] = useState(loadLibrary);
   const [settings, setSettings] = useState(loadSettings);

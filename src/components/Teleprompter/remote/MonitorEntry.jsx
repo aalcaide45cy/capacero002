@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone, Flashlight, FlashlightOff, ZoomIn,
+  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone, Flashlight, FlashlightOff, ZoomIn, Link2,
 } from 'lucide-react';
 import ScriptView from '../ScriptView';
 import SettingsPanel from '../SettingsPanel';
-import { startMonitor } from './rtc';
+import { startMonitor, reserveRoom, roomExists, pingRoom } from './rtc';
 import { buildContentIndex } from '../domIndex';
 import { createKaraoke, karaokeVars } from '../karaoke';
 import { DEFAULT_SETTINGS, loadJSON, saveJSON } from '../storage';
@@ -19,6 +19,7 @@ const FONT_STACKS = {
 };
 const ROOM_KEY = 'capacero_tp_monitor_room';
 const ROOM_KEY_OBS = 'capacero_tp_monitor_obs_room';
+const OBS_REF_KEY = 'capacero_tp_monitor_obs_ref'; // sala reservada para la dirección fija de OBS
 const QUALITY_LABELS = { baja: 'Baja (480p)', media: 'Media (720p)', alta: 'Alta (1080p)', maxima: 'Máxima (original)' };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -140,7 +141,7 @@ function useMonitorVideo(videoRef, camBoxRef, stream, settingsRef, onPlay, deps)
 }
 
 // ── Pantalla de lectura del PC: la imagen de la cámara del móvil, el guion y los botones ──
-function MonitorView({ stream, script, remote, settings, update, send, onNew, connected }) {
+function MonitorView({ stream, script, remote, settings, update, send, onNew, connected, obsUrl }) {
   const videoRef = useRef(null);
   const camBoxRef = useRef(null);
   const stageRef = useRef(null);
@@ -386,6 +387,7 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
                   </select>
                 </>
               )}
+              {obsUrl && <CopyObsButton url={obsUrl} />}
               <label className="tp-ctrl" style={{ width: 'auto', padding: '0 10px', gap: 6, display: 'flex', alignItems: 'center' }} title="Zoom solo en este monitor (digital)">
                 <ZoomIn size={18} />
                 <input
@@ -453,6 +455,28 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
   );
 }
 
+// Botón para copiar la dirección fija de OBS (se pega una sola vez en la fuente de navegador)
+function CopyObsButton({ url }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      className="tp-ctrl"
+      style={{ width: 'auto', padding: '0 10px', gap: 6, display: 'flex', alignItems: 'center' }}
+      onClick={() => {
+        navigator.clipboard?.writeText(url).then(() => {
+          setDone(true);
+          setTimeout(() => setDone(false), 2500);
+        }).catch(() => window.prompt('Copia esta dirección para OBS:', url));
+      }}
+      aria-label="Copiar enlace para OBS"
+      title="Copia la dirección fija de OBS (se pega una sola vez en la fuente de navegador)"
+    >
+      <Link2 size={18} /> <small>{done ? '¡Copiado!' : 'Enlace OBS'}</small>
+    </button>
+  );
+}
+
 // Vista limpia para OBS: solo la imagen de la cámara del móvil, sin guion ni mandos
 function CleanView({ stream, settings }) {
   const videoRef = useRef(null);
@@ -482,6 +506,36 @@ export default function MonitorEntry({ clean = false }) {
   const [settings, setSettings] = useState(() => loadMonitorSettings(clean));
   const sessionRef = useRef(null);
   const scriptRef = useRef(null);
+  // Dirección fija de OBS: /tp/monitor-obs?sala=<sala reservada por el monitor>
+  const salaParam = useMemo(() => {
+    if (!clean) return null;
+    try {
+      const v = new URLSearchParams(window.location.search).get('sala');
+      return v && /^[a-z0-9]{10}$/.test(v) ? v : null;
+    } catch {
+      return null;
+    }
+  }, [clean]);
+  const [obsRoom, setObsRoom] = useState(null);
+  // El monitor reserva (y recuerda) la sala de OBS: su QR lleva las dos y no hay que escanear otro
+  useEffect(() => {
+    if (clean) return undefined;
+    let off = false;
+    let id = null;
+    (async () => {
+      const saved = loadJSON(OBS_REF_KEY, null);
+      if (typeof saved === 'string' && /^[a-z0-9]{10}$/.test(saved) && (await roomExists(saved))) id = saved;
+      else id = await reserveRoom();
+      saveJSON(OBS_REF_KEY, id);
+      if (!off) setObsRoom(id);
+    })().catch(() => {});
+    // La sala reservada se renueva mientras el monitor siga abierto
+    const t = setInterval(() => id && pingRoom(id), 10 * 60 * 1000);
+    return () => {
+      off = true;
+      clearInterval(t);
+    };
+  }, [clean]);
 
   const update = useCallback(partial => setSettings(prev => ({ ...prev, ...partial })), []);
   useEffect(() => {
@@ -498,9 +552,9 @@ export default function MonitorEntry({ clean = false }) {
     setError('');
     setRemote({});
     const roomKey = clean ? ROOM_KEY_OBS : ROOM_KEY;
-    if (fresh) saveJSON(roomKey, null);
+    if (fresh && !salaParam) saveJSON(roomKey, null);
     try {
-      const saved = fresh ? null : loadJSON(roomKey, null);
+      const saved = salaParam || (fresh ? null : loadJSON(roomKey, null));
       const session = await startMonitor({
         resumeId: typeof saved === 'string' && /^[a-z0-9]{10}$/.test(saved) ? saved : null,
         onStream: s => setStream(new MediaStream(s.getTracks())),
@@ -515,7 +569,7 @@ export default function MonitorEntry({ clean = false }) {
         },
       });
       sessionRef.current = session;
-      saveJSON(roomKey, session.id);
+      if (!salaParam) saveJSON(roomKey, session.id);
       setRoomId(session.id);
       setStatus(s => (s === 'creando' ? 'esperando' : s));
     } catch (err) {
@@ -540,7 +594,23 @@ export default function MonitorEntry({ clean = false }) {
   useEffect(() => {
     if (connected && !clean) send({ t: 'cmd', c: 'quality', target: 'obs', v: settings.obsQuality, mbps: settings.obsMbps });
   }, [connected, clean, settings.obsQuality, settings.obsMbps, send]);
-  const link = useMemo(() => (roomId ? `${window.location.origin}/tp?monitor=${roomId}${clean ? '&role=obs' : ''}` : ''), [roomId, clean]);
+  const link = useMemo(
+    () => (roomId ? `${window.location.origin}/tp?monitor=${roomId}${clean ? '&role=obs' : obsRoom ? `&obs=${obsRoom}` : ''}` : ''),
+    [roomId, clean, obsRoom]
+  );
+  const obsUrl = obsRoom ? `${window.location.origin}/tp/monitor-obs?sala=${obsRoom}` : '';
+  // OBS con su dirección fija: no enseña ningún QR, espera al iPhone (que ya se enlazó al escanear el del monitor)
+  const obsWaiting = clean && salaParam && roomId === salaParam && !connected;
+
+  if (obsWaiting) {
+    return (
+      <div className="tp-root">
+        <div className="tp-prompter" style={{ backgroundColor: '#000' }}>
+          <p style={{ position: 'absolute', left: 16, bottom: 12, margin: 0, color: '#555', fontSize: 14 }}>Esperando al iPhone…</p>
+        </div>
+      </div>
+    );
+  }
 
   // Mientras no hay móvil conectado: el QR
   if (!connected && (!script || clean)) {
@@ -562,6 +632,15 @@ export default function MonitorEntry({ clean = false }) {
               <p>
                 {status === 'conectando' ? 'Conectando con el móvil…' : 'Escanea este QR con la cámara del iPhone.'}
               </p>
+              {!clean && obsUrl && (
+                <p className="tp-hint" style={{ maxWidth: 420 }}>
+                  Este QR enlaza también con OBS. En OBS, la fuente de navegador debe usar esta dirección (se pega una sola vez):
+                  <br />
+                  <span style={{ wordBreak: 'break-all' }}>{obsUrl}</span>
+                  <br />
+                  <CopyObsButton url={obsUrl} />
+                </p>
+              )}
               <ol className="tp-hint" style={{ textAlign: 'left', maxWidth: 420 }}>
                 <li>Abre el enlace que sale en el iPhone (Safari).</li>
                 <li>Toca «Conectar con el monitor» y permite la cámara.</li>
@@ -590,6 +669,7 @@ export default function MonitorEntry({ clean = false }) {
       send={send}
       onNew={newSession}
       connected={connected}
+      obsUrl={obsUrl}
     />
   );
 }

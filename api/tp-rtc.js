@@ -2,6 +2,7 @@
 //  POST { a:'create', offer }          -> { id }   el PC crea la sala con su oferta
 //  GET  ?id=...                        -> { offer, answer }   el móvil lee la oferta; el PC espera la respuesta
 //  POST { a:'answer', id, answer }     -> 204      el móvil responde
+//  POST { a:'reserve' }                -> { id }   el monitor reserva una sala para OBS (la oferta la pone OBS después)
 //  POST { a:'offer', id, offer }       -> 204      el PC pone una oferta nueva en la misma sala (reconectar sin otro QR)
 //  POST { a:'ping', id }               -> 204      el PC renueva la sala mientras sigue abierto
 //  POST { a:'close', id }              -> 204      cierra la sala (cerrar sesión)
@@ -50,10 +51,15 @@ export default async function handler(req, res) {
       await createRoom(id, b.offer);
       return res.status(200).json({ id });
     }
+    if (b.a === 'reserve') {
+      const id = newId();
+      await createRoom(id, '');
+      return res.status(200).json({ id });
+    }
     if (b.a === 'answer') {
       if (!validId(b.id) || !validSdp(b.answer)) return res.status(400).json({ error: 'respuesta' });
       const room = await getRoom(b.id);
-      if (!room || (b.oid && String(b.oid) !== offerId(room.offer))) return res.status(409).json({ error: 'oferta antigua' });
+      if (!room || !room.offer || (b.oid && String(b.oid) !== offerId(room.offer))) return res.status(409).json({ error: 'oferta antigua' });
       const ok = await setAnswer(b.id, b.answer);
       return ok ? res.status(204).end() : res.status(409).json({ error: 'sala caducada o ya usada' });
     }

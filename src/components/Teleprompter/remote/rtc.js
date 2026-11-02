@@ -35,6 +35,23 @@ async function apiGet(id) {
   return res.json();
 }
 
+// Salas reservadas para OBS: el monitor las crea y la dirección de OBS las usa siempre
+export async function reserveRoom() {
+  return (await apiPost({ a: 'reserve' })).id;
+}
+
+export async function roomExists(id) {
+  try {
+    await apiGet(id);
+    return true;
+  } catch (err) {
+    if (err?.status === 404) return false;
+    throw err;
+  }
+}
+
+export const pingRoom = id => apiPost({ a: 'ping', id }).catch(() => {});
+
 // Espera a que el navegador reúna las direcciones de red (en la misma wifi basta con las locales)
 function waitIce(pc, ms = 2500) {
   return new Promise(resolve => {
@@ -211,9 +228,10 @@ export async function startMonitor({ resumeId = null, onStream, onMessage, onSta
 
 // ── Móvil (cámara): lee la oferta del QR, responde y manda la imagen ──
 export async function connectCamera({ id, track, onMessage, onStatus, isCancelled = () => false }) {
-  // Si el PC aún tiene la oferta de la conexión anterior (ya contestada), espera a que prepare la nueva
+  // Si el PC aún tiene la oferta de la conexión anterior (ya contestada) o la sala está reservada sin oferta (OBS todavía
+  // no se ha abierto), espera a que haya una nueva
   let room = await apiGet(id);
-  while (room.answer) {
+  while (room.answer || !room.offer) {
     await new Promise(r => setTimeout(r, 1500));
     if (isCancelled()) throw new Error('cancelado');
     room = await apiGet(id);
