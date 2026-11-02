@@ -41,6 +41,23 @@ export function karaokeVars(s) {
 
 // Palabra que corresponde a la posición de desplazamiento: dentro de cada línea el resaltado avanza
 // de izquierda a derecha al ritmo con el que la línea pasa por la guía
+// Igual que wordAtPos pero sin redondear: una coordenada continua para sincronizar el monitor del PC
+export function wordCoordAtPos(index, pos, lineH) {
+  const lines = index.lines;
+  if (!lines || !lines.length) return -1;
+  let lo = 0;
+  let hi = lines.length - 1;
+  const target = pos + lineH * 0.5;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (lines[mid].top <= target) lo = mid;
+    else hi = mid - 1;
+  }
+  const line = lines[lo];
+  const frac = Math.min(0.999, Math.max(0, (pos - line.top) / lineH + 0.5));
+  return line.start + frac * (line.end - line.start + 1);
+}
+
 export function wordAtPos(index, pos, lineH) {
   const lines = index.lines;
   if (!lines || !lines.length) return -1;

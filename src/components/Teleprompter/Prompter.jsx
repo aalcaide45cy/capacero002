@@ -9,7 +9,8 @@ import SettingsPanel, { MicMeter } from './SettingsPanel';
 import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } from './useMedia';
 import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
 import { buildContentIndex } from './domIndex';
-import { createKaraoke, karaokeVars, wordAtPos } from './karaoke';
+import { createKaraoke, karaokeVars, wordAtPos, wordCoordAtPos } from './karaoke';
+import { useRemoteLink } from './remote/useRemoteLink';
 import { useOutputStream } from './useOutputStream';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
@@ -292,7 +293,7 @@ function RecordingResult({ result, wav, backup, onDiscard, onClose }) {
   );
 }
 
-export default function Prompter({ script, settings, update, onExit }) {
+export default function Prompter({ script, settings, update, onExit, monitorId = null }) {
   const stageRef = useRef(null);
   const contentRef = useRef(null);
   const videoRef = useRef(null);
@@ -870,6 +871,64 @@ export default function Prompter({ script, settings, update, onExit }) {
     setPlaying(false);
   }, [recorder, wav, setPlaying]);
 
+  // ── Monitor remoto en el PC: el móvil graba y manda la imagen, el guion y por dónde vas; el PC manda órdenes ──
+  const liveRef = useRef({});
+  liveRef.current = { recording: recorder.recording, startedAt: recorder.startedAt, countdown, resultOpen: !!recorder.result };
+  const remoteApi = useRef({});
+  remoteApi.current = {
+    toggle: togglePlay,
+    play: () => {
+      if (!playingRef.current) start();
+    },
+    pause: () => {
+      setCountdown(0);
+      setPlaying(false);
+    },
+    record: () => {
+      if (!liveRef.current.recording && !liveRef.current.resultOpen) startRecording();
+    },
+    stop: () => {
+      if (liveRef.current.recording) stopRecording();
+      else {
+        setCountdown(0);
+        setPlaying(false);
+      }
+    },
+    restart,
+    faster: () => changeSpeed(1),
+    slower: () => changeSpeed(-1),
+    next: () => jumpSection(1),
+    prev: () => jumpSection(-1),
+  };
+  const remoteApiProxy = useMemo(() => new Proxy({}, { get: (_, k) => remoteApi.current[k] }), []);
+  const getRemoteState = useCallback(() => {
+    const s = settingsRef.current;
+    const lh = s.fontSize * s.lineHeight;
+    let w = -1;
+    const cursor = followCursorRef.current?.current;
+    if (voiceModeRef.current === 'follow' && followTargetRef.current != null && typeof cursor === 'number' && cursor >= 0) w = cursor;
+    else if (indexRef.current?.lines?.length) w = wordCoordAtPos(indexRef.current, posRef.current, lh);
+    const l = liveRef.current;
+    return {
+      playing: playingRef.current,
+      recording: l.recording,
+      startedAt: l.startedAt,
+      countdown: l.countdown,
+      resultOpen: l.resultOpen,
+      speed: s.speed,
+      w,
+      idx: Math.floor(w),
+    };
+  }, []);
+  const remote = useRemoteLink({
+    id: monitorId,
+    track: camera.preview?.getVideoTracks()[0] || null,
+    api: remoteApiProxy,
+    getState: getRemoteState,
+    script,
+  });
+  const remoteText = { esperando: 'esperando cámara', conectando: 'conectando…', conectado: 'conectado', cerrado: 'sin conexión', error: 'error de conexión', caducado: 'QR caducado: genera otro' }[remote.status] || '';
+
   const exit = useCallback(() => {
     if (recorder.recording && !window.confirm('Se está grabando. ¿Parar la grabación y salir?')) return;
     if (recorder.result && !window.confirm('Tienes una grabación sin guardar. ¿Salir y descartarla?')) return;
@@ -1078,8 +1137,9 @@ export default function Prompter({ script, settings, update, onExit }) {
       )}
 
       <div className="tp-bottom">
-        {(cameraActive || requestedVoice !== 'off') && (
+        {(cameraActive || requestedVoice !== 'off' || monitorId) && (
           <div className="tp-status" aria-live="polite">
+            {monitorId && <span className="tp-status-voice">🖥 monitor: {remoteText}</span>}
             {recorder.recording && (
               <span className="tp-rec-badge">
                 <span className="tp-rec-dot" /> REC {formatTime((now - recorder.startedAt) / 1000)}

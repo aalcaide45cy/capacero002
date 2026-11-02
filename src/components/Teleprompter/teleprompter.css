@@ -1063,3 +1063,31 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-panel-backdrop { position: absolute; inset: 0; z-index: 29; background: transparent; }
 /* Nada dentro de la pantalla de lectura puede desplazar el contenedor (scrollIntoView, foco...) */
 .tp-prompter, .tp-camera { overflow: clip; }
+
+/* Monitor remoto (PC): pantalla de espera con el QR */
+.tp-monitor-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 100%;
+  padding: 24px 16px;
+  text-align: center;
+  overflow-y: auto;
+}
+.tp-monitor-wait h1 { margin: 0; font-size: 22px; }
+.tp-qr { padding: 12px; border-radius: 14px; background: #fff; line-height: 0; }
+.tp-monitor-wait ol { padding-left: 20px; }
+/* Aviso en el móvil cuando se abre desde el QR del monitor */
+.tp-monitor-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 16px 0;
+  padding: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.1);
+}
+.tp-monitor-banner p { margin: 4px 0 0; font-size: 14px; color: var(--tp-muted); }

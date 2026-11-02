@@ -8,6 +8,7 @@ const PrivacyCookies = lazy(() => import('./components/PrivacyCookies'));
 const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
 const LazyTeleprompter = lazy(() => import('./components/Teleprompter/TeleprompterEntry'));
+const LazyMonitor = lazy(() => import('./components/Teleprompter/remote/MonitorEntry'));
 const V4VideoPage = lazy(() => import('./components/V4/V4VideoPage'));
 
 function RouteLoadingFallback() {
@@ -53,6 +54,15 @@ function App() {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
                 <LazyEditor />
+            </Suspense>
+        );
+    }
+
+    // 4a. Monitor del teleprompter en el PC (cámara remota del móvil)
+    if (currentPath === '/tp/monitor' || currentPath === '/tp/monitor/') {
+        return (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <LazyMonitor />
             </Suspense>
         );
     }

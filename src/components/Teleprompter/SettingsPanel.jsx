@@ -684,6 +684,11 @@ const GROUPS = [
     keys: ['outputFormat', 'cropY', 'cropPreview', 'cropGuide', 'cropShade', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
   },
   {
+    id: 'monitor', label: 'Monitor', icon: Camera, color: '#38bdf8', soft: 'rgba(56, 189, 248, 0.16)', monitorOnly: true,
+    desc: 'Imagen de la cámara del móvil',
+    keys: ['cameraMirror', 'cameraDim', 'cameraFit'],
+  },
+  {
     id: 'interfaz', label: 'Interfaz', icon: SlidersHorizontal, color: '#fbbf24', soft: 'rgba(251, 191, 36, 0.16)',
     desc: 'Barra de herramientas, avisos y atajos',
     keys: ['controlsPinned', 'controlsHideDelay', 'tapWakesControls', 'hideNotices'],
@@ -1334,6 +1339,29 @@ function GrabacionGroup({ settings, update, camera, recording }) {
   );
 }
 
+function MonitorGroup({ settings, update }) {
+  return (
+    <>
+      <Toggle label="Imagen de la cámara en espejo" keywords="espejo selfie" checked={settings.cameraMirror} onChange={v => update({ cameraMirror: v })} />
+      <Segmented
+        label="Vista de la cámara"
+        value={settings.cameraFit}
+        onChange={v => update({ cameraFit: v })}
+        options={[{ value: 'cover', label: 'Llenar pantalla' }, { value: 'contain', label: 'Imagen completa' }]}
+      />
+      <Range
+        label="Oscurecer la imagen"
+        value={settings.cameraDim}
+        min={0}
+        max={0.9}
+        step={0.05}
+        format={v => `${Math.round(v * 100)} %`}
+        onChange={v => update({ cameraDim: v })}
+      />
+    </>
+  );
+}
+
 function InterfazGroup({ settings, update }) {
   return (
     <>
@@ -1382,11 +1410,12 @@ function InterfazGroup({ settings, update }) {
 let savedTab = 'lectura';
 let savedScroll = 0;
 
-export default function SettingsPanel({ settings, update, onClose, camera, recording }) {
+export default function SettingsPanel({ settings, update, onClose, camera, recording, onlyGroups = null }) {
+  const groups = GROUPS.filter(g => (onlyGroups ? onlyGroups.includes(g.id) : !g.monitorOnly));
   const bodyRef = useRef(null);
   const panelRef = useRef(null);
   const restoringUntil = useRef(0);
-  const [tab, setTabState] = useState(savedTab);
+  const [tab, setTabState] = useState(groups.some(g => g.id === savedTab) ? savedTab : groups[0].id);
   const [query, setQuery] = useState('');
   const [noResults, setNoResults] = useState(false);
   const [view, setView] = useState('groups');
@@ -1444,6 +1473,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
     audio: <AudioGroup {...common} />,
     grabacion: <GrabacionGroup {...common} />,
     interfaz: <InterfazGroup {...common} />,
+    monitor: <MonitorGroup {...common} />,
   };
 
   return (
@@ -1454,7 +1484,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
       <header className="tp-panel-header">
         <h2>{view === 'presets' ? 'Presets' : 'Ajustes'}</h2>
         <div className="tp-header-actions">
-          {view === 'groups' && (
+          {view === 'groups' && !onlyGroups && (
             <button type="button" className="tp-preset-btn" onClick={() => setView('presets')} aria-label="Presets de ajustes" title="Guardar y aplicar presets de ajustes">
               <Bookmark size={16} /> Presets
             </button>
@@ -1467,7 +1497,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
 
       {view === 'presets' ? (
         <div className="tp-panel-body">
-          <PresetsView groups={GROUPS} settings={settings} update={update} recording={recording} onBack={() => setView('groups')} />
+          <PresetsView groups={GROUPS.filter(g => !g.monitorOnly)} settings={settings} update={update} recording={recording} onBack={() => setView('groups')} />
         </div>
       ) : (
       <>
@@ -1489,7 +1519,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
           )}
         </label>
         <div className={`tp-tabs${q ? ' is-dim' : ''}`} role="tablist" aria-label="Grupos de ajustes">
-          {GROUPS.map(g => {
+          {groups.map(g => {
             const Icon = g.icon;
             return (
               <button
@@ -1521,7 +1551,7 @@ export default function SettingsPanel({ settings, update, onClose, camera, recor
       >
         <PanelCtx.Provider value={{ q }}>
           {q && <p className="tp-results-title">Resultados para «{query.trim()}»</p>}
-          {GROUPS.map(g => (
+          {groups.map(g => (
             <Group key={g.id} def={g} active={tab === g.id} onReset={() => reset(g)}>
               {bodies[g.id]}
             </Group>

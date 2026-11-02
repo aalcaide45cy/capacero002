@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ScriptEditor from './ScriptEditor';
+import { unlockAudio } from './audioCtx';
 import Prompter from './Prompter';
 import { TP_KEYS, createScriptItem, loadLibrary, loadSettings, saveJSON } from './storage';
 import './teleprompter.css';
@@ -77,6 +78,16 @@ export default function TeleprompterEntry() {
   useTeleprompterHead();
   const install = useInstall();
   const [mode, setMode] = useState('edit');
+  // Enlace del QR del monitor del PC: /tp?monitor=<código>
+  const [monitorId, setMonitorId] = useState(() => {
+    try {
+      const v = new URLSearchParams(window.location.search).get('monitor');
+      return v && /^[a-z0-9]{10}$/.test(v) ? v : null;
+    } catch {
+      return null;
+    }
+  });
+  const [monitorActive, setMonitorActive] = useState(false);
   const [lib, setLib] = useState(loadLibrary);
   const [settings, setSettings] = useState(loadSettings);
 
@@ -144,7 +155,16 @@ export default function TeleprompterEntry() {
   if (mode === 'read') {
     return (
       <div className="tp-root">
-        <Prompter script={script} settings={settings} update={update} onExit={() => setMode('edit')} />
+        <Prompter
+          script={script}
+          settings={settings}
+          update={update}
+          monitorId={monitorActive ? monitorId : null}
+          onExit={() => {
+            setMode('edit');
+            setMonitorActive(false);
+          }}
+        />
       </div>
     );
   }
@@ -158,6 +178,14 @@ export default function TeleprompterEntry() {
         update={update}
         install={install}
         library={library}
+        monitorId={monitorId}
+        onConnectMonitor={() => {
+          unlockAudio();
+          update({ cameraOn: true });
+          setMonitorActive(true);
+          setMode('read');
+        }}
+        onDismissMonitor={() => setMonitorId(null)}
         onStart={() => {
           saveJSON(TP_KEYS.library, lib.items);
           saveJSON(TP_KEYS.current, lib.currentId);
