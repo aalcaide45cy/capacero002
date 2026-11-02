@@ -1187,7 +1187,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
   const dragRef = useRef(null);
   const onPointerDown = e => {
     if (e.button !== undefined && e.button !== 0) return;
-    dragRef.current = { y: e.clientY, startPos: posRef.current, moved: false };
+    dragRef.current = { x: e.clientX, y: e.clientY, startPos: posRef.current, moved: false };
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const onPointerMove = e => {
@@ -1196,7 +1196,9 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
       if (e.pointerType === 'mouse') setControlsVisible(true);
       return;
     }
-    const dy = e.clientY - drag.y;
+    // Con la pantalla girada el dedo se mueve en las coordenadas del móvil: se pasa a las de la interfaz girada
+    const rot = settingsRef.current.uiRotation;
+    const dy = rot === 90 ? -(e.clientX - drag.x) : rot === 270 ? e.clientX - drag.x : e.clientY - drag.y;
     if (Math.abs(dy) > 6) drag.moved = true;
     if (drag.moved) {
       const sign = settingsRef.current.mirrorV ? -1 : 1;
