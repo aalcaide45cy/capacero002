@@ -35,6 +35,7 @@ function loadMonitorSettings(clean = false) {
     cameraDim: 0.35,
     cameraZoom: 1,
     monitorQuality: 'alta',
+    monitorMbps: 0,
     ...(saved && typeof saved === 'object' ? saved : {}),
     // El monitor siempre enseña la imagen completa de la cámara del móvil
     cameraFit: 'contain',
@@ -347,6 +348,17 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
               >
                 {Object.entries(QUALITY_LABELS).map(([k, l]) => <option key={k} value={k} style={{ color: '#000' }}>{l}</option>)}
               </select>
+              <select
+                className="tp-ctrl"
+                style={{ width: 'auto', padding: '0 8px', background: 'transparent', color: 'inherit' }}
+                value={settings.monitorMbps}
+                onChange={e => update({ monitorMbps: Number(e.target.value) })}
+                aria-label="Mbps de la imagen"
+                title="Límite de Mbps de la imagen que llega a este PC (Automático usa el de la calidad)"
+              >
+                <option value={0} style={{ color: '#000' }}>Mbps: automático</option>
+                {[1, 2, 4, 6, 8, 12, 20, 30].map(m => <option key={m} value={m} style={{ color: '#000' }}>{m} Mbps</option>)}
+              </select>
               <label className="tp-ctrl" style={{ width: 'auto', padding: '0 10px', gap: 6, display: 'flex', alignItems: 'center' }} title="Zoom solo en este monitor (digital)">
                 <ZoomIn size={18} />
                 <input
@@ -495,8 +507,8 @@ export default function MonitorEntry({ clean = false }) {
   const connected = status === 'conectado';
   // El móvil manda la imagen con la calidad que se elige aquí (y se repite cada vez que se reconecta)
   useEffect(() => {
-    if (connected) send({ t: 'cmd', c: 'quality', v: settings.monitorQuality });
-  }, [connected, settings.monitorQuality, send]);
+    if (connected) send({ t: 'cmd', c: 'quality', v: settings.monitorQuality, mbps: settings.monitorMbps });
+  }, [connected, settings.monitorQuality, settings.monitorMbps, send]);
   const link = useMemo(() => (roomId ? `${window.location.origin}/tp?monitor=${roomId}` : ''), [roomId]);
 
   // Mientras no hay móvil conectado: el QR

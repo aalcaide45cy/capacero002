@@ -254,6 +254,7 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
   // La copia que ve el PC es una vista previa: ~720p y poco bitrate para no cargar al móvil mientras graba
   let current = track;
   let level = 'media';
+  let mbps = 0;
   const limitQuality = async () => {
     try {
       if (!transceiver) return;
@@ -263,7 +264,7 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
       const h = current?.getSettings?.().height || 720;
       const longSide = Math.max(w, h);
       const q = QUALITY[level] || QUALITY.media;
-      p.encodings[0].maxBitrate = q.bitrate;
+      p.encodings[0].maxBitrate = mbps > 0 ? Math.round(mbps * 1_000_000) : q.bitrate;
       p.encodings[0].maxFramerate = q.fps;
       p.encodings[0].scaleResolutionDownBy = q.side ? Math.max(1, longSide / q.side) : 1;
       await transceiver.sender.setParameters(p);
@@ -276,9 +277,11 @@ export async function connectCamera({ id, track, onMessage, onStatus, isCancelle
   return {
     send: obj => (channel ? channel.send(obj) : false),
     // El PC elige con qué calidad le llega la imagen (la grabación del móvil no cambia)
-    setQuality: l => {
+    // mbps > 0 fija el límite de Mbps; 0 usa el de la calidad elegida
+    setQuality: (l, m = 0) => {
       if (QUALITY[l]) {
         level = l;
+        mbps = Number(m) > 0 && Number(m) <= 50 ? Number(m) : 0;
         limitQuality();
       }
     },
