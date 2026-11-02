@@ -30,8 +30,9 @@ function loadMonitorSettings() {
     align: 'center',
     cameraMirror: true,
     cameraDim: 0.35,
-    cameraFit: 'contain',
     ...(saved && typeof saved === 'object' ? saved : {}),
+    // El monitor siempre enseña la imagen completa de la cámara del móvil
+    cameraFit: 'contain',
   };
 }
 
@@ -124,7 +125,7 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
         v.style.height = '100%';
         return;
       }
-      const s = settingsRef.current.cameraFit === 'contain' ? Math.min(cw / vw, ch / vh) : Math.max(cw / vw, ch / vh);
+      const s = Math.min(cw / vw, ch / vh);
       v.style.objectFit = 'fill';
       v.style.width = `${Math.round(vw * s)}px`;
       v.style.height = `${Math.round(vh * s)}px`;
@@ -141,7 +142,7 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
       v.removeEventListener('resize', apply);
       clearInterval(t);
     };
-  }, [settings.cameraFit, settings.cameraMirror]);
+  }, [settings.cameraMirror]);
 
   // Índice de palabras del guion en ESTE tamaño de pantalla
   const rebuildRef = useRef(() => {});

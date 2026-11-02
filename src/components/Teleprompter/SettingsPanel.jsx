@@ -686,7 +686,7 @@ const GROUPS = [
   {
     id: 'monitor', label: 'Monitor', icon: Camera, color: '#38bdf8', soft: 'rgba(56, 189, 248, 0.16)', monitorOnly: true,
     desc: 'Imagen de la cámara del móvil',
-    keys: ['cameraMirror', 'cameraDim', 'cameraFit'],
+    keys: ['cameraMirror', 'cameraDim'],
   },
   {
     id: 'interfaz', label: 'Interfaz', icon: SlidersHorizontal, color: '#fbbf24', soft: 'rgba(251, 191, 36, 0.16)',
@@ -1359,12 +1359,6 @@ function MonitorGroup({ settings, update }) {
   return (
     <>
       <Toggle label="Imagen de la cámara en espejo" keywords="espejo selfie" checked={settings.cameraMirror} onChange={v => update({ cameraMirror: v })} />
-      <Segmented
-        label="Vista de la cámara"
-        value={settings.cameraFit}
-        onChange={v => update({ cameraFit: v })}
-        options={[{ value: 'cover', label: 'Llenar pantalla' }, { value: 'contain', label: 'Imagen completa' }]}
-      />
       <Range
         label="Oscurecer la imagen"
         value={settings.cameraDim}
