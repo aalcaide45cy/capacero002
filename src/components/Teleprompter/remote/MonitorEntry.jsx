@@ -34,7 +34,7 @@ function loadMonitorSettings(clean = false) {
     cameraMirror: true,
     cameraDim: 0.35,
     cameraZoom: 1,
-    monitorQuality: clean ? 'alta' : 'media',
+    monitorQuality: 'alta',
     ...(saved && typeof saved === 'object' ? saved : {}),
     // El monitor siempre enseña la imagen completa de la cámara del móvil
     cameraFit: 'contain',
@@ -385,6 +385,7 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
               >
                 {remote.torch ? <Flashlight size={20} /> : <FlashlightOff size={20} />}
               </button>
+              {remote.torch == null && connected && <small style={{ opacity: 0.7 }}>sin linterna</small>}
               {recording ? (
                 <button type="button" className="tp-ctrl tp-ctrl-rec is-recording" onClick={() => cmd('stop')} aria-label="Parar grabación" title="Parar la grabación (R)"><Square size={18} fill="currentColor" /></button>
               ) : (
