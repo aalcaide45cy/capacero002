@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
-  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone,
+  Play, Pause, RotateCcw, ChevronUp, ChevronDown, Minus, Plus, Circle, Square, Settings2, Maximize, Minimize, MonitorSmartphone, Flashlight, FlashlightOff,
 } from 'lucide-react';
 import ScriptView from '../ScriptView';
 import SettingsPanel from '../SettingsPanel';
@@ -213,7 +213,7 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
     return () => clearInterval(id);
   }, [remote.recording]);
 
-  const cmd = useCallback(c => send({ t: 'cmd', c }), [send]);
+  const cmd = useCallback((c, v) => send({ t: 'cmd', c, v }), [send]);
 
   useEffect(() => {
     const onKey = e => {
@@ -326,6 +326,29 @@ function MonitorView({ stream, script, remote, settings, update, send, onNew, co
               </div>
             </div>
             <div className="tp-controls-group">
+              {Array.isArray(remote.cams) && remote.cams.length > 1 && (
+                <select
+                  className="tp-ctrl"
+                  style={{ width: 'auto', maxWidth: 190, padding: '0 8px', background: 'transparent', color: 'inherit' }}
+                  value={remote.cam || ''}
+                  disabled={recording}
+                  onChange={e => cmd('camera', e.target.value)}
+                  aria-label="Cámara del móvil"
+                  title={recording ? 'No se puede cambiar de cámara mientras graba' : 'Cámara que usa el móvil'}
+                >
+                  {remote.cams.map(([id, label]) => <option key={id} value={id} style={{ color: '#000' }}>{label}</option>)}
+                </select>
+              )}
+              <button
+                type="button"
+                className={`tp-ctrl${remote.torch ? ' is-on' : ''}`}
+                disabled={remote.torch == null}
+                onClick={() => cmd('torch', !remote.torch)}
+                aria-label="Linterna del móvil"
+                title={remote.torch == null ? 'La linterna no está disponible con esta cámara o en este navegador del móvil' : 'Encender o apagar la linterna del móvil'}
+              >
+                {remote.torch ? <Flashlight size={20} /> : <FlashlightOff size={20} />}
+              </button>
               {recording ? (
                 <button type="button" className="tp-ctrl tp-ctrl-rec is-recording" onClick={() => cmd('stop')} aria-label="Parar grabación" title="Parar la grabación (R)"><Square size={18} fill="currentColor" /></button>
               ) : (

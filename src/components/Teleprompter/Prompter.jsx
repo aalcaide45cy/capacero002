@@ -933,7 +933,35 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
     slower: () => changeSpeed(-1),
     next: () => jumpSection(1),
     prev: () => jumpSection(-1),
+    // Cámara y linterna se manejan desde el PC
+    camera: id => {
+      if (!liveRef.current.recording && typeof id === 'string' && id) update({ cameraSource: id });
+    },
+    torch: on => setTorch(!!on),
   };
+  // Linterna de la cámara (no todos los móviles y navegadores la dejan usar; Safari en iPhone normalmente no)
+  const videoTrack = camera.preview?.getVideoTracks()[0] || null;
+  const torchSupported = !!videoTrack?.getCapabilities?.().torch;
+  const [torchOn, setTorchOn] = useState(false);
+  const torchRef = useRef({ supported: false, on: false });
+  torchRef.current = { supported: torchSupported, on: torchOn };
+  const setTorch = useCallback(
+    async on => {
+      const t = camera.preview?.getVideoTracks()[0];
+      if (!t || !t.getCapabilities?.().torch) return;
+      try {
+        await t.applyConstraints({ advanced: [{ torch: on }] });
+        setTorchOn(on);
+      } catch (err) {
+        recLog.add(`linterna: ERROR ${err?.name || ''} ${err?.message || ''}`);
+      }
+    },
+    [camera.preview]
+  );
+  // Una cámara nueva empieza con la linterna apagada
+  useEffect(() => {
+    setTorchOn(false);
+  }, [camera.preview]);
   const remoteApiProxy = useMemo(() => new Proxy({}, { get: (_, k) => remoteApi.current[k] }), []);
   const getRemoteState = useCallback(() => {
     const s = settingsRef.current;
@@ -952,8 +980,26 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
       speed: s.speed,
       w,
       idx: Math.floor(w),
+      cams: camsRef.current.list,
+      cam: camsRef.current.current,
+      torch: torchRef.current.supported ? torchRef.current.on : null,
     };
   }, []);
+  // Cámaras que el PC puede elegir (sin repetidos) y la que se está usando
+  const camsRef = useRef({ list: [], current: '' });
+  {
+    const seen = new Set();
+    const list = [];
+    camera.devices.video.forEach((d, i) => {
+      const label = d.label || `Cámara ${i + 1}`;
+      if (seen.has(label.toLowerCase())) return;
+      seen.add(label.toLowerCase());
+      list.push([d.deviceId, label]);
+    });
+    const t = camera.preview?.getVideoTracks()[0];
+    const current = list.find(([, l]) => t && l === t.label)?.[0] || t?.getSettings?.().deviceId || '';
+    camsRef.current = { list, current };
+  }
   const remote = useRemoteLink({
     id: monitorId,
     track: camera.preview?.getVideoTracks()[0] || null,

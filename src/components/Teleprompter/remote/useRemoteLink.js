@@ -62,7 +62,7 @@ export function useRemoteLink({ id, track, api, getState, script }) {
       onMessage: m => {
         if (m.t === 'cmd' && apiRef.current[m.c]) {
           recLog.add(`monitor remoto: orden «${m.c}»`);
-          apiRef.current[m.c]();
+          apiRef.current[m.c](m.v);
         } else if (m.t === 'need-script') {
           sendScript();
         }
