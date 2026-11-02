@@ -940,8 +940,23 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
     torch: on => setTorch(!!on),
   };
   // Linterna de la cámara (no todos los móviles y navegadores la dejan usar; Safari en iPhone normalmente no)
-  const videoTrack = camera.preview?.getVideoTracks()[0] || null;
-  const torchSupported = !!videoTrack?.getCapabilities?.().torch;
+  // La cámara trasera suele tener linterna y la frontal no; el iPhone puede tardar un momento en declararla, así que se vuelve a mirar
+  const [torchSupported, setTorchSupported] = useState(false);
+  useEffect(() => {
+    const t = camera.preview?.getVideoTracks()[0];
+    const check = () => {
+      const caps = t?.getCapabilities?.() || {};
+      setTorchSupported(!!caps.torch);
+      return !!caps.torch;
+    };
+    if (!t) {
+      setTorchSupported(false);
+      return undefined;
+    }
+    recLog.add(`linterna: ${check() ? 'disponible' : 'no declarada'} (${t.label})`);
+    const timers = [400, 1200, 3000].map(ms => setTimeout(check, ms));
+    return () => timers.forEach(clearTimeout);
+  }, [camera.preview]);
   const [torchOn, setTorchOn] = useState(false);
   const torchRef = useRef({ supported: false, on: false });
   torchRef.current = { supported: torchSupported, on: torchOn };
