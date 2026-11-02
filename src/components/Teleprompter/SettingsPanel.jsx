@@ -362,10 +362,14 @@ function MicTest({ settings, update, recording }) {
 function VoiceTest({ update }) {
   const [state, setState] = useState({ running: false, heard: '', error: '', started: false });
 
+  // Avisa a la pantalla de lectura para que pause las órdenes de voz mientras dura la prueba
+  const announce = on => window.dispatchEvent(new CustomEvent('tp-voice-test', { detail: on }));
   const run = async (useTrack = false) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     unlockAudio();
+    announce(true);
+    await new Promise(r => setTimeout(r, 450));
     let micStream = null;
     let track = null;
     if (useTrack) {
@@ -374,6 +378,7 @@ function VoiceTest({ update }) {
         track = micStream.getAudioTracks()[0];
       } catch (err) {
         setState({ running: false, heard: '', error: err?.name === 'NotAllowedError' ? 'not-allowed' : String(err?.name || err), started: false });
+        announce(false);
         return;
       }
     }
@@ -392,6 +397,7 @@ function VoiceTest({ update }) {
     };
     rec.onerror = e => setState(s => ({ ...s, error: e.error }));
     rec.onend = () => {
+      announce(false);
       micStream?.getTracks().forEach(t => t.stop());
       // Si entiende lo que dices usando la pista del micrófono, se activa para poder seguir tu voz también al grabar
       if (track && got) {
@@ -405,6 +411,7 @@ function VoiceTest({ update }) {
       else rec.start();
     } catch (err) {
       setState({ running: false, heard: '', error: String(err?.name || err), started: false });
+      announce(false);
     }
     setTimeout(() => { try { rec.stop(); } catch { /* ya parado */ } }, 7000);
   };

@@ -406,8 +406,15 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
   const srSupported = speechRecognitionSupported();
   const srBlocked = recorder.recording && isAppleSafari() && !(settings.voiceFollowWhileRecording || settings.voiceUseTrack || settings.voiceCommands);
   const wantsFollow = requestedVoice === 'follow' && srSupported && !srBlocked;
-  // Con los ajustes abiertos se pausan: iOS solo deja un reconocimiento a la vez y chocaría con las pruebas de voz
-  const commandsActive = settings.voiceCommands && srSupported && !srBlocked && !panelOpen;
+  // Solo se pausan mientras corre una prueba de voz de los ajustes: iOS deja un único reconocimiento a la vez y chocaría.
+  // Abrir los ajustes sin más no las toca (parar y reanudar el reconocimiento hace sonar un pitido del iPhone)
+  const [voiceTesting, setVoiceTesting] = useState(false);
+  useEffect(() => {
+    const on = e => setVoiceTesting(!!e.detail);
+    window.addEventListener('tp-voice-test', on);
+    return () => window.removeEventListener('tp-voice-test', on);
+  }, []);
+  const commandsActive = settings.voiceCommands && srSupported && !srBlocked && !voiceTesting;
   const [cmdToast, setCmdToast] = useState('');
   const lastCmdRef = useRef(0);
   const cmdToastTimer = useRef(null);
