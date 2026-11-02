@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, ChevronUp, ChevronDown,
-  FlipHorizontal2, Settings2, Camera, CameraOff, Circle, Square, Maximize, Minimize,
+  FlipHorizontal2, Settings2, RectangleVertical, RectangleHorizontal, Crop, Camera, CameraOff, Circle, Square, Maximize, Minimize,
   Download, Share2, Trash2, Pin, PinOff, Mic, MicOff, ListOrdered, X,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
@@ -1122,6 +1122,21 @@ export default function Prompter({ script, settings, update, onExit }) {
           >
             {requestedVoice === 'off' ? <MicOff size={20} /> : <Mic size={20} />}
           </button>
+          {hasMediaDevices() && (
+            <button
+              type="button"
+              className={`tp-ctrl has-label${settings.outputFormat !== 'normal' ? ' is-on' : ''}`}
+              disabled={recorder.recording}
+              onClick={() =>
+                update({ outputFormat: settings.outputFormat === 'normal' ? 'crop' : settings.outputFormat === 'crop' ? 'bars' : 'normal' })
+              }
+              aria-label="Cambiar la orientación del vídeo grabado"
+              title={`Vídeo grabado: ${settings.outputFormat === 'normal' ? 'como la cámara' : settings.outputFormat === 'crop' ? 'horizontal con recorte' : 'horizontal con barras'} (toca para cambiar)`}
+            >
+              {settings.outputFormat === 'normal' ? <RectangleVertical size={18} /> : settings.outputFormat === 'crop' ? <Crop size={18} /> : <RectangleHorizontal size={18} />}
+              <small>{settings.outputFormat === 'normal' ? 'Cám.' : settings.outputFormat === 'crop' ? 'Recorte' : 'Barras'}</small>
+            </button>
+          )}
           <button
             type="button"
             className={`tp-ctrl${settings.mirrorH ? ' is-on' : ''}`}

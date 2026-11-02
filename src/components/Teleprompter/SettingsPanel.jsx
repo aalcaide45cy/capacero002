@@ -520,6 +520,97 @@ function LastLog() {
   );
 }
 
+// ─── Listas de dispositivos sin repetidos ───
+const FRONT_RE = /(front|frontal|delantera|user|selfie|facetime)/i;
+const BACK_RE = /(back|trasera|rear|environment)/i;
+
+// Cámaras: las reales del dispositivo, sin duplicados; «Frontal» y «Trasera» solo si el navegador aún no da nombres
+function buildCameraChoices(devices) {
+  const seen = new Set();
+  const list = [];
+  devices.video.forEach((d, i) => {
+    const label = d.label || `Cámara ${i + 1}`;
+    const key = label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    list.push({ value: d.deviceId, label });
+  });
+  const hasFront = list.some(o => FRONT_RE.test(o.label));
+  const hasBack = list.some(o => BACK_RE.test(o.label));
+  const presets = [];
+  if (!hasFront) presets.push({ value: 'user', label: 'Frontal' });
+  if (!hasBack) presets.push({ value: 'environment', label: 'Trasera' });
+  const options = [...presets, ...list];
+  // «user» y «environment» (los valores antiguos) apuntan a la cámara real que les corresponde
+  const resolve = source => {
+    if (source === 'user' && hasFront) return list.find(o => FRONT_RE.test(o.label))?.value;
+    if (source === 'environment' && hasBack) {
+      const backs = list.filter(o => BACK_RE.test(o.label)).sort((a, b) => a.label.length - b.label.length);
+      return backs[0]?.value;
+    }
+    return source;
+  };
+  return { options, resolve };
+}
+
+// Micrófonos: sin los alias «default» y «communications» ni nombres repetidos
+function buildMicOptions(devices) {
+  const seen = new Set();
+  const list = [];
+  devices.audio.forEach((d, i) => {
+    if (d.deviceId === 'default' || d.deviceId === 'communications') return;
+    const label = (d.label || `Micrófono ${i + 1}`).replace(/^(Predeterminado|Default|Comunicaciones|Communications)\s*[-–]\s*/i, '');
+    const key = label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    list.push({ value: d.deviceId, label });
+  });
+  return [{ value: 'default', label: 'Predeterminado del sistema' }, ...list];
+}
+
+// Orientación del vídeo grabado (se usa en Cámara y en Grabar: es el mismo ajuste)
+function OutputFormatControls({ settings, update, recording, withScale }) {
+  return (
+    <>
+      <Segmented
+        label="Orientación del vídeo grabado"
+        keywords="horizontal vertical apaisado 16:9 iphone girar recortar barras"
+        value={settings.outputFormat}
+        onChange={v => !recording && update({ outputFormat: v })}
+        options={[
+          { value: 'normal', label: 'Como la cámara' },
+          { value: 'crop', label: 'Horizontal (recorte)' },
+          { value: 'bars', label: 'Horizontal (barras)' },
+        ]}
+      />
+      {settings.outputFormat === 'crop' && (
+        <Range
+          label="Posición del recorte"
+          keywords="subir bajar encuadre cara"
+          value={settings.cropY}
+          min={0}
+          max={100}
+          format={v => (v === 0 ? 'arriba del todo' : v === 100 ? 'abajo del todo' : `${v} % desde arriba`)}
+          onChange={v => update({ cropY: v })}
+        />
+      )}
+      {withScale && settings.outputFormat !== 'normal' && (
+        <Select
+          label="Tamaño del vídeo horizontal"
+          value={settings.outputScale}
+          disabled={recording}
+          onChange={v => update({ outputScale: v })}
+          options={[
+            { value: 'native', label: 'El del encuadre (sin ampliar)' },
+            { value: '1080', label: '1920 × 1080 (Full HD)' },
+            { value: '2160', label: '3840 × 2160 (4K)' },
+          ]}
+        />
+      )}
+    </>
+  );
+}
+
 // ─── Grupos de ajustes ───
 const GROUPS = [
   {
@@ -696,8 +787,8 @@ function TextoGroup({ settings, update }) {
         </div>
       </Row>
       <Subtitle>Espejo</Subtitle>
-      <Toggle label="Espejo horizontal" checked={settings.mirrorH} onChange={v => update({ mirrorH: v })} />
-      <Toggle label="Espejo vertical" checked={settings.mirrorV} onChange={v => update({ mirrorV: v })} />
+      <Toggle label="Espejo horizontal del texto" keywords="espejo cristal" checked={settings.mirrorH} onChange={v => update({ mirrorH: v })} />
+      <Toggle label="Espejo vertical del texto" keywords="espejo cristal" checked={settings.mirrorV} onChange={v => update({ mirrorV: v })} />
       <Help title="Para qué sirve el espejo">Para cristales de teleprompter, que reflejan el texto al revés.</Help>
     </>
   );
@@ -938,11 +1029,7 @@ function CamaraBody({ settings, update, camera, recording }) {
     videoTrack?.applyConstraints({ advanced: [{ zoom: v }] }).catch(() => {});
   };
 
-  const cameraOptions = [
-    { value: 'user', label: 'Frontal' },
-    { value: 'environment', label: 'Trasera' },
-    ...devices.video.map((d, i) => ({ value: d.deviceId, label: d.label || `Cámara ${i + 1}` })),
-  ];
+  const cameraChoices = buildCameraChoices(devices);
 
   return (
     <>
@@ -958,7 +1045,7 @@ function CamaraBody({ settings, update, camera, recording }) {
       )}
       {settings.cameraOn && (
         <>
-          <Select label="Cámara" keywords="frontal trasera lente" value={settings.cameraSource} disabled={recording} options={cameraOptions} onChange={v => update({ cameraSource: v })} />
+          <Select label="Cámara a usar" keywords="frontal trasera lente" value={cameraChoices.resolve(settings.cameraSource)} disabled={recording} options={cameraChoices.options} onChange={v => update({ cameraSource: v })} />
           <Segmented
             label="Resolución"
             keywords="720 1080 4k calidad"
@@ -994,7 +1081,9 @@ function CamaraBody({ settings, update, camera, recording }) {
             </Row>
           )}
           <Subtitle>Imagen en pantalla</Subtitle>
-          <Toggle label="Ver la cámara en espejo" checked={settings.cameraMirror} onChange={v => update({ cameraMirror: v })} />
+          <Toggle label="Imagen de la cámara en espejo (solo vista previa)" keywords="espejo selfie" checked={settings.cameraMirror} onChange={v => update({ cameraMirror: v })} />
+          <Subtitle>Formato del vídeo grabado</Subtitle>
+          <OutputFormatControls settings={settings} update={update} recording={recording} />
           <Segmented
             label="Vista de la cámara"
             keywords="encuadre recorte"
@@ -1033,12 +1122,7 @@ function AudioGroup({ settings, update, camera, recording }) {
   const { stream, devices } = camera;
   const audioTrack = camera.micTrack || stream?.getAudioTracks()[0];
   const audioSettings = audioTrack?.getSettings?.() || {};
-  const micOptions = [
-    { value: 'default', label: 'Predeterminado del sistema' },
-    ...devices.audio
-      .filter(d => d.deviceId !== 'default')
-      .map((d, i) => ({ value: d.deviceId, label: d.label || `Micrófono ${i + 1}` })),
-  ];
+  const micOptions = buildMicOptions(devices);
 
   return (
     <>
@@ -1140,41 +1224,7 @@ function GrabacionGroup({ settings, update, camera, recording }) {
   return (
     <>
       <Subtitle>Formato del vídeo</Subtitle>
-      <Segmented
-        label="Orientación del vídeo grabado"
-        keywords="horizontal vertical apaisado 16:9 iphone girar recortar barras"
-        value={settings.outputFormat}
-        onChange={v => !recording && update({ outputFormat: v })}
-        options={[
-          { value: 'normal', label: 'Como la cámara' },
-          { value: 'crop', label: 'Horizontal (recorte)' },
-          { value: 'bars', label: 'Horizontal (barras)' },
-        ]}
-      />
-      {settings.outputFormat === 'crop' && (
-        <Range
-          label="Posición del recorte"
-          keywords="subir bajar encuadre cara"
-          value={settings.cropY}
-          min={0}
-          max={100}
-          format={v => (v === 0 ? 'arriba del todo' : v === 100 ? 'abajo del todo' : `${v} % desde arriba`)}
-          onChange={v => update({ cropY: v })}
-        />
-      )}
-      {settings.outputFormat !== 'normal' && (
-        <Select
-          label="Resolución del vídeo horizontal"
-          value={settings.outputScale}
-          disabled={recording}
-          onChange={v => update({ outputScale: v })}
-          options={[
-            { value: 'native', label: 'La del encuadre (sin ampliar)' },
-            { value: '1080', label: '1920 × 1080 (Full HD)' },
-            { value: '2160', label: '3840 × 2160 (4K)' },
-          ]}
-        />
-      )}
+      <OutputFormatControls settings={settings} update={update} recording={recording} withScale />
       <Help title="Grabar en horizontal con el iPhone en vertical">
         Con el iPhone en vertical la cámara entrega un encuadre vertical. «Horizontal (recorte)» corta de ese encuadre una
         franja 16:9 (en la vista previa se marca cuál; la subes o bajas con «Posición del recorte»). «Horizontal (barras)»

@@ -1053,3 +1053,7 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-index li button { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .tp-index li button.is-current { background: rgba(34, 211, 238, 0.14); color: var(--tp-accent); box-shadow: inset 3px 0 0 var(--tp-accent); }
 .tp-here { flex-shrink: 0; padding: 1px 7px; border-radius: 999px; background: var(--tp-accent); color: var(--tp-accent-fg); font-size: 10.5px; font-style: normal; font-weight: 800; }
+
+.tp-ctrl.has-label { flex-direction: column; gap: 1px; width: 52px; }
+.tp-ctrl.has-label small { font-size: 9px; font-weight: 700; line-height: 1; }
+.tp-ctrl:disabled { opacity: 0.45; cursor: not-allowed; }
