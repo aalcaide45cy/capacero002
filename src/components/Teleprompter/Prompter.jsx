@@ -414,7 +414,9 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
     window.addEventListener('tp-voice-test', on);
     return () => window.removeEventListener('tp-voice-test', on);
   }, []);
-  const commandsActive = settings.voiceCommands && srSupported && !srBlocked && !voiceTesting;
+  // Con la cámara encendida, las órdenes esperan a tener la pista del micrófono y se enganchan a ella: así el reconocimiento no abre
+  // otro micrófono aparte (el iPhone avisa con un pitido al abrirlo y cerrarlo)
+  const commandsActive = settings.voiceCommands && srSupported && !srBlocked && !voiceTesting && (!settings.cameraOn || !!camera.micTrack);
   const [cmdToast, setCmdToast] = useState('');
   const lastCmdRef = useRef(0);
   const cmdToastTimer = useRef(null);

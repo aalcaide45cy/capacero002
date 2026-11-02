@@ -97,6 +97,7 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch, track, onPhra
   callbacks.current = { getIndex, onMatch, onPhrase, matchWords };
   const trackRef = useRef(null);
   trackRef.current = track || null;
+  const trackId = track?.id || '';
 
   useEffect(() => {
     if (!active || !speechRecognitionSupported()) return undefined;
@@ -164,7 +165,12 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch, track, onPhra
         const t = trackRef.current;
         if (t) {
           recLog.add('voz: start(pista de audio)');
-          rec.start(t);
+          try {
+            rec.start(t);
+          } catch {
+            // Safari sin esa opción: se escucha el micrófono del sistema
+            rec.start();
+          }
         } else rec.start();
       } catch (err) {
         recLog.add(`voz: start falló ${err?.name} ${err?.message}`);
@@ -187,7 +193,7 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch, track, onPhra
       }
       setState({ listening: false, error: '', heard: '' });
     };
-  }, [active, lang]);
+  }, [active, lang, trackId]);
 
   return { ...state, cursorRef };
 }
