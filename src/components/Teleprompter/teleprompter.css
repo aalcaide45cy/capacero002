@@ -1038,3 +1038,13 @@ body.tp-reading .fixed.bottom-0.left-0.w-full.z-50 { display: none !important; }
 .tp-preset-info strong { display: block; word-break: break-word; }
 .tp-preset-info small { color: var(--tp-muted); }
 .tp-preset-list .tp-preset-groups { margin: 4px 0; }
+
+/* Guía del recorte horizontal sobre la vista previa de la cámara */
+.tp-crop-guide {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  border: 2px dashed rgba(34, 211, 238, 0.95);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}

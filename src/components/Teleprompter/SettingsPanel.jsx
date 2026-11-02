@@ -555,7 +555,7 @@ const GROUPS = [
   {
     id: 'grabacion', label: 'Grabar', icon: Circle, color: '#f87171', soft: 'rgba(248, 113, 113, 0.16)',
     desc: 'Calidad, copias y rendimiento',
-    keys: ['videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
+    keys: ['outputFormat', 'cropY', 'outputScale', 'videoBitrate', 'audioBitrate', 'wavRecord', 'wavBitDepth', 'backupRecordings', 'liteWhileRecording'],
   },
   {
     id: 'interfaz', label: 'Interfaz', icon: SlidersHorizontal, color: '#fbbf24', soft: 'rgba(251, 191, 36, 0.16)',
@@ -1139,6 +1139,51 @@ function GrabacionGroup({ settings, update, camera, recording }) {
   );
   return (
     <>
+      <Subtitle>Formato del vídeo</Subtitle>
+      <Segmented
+        label="Orientación del vídeo grabado"
+        keywords="horizontal vertical apaisado 16:9 iphone girar recortar barras"
+        value={settings.outputFormat}
+        onChange={v => !recording && update({ outputFormat: v })}
+        options={[
+          { value: 'normal', label: 'Como la cámara' },
+          { value: 'crop', label: 'Horizontal (recorte)' },
+          { value: 'bars', label: 'Horizontal (barras)' },
+        ]}
+      />
+      {settings.outputFormat === 'crop' && (
+        <Range
+          label="Posición del recorte"
+          keywords="subir bajar encuadre cara"
+          value={settings.cropY}
+          min={0}
+          max={100}
+          format={v => (v === 0 ? 'arriba del todo' : v === 100 ? 'abajo del todo' : `${v} % desde arriba`)}
+          onChange={v => update({ cropY: v })}
+        />
+      )}
+      {settings.outputFormat !== 'normal' && (
+        <Select
+          label="Resolución del vídeo horizontal"
+          value={settings.outputScale}
+          disabled={recording}
+          onChange={v => update({ outputScale: v })}
+          options={[
+            { value: 'native', label: 'La del encuadre (sin ampliar)' },
+            { value: '1080', label: '1920 × 1080 (Full HD)' },
+            { value: '2160', label: '3840 × 2160 (4K)' },
+          ]}
+        />
+      )}
+      <Help title="Grabar en horizontal con el iPhone en vertical">
+        Con el iPhone en vertical la cámara entrega un encuadre vertical. «Horizontal (recorte)» corta de ese encuadre una
+        franja 16:9 (en la vista previa se marca cuál; la subes o bajas con «Posición del recorte»). «Horizontal (barras)»
+        mete el encuadre vertical completo en un vídeo 16:9 con barras negras a los lados. Para que el recorte conserve
+        nitidez, graba la cámara en 4K (grupo Cámara): el recorte de un encuadre 4K vertical da un vídeo de unos 2160 × 1215.
+        Dibujar el vídeo en el teléfono consume más batería y procesador que grabar la cámara tal cual.
+      </Help>
+
+      <Subtitle>Calidad</Subtitle>
       <Select
         label="Calidad de vídeo (bitrate)"
         keywords="mbps"

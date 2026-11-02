@@ -10,6 +10,7 @@ import { useCamera, useRecorder, hasMediaDevices, RESOLUTIONS, isAppleSafari } f
 import { useSpeechLevel, useSpeechFollow, speechRecognitionSupported } from './useVoice';
 import { buildContentIndex } from './domIndex';
 import { createKaraoke, karaokeVars, wordAtPos } from './karaoke';
+import { useOutputStream } from './useOutputStream';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
 import { unlockAudio } from './audioCtx';
@@ -112,6 +113,44 @@ function LogBox({ text }) {
       </div>
     </details>
   );
+}
+
+// Marca en la vista previa qué franja 16:9 del encuadre vertical es la que se graba
+function CropGuide({ videoRef, boxRef, cropY, enabled }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    const apply = () => {
+      const v = videoRef.current;
+      const box = boxRef.current;
+      const el = ref.current;
+      if (!v || !box || !el || !v.videoWidth) return;
+      const vr = v.getBoundingClientRect();
+      const br = box.getBoundingClientRect();
+      const vw = v.videoWidth;
+      const vh = v.videoHeight;
+      const scale = vr.width / vw;
+      const wide = vw / vh > 16 / 9;
+      const cw = wide ? vh * (16 / 9) : vw;
+      const ch = wide ? vh : vw * (9 / 16);
+      const cx = wide ? (vw - cw) / 2 : 0;
+      const cy = wide ? 0 : (vh - ch) * (cropY / 100);
+      el.style.display = 'block';
+      el.style.left = `${vr.left - br.left + cx * scale}px`;
+      el.style.top = `${vr.top - br.top + cy * scale}px`;
+      el.style.width = `${cw * scale}px`;
+      el.style.height = `${ch * scale}px`;
+    };
+    apply();
+    const id = setInterval(apply, 400);
+    window.addEventListener('resize', apply);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('resize', apply);
+    };
+  }, [videoRef, boxRef, cropY, enabled]);
+  if (!enabled) return null;
+  return <div className="tp-crop-guide" ref={ref} aria-hidden="true" />;
 }
 
 // Coloca el vídeo de la cámara cubriendo (o conteniendo) el escenario calculando el tamaño a mano.
@@ -268,7 +307,15 @@ export default function Prompter({ script, settings, update, onExit }) {
   const videoBps = settings.videoBitrate > 0
     ? settings.videoBitrate * 1_000_000
     : (RESOLUTIONS[settings.resolution] || RESOLUTIONS['1080']).bitrate;
-  const recorder = useRecorder(camera.stream, videoBps, settings.audioBitrate * 1000);
+  const outStream = useOutputStream({
+    stream: camera.stream,
+    videoRef,
+    format: settings.outputFormat,
+    cropY: settings.cropY,
+    scale: settings.outputScale,
+    fps: settings.fps,
+  });
+  const recorder = useRecorder(settings.outputFormat !== 'normal' && outStream ? outStream : camera.stream, videoBps, settings.audioBitrate * 1000);
   const wav = useWavRecorder(camera.stream, settings.wavBitDepth);
   const fullscreen = useFullscreen();
   useWakeLock();
@@ -933,6 +980,7 @@ export default function Prompter({ script, settings, update, onExit }) {
       {settings.cameraOn && (
         <div className="tp-camera" ref={camBoxRef}>
           <video ref={videoRef} autoPlay playsInline muted />
+          <CropGuide videoRef={videoRef} boxRef={camBoxRef} cropY={settings.cropY} enabled={settings.outputFormat === 'crop'} />
           <div className="tp-camera-dim" style={{ opacity: settings.cameraDim }} />
         </div>
       )}

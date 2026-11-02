@@ -314,6 +314,8 @@ export function useRecorder(stream, videoBps, audioBps) {
   const [startedAt, setStartedAt] = useState(0);
   const [result, setResult] = useState(null);
   const recorderRef = useRef(null);
+  const streamRef = useRef(stream);
+  streamRef.current = stream;
 
   const discard = useCallback(() => {
     setResult(prev => {
@@ -323,6 +325,7 @@ export function useRecorder(stream, videoBps, audioBps) {
   }, []);
 
   const start = useCallback(() => {
+    const stream = streamRef.current;
     if (!stream || typeof MediaRecorder === 'undefined') return false;
     discard();
     const mimeType = pickMimeType();
@@ -371,7 +374,7 @@ export function useRecorder(stream, videoBps, audioBps) {
     setStartedAt(Date.now());
     setRecording(true);
     return true;
-  }, [stream, videoBps, audioBps, discard]);
+  }, [videoBps, audioBps, discard]);
 
   const stop = useCallback(() => {
     const rec = recorderRef.current;
