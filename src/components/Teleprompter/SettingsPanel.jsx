@@ -666,7 +666,7 @@ const GROUPS = [
   {
     id: 'voz', label: 'Voz', icon: Mic, color: '#4ade80', soft: 'rgba(74, 222, 128, 0.16)',
     desc: 'Que el texto te siga al hablar',
-    keys: ['voiceMode', 'voiceSensitivity', 'voicePace', 'voicePaceFactor', 'voiceFollowSpeed', 'voiceLookahead', 'voiceAlign', 'voiceLang', 'voiceUseTrack', 'voiceFollowWhileRecording'],
+    keys: ['voiceMode', 'voiceCommands', 'voiceCommandBeep', 'voiceSensitivity', 'voicePace', 'voicePaceFactor', 'voiceFollowSpeed', 'voiceLookahead', 'voiceAlign', 'voiceLang', 'voiceUseTrack', 'voiceFollowWhileRecording'],
   },
   {
     id: 'camara', label: 'Cámara', icon: Camera, color: '#fb923c', soft: 'rgba(251, 146, 60, 0.16)',
@@ -933,6 +933,22 @@ function VozGroup({ settings, update }) {
         te sigue. Usa el reconocimiento de voz del navegador (en Chrome lo procesa Google). En iPhone, para usarlo grabando hace
         falta la opción experimental de «Avanzado».
       </Help>
+      <Subtitle>Órdenes de voz</Subtitle>
+      <Toggle label="Órdenes de voz («Reproducir», «Grabar», «Parar»)" keywords="comandos voz grabar reproducir parar stop" checked={settings.voiceCommands} onChange={v => update({ voiceCommands: v })} />
+      {settings.voiceCommands && (
+        <Toggle label="Pitido al reconocer una orden" checked={settings.voiceCommandBeep} onChange={v => update({ voiceCommandBeep: v })} />
+      )}
+      <Help title="Cómo funcionan las órdenes de voz">
+        <strong>Con todo parado:</strong> di «Reproducir» (solo mueve el texto) o «Grabar» (cuenta atrás, graba y mueve el
+        texto). Valen también «reproduce», «empieza», «graba», «rec»… y solo cuentan si es una frase corta.
+        <br />
+        <strong>Leyendo o grabando:</strong> di «Parar, parar, parar» (tres veces seguidas; vale «stop stop stop» o mezclarlas) y
+        se detiene todo. Cada orden se confirma con un aviso en pantalla y un pitido.
+        <br />
+        Con las órdenes activas el reconocimiento escucha todo el rato (el iPhone enseña el micrófono encendido y gasta más
+        batería) y usa el micrófono de la cámara.
+      </Help>
+      <Subtitle>Seguir el guion</Subtitle>
       <Row label="Probar el reconocimiento de voz" keywords="diagnóstico prueba dictado">
         <VoiceTest update={update} />
       </Row>

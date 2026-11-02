@@ -90,11 +90,11 @@ export const speechRecognitionSupported = () =>
   typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
 // Reconocimiento de voz del navegador: coloca el texto donde vas leyendo.
-export function useSpeechFollow({ active, lang, getIndex, onMatch, track }) {
+export function useSpeechFollow({ active, lang, getIndex, onMatch, track, onPhrase, matchWords = true }) {
   const [state, setState] = useState({ listening: false, error: '', heard: '' });
   const cursorRef = useRef(0);
   const callbacks = useRef({});
-  callbacks.current = { getIndex, onMatch };
+  callbacks.current = { getIndex, onMatch, onPhrase, matchWords };
   const trackRef = useRef(null);
   trackRef.current = track || null;
 
@@ -120,6 +120,10 @@ export function useSpeechFollow({ active, lang, getIndex, onMatch, track }) {
         recLog.add('voz: reconocimiento iniciado');
       };
       rec.onresult = e => {
+        // La última frase reconocida, para las órdenes de voz
+        const last = e.results[e.results.length - 1];
+        if (last && callbacks.current.onPhrase) callbacks.current.onPhrase(last[0].transcript, !!last.isFinal);
+        if (!callbacks.current.matchWords) return;
         let transcript = '';
         for (let i = e.resultIndex; i < e.results.length; i++) transcript += `${e.results[i][0].transcript} `;
         const spoken = normalizeText(transcript);

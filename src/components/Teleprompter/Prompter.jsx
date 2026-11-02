@@ -14,7 +14,8 @@ import { useRemoteLink } from './remote/useRemoteLink';
 import { useOutputStream } from './useOutputStream';
 import { useWavRecorder } from './useWavRecorder';
 import { recLog, describeTrack } from './recLog';
-import { unlockAudio } from './audioCtx';
+import { unlockAudio, beep } from './audioCtx';
+import { parseVoiceCommand } from './voiceCommands';
 import { saveRecording, deleteRecording } from './recStore';
 import { loadPosition, savePosition } from './storage';
 
@@ -352,15 +353,45 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
   const [curSection, setCurSection] = useState(-1);
   const indexPanelRef = useRef(null);
   const [ownTrack, setOwnTrack] = useState(null);
+  const liveRef = useRef({});
+  const remoteApi = useRef({});
 
   const requestedVoice = settings.voiceMode;
   const srSupported = speechRecognitionSupported();
-  const srBlocked = recorder.recording && isAppleSafari() && !(settings.voiceFollowWhileRecording || settings.voiceUseTrack);
+  const srBlocked = recorder.recording && isAppleSafari() && !(settings.voiceFollowWhileRecording || settings.voiceUseTrack || settings.voiceCommands);
   const wantsFollow = requestedVoice === 'follow' && srSupported && !srBlocked;
+  const commandsActive = settings.voiceCommands && srSupported && !srBlocked;
+  const [cmdToast, setCmdToast] = useState('');
+  const lastCmdRef = useRef(0);
+  const cmdToastTimer = useRef(null);
+  // Órdenes de voz: con todo parado «reproducir» y «grabar»; leyendo o grabando, «parar» tres veces
+  const handlePhrase = useCallback(text => {
+    const s = settingsRef.current;
+    if (!s.voiceCommands) return;
+    const nowMs = Date.now();
+    if (nowMs - lastCmdRef.current < 2500) return;
+    const l = liveRef.current;
+    const busy = playingRef.current || l.recording || l.countdown > 0;
+    if (!busy && l.resultOpen) return;
+    const cmd = parseVoiceCommand(text, { busy });
+    if (!cmd) return;
+    lastCmdRef.current = nowMs;
+    recLog.add(`orden de voz: ${cmd} («${text.trim()}»)`);
+    // Primero se ejecuta y luego suena el pitido, para que no se cuele al principio de la grabación
+    if (cmd === 'play') remoteApi.current.play();
+    else if (cmd === 'record') remoteApi.current.record();
+    else remoteApi.current.stop();
+    if (s.voiceCommandBeep) beep(cmd === 'stop' ? 'stop' : 'ok');
+    setCmdToast(cmd === 'play' ? 'Reproducir' : cmd === 'record' ? 'Grabar' : 'Parar');
+    clearTimeout(cmdToastTimer.current);
+    cmdToastTimer.current = setTimeout(() => setCmdToast(''), 1800);
+  }, []);
   const follow = useSpeechFollow({
-    active: wantsFollow && playing,
+    active: (wantsFollow && playing) || commandsActive,
+    matchWords: wantsFollow && playing,
+    onPhrase: handlePhrase,
     lang: settings.voiceLang,
-    track: settings.voiceUseTrack ? camera.micTrack : null,
+    track: settings.voiceUseTrack || settings.voiceCommands ? camera.micTrack : null,
     getIndex: () => indexRef.current,
     onMatch: (found, index) => {
       const s = settingsRef.current;
@@ -872,9 +903,7 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
   }, [recorder, wav, setPlaying]);
 
   // ── Monitor remoto en el PC: el móvil graba y manda la imagen, el guion y por dónde vas; el PC manda órdenes ──
-  const liveRef = useRef({});
   liveRef.current = { recording: recorder.recording, startedAt: recorder.startedAt, countdown, resultOpen: !!recorder.result };
-  const remoteApi = useRef({});
   remoteApi.current = {
     toggle: togglePlay,
     play: () => {
@@ -1132,13 +1161,15 @@ export default function Prompter({ script, settings, update, onExit, monitorId =
 
       {countdown > 0 && <div className="tp-countdown" aria-live="assertive">{countdown}</div>}
 
+      {cmdToast && <div className="tp-toast tp-cmd-toast">🎤 Orden: {cmdToast}</div>}
       {settings.cameraOn && !panelOpen && (camera.error || micIssue) && !(settings.hideNotices && (playing || recorder.recording || countdown > 0)) && (
         <div className="tp-toast">{camera.error || micIssue}</div>
       )}
 
       <div className="tp-bottom">
-        {(cameraActive || requestedVoice !== 'off' || monitorId) && (
+        {(cameraActive || requestedVoice !== 'off' || monitorId || settings.voiceCommands) && (
           <div className="tp-status" aria-live="polite">
+            {settings.voiceCommands && <span className="tp-status-voice">🎤 órdenes de voz</span>}
             {monitorId && <span className="tp-status-voice">🖥 monitor: {remoteText}</span>}
             {recorder.recording && (
               <span className="tp-rec-badge">

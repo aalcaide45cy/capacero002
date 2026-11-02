@@ -63,6 +63,8 @@ export const DEFAULT_SETTINGS = {
   karaokeRead: 'color',
   karaokeReadColor: '#7dd3fc',
   hideNotices: true,
+  voiceCommands: false,
+  voiceCommandBeep: true,
   voiceMode: 'off',
   voiceLast: 'talk',
   voiceSensitivity: 10,
