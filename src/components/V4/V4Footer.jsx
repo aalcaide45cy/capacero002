@@ -2,6 +2,13 @@ import React from 'react';
 import { Youtube, Mail } from 'lucide-react';
 import { trackSubscribe, trackSocialClick } from '../../utils/analytics';
 
+const SOCIAL_LINKS = [
+  { label: 'YouTube', href: 'https://youtube.com/@capacero0' },
+  { label: 'TikTok', href: 'https://www.tiktok.com/@capacero' },
+  { label: 'Instagram', href: 'https://www.instagram.com/capa.cero_3d' },
+  { label: 'Udemy', href: 'https://www.udemy.com/user/alfonso-alcaide-cornejo/' },
+];
+
 export default function V4Footer({ onOpenCollaboration }) {
   const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
 
@@ -60,6 +67,22 @@ export default function V4Footer({ onOpenCollaboration }) {
           © {new Date().getFullYear()} Capa Cero. Creado para la comunidad 3D.
         </div>
 
+      </div>
+
+      {/* Sobre mí + redes (texto HTML para buscadores e IA) */}
+      <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-zinc-900 text-left">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Sobre mí</h2>
+        <p className="text-xs text-zinc-400 max-w-3xl leading-relaxed">
+          Hola, soy Alfonso Alcaide Cornejo, creador de CapaCero3D. Hago tutoriales en español sobre impresión 3D,
+          Bambu Studio y Fusion 360 para que entiendas qué ajuste usar, por qué funciona y cómo evitar errores en el taller.
+        </p>
+        <nav aria-label="Redes de Alfonso Alcaide Cornejo" className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs font-semibold text-zinc-300">
+          {SOCIAL_LINKS.map((l) => (
+            <a key={l.href} href={l.href} target="_blank" rel="me noopener" className="hover:text-cyan-400 transition-colors">
+              {l.label}
+            </a>
+          ))}
+        </nav>
       </div>
     </footer>
   );
