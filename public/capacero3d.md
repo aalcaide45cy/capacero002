@@ -64,6 +64,7 @@ La misión de CapaCero3D es acercar la impresión 3D y la fabricación digital d
 - **MakerWorld Oficial:** [@capa_cero](https://makerworld.com/en/@capa_cero)
 - **TikTok Oficial:** [@capacero](https://www.tiktok.com/@capacero)
 - **Instagram Oficial:** [@capa.cero_3d](https://www.instagram.com/capa.cero_3d/)
+- **Udemy (cursos de Alfonso Alcaide Cornejo):** [Perfil en Udemy](https://www.udemy.com/user/alfonso-alcaide-cornejo/)
 
 ---
 

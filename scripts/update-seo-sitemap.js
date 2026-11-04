@@ -155,7 +155,31 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
           "https://www.youtube.com/@CapaCero0",
           "https://makerworld.com/en/@capa_cero",
           "https://www.instagram.com/capa.cero_3d/",
-          "https://www.tiktok.com/@capacero"
+          "https://www.tiktok.com/@capacero",
+          "https://www.udemy.com/user/alfonso-alcaide-cornejo/"
+        ],
+        "founder": {
+          "@id": "https://www.capacero3d.com/#person"
+        }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://www.capacero3d.com/#person",
+        "name": "Alfonso Alcaide Cornejo",
+        "url": "https://www.capacero3d.com/",
+        "image": "https://www.capacero3d.com/logo-emblem.png",
+        "description": "Creador de CapaCero3D: tutoriales en español de impresión 3D, Bambu Studio y Fusion 360.",
+        "jobTitle": "Creador de contenido sobre impresión 3D",
+        "knowsAbout": ["Impresión 3D", "Bambu Studio", "Fusion 360", "Bambu Lab", "Modelado 3D", "Fabricación digital"],
+        "worksFor": {
+          "@id": "https://www.capacero3d.com/#organization"
+        },
+        "sameAs": [
+          "https://www.youtube.com/@CapaCero0",
+          "https://www.tiktok.com/@capacero",
+          "https://www.instagram.com/capa.cero_3d/",
+          "https://www.udemy.com/user/alfonso-alcaide-cornejo/",
+          "https://makerworld.com/en/@capa_cero"
         ]
       },
       {
@@ -188,8 +212,7 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
               }
             ],
             "author": {
-              "@type": "Person",
-              "name": "Capa Cero 3D"
+              "@id": "https://www.capacero3d.com/#person"
             },
             "publisher": {
               "@type": "Organization",
@@ -256,7 +279,7 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
     content="Aprende Bambu Studio e impresión 3D paso a paso. Videoteca oficial de Capa Cero con cursos estructurados, trucos de calibración y modelos 3D descargables en MakerWorld." />
   <meta name="keywords"
     content="tutoriales bambu studio, bambu lab espanol, cursos bambu studio, modelos 3d makerworld, fusion 360 impresion 3d, costuras scarf bambu studio, multicolor sin ams, capa cero 3d" />
-  <meta name="author" content="Capa Cero 3D" />
+  <meta name="author" content="Alfonso Alcaide Cornejo (Capa Cero 3D)" />
   
   <meta property="og:site_name" content="Capa Cero 3D" />
   <meta property="og:locale" content="es_ES" />
@@ -312,6 +335,14 @@ ${noscriptList}
       </ul>
       <p>Canal Oficial de YouTube: <a href="https://www.youtube.com/@CapaCero0?sub_confirmation=1">Suscríbete a Capa Cero 3D</a></p>
       <p>Perfil Oficial de MakerWorld: <a href="https://makerworld.com/en/@capa_cero">Descargar Modelos 3D en MakerWorld</a></p>
+      <h2>Sobre mí</h2>
+      <p>Hola, soy Alfonso Alcaide Cornejo, creador de CapaCero3D. Hago tutoriales en español sobre impresión 3D, Bambu Studio y Fusion 360 para que entiendas qué ajuste usar, por qué funciona y cómo evitar errores.</p>
+      <p>
+        <a href="https://youtube.com/@capacero0" rel="me noopener">YouTube</a> ·
+        <a href="https://www.tiktok.com/@capacero" rel="me noopener">TikTok</a> ·
+        <a href="https://www.instagram.com/capa.cero_3d" rel="me noopener">Instagram</a> ·
+        <a href="https://www.udemy.com/user/alfonso-alcaide-cornejo/" rel="me noopener">Udemy</a>
+      </p>
       <p><a href="https://www.capacero3d.com/politica-privacidad">Política de Privacidad</a></p>
     </main>
   </noscript>
