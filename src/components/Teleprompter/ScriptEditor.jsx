@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { BookOpen, FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone } from 'lucide-react';
+import { BookOpen, FolderOpen, FileDown, FileText, Play, Settings2, Eye, PenLine, Trash2, X, Smartphone, MonitorSmartphone } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel from './SettingsPanel';
 import { unlockAudio } from './audioCtx';
@@ -128,6 +128,10 @@ export default function ScriptEditor({ script, setScript, settings, update, onSt
           </button>
           <a className="tp-btn" href="/editor" title="Ir al Editor MD">
             <PenLine size={18} /> <span>Editor MD</span>
+          </a>
+          {/* Solo se ve en ordenadores (ratón): la pantalla de monitor es para el PC, no para el móvil */}
+          <a className="tp-btn tp-pc-only" href="/tp/monitor" title="Abrir el monitor del PC (cámara remota del móvil)">
+            <MonitorSmartphone size={18} /> <span>Monitor</span>
           </a>
           {editorFiles.length > 0 && (
             <button type="button" className="tp-btn" onClick={() => setImportOpen(true)} title="Importar un documento abierto en el Editor MD">
