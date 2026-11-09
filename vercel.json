@@ -21,11 +21,6 @@
             "permanent": true
         },
         {
-            "source": "/producto/:path*",
-            "destination": "/",
-            "permanent": true
-        },
-        {
             "source": "/v4",
             "destination": "/",
             "permanent": true
@@ -44,6 +39,10 @@
         {
             "source": "/admin/:path*",
             "destination": "/api/admin?p=:path*"
+        },
+        {
+            "source": "/producto/:path*",
+            "destination": "/api/admin?p=gone"
         },
         {
             "source": "/video/:slug",
