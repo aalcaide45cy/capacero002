@@ -626,6 +626,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
   const route = String(req.query.p || '').replace(/^\/+|\/+$/g, '');
+  // Las antiguas páginas /producto/* (afiliados) ya no existen: se responde 410 para que Google las retire en vez de redirigirlas a la portada.
+  if (route === 'gone') {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    return res.status(410).setHeader('Content-Type', 'text/html; charset=utf-8').send('<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Página eliminada</title><body style="font-family:system-ui;text-align:center;padding:60px"><h1>Esta página ya no existe</h1><p><a href="https://www.capacero3d.com/">Ir a Capa Cero 3D</a></p></body></html>');
+  }
   const pool = getPool();
   try {
     if (route === 'login') return await handleLogin(pool, req, res, nonce);
