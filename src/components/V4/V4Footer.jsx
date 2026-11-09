@@ -57,6 +57,9 @@ export default function V4Footer({ onOpenCollaboration }) {
               <span>Colaboraciones</span>
             </button>
           )}
+          <a href="/sobre-mi" className="hover:text-cyan-300 transition-colors">
+            Sobre mí
+          </a>
           <a href="/politica-privacidad" className="hover:text-cyan-300 transition-colors">
             Privacidad y Cookies
           </a>
