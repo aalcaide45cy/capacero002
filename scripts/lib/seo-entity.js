@@ -20,7 +20,7 @@ export const SAME_AS = PROFILES.map((p) => p.url);
 export const PERSON_NAME = 'Alfonso Alcaide Cornejo';
 export const PERSON_DESCRIPTION =
   'Alfonso Alcaide Cornejo es un creador de contenido español especializado en impresión 3D. ' +
-  'Dirige CapaCero3D, con tutoriales de Bambu Studio y Fusion 360, cursos en Udemy y presencia en YouTube, TikTok e Instagram.';
+  'Dirige CapaCero3D, con tutoriales de Bambu Studio y Fusion 360, cursos en Udemy de diseño 3D y videojuegos, y presencia en YouTube, TikTok e Instagram.';
 
 export const personNode = {
   '@type': 'Person',
@@ -36,7 +36,7 @@ export const personNode = {
   knowsLanguage: 'es',
   knowsAbout: [
     'Impresión 3D', 'Impresión 3D FDM', 'Bambu Studio', 'Bambu Lab', 'Fusion 360',
-    'Calibración de impresoras 3D', 'Modelado 3D para impresión', 'Fabricación digital', 'Grabado láser',
+    'Calibración de impresoras 3D', 'Diseño 3D', 'Desarrollo de videojuegos', 'Modelado 3D para impresión', 'Fabricación digital', 'Grabado láser',
   ],
   worksFor: { '@id': ORG_ID },
   sameAs: SAME_AS,

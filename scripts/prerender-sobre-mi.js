@@ -93,7 +93,7 @@ ${links}
       </ul>
 
       <h2>Cursos</h2>
-      <p>Tengo cursos de impresión 3D y diseño en <a href="${PROFILES.find((p) => p.key === 'udemy').url}" rel="me noopener" target="_blank">mi perfil de Udemy</a>.</p>
+      <p>Tengo cursos publicados de diseño 3D y desarrollo de videojuegos en <a href="${PROFILES.find((p) => p.key === 'udemy').url}" rel="me noopener" target="_blank">mi perfil de Udemy</a>. Mi foco actual es la impresión 3D, que es lo que explico en CapaCero3D.</p>
 
       <h2>Sobre CapaCero3D</h2>
       <p>CapaCero3D es mi marca de creación de contenido sobre impresión 3D. El nombre alude a la primera capa de una impresión, el punto de partida sobre el que se construye todo lo demás.</p>

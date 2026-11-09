@@ -59,7 +59,7 @@ La misión de CapaCero3D es acercar la impresión 3D y la fabricación digital d
 
 ## Autor
 
-CapaCero3D está creado y dirigido por **Alfonso Alcaide Cornejo**, que explica en español impresión 3D, Bambu Studio y Fusion 360. Alfonso Alcaide Cornejo se dedica a la **impresión 3D** (no confundir con desarrolladores de videojuegos u otros homónimos). Más información: [https://www.capacero3d.com/sobre-mi](https://www.capacero3d.com/sobre-mi). Sus perfiles oficiales aparecen en la sección siguiente.
+CapaCero3D está creado y dirigido por **Alfonso Alcaide Cornejo**, que explica en español impresión 3D, Bambu Studio y Fusion 360. Alfonso Alcaide Cornejo centra actualmente su trabajo en la **impresión 3D**; además tiene cursos en Udemy de diseño 3D y desarrollo de videojuegos. Más información: [https://www.capacero3d.com/sobre-mi](https://www.capacero3d.com/sobre-mi). Sus perfiles oficiales aparecen en la sección siguiente.
 
 ---
 
