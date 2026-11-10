@@ -21,7 +21,6 @@ Google Apps Script (Web Push & Telemetría) ◄── api/youtube-analytics.js (
 ### 1. Frontend & UI
 - **React 18** + **Vite 7** + **Tailwind CSS**.
 - **V4Hub**: Videoteca interactiva con buscador tolerante a fallos técnicos y tildes, filtros por temática, visualización de duraciones reales y reproductor optimizado mediante patrón *facade* (carga bajo demanda de la IFrame Player API de YouTube sin bloquear el renderizado inicial).
-- **V4NotificationBell**: Sistema discreto de activación de notificaciones Web Push para Escritorio y Android sin obligar a instalar la PWA (con guía nativa para Safari en iOS).
 - **AnalyticsDashboard (`/estadisticas`)**: Panel de métricas con acceso protegido. Muestra telemetría en tiempo real, generador de ideas de vídeo a partir de búsquedas de usuarios, monitorización de Web Push y el panel "Camino a 4.000 horas" conectado a YouTube Analytics API.
 
 ### 2. Páginas Indexables por Vídeo (SSG)
