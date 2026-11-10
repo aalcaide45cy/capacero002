@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import Papa from 'papaparse';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,7 +8,6 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.resolve(__dirname, '../src/data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'videos_v4.json');
 const SLUGS_FILE = path.join(DATA_DIR, 'slugs.json');
-const NOTIFIED_FILE = path.join(DATA_DIR, 'notified.json');
 const CATEGORY_MAP_FILE = path.join(DATA_DIR, 'category-map.json');
 
 // Los Shorts se detectan dinámicamente sin listas estáticas de IDs
@@ -29,45 +27,6 @@ function getCategoryMap() {
   }
   _cachedCategoryMap = null;
   return null;
-}
-
-function getNotifiedIds() {
-  if (fs.existsSync(NOTIFIED_FILE)) {
-    try {
-      const data = JSON.parse(fs.readFileSync(NOTIFIED_FILE, 'utf-8'));
-      if (Array.isArray(data)) return new Set(data);
-    } catch (e) {
-      console.warn('Advertencia al leer notified.json:', e.message);
-    }
-  }
-  return null;
-}
-
-async function notifyNewVideoInAppsScript(video) {
-  const defaultUrl = 'https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec';
-  const baseUrl = process.env.SHEETS_DB_URL || defaultUrl;
-  const token = process.env.STATS_API_TOKEN || '';
-  const slug = video.slug || video.youtubeId;
-  const targetVideoUrl = `https://www.capacero3d.com/video/${slug}`;
-  const title = `Nuevo vídeo: ${video.title}`;
-  const body = video.description
-    ? (video.description.slice(0, 120) + '...')
-    : 'Ya disponible en Capa Cero 3D. Pulsa para ver el nuevo tutorial.';
-
-  try {
-    const notifyUrl = `${baseUrl}?action=notify_new_video&token=${encodeURIComponent(token)}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}&slug=${encodeURIComponent(slug)}&url=${encodeURIComponent(targetVideoUrl)}`;
-    const res = await fetch(notifyUrl, { method: 'POST' });
-    const data = await res.json().catch(() => null);
-    if (res.ok && data?.success) {
-      console.log(`🔔 Notificación push enviada con éxito para: "${video.title}"`);
-      return true;
-    } else {
-      console.warn(`⚠️ Apps Script no procesó el aviso push (${res.status}):`, data?.message || 'Acción no reconocida');
-    }
-  } catch (err) {
-    console.warn(`⚠️ Aviso: No se pudo enviar notificación push para "${video.title}":`, err.message);
-  }
-  return false;
 }
 
 function generateSlug(title) {
@@ -129,7 +88,6 @@ function updateSlugsMap(videos) {
   return slugsMap;
 }
 
-const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv";
 
 // Cargar vídeos existentes para preservar estadísticas si la API de YouTube no responde temporalmente
 const existingVideosMap = {};
@@ -642,65 +600,6 @@ function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, ex
   };
 }
 
-// Lee de Neon los vídeos que no están en la hoja y los añade (y respeta los marcados como ocultos).
-// Es opcional: sin DATABASE_URL, o si falla la conexión, la compilación sigue solo con la hoja.
-async function mergeDbOnlyVideos(validVideos) {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) return;
-  let client;
-  try {
-    const { default: pg } = await import('pg');
-    client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000 });
-    await client.connect();
-    const { rows } = await client.query('SELECT * FROM videos ORDER BY published_at DESC');
-    const hidden = new Set(rows.filter(r => r.hidden).map(r => r.youtube_id));
-    for (let i = validVideos.length - 1; i >= 0; i--) {
-      if (hidden.has(validVideos[i].youtubeId)) validVideos.splice(i, 1);
-    }
-    const present = new Set(validVideos.map(v => v.youtubeId));
-    let added = 0;
-    for (const r of rows) {
-      if (r.hidden || r.is_short || present.has(r.youtube_id)) continue;
-      const views = Number(r.views) || 0;
-      const likes = Number(r.likes) || 0;
-      const downloads = Array.isArray(r.downloads) ? r.downloads : [];
-      validVideos.push({
-        id: `db-${r.youtube_id}`,
-        title: r.title,
-        youtubeUrl: `https://www.youtube.com/watch?v=${r.youtube_id}`,
-        youtubeId: r.youtube_id,
-        thumbnail: `https://img.youtube.com/vi/${r.youtube_id}/hqdefault.jpg`,
-        category: r.extra?.category || 'Bambu Studio',
-        description: r.description || '',
-        consejoClave: r.key_tip || '',
-        downloads,
-        isFeatured: Boolean(r.is_featured),
-        isScheduled: Boolean(r.is_scheduled),
-        scheduledDateFormatted: r.is_scheduled ? formatScheduledDate(r.scheduled_date || r.published_at) : null,
-        chapterNumber: r.extra?.chapterNumber || null,
-        popularityScore: (likes * 10) + Math.round(views / 10) + (r.is_featured ? 500 : 0),
-        publishedAt: r.published_at ? new Date(r.published_at).toISOString() : new Date().toISOString(),
-        duration: r.duration || null,
-        views,
-        likes,
-        comments: Number(r.comments) || 0,
-        hasDownloads: downloads.length > 0,
-        hasTip: Boolean(r.key_tip),
-        hasDescription: Boolean(r.description),
-        playlistId: r.playlist_id || null,
-        playlistTitle: r.playlist_title || null,
-        slug: r.slug
-      });
-      added++;
-    }
-    if (added > 0) console.log(`🗄️ Añadidos ${added} vídeo(s) desde Neon que no estaban en la hoja.`);
-  } catch (err) {
-    console.warn('⚠️ No se pudo leer Neon (se continúa solo con la hoja):', err.message);
-  } finally {
-    if (client) await client.end().catch(() => {});
-  }
-}
-
 function formatScheduledDate(rawDate) {
   if (!rawDate) return 'Estreno Próximamente';
   const str = String(rawDate).trim();
@@ -718,9 +617,7 @@ function formatScheduledDate(rawDate) {
   return `Estreno el día ${str}`;
 }
 
-// Fuente de datos: Neon cuando settings.video_source = 'db'; si no (o si falla), la hoja de Google.
-let dataOrigin = 'sheet';
-
+// Fuente de datos: la tabla videos de Neon.
 async function loadRowsFromDb() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) return null;
@@ -754,84 +651,58 @@ async function loadRowsFromDb() {
       };
     });
   } catch (err) {
-    console.warn('⚠️ No se pudo leer Neon (se usa la hoja):', err.message);
+    console.warn('⚠️ No se pudo leer Neon:', err.message);
     return null;
   } finally {
     if (client) await client.end().catch(() => {});
   }
 }
 
-// Tras una compilación correcta desde la hoja, copia el catálogo completo a Neon y lo marca como fuente.
-async function persistCatalogToDb(videos) {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl || videos.length < 30) return;
-  let client;
+// Respaldo sin base de datos (por ejemplo en GitHub Actions sin DATABASE_URL): se parte del último catálogo guardado
+// para refrescar solo las estadísticas. Los vídeos nuevos entran siempre por Neon (api/cron-sync).
+function loadRowsFromSavedCatalog() {
   try {
-    const { default: pg } = await import('pg');
-    client = new pg.Client({ connectionString: dbUrl, connectionTimeoutMillis: 8000 });
-    await client.connect();
-    await client.query('BEGIN');
-    for (const v of videos) {
-      await client.query(
-        `INSERT INTO videos (youtube_id, slug, title, description, published_at, duration, views, likes, comments,
-           is_scheduled, is_featured, playlist_id, playlist_title, key_tip, downloads, extra, source)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'sheet')
-         ON CONFLICT (youtube_id) DO UPDATE SET
-           title = EXCLUDED.title, description = EXCLUDED.description, published_at = EXCLUDED.published_at,
-           duration = EXCLUDED.duration, views = GREATEST(videos.views, EXCLUDED.views),
-           likes = GREATEST(videos.likes, EXCLUDED.likes), comments = GREATEST(videos.comments, EXCLUDED.comments),
-           is_scheduled = EXCLUDED.is_scheduled, is_featured = EXCLUDED.is_featured, playlist_id = EXCLUDED.playlist_id,
-           playlist_title = EXCLUDED.playlist_title, key_tip = EXCLUDED.key_tip, downloads = EXCLUDED.downloads,
-           extra = EXCLUDED.extra, updated_at = now()`,
-        [
-          v.youtubeId, v.slug, v.title, v.description || '', v.publishedAt, v.duration,
-          v.views || 0, v.likes || 0, v.comments || 0, Boolean(v.isScheduled), Boolean(v.isFeatured),
-          v.playlistId, v.playlistTitle, v.consejoClave || null, JSON.stringify(v.downloads || []),
-          JSON.stringify({ category: v.category, chapterNumber: v.chapterNumber, legacyId: v.id })
-        ]
-      );
-    }
-    await client.query(
-      `INSERT INTO settings (key, value) VALUES ('video_source', '"db"'::jsonb)
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`
-    );
-    await client.query('COMMIT');
-    console.log(`🗄️ Catálogo (${videos.length} vídeos) copiado a Neon. A partir de ahora la fuente es Neon.`);
-  } catch (err) {
-    if (client) await client.query('ROLLBACK').catch(() => {});
-    console.warn('⚠️ No se pudo copiar el catálogo a Neon (se sigue con la hoja):', err.message);
-  } finally {
-    if (client) await client.end().catch(() => {});
+    const saved = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
+    if (!Array.isArray(saved) || saved.length === 0) return null;
+    return saved.map(v => {
+      const dl = Array.isArray(v.downloads) ? v.downloads : [];
+      return {
+        id: v.id,
+        Titulo: v.title,
+        URL_Youtube: v.youtubeUrl || `https://www.youtube.com/watch?v=${v.youtubeId}`,
+        Categoria: v.category || '',
+        Descripcion: v.description || '',
+        Consejo_Clave: v.consejoClave || '',
+        Enlace_Descarga: dl[0]?.url || '',
+        Enlace_Descarga2: dl[1]?.url || '',
+        Enlace_Descarga3: dl[2]?.url || '',
+        Destacado: v.isFeatured ? 'SI' : '',
+        Fecha_Estreno: v.isScheduled && v.publishedAt ? v.publishedAt : '',
+        Estado: v.isScheduled ? 'programado' : '',
+        views: Number(v.views) || 0,
+        likes: Number(v.likes) || 0,
+        comments: Number(v.comments) || 0
+      };
+    });
+  } catch {
+    return null;
   }
 }
 
 async function main() {
   const dbRows = await loadRowsFromDb();
   if (dbRows) {
-    dataOrigin = 'db';
     console.log(`🚀 Iniciando Videoteca V4 desde Neon (${dbRows.length} vídeos)...`);
     await processResults({ data: dbRows });
     return;
   }
-  console.log('🚀 Iniciando descarga de Videoteca V4 desde Google Sheets...');
-  try {
-    const response = await fetch(SHEET_CSV_URL);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-    const csvText = await response.text();
-    if (!csvText || !csvText.trim()) throw new Error('CSV vacío');
-
-    Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      complete: processResults,
-      error: (err) => {
-        console.error('🔥 Error parseando CSV de vídeos:', err);
-      }
-    });
-  } catch (error) {
-    console.warn('⚠️ No se pudo descargar la hoja de vídeos (usando existente):', error.message);
+  const savedRows = loadRowsFromSavedCatalog();
+  if (!savedRows) {
+    console.warn('⚠️ Sin acceso a Neon y sin catálogo guardado: no se cambia nada.');
+    return;
   }
+  console.log(`🚀 Sin acceso a Neon: se refrescan las estadísticas del catálogo guardado (${savedRows.length} vídeos)...`);
+  await processResults({ data: savedRows });
 }
 
 async function processResults(results) {
@@ -849,7 +720,7 @@ async function processResults(results) {
             return t.length > 0 || u.length > 0;
           });
 
-        console.log(`📊 Procesando ${rows.length} filas de la hoja y obteniendo estadísticas en tiempo real...`);
+        console.log(`📊 Procesando ${rows.length} vídeos y obteniendo estadísticas en tiempo real...`);
 
         const ytApiKey = process.env.YOUTUBE_API_KEY || '';
         const playlistsMap = await fetchChannelPlaylists(ytApiKey);
@@ -928,9 +799,6 @@ async function processResults(results) {
 
         const validVideos = Array.from(videosMap.values());
 
-        // Vídeos que existen en Neon (alta automática desde YouTube) pero aún no están en la hoja
-        if (dataOrigin === 'sheet') await mergeDbOnlyVideos(validVideos);
-
         // Orden cronológico estricto (más nuevo publicado primero)
         validVideos.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
@@ -940,46 +808,10 @@ async function processResults(results) {
         if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
         fs.writeFileSync(OUTPUT_FILE, JSON.stringify(validVideos, null, 2));
-        if (dataOrigin === 'sheet') await persistCatalogToDb(validVideos);
         console.log(`✨ Generados ${validVideos.length} vídeos ÚNICOS con estadísticas reales de YouTube en src/data/videos_v4.json`);
         console.log(`🎬 Vídeo #1: ${validVideos[0]?.title} [${validVideos[0]?.duration || 'N/A'}] (${validVideos[0]?.views} views | ${validVideos[0]?.likes} likes | ${validVideos[0]?.comments} comments)`);
         console.log(`🎬 Vídeo #2: ${validVideos[1]?.title} [${validVideos[1]?.duration || 'N/A'}] (${validVideos[1]?.views} views | ${validVideos[1]?.likes} likes | ${validVideos[1]?.comments} comments)`);
         console.log(`🎬 Vídeo #3: ${validVideos[2]?.title} [${validVideos[2]?.duration || 'N/A'}] (${validVideos[2]?.views} views | ${validVideos[2]?.likes} likes | ${validVideos[2]?.comments} comments)\n`);
-
-        // Gestión de notificaciones push de nuevos vídeos (Fase 09)
-        let notifiedSet = getNotifiedIds();
-        if (!notifiedSet) {
-          // Primera ejecución: inicializar con todos los vídeos actuales para evitar spam de 33 avisos
-          notifiedSet = new Set();
-          for (const v of validVideos) {
-            if (v.youtubeId) notifiedSet.add(v.youtubeId);
-          }
-          fs.writeFileSync(NOTIFIED_FILE, JSON.stringify(Array.from(notifiedSet), null, 2), 'utf-8');
-          console.log(`📌 Primera ejecución: inicializados ${notifiedSet.size} vídeos en src/data/notified.json`);
-        } else {
-          // Ejecuciones posteriores: notificar vídeos nuevos publicados que no estén programados
-          let newNotifiedCount = 0;
-          // Las vistas previas de Vercel nunca envían avisos reales a los suscriptores.
-          const isPreviewBuild = Boolean(process.env.VERCEL) && process.env.VERCEL_ENV !== 'production';
-          for (const v of validVideos) {
-            if (v.youtubeId && !v.isScheduled && !notifiedSet.has(v.youtubeId)) {
-              console.log(`🆕 ¡Nuevo vídeo publicado detectado! ID: ${v.youtubeId} - "${v.title}"`);
-              if (isPreviewBuild) {
-                console.log('⏭️ Vista previa: no se envía el aviso push ni se marca como avisado.');
-                continue;
-              }
-              // Solo se marca como avisado si el aviso se envió; así un fallo se reintenta en la siguiente compilación.
-              if (await notifyNewVideoInAppsScript(v)) {
-                notifiedSet.add(v.youtubeId);
-                newNotifiedCount++;
-              }
-            }
-          }
-          if (newNotifiedCount > 0) {
-            fs.writeFileSync(NOTIFIED_FILE, JSON.stringify(Array.from(notifiedSet), null, 2), 'utf-8');
-            console.log(`💾 Actualizado src/data/notified.json con ${newNotifiedCount} nuevo(s) vídeo(s).`);
-          }
-        }
       }
 }
 

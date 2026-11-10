@@ -78,7 +78,8 @@ export default function V4Hub() {
   // Sincronización continua en segundo plano y detección de hash (#pair= o #sync=)
   useEffect(() => {
     // 1. Si el dispositivo ya está vinculado a una Bóveda, descargar cambios en el inicio
-    if (getVaultId()) {
+    // (salvo si se llega con un código de emparejamiento: primero se completa el intercambio)
+    if (getVaultId() && !window.location.hash.startsWith('#pair=')) {
       syncVaultPull();
     }
 
@@ -101,13 +102,14 @@ export default function V4Hub() {
       // Caso 1: Emparejamiento por Bóveda Cloud (#pair=CPXXXX)
       if (hash.startsWith('#pair=')) {
         const pairId = hash.replace('#pair=', '').trim();
-        try {
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        } catch (e) {}
 
         if (pairId) {
           setSyncToastMessage('⏳ Sincronizando notas con tu otro dispositivo...');
           const res = await completeQRExchange(pairId);
+          // El código se quita de la dirección al terminar: si la página se recarga a mitad, se reintenta
+          try {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          } catch (e) {}
           if (res && res.success) {
             setSyncToastMessage('🎉 ' + res.message);
           } else {

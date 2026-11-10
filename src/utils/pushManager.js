@@ -213,7 +213,7 @@ export async function subscribeToPushNotifications() {
     } catch (e) {}
     const timezone = (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || 'Europe/Madrid';
 
-    // 4. Enviar suscripción a Google Sheets (100% privado y propio)
+    // 4. Guardar la suscripción en Neon (/api/push-subscribe)
     const payload = {
       type: 'push_subscription',
       timestamp: new Date().toISOString(),

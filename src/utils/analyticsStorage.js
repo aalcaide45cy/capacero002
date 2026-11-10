@@ -1,5 +1,3 @@
-import Papa from 'papaparse';
-
 /**
  * Capa Cero Analytics - Local Data Engine (IndexedDB + LocalStorage Fallback)
  * Proporciona almacenamiento de alta capacidad y cálculos agregados en tiempo real.
@@ -404,7 +402,7 @@ export const loadAnalyticsData = async (mode = 'live') => {
     let allEvents = await getAllEvents();
 
     // Filtrar estrictamente solo sesiones reales
-    const liveSessions = allSessions.filter(s => s.isReal === true || (!s.isDemo && s.fromSheets === true) || (!s.isDemo && typeof s.isReal === 'undefined' && s.sessionId && !s.sessionId.includes('demo')));
+    const liveSessions = allSessions.filter(s => s.isReal === true || (!s.isDemo && typeof s.isReal === 'undefined' && s.sessionId && !s.sessionId.includes('demo')));
     const sessionIdsSet = new Set(liveSessions.map(s => s.sessionId));
     const liveEvents = allEvents.filter(e => !e.isDemo && (sessionIdsSet.has(e.sessionId) || e.isReal === true));
 
@@ -733,10 +731,7 @@ export const exportAnalyticsToJSON = (sessions, events) => {
     document.body.removeChild(link);
 };
 
-// URL de la pestaña de estadísticas publicada en Google Sheets
-export const GOOGLE_SHEETS_STATS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQlwl3lsPNIgJl38cunAhoqkwvjCU3fW0gjgvIrU9xjF4H5GMRhLYgDKiNTIgS62Wn6hoZgMqgZnvS1/pub?output=csv&gid=1728927826";
-
-// Obtener métricas y registros de notificaciones push desde Google Sheets
+// Obtener métricas y registros de notificaciones push desde Neon (/api/stats)
 export const fetchPushStats = async () => {
     try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('capa_cero_stats_token') : null;
@@ -744,7 +739,7 @@ export const fetchPushStats = async () => {
         try {
             const headers = {};
             if (token) headers['Authorization'] = `Bearer ${token}`;
-            res = await fetch('/api/stats-proxy?action=push_stats&t=' + Date.now(), { headers });
+            res = await fetch('/api/stats?action=push_stats&t=' + Date.now(), { headers });
             if (res.status === 503) {
                 return {
                     notConfigured: true,
@@ -761,13 +756,7 @@ export const fetchPushStats = async () => {
             res = null;
         }
 
-        // Si el proxy no responde (entorno local sin backend Vercel), fallback directo a Apps Script
-        if (!res || !res.ok) {
-            const fallbackUrl = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec?action=push_stats&t=" + Date.now();
-            res = await fetch(fallbackUrl);
-        }
-
-        if (!res.ok) throw new Error("HTTP error " + res.status);
+        if (!res || !res.ok) throw new Error('HTTP error ' + (res ? res.status : 'red'));
         const data = await res.json();
         return {
             success: true,
@@ -794,487 +783,71 @@ export const fetchPushStats = async () => {
     }
 };
 
-// Sincronizar con Google Sheets (leer e importar filas remotas si existen)
-export const syncWithGoogleSheet = async () => {
+// Descarga del servidor (Neon) las sesiones de todos los visitantes y las guarda en la base local del panel
+export const syncSessionsFromServer = async () => {
     try {
-        const response = await fetch(GOOGLE_SHEETS_STATS_URL);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('capa_cero_stats_token') : null;
+        const response = await fetch('/api/stats?action=sessions&t=' + Date.now(), {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         if (!response.ok) return { success: false, message: `Error HTTP ${response.status}` };
 
-        const csvText = await response.text();
-        if (!csvText || csvText.trim().length < 25) {
-            return { success: true, count: 0, message: 'La pestaña de Google Sheets está conectada (cabeceras listas).' };
-        }
-
-        return new Promise((resolve) => {
-            Papa.parse(csvText, {
-                header: true,
-                skipEmptyLines: true,
-                complete: async (results) => {
-                    if (!results.data || !Array.isArray(results.data)) {
-                        resolve({ success: true, count: 0, message: 'Hoja de cálculo vacía.' });
-                        return;
-                    }
-
-                    let imported = 0;
-                    for (const row of results.data) {
-                        const sid = row.ID_Sesion || row.id_sesion || row.SessionId;
-                        if (!sid) continue;
-
-                        let parsedDwell = {};
-                        try {
-                            parsedDwell = row.Secciones_Vistas ? JSON.parse(row.Secciones_Vistas) : {};
-                        } catch (e) {}
-
-                        const sessionObj = {
-                            sessionId: sid,
-                            timestamp: row.Timestamp || new Date().toISOString(),
-                            country: row.Pais || 'España',
-                            countryCode: row.Codigo_Pais || 'ES',
-                            flag: row.Bandera || '🇪🇸',
-                            region: row.Region_Provincia || '',
-                            city: row.Ciudad || '',
-                            device: row.Dispositivo || 'Desktop',
-                            os: row.Sistema_Operativo || 'Windows',
-                            browser: row.Navegador || 'Chrome',
-                            origin: row.Canal_Origen || 'Directo',
-                            totalActiveSeconds: parseInt(row.Tiempo_Activo_Segundos, 10) || 0,
-                            hasSubscribed: String(row.Suscrito || '').toUpperCase() === 'SI',
-                            subscribedFrom: row.Suscrito_Desde || null,
-                            dwellTimes: parsedDwell
-                        };
-
-                        await saveSession(sessionObj);
-                        imported++;
-                    }
-
-                    resolve({
-                        success: true,
-                        count: imported,
-                        message: `¡Sincronizadas ${imported} sesiones desde Google Sheets!`
-                    });
-                },
-                error: (err) => {
-                    resolve({ success: false, message: `Error al parsear CSV: ${err.message}` });
-                }
+        const data = await response.json();
+        const rows = Array.isArray(data.sessions) ? data.sessions : [];
+        let imported = 0;
+        for (const row of rows) {
+            if (!row.sessionId) continue;
+            await saveSession({
+                sessionId: row.sessionId,
+                timestamp: row.timestamp || new Date().toISOString(),
+                country: row.country || 'España',
+                countryCode: row.countryCode || 'ES',
+                flag: row.flag || '🇪🇸',
+                region: row.region || '',
+                city: row.city || '',
+                device: row.device || 'Desktop',
+                os: row.os || 'Windows',
+                browser: row.browser || 'Chrome',
+                origin: row.origin || 'Directo',
+                totalActiveSeconds: parseInt(row.totalActiveSeconds, 10) || 0,
+                hasSubscribed: row.hasSubscribed === true,
+                subscribedFrom: row.subscribedFrom || null,
+                dwellTimes: row.dwellTimes || {}
             });
-        });
+            imported++;
+        }
+        return { success: true, count: imported, message: `¡Sincronizadas ${imported} sesiones!` };
     } catch (e) {
-        return { success: false, message: 'No se pudo conectar con Google Sheets (comprueba la conexión).' };
+        return { success: false, message: 'No se pudo conectar con el servidor (comprueba la conexión).' };
     }
 };
 
-// Plantilla de Columnas recomendadas para la pestaña "Estadisticas"
-export const RECOMMENDED_SHEET_COLUMNS = [
-    { col: 'A', name: 'Timestamp', desc: 'Fecha y hora ISO (ej: 2026-08-16 19:45:00)' },
-    { col: 'B', name: 'ID_Sesion', desc: 'Identificador único de sesión (ej: ses_a9b8c7)' },
-    { col: 'C', name: 'Pais', desc: 'Nombre del país (ej: España, México)' },
-    { col: 'D', name: 'Codigo_Pais', desc: 'Código ISO 2 letras (ej: ES, MX, AR)' },
-    { col: 'E', name: 'Bandera', desc: 'Emoji bandera (ej: 🇪🇸, 🇲🇽)' },
-    { col: 'F', name: 'Region_Provincia', desc: 'Provincia o comunidad autónoma (ej: Madrid, Valencia)' },
-    { col: 'G', name: 'Ciudad', desc: 'Ciudad detectada (ej: Madrid, Barcelona)' },
-    { col: 'H', name: 'Dispositivo', desc: 'Tipo: Móvil, Desktop o Tablet' },
-    { col: 'I', name: 'Sistema_Operativo', desc: 'SO: Windows, Android, iOS, macOS' },
-    { col: 'J', name: 'Navegador', desc: 'Navegador: Chrome, Safari, TikTok In-App' },
-    { col: 'K', name: 'Canal_Origen', desc: 'Origen: YouTube, TikTok, Instagram, Directo, Google' },
-    { col: 'L', name: 'Tiempo_Activo_Segundos', desc: 'Segundos reales de permanencia activa' },
-    { col: 'M', name: 'Suscrito', desc: 'SI o NO' },
-    { col: 'N', name: 'Suscrito_Desde', desc: 'Vídeo exacto o sección donde hizo clic en suscribirse' },
-    { col: 'O', name: 'Secciones_Vistas', desc: 'Detalle de secciones exploradas y segundos' },
-    { col: 'P', name: 'Tarjetas_Clicadas', desc: 'Títulos de tutoriales clicados' },
-    { col: 'Q', name: 'Descargas_Realizadas', desc: 'Archivos .3MF o perfiles descargados' },
-    { col: 'R', name: 'Busquedas_Tecleadas', desc: 'Palabras buscadas en el buscador' },
-    { col: 'S', name: 'Doctor3D_Consultas', desc: 'Síntomas mecánicos consultados' }
-];
-
-// Código Apps Script completo, ultra compatible y limpio
-export const GOOGLE_APPS_SCRIPT_CODE = `/**
- * ==============================================================================
- * SISTEMA INTEGRAL CAPA CERO 3D - VÍDEOS HORIZONTALES Y ANALÍTICA V4
- * ==============================================================================
- * Compatible al 100% con Google Apps Script (V8 y Clásico).
- */
-
-// Lista de Shorts y vídeos privados que no deben sincronizarse
-var VIDEOS_IGNORADOS = [
-  "C4tnZhcznnM",
-  "cPEr2vj8OD8",
-  "XIWrao4uNtU",
-  "74U1uClr5LA",
-  "px2XMValBno",
-  "lUI7KoJg40w",
-  "YK1OFjCqjGc",
-  "gRmLRA6tpZw",
-  "-Ed4ICmVaZ8",
-  "z905Akv3KHQ"
-];
-
-function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  ui.createMenu('🎥 Capa Cero')
-    .addItem('🔄 Sincronizar Vídeos (Solo Horizontales)', 'sincronizarVideosCapaCero')
-    .addItem('🗑️ Limpiar y Re-sincronizar Todo (27 Vídeos)', 'limpiarYResincronizar')
-    .addSeparator()
-    .addItem('📊 Crear y Formatear Pestaña "Estadisticas"', 'crearYFormatearPestanaEstadisticas')
-    .addToUi();
-}
-
-/**
- * CREA Y FORMATEA AUTOMÁTICAMENTE LA PESTAÑA "Estadisticas"
- */
-function crearYFormatearPestanaEstadisticas() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Estadisticas");
-  
-  if (!sheet) {
-    sheet = ss.insertSheet("Estadisticas");
-  }
-  
-  var headers = [
-    "Timestamp",
-    "ID_Sesion",
-    "Pais",
-    "Codigo_Pais",
-    "Bandera",
-    "Region_Provincia",
-    "Ciudad",
-    "Dispositivo",
-    "Sistema_Operativo",
-    "Navegador",
-    "Canal_Origen",
-    "Tiempo_Activo_Segundos",
-    "Suscrito",
-    "Suscrito_Desde",
-    "Secciones_Vistas",
-    "Tarjetas_Clicadas",
-    "Descargas_Realizadas",
-    "Busquedas_Tecleadas",
-    "Doctor3D_Consultas"
-  ];
-  
-  // Establecer cabeceras
-  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  
-  // Estilo visual de la cabecera (Fila 1)
-  var headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setBackground("#0f172a");
-  headerRange.setFontColor("#38bdf8");
-  headerRange.setFontWeight("bold");
-  headerRange.setFontSize(10);
-  headerRange.setHorizontalAlignment("center");
-  headerRange.setVerticalAlignment("middle");
-  sheet.setRowHeight(1, 38);
-  sheet.setFrozenRows(1);
-  
-  // Asignar formatos y tipos de datos por columna
-  sheet.getRange("A2:A").setNumberFormat("yyyy-mm-dd hh:mm:ss");
-  sheet.getRange("B2:B").setNumberFormat("@");
-  sheet.getRange("C2:C").setNumberFormat("@");
-  sheet.getRange("D2:D").setNumberFormat("@");
-  sheet.getRange("E2:E").setNumberFormat("@");
-  sheet.getRange("F2:F").setNumberFormat("@");
-  sheet.getRange("G2:G").setNumberFormat("@");
-  sheet.getRange("H2:H").setNumberFormat("@");
-  sheet.getRange("I2:I").setNumberFormat("@");
-  sheet.getRange("J2:J").setNumberFormat("@");
-  sheet.getRange("K2:K").setNumberFormat("@");
-  sheet.getRange("L2:L").setNumberFormat("#,##0");
-  sheet.getRange("M2:M").setNumberFormat("@");
-  sheet.getRange("N2:N").setNumberFormat("@");
-  sheet.getRange("O2:S").setNumberFormat("@");
-  
-  // Ajustar anchos de columnas
-  sheet.setColumnWidth(1, 160);
-  sheet.setColumnWidth(2, 140);
-  sheet.setColumnWidth(3, 110);
-  sheet.setColumnWidth(4, 90);
-  sheet.setColumnWidth(5, 70);
-  sheet.setColumnWidth(6, 130);
-  sheet.setColumnWidth(7, 130);
-  sheet.setColumnWidth(8, 100);
-  sheet.setColumnWidth(9, 130);
-  sheet.setColumnWidth(10, 130);
-  sheet.setColumnWidth(11, 140);
-  sheet.setColumnWidth(12, 150);
-  sheet.setColumnWidth(13, 90);
-  sheet.setColumnWidth(14, 220);
-  sheet.setColumnWidth(15, 200);
-  sheet.setColumnWidth(16, 200);
-  sheet.setColumnWidth(17, 200);
-  sheet.setColumnWidth(18, 180);
-  sheet.setColumnWidth(19, 200);
-  
-  SpreadsheetApp.getUi().alert(
-    "✅ ¡Pestaña 'Estadisticas' creada y formateada con éxito!"
-  );
-}
-
-/**
- * RECEPTOR WEBHOOK POST (Recepción de analíticas en tiempo real)
- */
-function doPost(e) {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName("Estadisticas");
-    if (!sheet) {
-      sheet = ss.insertSheet("Estadisticas");
+// Carga en el servidor un fichero de histórico (sesiones y bóvedas) por lotes. No pisa lo que ya exista.
+export const importHistoryFile = async (file) => {
+    try {
+        const data = JSON.parse(await file.text());
+        const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+        const vaults = Array.isArray(data.vaults) ? data.vaults : [];
+        const token = localStorage.getItem('capa_cero_stats_token');
+        const send = async (body) => {
+            const res = await fetch('/api/stats?action=import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        };
+        let nSessions = 0, nVaults = 0;
+        for (let i = 0; i < sessions.length; i += 200) {
+            nSessions += (await send({ sessions: sessions.slice(i, i + 200) })).sessions || 0;
+        }
+        if (vaults.length) nVaults = (await send({ vaults })).vaults || 0;
+        return {
+            success: true,
+            message: `Histórico cargado: ${nSessions} sesiones nuevas de ${sessions.length} y ${nVaults} bóvedas nuevas de ${vaults.length}.`
+        };
+    } catch (e) {
+        return { success: false, message: `No se pudo cargar el histórico: ${e.message}` };
     }
-    
-    // Si la hoja no tiene encabezados, crearlos automáticamente
-    if (sheet.getLastRow() === 0) {
-      var headers = [
-        "Timestamp", "ID_Sesion", "Pais", "Codigo_Pais", "Bandera",
-        "Region_Provincia", "Ciudad", "Dispositivo", "Sistema_Operativo",
-        "Navegador", "Canal_Origen", "Tiempo_Activo_Segundos", "Suscrito",
-        "Suscrito_Desde", "Secciones_Vistas", "Tarjetas_Clicadas",
-        "Descargas_Realizadas", "Busquedas_Tecleadas", "Doctor3D_Consultas"
-      ];
-      sheet.appendRow(headers);
-    }
-    
-    var data = {};
-    if (e && e.postData && e.postData.contents) {
-      try {
-        data = JSON.parse(e.postData.contents);
-      } catch (parseErr) {
-        data = {};
-      }
-    }
-    
-    var row = [
-      data.timestamp || new Date().toISOString(),
-      data.sessionId || "",
-      data.country || "",
-      data.countryCode || "",
-      data.flag || "",
-      data.region || "",
-      data.city || "",
-      data.device || "",
-      data.os || "",
-      data.browser || "",
-      data.origin || "",
-      data.totalActiveSeconds || 0,
-      data.hasSubscribed ? "SI" : "NO",
-      data.subscribedFrom || "",
-      typeof data.dwellTimes === 'object' ? JSON.stringify(data.dwellTimes) : (data.dwellTimes || "{}"),
-      Array.isArray(data.clickedCards) ? data.clickedCards.join(" | ") : (data.clickedCards || ""),
-      Array.isArray(data.downloads) ? data.downloads.join(" | ") : (data.downloads || ""),
-      Array.isArray(data.searches) ? data.searches.join(" | ") : (data.searches || ""),
-      Array.isArray(data.doctorConsults) ? data.doctorConsults.join(" | ") : (data.doctorConsults || "")
-    ];
-    
-    sheet.appendRow(row);
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  return ContentService.createTextOutput("Capa Cero Analytics Webhook Activo.")
-    .setMimeType(ContentService.MimeType.TEXT);
-}
-
-/**
- * AUTO-COMPLETAR AL PEGAR
- */
-function alPegarEnlace(e) {
-  try {
-    if (!e || !e.range) return;
-    var sheet = e.range.getSheet();
-    var row = e.range.getRow();
-    
-    if (row <= 1) return;
-    
-    var valorPegado = String(e.value || e.range.getValue()).trim();
-    if (!valorPegado || (valorPegado.indexOf("youtu.be") === -1 && valorPegado.indexOf("youtube.com") === -1)) return;
-    
-    var videoId = extraerYouTubeId(valorPegado);
-    if (!videoId || VIDEOS_IGNORADOS.indexOf(videoId) !== -1) {
-      sheet.getRange(row, 1, 1, 9).clearContent();
-      return;
-    }
-    
-    if (esShort(videoId, valorPegado, "")) {
-      sheet.getRange(row, 1, 1, 9).clearContent();
-      return;
-    }
-    
-    var cleanUrl = "https://www.youtube.com/watch?v=" + videoId;
-    var info = obtenerInfoRealYouTube(videoId);
-    
-    if (esShort(videoId, cleanUrl, info.title)) {
-      sheet.getRange(row, 1, 1, 9).clearContent();
-      return;
-    }
-    
-    var filaActual = sheet.getRange(row, 1, 1, 9).getValues()[0];
-    
-    var titulo = filaActual[0] && filaActual[0].indexOf("http") === -1 ? filaActual[0] : info.title;
-    var categoria = filaActual[2] ? filaActual[2] : info.category;
-    var descripcion = filaActual[3] ? filaActual[3] : "Tutorial oficial de Capa Cero: " + info.title + ". Explicación paso a paso para dominar tu impresora y el laminador.";
-    var consejo = filaActual[4] ? filaActual[4] : "Aplica este ajuste en Bambu Studio para optimizar el acabado y adherencia.";
-    var descarga1 = filaActual[5] ? filaActual[5] : "https://makerworld.com/en/@capa_cero";
-    var descarga2 = filaActual[6] ? filaActual[6] : "";
-    var descarga3 = filaActual[7] ? filaActual[7] : "";
-    var destacado = filaActual[8] ? filaActual[8] : "NO";
-    
-    sheet.getRange(row, 1, 1, 9).setValues([[
-      titulo,
-      cleanUrl,
-      categoria,
-      descripcion,
-      consejo,
-      descarga1,
-      descarga2,
-      descarga3,
-      destacado
-    ]]);
-  } catch (err) {}
-}
-
-/**
- * DETECTOR ESTRICTO ANTI-SHORTS
- */
-function esShort(videoId, url, title) {
-  var urlLower = (url || "").toLowerCase();
-  var titleLower = (title || "").toLowerCase();
-  
-  if (VIDEOS_IGNORADOS.indexOf(videoId) !== -1) return true;
-  if (urlLower.indexOf("/shorts/") !== -1) return true;
-  if (titleLower.indexOf("#shorts") !== -1 || titleLower.indexOf("#short") !== -1) return true;
-  
-  try {
-    var ytUrl = "https://www.youtube.com/watch?v=" + videoId;
-    var html = UrlFetchApp.fetch(ytUrl, { muteHttpExceptions: true }).getContentText();
-    
-    if (html.indexOf('<link rel="canonical" href="https://www.youtube.com/shorts/') !== -1) {
-      return true;
-    }
-    
-    var matchDur = html.match(/"approxDurationMs":"(\d+)"/);
-    if (matchDur && matchDur[1]) {
-      var durSec = Math.round(parseInt(matchDur[1], 10) / 1000);
-      if (durSec > 0 && durSec <= 60) {
-        return true;
-      }
-    }
-  } catch (e) {}
-  
-  return false;
-}
-
-function extraerYouTubeId(url) {
-  var regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  var match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-}
-
-function obtenerInfoRealYouTube(videoId) {
-  var title = "";
-  var category = "Bambu Studio";
-  
-  try {
-    var apiUrl = "https://noembed.com/embed?url=https://www.youtube.com/watch?v=" + videoId;
-    var res = UrlFetchApp.fetch(apiUrl, { muteHttpExceptions: true });
-    if (res.getResponseCode() === 200) {
-      var data = JSON.parse(res.getContentText());
-      if (data.title) title = data.title;
-    }
-  } catch (e) {}
-  
-  if (!title) {
-    title = "Tutorial #" + videoId;
-  }
-  
-  var t = title.toLowerCase();
-  if (t.indexOf("fusion") !== -1 || t.indexOf("360") !== -1 || t.indexOf("modelad") !== -1) {
-    category = "Modelado 3D";
-  } else if (t.indexOf("filamento") !== -1 || t.indexOf("perfil") !== -1 || t.indexOf("costura") !== -1 || t.indexOf("calibrac") !== -1) {
-    category = "Perfiles y Calibración";
-  } else if (t.indexOf("multicolor") !== -1 || t.indexOf("ams") !== -1 || t.indexOf("pintar") !== -1) {
-    category = "Multicolor y AMS";
-  } else if (t.indexOf("boquilla") !== -1 || t.indexOf("hardware") !== -1 || t.indexOf("laser") !== -1 || t.indexOf("grabador") !== -1) {
-    category = t.indexOf("laser") !== -1 ? "Grabado Láser" : "Hardware y Boquillas";
-  } else if (t.indexOf("ahorra") !== -1 || t.indexOf("tiempo") !== -1 || t.indexOf("truco") !== -1 || t.indexOf("chatgpt") !== -1 || t.indexOf("dinero") !== -1) {
-    category = "Trucos Rápidos";
-  } else {
-    category = "Bambu Studio";
-  }
-  
-  return { title: title, category: category };
-}
-
-function sincronizarVideosCapaCero() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  
-  var catalogoCanal = [
-    ["¡Adiós a las costuras! El truco definitivo en Bambu Studio", "https://www.youtube.com/watch?v=PCbMinEbUd4", "Perfiles y Calibración", "Tutorial completo de Capa Cero: ¡Adiós a las costuras! El truco definitivo en Bambu Studio. Explicación paso a paso para dominar tu impresora y el laminador.", "Activa el tipo de costura en cicatriz (Scarf) y ajusta el orden de paredes a interior-exterior.", "https://makerworld.com/en/@capa_cero", "", "", "SI"],
-    ["Movimiento por el Viewport y Ajustes de Placas #8", "https://www.youtube.com/watch?v=hZvIHMnxb3w", "Bambu Studio", "Aprende a moverte por el espacio de trabajo 3D, rotar la placa y colocar objetos antes de enviar a imprimir.", "Usa la vista de líneas de laminado para verificar la primera capa antes de imprimir.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Fusion 360 para Principiantes: Modela tu Primera Mesa", "https://www.youtube.com/watch?v=9otbdJPW1WA", "Modelado 3D", "Aprende modelado paramétrico desde cero en Fusion 360 con un ejemplo práctico paso a paso.", "Trabaja siempre con restricciones y cotas paramétricas para poder editar el diseño fácilmente.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Perfiles de Impresión: Los Ajustes Clave que Olvidas #7", "https://www.youtube.com/watch?v=-uD_McDZ3Qk", "Perfiles y Calibración", "Descubre los ajustes críticos de los perfiles de proceso en Bambu Studio para no arruinar tus piezas.", "Guarda perfiles independientes para filamentos especiales como PETG, TPU o filamentos con fibra.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Ahorra la Mitad del Tiempo en Bambu Studio: 3 Ejemplos Reales", "https://www.youtube.com/watch?v=oDGtU6Z2VYM", "Trucos Rápidos", "Reduce horas de impresión sin perder resistencia ni acabado visual optimizando rellenos y perímetros.", "Aumenta la velocidad de relleno y perímetros internos manteniendo las paredes externas a velocidad media.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Perfiles vs Filamentos en Bambu Studio: Diferencias Clave #6", "https://www.youtube.com/watch?v=-ZIU1pywxiQ", "Perfiles y Calibración", "Aprende la diferencia real entre ajustar el filamento y ajustar el perfil de impresión.", "No cambies la temperatura en el perfil de proceso; hazlo siempre en el ajuste del filamento.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Deja de Tirar Dinero: La Técnica Pro para Impresiones Gigantes", "https://www.youtube.com/watch?v=OHLka3HAwn0", "Trucos Rápidos", "Cómo imprimir piezas de gran volumen ahorrando metros de filamento y evitando fallos de warping.", "Usa borde exterior (brim) amplio y mantén la puerta cerrada en materiales técnicos.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["AlgoLaser Pixi 10W: ¿El Mejor Grabador Láser por Menos de 300€?", "https://www.youtube.com/watch?v=fpvQEW7-9vo", "Grabado Láser", "Análisis a fondo y pruebas reales de corte y grabado con el AlgoLaser Pixi 10W.", "Calibra el foco milimétricamente y usa siempre asistencia de aire (Air Assist).", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Boquillas Estándar vs High-Flow: ¿Cuál Elegir? #5", "https://www.youtube.com/watch?v=DNouZLKOnpk", "Hardware y Boquillas", "Comparativa real de caudal volumétrico y velocidades entre hotends estándar y de alto flujo.", "Las boquillas High-Flow te permiten subir el caudal volumétrico máximo hasta un 40%.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¡Deja de Imprimir Textos Feos! El Truco de Alta Resolución", "https://www.youtube.com/watch?v=w-DRE8UtD9s", "Bambu Studio", "Consigue letras y leyendas nítidas en la primera capa o superficies superiores con estos ajustes.", "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Cómo Elegir la Placa de Impresión en Bambu Studio #4", "https://www.youtube.com/watch?v=zXLmMLsKLe4", "Bambu Studio", "Diferencias entre placa PEI texturada, placa fría, placa suave y ajustes en el software.", "Selecciona siempre el tipo de placa exacto en el desplegable superior de Bambu Studio.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¡Deja de Imprimir Basura! Cómo Arreglar Modelos de IA", "https://www.youtube.com/watch?v=kYbpS-vwqJM", "Modelado 3D", "Aprende a reparar mallas rotas, caras invertidas y geometrías no-manifold procedentes de generadores de IA.", "Utiliza la herramienta de reparación de malla integrada de Bambu Studio antes de laminar.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Lo que Hace ChatGPT con Bambu Studio te Sorprenderá", "https://www.youtube.com/watch?v=v3SFbjI8BEE", "Trucos Rápidos", "Cómo usar la inteligencia artificial para resolver dudas de laminado, G-code y orientación de piezas.", "Pide a ChatGPT que calcule el coste energético y de material por gramo para tus presupuestos.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Configura tu Primer Entorno en Bambu Studio Correctamente #3", "https://www.youtube.com/watch?v=cfs1ctvUC-8", "Bambu Studio", "Paso a paso para vincular tu impresora Bambu Lab, configurar la nube y tu área de trabajo.", "Activa el modo Desarrollador/Avanzado para desbloquear todos los parámetros de control.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¿Lo Sabías? Los Ajustes SECRETOS de Bambu Studio Explicados", "https://www.youtube.com/watch?v=lP0FvQZ6uwk", "Bambu Studio", "Funciones ocultas del laminador que mejoran drásticamente la calidad superficial y la adherencia.", "Explora el ajuste de compensación dimensional si tus piezas encajables quedan demasiado justas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Ecosistema Bambu Lab: Guía Completa para Principiantes #2", "https://www.youtube.com/watch?v=YUMNakCgUJs", "Bambu Studio", "Todo sobre el funcionamiento conjunto de la máquina, Bambu Handy, MakerWorld y Bambu Studio.", "Sincroniza tus perfiles de filamento en la nube para tenerlos disponibles en cualquier ordenador.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Instalación de Bambu Studio: Guía Paso a Paso #1", "https://www.youtube.com/watch?v=hVCS-uyGflk", "Bambu Studio", "Primeros pasos desde la descarga oficial hasta la configuración inicial sin errores.", "Descarga siempre el instalador desde la web oficial de Bambu Lab o su GitHub de versiones estables.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Textos y Modificadores en Bambustudio: Todo lo que Necesitas Saber #15", "https://www.youtube.com/watch?v=IFTgPS3a6v8", "Bambu Studio", "Añade texto tridimensional sobre cualquier superficie curva o plana y crea modificadores de relleno.", "Usa una altura de capa fina (0.12 o 0.16mm) en las capas que contienen letras para máxima definición.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Pintar Objetos 3D Nunca Fue Tan Fácil | BambuStudio #14", "https://www.youtube.com/watch?v=3BtSMuvl8BQ", "Multicolor y AMS", "Herramientas de pintura por capas, por relleno de cubos y por triángulos en modelos multicolor.", "Usa la herramienta de relleno por ángulo para pintar caras completas en un solo clic.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Montaje de Objetos 3D: Lo Que No Sabías que Podías Hacer en BambuStudio #13", "https://www.youtube.com/watch?v=mzItWgN4a5c", "Bambu Studio", "Ensambla piezas separadas directamente en la placa sin necesidad de abrir un programa de modelado.", "Usa conectores de espiga o cola de milano automáticos para unir piezas grandes.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Grupos y Jerarquías en Bambu Studio | Guía de mallas booleanas #12", "https://www.youtube.com/watch?v=ozlbqVkcinE", "Bambu Studio", "Domina las operaciones de unión, resta y corte booleano de volúmenes directamente en el slicer.", "Agrupa piezas del mismo material para procesar ajustes en bloque.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["No Hagas Esto al Cortar en Bambustudio | Guía Completa #11", "https://www.youtube.com/watch?v=STc2U-cqecQ", "Bambu Studio", "Cómo cortar modelos grandes para imprimir por partes con uniones perfectas y sin holguras.", "Añade conectores tipo pin con tolerancia de 0.15mm para un montaje firme.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Escala, rota y posiciona: controles esenciales de BambuStudio #10", "https://www.youtube.com/watch?v=RNWxu9tsB-k", "Bambu Studio", "Atajos de teclado y trucos de posicionamiento para optimizar el espacio en la cama de impresión.", "Orienta las caras visuales principales en vertical para evitar marcas de capas escalonadas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["¿Perdido en la interfaz? Todo lo que necesitas saber #9", "https://www.youtube.com/watch?v=sIzQPJSVdvo", "Bambu Studio", "Guía rápida para entender cada botón, panel lateral y menú superior sin perder el tiempo.", "Usa la barra de búsqueda de parámetros (Ctrl+F) para encontrar cualquier ajuste al instante.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Todo lo que Necesitas Saber sobre el Laminado en Bambu Studio #8.1", "https://www.youtube.com/watch?v=D6zKWJAS6G0", "Bambu Studio", "Interpretación de la vista previa de corte: retracciones, velocidades, cambios de capas y costuras.", "Comprueba la pestaña de 'Velocidad de flujo' para asegurarte de que no supera el límite de tu boquilla.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Probando Madimaker: ¿La Mejor Alternativa para Descargar Modelos 3D?", "https://www.youtube.com/watch?v=1ol3BaUnJ8Y", "Modelado 3D", "Análisis de la plataforma y cómo preparar los archivos descargados para laminar en Bambu Studio.", "Verifica siempre la escala del archivo importado antes de mandar a la cola de impresión.", "https://makerworld.com/en/@capa_cero", "", "", "NO"],
-    ["Adiós a las Limitaciones del AMS: Imprime Multicolor de Esta Forma", "https://www.youtube.com/watch?v=nPaTKz9Zqcs", "Multicolor y AMS", "Aprende a configurar impresiones multicolor manuales o por capas sin necesidad de tener el sistema AMS.", "Inserta pausas de cambio de filamento automáticas en la barra lateral del visor de capas.", "https://makerworld.com/en/@capa_cero", "", "", "NO"]
-  ];
-
-  var existingUrls = {};
-  var lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    var data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-    for (var i = 0; i < data.length; i++) {
-      if (data[i][0]) {
-        existingUrls[String(data[i][0]).trim()] = true;
-      }
-    }
-  }
-
-  var totalNuevos = 0;
-  for (var k = 0; k < catalogoCanal.length; k++) {
-    var videoUrl = catalogoCanal[k][1];
-    if (!existingUrls[videoUrl]) {
-      sheet.appendRow(catalogoCanal[k]);
-      existingUrls[videoUrl] = true;
-      totalNuevos++;
-    }
-  }
-
-  SpreadsheetApp.getUi().alert(
-    totalNuevos > 0 
-      ? "✅ ¡Sincronizados " + totalNuevos + " tutoriales horizontales en español!" 
-      : "ℹ️ Tu hoja ya contiene exactamente los 27 tutoriales horizontales."
-  );
-}
-
-function limpiarYResincronizar() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow - 1, 9).clearContent();
-  }
-  sincronizarVideosCapaCero();
-}`;
-
-
+};

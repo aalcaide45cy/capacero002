@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
   
   const url = new URL(event.request.url);
   
-  // No cachear llamadas a APIs dinámicas, YouTube embeds o Google Sheets
+  // No cachear llamadas a APIs dinámicas ni recursos de otros dominios
   if (
     url.origin !== location.origin ||
     url.pathname.startsWith('/api') ||
@@ -83,7 +83,6 @@ self.addEventListener('fetch', (event) => {
 // =========================================================================
 // 🔔 4. RECEPTOR NATIVO DE NOTIFICACIONES PUSH (VAPID)
 // =========================================================================
-const GOOGLE_SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec';
 
 self.addEventListener('push', (event) => {
   let getDataPromise;
@@ -100,20 +99,12 @@ self.addEventListener('push', (event) => {
       }
     }
   } else {
-    // Si el push se envió como ping VAPID directo sin cifrado, consultar última notificación de Google Sheets
-    const fetchUrl = GOOGLE_SHEETS_WEBHOOK + '?action=latest_notification&t=' + Date.now();
-    getDataPromise = fetch(fetchUrl, {
-      method: 'GET',
-      mode: 'cors',
-      redirect: 'follow',
-      cache: 'no-store'
-    })
-      .then((res) => res.json())
-      .catch((err) => ({
-        title: '🚀 ¡Nuevo aviso en Capa Cero 3D!',
-        body: '¡Nuevo tutorial o actualización disponible en la academia!',
-        url: 'https://www.capacero3d.com'
-      }));
+    // Push sin contenido: se muestra el aviso genérico
+    getDataPromise = Promise.resolve({
+      title: '🚀 ¡Nuevo aviso en Capa Cero 3D!',
+      body: '¡Nuevo tutorial o actualización disponible en la academia!',
+      url: 'https://www.capacero3d.com'
+    });
   }
 
   event.waitUntil(

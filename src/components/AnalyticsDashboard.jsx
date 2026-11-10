@@ -15,9 +15,8 @@ import {
     exportAnalyticsToCSV,
     exportAnalyticsToJSON,
     clearAnalyticsDB,
-    RECOMMENDED_SHEET_COLUMNS,
-    GOOGLE_APPS_SCRIPT_CODE,
-    syncWithGoogleSheet,
+    syncSessionsFromServer,
+    importHistoryFile,
     fetchPushStats
 } from '../utils/analyticsStorage';
 import { loadV4Videos, getYouTubeThumbnail } from '../utils/loadV4Videos';
@@ -67,8 +66,6 @@ export default function AnalyticsDashboard() {
     // Modal States
     const [selectedKpiModal, setSelectedKpiModal] = useState(null); // 'visits' | 'subs' | 'dwell' | 'cards' | 'downloads' | 'countries' | null
     const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-    const [isSheetsConfigModalOpen, setIsSheetsConfigModalOpen] = useState(false);
-    const [copiedScript, setCopiedScript] = useState(false);
     const [statusToast, setStatusToast] = useState(null);
 
     // Hover Preview Tooltip State
@@ -141,10 +138,10 @@ export default function AnalyticsDashboard() {
     const fetchData = async (mode = dataMode) => {
         setIsLoading(true);
         try {
-            // En modo En Vivo, sincronizar automáticamente con Google Sheets para cargar todas las visitas mundiales al entrar
+            // En modo En Vivo, sincronizar automáticamente con el servidor para cargar todas las visitas mundiales al entrar
             if (mode === 'live') {
                 try {
-                    await syncWithGoogleSheet();
+                    await syncSessionsFromServer();
                 } catch (syncErr) {
                     console.warn("Auto-sincronización inicial omitida o sin conexión:", syncErr);
                 }
@@ -186,7 +183,7 @@ export default function AnalyticsDashboard() {
         const token = localStorage.getItem('capa_cero_stats_token');
         if (!token) return;
         try {
-            const res = await fetch('/api/stats-proxy?action=ideas_done_list', {
+            const res = await fetch('/api/stats?action=ideas_done_list', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -202,7 +199,7 @@ export default function AnalyticsDashboard() {
                 }
             }
         } catch (e) {
-            console.warn("No se pudieron obtener ideas grabadas desde Apps Script:", e);
+            console.warn("No se pudieron obtener ideas grabadas del servidor:", e);
         }
     };
 
@@ -221,7 +218,7 @@ export default function AnalyticsDashboard() {
         const token = localStorage.getItem('capa_cero_stats_token');
         if (token) {
             try {
-                await fetch(`/api/stats-proxy?action=mark_idea_done&term=${encodeURIComponent(norm)}&done=${next}`, {
+                await fetch(`/api/stats?action=mark_idea_done&term=${encodeURIComponent(norm)}&done=${next}`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -231,18 +228,29 @@ export default function AnalyticsDashboard() {
         }
     };
 
-    const handleSyncSheets = async () => {
+    const handleSyncServer = async () => {
         setIsLoading(true);
         try {
-            const res = await syncWithGoogleSheet();
+            const res = await syncSessionsFromServer();
             await fetchData('live');
             setDataMode('live');
             localStorage.setItem('capa_cero_analytics_mode', 'live');
             showToast(res.message || 'Sincronización completada');
         } catch (e) {
-            showToast('Error sincronizando con Google Sheets');
+            showToast('Error sincronizando con el servidor');
         }
         setIsLoading(false);
+    };
+
+    const handleImportHistory = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        setIsLoading(true);
+        const res = await importHistoryFile(file);
+        if (res.success) await fetchData('live');
+        setIsLoading(false);
+        window.alert(res.message);
     };
 
     const handleClearData = async () => {
@@ -256,13 +264,6 @@ export default function AnalyticsDashboard() {
     const showToast = (msg) => {
         setStatusToast(msg);
         setTimeout(() => setStatusToast(null), 3000);
-    };
-
-    const handleCopyScript = () => {
-        navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_CODE);
-        setCopiedScript(true);
-        showToast('Código Apps Script copiado al portapapeles');
-        setTimeout(() => setCopiedScript(false), 3000);
     };
 
     // Extraer lista de países únicos disponibles para el filtro (a partir de todas las sesiones cargadas)
@@ -506,15 +507,6 @@ export default function AnalyticsDashboard() {
                                                 ? `🟢 Modo En Vivo: ${sessions.length} visitas reales registradas`
                                                 : '🎭 Modo Demo: Mostrando simulación de ejemplo'}
                                         </span>
-                                        <span className="text-zinc-600">•</span>
-                                        <button
-                                            onClick={() => setIsSheetsConfigModalOpen(true)}
-                                            className="text-cyan-400 hover:text-cyan-300 underline font-medium flex items-center gap-1"
-                                            title="Ver configuración y columnas de Google Sheets"
-                                        >
-                                            <span>Google Sheets (Columnas & Apps Script)</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -561,13 +553,13 @@ export default function AnalyticsDashboard() {
                             </button>
 
                             <button
-                                onClick={handleSyncSheets}
+                                onClick={handleSyncServer}
                                 disabled={isLoading}
                                 className="bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50"
-                                title="Importar datos nuevos desde Google Sheets"
+                                title="Descargar las sesiones nuevas del servidor"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-400' : 'text-emerald-400'}`} />
-                                <span>Sincronizar Sheets</span>
+                                <span>Sincronizar</span>
                             </button>
 
                             <button
@@ -596,6 +588,15 @@ export default function AnalyticsDashboard() {
                                 <Database className="w-3.5 h-3.5 text-cyan-400" />
                                 <span>JSON</span>
                             </button>
+
+                            <label
+                                className="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer"
+                                title="Cargar en el servidor un fichero de histórico (JSON)"
+                            >
+                                <Database className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Importar</span>
+                                <input type="file" accept="application/json,.json" className="hidden" onChange={handleImportHistory} />
+                            </label>
 
                             <a
                                 href="/"
@@ -2562,116 +2563,6 @@ export default function AnalyticsDashboard() {
                                     className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-lg"
                                 >
                                     ¡Entendido!
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* ================= GOOGLE SHEETS CONFIG MODAL ================= */}
-                {isSheetsConfigModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-                        <div className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl my-auto text-left space-y-6 max-h-[90vh] overflow-y-auto">
-                            
-                            <div className="flex items-center justify-between border-b border-zinc-800 pb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl">
-                                        <Database className="w-6 h-6 text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-black text-white">
-                                            ⚙️ Conexión con Google Sheets
-                                        </h3>
-                                        <p className="text-xs text-zinc-400">Estructura de columnas requerida y script de sincronización</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setIsSheetsConfigModalOpen(false)}
-                                    className="p-2 bg-zinc-900 text-zinc-400 hover:text-white rounded-xl"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            {/* Columnas Requeridas */}
-                            <div>
-                                <h4 className="text-sm font-bold text-white mb-2">
-                                    1. Columnas necesarias en tu pestaña "Estadisticas" (Fila 1):
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 bg-zinc-900/80 p-4 rounded-2xl border border-zinc-800 max-h-56 overflow-y-auto text-xs">
-                                    {RECOMMENDED_SHEET_COLUMNS.map(col => (
-                                        <div key={col.col} className="p-2 rounded-lg bg-black/40 border border-zinc-800">
-                                            <div className="font-mono text-cyan-400 font-bold">Col {col.col}: {col.name}</div>
-                                            <div className="text-[11px] text-zinc-500 mt-0.5">{col.desc}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Google Apps Script Code */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-bold text-white">
-                                        2. Código Apps Script Unificado (Vídeos + Estadísticas + Webhook):
-                                    </h4>
-                                    <button
-                                        onClick={handleCopyScript}
-                                        className="bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
-                                    >
-                                        {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                        <span>{copiedScript ? '¡Copiado!' : 'Copiar Código Completo'}</span>
-                                    </button>
-                                </div>
-                                <div className="p-3 bg-blue-950/30 border border-cyan-500/20 rounded-xl text-xs text-cyan-200 mb-2">
-                                    💡 <strong>Paso 1:</strong> Pega este código en <em>Extensiones &gt; Apps Script</em> y guarda.<br />
-                                    💡 <strong>Paso 2:</strong> Recarga tu Google Sheet y en el menú superior <strong>"🎥 Capa Cero"</strong> haz clic en <strong>"📊 Crear y Formatear Pestaña Estadísticas"</strong> para crear automáticamente las 19 columnas con sus anchos y formatos.<br />
-                                    💡 <strong>Paso 3:</strong> Pulsa <em>Implementar &gt; Nueva Implementación &gt; Aplicación Web</em> (Acceso: Cualquier persona / Anyone) y copia la URL resultante abajo si deseas guardar en vivo.
-                                </div>
-                                <pre className="bg-black text-zinc-300 text-xs p-4 rounded-2xl border border-zinc-800 overflow-x-auto max-h-44 font-mono leading-relaxed">
-                                    {GOOGLE_APPS_SCRIPT_CODE}
-                                </pre>
-                            </div>
-
-                            {/* Campo de URL de Webhook para conexión en vivo */}
-                            <div className="p-4 bg-zinc-900 rounded-2xl border border-zinc-800 space-y-3">
-                                <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                                    <Database className="w-4 h-4 text-cyan-400" />
-                                    3. URL del Webhook de tu Aplicación Web (Opcional para guardado en vivo):
-                                </h4>
-                                <div className="flex flex-col sm:flex-row gap-2">
-                                    <input
-                                        type="url"
-                                        placeholder="https://script.google.com/macros/s/.../exec"
-                                        defaultValue={localStorage.getItem('capa_cero_sheets_webhook') || ''}
-                                        id="sheets-webhook-input"
-                                        className="flex-1 bg-black border border-zinc-800 text-xs text-white rounded-xl px-3 py-2.5 focus:outline-none focus:border-cyan-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const input = document.getElementById('sheets-webhook-input');
-                                            const val = input ? input.value.trim() : '';
-                                            if (val) {
-                                                localStorage.setItem('capa_cero_sheets_webhook', val);
-                                                showToast('URL de Google Sheets Webhook guardada');
-                                            } else {
-                                                localStorage.removeItem('capa_cero_sheets_webhook');
-                                                showToast('Webhook desactivado');
-                                            }
-                                        }}
-                                        className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap"
-                                    >
-                                        Guardar URL
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end pt-2">
-                                <button
-                                    onClick={() => setIsSheetsConfigModalOpen(false)}
-                                    className="bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-colors"
-                                >
-                                    Cerrar
                                 </button>
                             </div>
                         </div>
