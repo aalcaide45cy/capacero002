@@ -11,7 +11,7 @@ let inMemoryModelsTime = 0;
 let activeInFlightPromise = null;
 
 /**
- * Normaliza una fila del Google Sheet de MakerWorld
+ * Normaliza una fila de modelos de MakerWorld
  */
 export function normalizeMakerWorldRow(raw, index = 0) {
   if (!raw || typeof raw !== 'object') return null;

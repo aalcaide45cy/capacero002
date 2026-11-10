@@ -1,118 +1,77 @@
-# 🎬 Capa Cero 3D — Plataforma Web y Videoteca Oficial
+# Capa Cero 3D: web y videoteca
 
-> Portal web oficial, videoteca de recursos y centro de aprendizaje de impresión 3D del canal [Capa Cero 3D](https://www.capacero3d.com).
+Web oficial del canal [Capa Cero 3D](https://www.capacero3d.com): videoteca, página propia por vídeo y herramientas internas.
 
----
+## Arquitectura
 
-## 🏗️ Arquitectura del Proyecto
-
-La plataforma combina la velocidad y seguridad de un sitio estático (**SSG - Static Site Generation**) con la agilidad de un **CMS No-Code basado en Google Sheets**, enriquecido dinámicamente mediante APIs oficiales de Google y funciones serverless.
+Sitio estático (React + Vite + Tailwind) desplegado en Vercel, con funciones serverless en `api/` y base de datos Postgres en Neon. No depende de Google Sheets ni de Apps Script.
 
 ```text
-Google Sheets (CMS) ──┐
-YouTube Data API v3 ──┼─► scripts/update-videos.js ──► src/data/videos_v4.json ──┐
-Category Map Rules  ──┘                                                          │
-                                                                                 ▼
-Vite Build ──► scripts/prerender-videos.js ──► dist/video/<slug>/index.html ──► Vercel CDN
-                                                                                 ▲
-Google Apps Script (Web Push & Telemetría) ◄── api/youtube-analytics.js (OAuth) ─┘
+YouTube (API o RSS) ──► api/cron-sync.js ──► Neon (tabla videos) ──► scripts/update-videos.js ──► src/data/videos_v4.json
+                                                                                                      │
+Vite build ──► scripts/prerender-videos.js ──► dist/video/<slug>/index.html ──► Vercel ◄──────────────┘
 ```
 
-### 1. Frontend & UI
-- **React 18** + **Vite 7** + **Tailwind CSS**.
-- **V4Hub**: Videoteca interactiva con buscador tolerante a fallos técnicos y tildes, filtros por temática, visualización de duraciones reales y reproductor optimizado mediante patrón *facade* (carga bajo demanda de la IFrame Player API de YouTube sin bloquear el renderizado inicial).
-- **V4NotificationBell**: Sistema discreto de activación de notificaciones Web Push para Escritorio y Android sin obligar a instalar la PWA (con guía nativa para Safari en iOS).
-- **AnalyticsDashboard (`/estadisticas`)**: Panel de métricas con acceso protegido. Muestra telemetría en tiempo real, generador de ideas de vídeo a partir de búsquedas de usuarios, monitorización de Web Push y el panel "Camino a 4.000 horas" conectado a YouTube Analytics API.
+- **Vídeos:** `api/cron-sync.js` busca vídeos nuevos del canal y los guarda en Neon. Si hay alguno, lanza un despliegue y encola el aviso push. `scripts/update-videos.js` lee Neon en cada compilación, refresca estadísticas con la YouTube Data API y genera `src/data/videos_v4.json`. Sin acceso a Neon (por ejemplo en la Action de GitHub sin `DATABASE_URL`), parte del último JSON guardado y solo refresca estadísticas.
+- **Páginas por vídeo:** `scripts/prerender-videos.js` genera `dist/video/<slug>/index.html` con `VideoObject`, Open Graph y canónica. `scripts/update-seo-sitemap.js` genera el `sitemap.xml`.
+- **Base de datos:** estructura en `db/migrations/` (se aplica en el `prebuild`). Más detalle en `db/README.md`.
 
-### 2. Páginas Indexables por Vídeo (SSG)
-- Cada tutorial cuenta con su propia URL permanente: `/video/:slug` (ej. `/video/textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber-15`).
-- Generadas en fase de compilación mediante `scripts/prerender-videos.js`.
-- Incluyen marcado estructurado `VideoObject` (Schema.org), etiquetas Open Graph y Twitter Cards completas, y enlace canónico para indexación óptima en Google y Google Video Search.
+## Rutas
 
-### 3. Sincronización & Scripts Build-time
-- **`scripts/update-videos.js`**: Descarga la hoja de Google Sheets, consulta por lotes a la **YouTube Data API v3** para obtener vistas, likes, comentarios, duraciones exactas y detección de estrenos, normaliza categorías según `src/data/category-map.json`, y dispara notificaciones push para nuevos lanzamientos controlados por `src/data/notified.json`.
-- **`scripts/update-seo-sitemap.js`**: Genera un `sitemap.xml` enriquecido con la extensión `<video:video>` para cada publicación.
-- **`scripts/prerender-videos.js`**: Prerenderiza los HTML estáticos de cada vídeo en `dist/video/<slug>/index.html`.
-- **`scripts/get-youtube-refresh-token.js`**: Utilidad interactiva CLI para generar el refresh token de OAuth 2.0 requerido por YouTube Analytics.
-
-### 4. Funciones Serverless (Vercel)
-- **`api/youtube-analytics.js`**: Endpoint serverless que renueva tokens OAuth 2.0 para consultar en tiempo real las horas de visualización hacia la monetización (últimos 365 días, caducidad en 30 días, ritmo diario).
-- **`api/subscribe.js`**: Captación segura con validación honeypot antispam.
-
----
-
-## 🗺️ Rutas Principales
-
-| Ruta | Descripción | Indexable |
+| Ruta | Qué es | Indexable |
 | :--- | :--- | :---: |
-| `/` | Portada y Videoteca principal (V4Hub) con todos los recursos | Sí |
-| `/video/:slug` | Página estática dedicada para cada tutorial y sus descargas | Sí |
-| `/estadisticas` | Panel privado de analíticas y Camino a 4.000 horas | No (`noindex`) |
-| `/privacidad-cookies` | Política de privacidad y panel de preferencias de cookies | Sí |
-| `/sitemap.xml` | Mapa del sitio con extensión de vídeo XML para buscadores | Sí |
+| `/` | Portada y videoteca | Sí |
+| `/video/:slug` | Página de cada vídeo | Sí |
+| `/politica-privacidad` | Privacidad y cookies | Sí |
+| `/tp`, `/tp/monitor`, `/tp/monitor-obs` | Teleprompter y monitor de cámara remota | No |
+| `/editor` | Editor Markdown | No |
+| `/estadisticas` | Panel privado de analíticas (contraseña) | No |
+| `/admin` | Panel de administración (contraseña + TOTP) | No |
 
----
+## Funciones serverless (`api/`)
 
-## 🔐 Variables de Entorno
+| Función | Para qué |
+| :--- | :--- |
+| `admin.js` | Panel `/admin` |
+| `cron-sync.js` | Alta automática de vídeos nuevos (protegida con `CRON_SECRET`) |
+| `track.js` | Visitas y detalle de sesiones (tablas `visits` y `analytics_sessions`) |
+| `stats.js` | Datos de `/estadisticas`: sesiones, suscriptores push, ideas e importación de histórico |
+| `auth-stats.js` | Inicio de sesión de `/estadisticas` |
+| `youtube-analytics.js` | Horas de visualización (YouTube Analytics, OAuth) |
+| `vault.js` | Sincronización de notas y progreso entre dispositivos y por QR (tabla `vaults`) |
+| `push-subscribe.js` | Alta de suscripciones push |
+| `collab.js` | Formulario de colaboraciones |
+| `models.js` | Modelos de MakerWorld de la portada |
+| `tp-rtc.js` | Conexión de la cámara remota del teleprompter |
+| `counter.js` | Contador de ficheros del editor |
 
-Configura estas variables en tu entorno local (`.env.local`) y en el panel de **Vercel** o **GitHub Secrets**:
+## Variables de entorno
 
-| Variable | Dónde se usa | Propósito |
-| :--- | :--- | :--- |
-| `YOUTUBE_API_KEY` | GitHub Actions / Build | Clave de YouTube Data API v3 para extraer estadísticas y duraciones |
-| `STATS_API_TOKEN` | Vercel / Apps Script / Web | Token secreto para autenticar el panel `/estadisticas` y peticiones |
-| `SHEETS_DB_URL` | Build / Cliente | URL del despliegue Web App de Google Apps Script |
-| `VAPID_PUBLIC_KEY` | Cliente Web (`.env.local`) | Clave pública VAPID para suscripción al servicio Web Push en el navegador |
-| `VAPID_PRIVATE_KEY` | Google Apps Script | Clave privada VAPID para firmar el envío de notificaciones push |
-| `VAPID_SUBJECT` | Google Apps Script | Correo de contacto administrativo para el protocolo Web Push |
-| `YOUTUBE_CLIENT_ID` | Vercel Serverless | Client ID de Google Cloud OAuth 2.0 para YouTube Analytics |
-| `YOUTUBE_CLIENT_SECRET` | Vercel Serverless | Client Secret de Google Cloud OAuth 2.0 para YouTube Analytics |
-| `YOUTUBE_REFRESH_TOKEN` | Vercel Serverless | Refresh Token permanente para consultar YouTube Analytics API |
-| `GA_MEASUREMENT_ID` | Cliente Web | Identificador de flujo de Google Analytics 4 (`G-XXXXXXXXXX`) |
+Se configuran en Vercel (y `YOUTUBE_API_KEY`, `DATABASE_URL` y `CRON_SECRET` también como secretos de GitHub para las Actions). Nunca van en el repo.
 
----
+| Variable | Uso |
+| :--- | :--- |
+| `DATABASE_URL` | Conexión a Neon (rol de la web) |
+| `DATABASE_URL_MIGRATIONS` | Conexión a Neon para migraciones |
+| `YOUTUBE_API_KEY` | Estadísticas y duraciones de YouTube |
+| `CRON_SECRET` | Protege `api/cron-sync` |
+| `VERCEL_DEPLOY_HOOK_URL` | Despliegue automático al detectar un vídeo nuevo |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Avisos push |
+| `STATS_PASSWORD`, `STATS_SECRET` | Acceso a `/estadisticas` |
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | YouTube Analytics (`scripts/get-youtube-refresh-token.js` genera el token) |
+| `ADMIN_EMAIL`, `ADMIN_ENC_KEY` | Panel `/admin` |
+| `COLLAB_LEGACY_WEBHOOK` | Opcional: reenvío por correo de los mensajes de colaboración |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Opcional: contador del editor |
 
-## 🚀 Guía: Cómo Publicar un Nuevo Vídeo
+## Publicar un vídeo nuevo
 
-Para publicar un nuevo vídeo en la web no es necesario tocar el código fuente:
+No hay que tocar nada: al subirlo a YouTube, `api/cron-sync` lo detecta, lo guarda en Neon, despliega la web y envía el aviso push. Desde `/admin` también se puede añadir un vídeo por su enlace.
 
-1. **Sube el vídeo a YouTube** como lo haces habitualmente.
-2. **Abre la hoja de cálculo de Google Sheets** de Capa Cero y añade una nueva fila con:
-   - `Titulo`: Título del vídeo (incluyendo número de capítulo `#XX` si pertenece a un curso).
-   - `URL_Youtube`: Enlace completo del vídeo de YouTube.
-   - `Categoria`: Ej. `Curso BambuStudio`, `Modelado 3D`, `Perfiles y Calibración`, etc. (Los vídeos con *"Fusion 360"* en el título se mapean automáticamente a la categoría `Fusion 360`).
-   - `Descripcion`: Resumen técnico del tutorial.
-   - `Consejo_Clave`: Tip destacado para la tarjeta del vídeo.
-   - `Enlace_Descarga`: (Opcional) Enlace a MakerWorld, Drive, Printables o plantilla.
-   - `Destacado`: `SI` o `NO` para fijarlo en la cabecera.
-3. **Publicación automática:**
-   - La acción programada de GitHub Actions (`update-youtube-stats.yml`) corre cada 6 horas.
-   - Detecta la nueva fila, consulta las duraciones y estadísticas en YouTube, genera la página `/video/<slug>`, actualiza el `sitemap.xml`, notifica vía Web Push a los suscriptores y despliega la web en Vercel.
-4. **Publicación inmediata (manual):**
-   - Ve a la pestaña **Actions** en el repositorio de GitHub y pulsa **Run workflow** en "Actualizar Estadísticas de YouTube".
-   - O bien, desde tu entorno local, ejecuta:
-     ```bash
-     npm run build
-     ```
-     y realiza `git push` a la rama principal.
-
----
-
-## 💻 Desarrollo Local
+## Desarrollo local
 
 ```bash
-# 1. Instalar dependencias
 npm install
-
-# 2. Sincronizar datos y vídeos desde Google Sheets y YouTube
-npm run update-data
-
-# 3. Iniciar servidor de desarrollo
-npm run dev
-
-# 4. Compilar para producción (actualiza datos, SEO y genera páginas estáticas)
-npm run build
-
-# 5. Previsualizar la compilación de producción
-npm run preview
+npm run dev        # servidor de desarrollo
+npm run build      # migraciones, datos, sitemap, compilación y páginas estáticas
+npm run preview    # ver la compilación
 ```

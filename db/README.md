@@ -13,5 +13,5 @@ los vídeos nuevos que no son Shorts y, si hay alguno, lanza un despliegue con `
 Se protege con `CRON_SECRET` (cabecera `Authorization: Bearer ...`). Lo llaman Vercel Cron (1 vez al día) y
 `.github/workflows/cron-sync.yml` (cada hora, necesita el secreto `CRON_SECRET` en GitHub).
 
-La compilación (`scripts/update-videos.js`) sigue leyendo la hoja y además añade los vídeos que estén en Neon y no en la hoja;
-un vídeo marcado `hidden` en Neon se oculta.
+La compilación (`scripts/update-videos.js`) lee los vídeos de la tabla `videos` (los marcados `hidden` no se publican).
+Sin acceso a Neon se parte del último `src/data/videos_v4.json` guardado y solo se refrescan las estadísticas.

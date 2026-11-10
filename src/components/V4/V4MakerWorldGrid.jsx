@@ -11,7 +11,7 @@ export default function V4MakerWorldGrid({ searchQuery = '', onSearchChange }) {
   const [selectedTag, setSelectedTag] = useState('Todos');
   const [selectedModelModal, setSelectedModelModal] = useState(null);
 
-  // Sincronización en segundo plano con Google Sheets (SWR)
+  // Actualización en segundo plano desde /api/models (SWR)
   useEffect(() => {
     let isMounted = true;
     loadMakerWorldModels()

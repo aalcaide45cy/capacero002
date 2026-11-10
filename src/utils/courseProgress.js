@@ -642,9 +642,13 @@ export function applySyncPayload(encodedPayload, isInitialMerge = false) {
 }
 
 // ================= 6. SINCRONIZACIÓN ACTIVA Y CONTINUA (BÓVEDA EN LA NUBE) =================
-const APPS_SCRIPT_ENDPOINT = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
+// Bóveda en Neon a través de /api/vault
+const VAULT_ENDPOINT = '/api/vault';
 
 let pushDebounceTimer = null;
+// Mientras el móvil completa un emparejamiento por QR no se descarga la bóveda: todavía contiene solo los datos
+// del otro dispositivo y, al aplicarla, borraría las notas locales antes de fusionarlas.
+let qrExchangeInProgress = false;
 
 // Obtener payload local codificado
 export function getLocalSyncPayload() {
@@ -686,7 +690,7 @@ export function syncVaultPush(immediate = false) {
     const payload = getLocalSyncPayload();
 
     try {
-      const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+      const res = await fetch(VAULT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
@@ -739,10 +743,14 @@ export async function syncVaultPull() {
     return { success: false, reason: 'offline' };
   }
 
+  if (qrExchangeInProgress) {
+    return { success: false, reason: 'busy' };
+  }
+
   dispatchSyncStatus('syncing');
 
   try {
-    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+    const res = await fetch(VAULT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -765,8 +773,9 @@ export async function syncVaultPull() {
         dispatchSyncStatus('synced', { lastSync: now });
         return { success: true, message: 'Notas sincronizadas.' };
       } else if (data && data.status === 'not_found') {
-        dispatchSyncStatus('unlinked');
-        return { success: false, reason: 'not_found' };
+        // La nube aún no tiene esta bóveda (por ejemplo, tras el cambio de servidor): se sube la copia local.
+        const pushed = await syncVaultPush(true);
+        return pushed.success ? { success: true, message: 'Notas sincronizadas.' } : { success: false, reason: 'not_found' };
       }
     }
   } catch (err) {
@@ -790,7 +799,7 @@ export async function deleteCloudVault(customVaultId = null) {
   }
 
   try {
-    await fetch(APPS_SCRIPT_ENDPOINT, {
+    await fetch(VAULT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -815,7 +824,7 @@ export async function initiateQRSyncSession() {
   const payload = getLocalSyncPayload();
 
   try {
-    await fetch(APPS_SCRIPT_ENDPOINT, {
+    await fetch(VAULT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -839,7 +848,7 @@ export async function initiateQRSyncSession() {
 export async function pollQRSyncSession(pairId) {
   if (!pairId) return { status: 'waiting' };
   try {
-    const res = await fetch(`${APPS_SCRIPT_ENDPOINT}?action=qr_sync_poll&pairId=${encodeURIComponent(pairId)}`);
+    const res = await fetch(`${VAULT_ENDPOINT}?action=qr_sync_poll&pairId=${encodeURIComponent(pairId)}`);
     if (res.ok) {
       const data = await res.json();
       if (data.status === 'ready' && data.payload) {
@@ -860,12 +869,12 @@ export async function completeQRExchange(pairId) {
   if (!pairId) return { success: false, message: 'Código no válido' };
   
   const normalizedVaultId = String(pairId).trim().toUpperCase();
-  setVaultId(normalizedVaultId);
+  qrExchangeInProgress = true;
 
   const phonePayload = getLocalSyncPayload();
 
   try {
-    const res = await fetch(APPS_SCRIPT_ENDPOINT, {
+    const res = await fetch(VAULT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
@@ -878,13 +887,17 @@ export async function completeQRExchange(pairId) {
 
     if (res.ok) {
       const data = await res.json();
+      // El dispositivo se vincula solo cuando el intercambio ha llegado: si la página se recarga a mitad
+      // (por ejemplo al actualizarse la web), se repite entero en vez de descargar una bóveda a medias.
+      setVaultId(normalizedVaultId);
       if (data.sourcePayload) {
         applySyncPayload(data.sourcePayload, true);
       }
       const now = new Date().toISOString();
       setLastSyncTime(now);
       dispatchSyncStatus('synced', { lastSync: now });
-      syncVaultPush(true);
+      // Se espera a que la bóveda tenga ya los datos fusionados antes de permitir descargas
+      await syncVaultPush(true);
 
       return {
         success: true,
@@ -893,6 +906,8 @@ export async function completeQRExchange(pairId) {
     }
   } catch (e) {
     console.error('Error completando intercambio QR:', e);
+  } finally {
+    qrExchangeInProgress = false;
   }
 
   return { success: false, message: 'No se pudo completar la sincronización.' };

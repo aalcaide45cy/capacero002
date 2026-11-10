@@ -1,15 +1,12 @@
 /**
  * Capa Cero Analytics Engine v4
  * Sistema integral de telemetría, geolocalización, atribución de suscriptores,
- * dwell time por secciones, interacciones y sincronización inteligente con Google Sheets
+ * dwell time por secciones, interacciones y sincronización con el servidor (Neon)
  * sin impacto en el rendimiento ni en los Core Web Vitals.
  */
 
 import { saveSession, saveEvent } from './analyticsStorage';
 
-// --- CONFIGURACIÓN DE GOOGLE SHEETS ---
-export const GOOGLE_SHEETS_ENABLED = true;
-export const SHEETS_DB_URL = "https://script.google.com/macros/s/AKfycbxDWa6hm0oWLcWc7G5hOSo04zl3-eLbZ_nKSH1035Xo_RaEBjtpsU-O6NcJVs8CasHtBg/exec";
 
 // Identificadores únicos y persistentes
 export const getUserId = () => {
@@ -180,12 +177,10 @@ let sessionDownloadedItems = [];
 let sessionSearchTerms = [];
 let sessionDoctorConsults = [];
 
-// Envío a Google Sheets (Asíncrono de 0ms con sendBeacon o fetch keepalive)
-export const sendToSheetsIfEnabled = (extraData = {}) => {
+// Envío del detalle de la sesión a Neon (/api/track), sin bloquear: sendBeacon o fetch keepalive
+export const sendSessionToServer = (extraData = {}) => {
     try {
-        const customWebhook = localStorage.getItem('capa_cero_sheets_webhook');
-        const targetUrl = customWebhook || (GOOGLE_SHEETS_ENABLED ? SHEETS_DB_URL : null);
-        if (!targetUrl) return;
+        const targetUrl = '/api/track';
 
         const payload = {
             timestamp: currentSession?.timestamp || new Date().toISOString(),
@@ -219,7 +214,6 @@ export const sendToSheetsIfEnabled = (extraData = {}) => {
         } else {
             fetch(targetUrl, {
                 method: 'POST',
-                mode: 'no-cors',
                 keepalive: true,
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: jsonStr
@@ -305,12 +299,12 @@ export const initAnalyticsSession = async () => {
         }
     } catch (e) {}
 
-    // Sincronizar con Google Sheets en segundo plano sin retrasar el primer render
+    // Enviar la sesión al servidor en segundo plano sin retrasar el primer render
     if (typeof window !== 'undefined') {
         if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(() => sendToSheetsIfEnabled(), { timeout: 3500 });
+            window.requestIdleCallback(() => sendSessionToServer(), { timeout: 3500 });
         } else {
-            setTimeout(() => sendToSheetsIfEnabled(), 3000);
+            setTimeout(() => sendSessionToServer(), 3000);
         }
     }
 
@@ -325,19 +319,19 @@ const setupActiveTimeTracker = () => {
     window.addEventListener('blur', () => {
         isWindowFocused = false;
         persistCurrentSession();
-        sendToSheetsIfEnabled();
+        sendSessionToServer();
     });
     document.addEventListener('visibilitychange', () => {
         isWindowFocused = !document.hidden;
         lastTickTime = Date.now();
         if (document.hidden) {
             persistCurrentSession();
-            sendToSheetsIfEnabled();
+            sendSessionToServer();
         }
     });
     window.addEventListener('pagehide', () => {
         persistCurrentSession();
-        sendToSheetsIfEnabled();
+        sendSessionToServer();
     });
 
     let ticksCount = 0;
@@ -524,7 +518,7 @@ export const trackVideoComplete = (video) => {
     if (window.gtag) {
         window.gtag('event', 'video_complete', payload);
     }
-    sendToSheetsIfEnabled({
+    sendSessionToServer({
         completedVideo: video.title || ''
     });
 };
@@ -550,7 +544,7 @@ export const trackSubscribe = (sourceContext = 'Hero CTA', videoDetails = null) 
         }
     });
 
-    sendToSheetsIfEnabled({
+    sendSessionToServer({
         hasSubscribed: true,
         subscribedFrom: attribution
     });
