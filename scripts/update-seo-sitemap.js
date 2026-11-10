@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { organizationNode, personNode } from './lib/seo-entity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,6 +105,12 @@ export function updateSeoSitemap() {
 ${xmlVideos}
   </url>
 ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
+    <loc>https://www.capacero3d.com/sobre-mi</loc>
+    <lastmod>${rootLastMod}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.capacero3d.com/politica-privacidad</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>yearly</changefreq>
@@ -145,43 +152,8 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
           "query-input": "required name=search_term_string"
         }
       },
-      {
-        "@type": "Organization",
-        "@id": "https://www.capacero3d.com/#organization",
-        "name": "Capa Cero 3D",
-        "url": "https://www.capacero3d.com/",
-        "logo": "https://www.capacero3d.com/logo-capa-cero.webp",
-        "sameAs": [
-          "https://www.youtube.com/@CapaCero0",
-          "https://makerworld.com/en/@capa_cero",
-          "https://www.instagram.com/capa.cero_3d/",
-          "https://www.tiktok.com/@capacero",
-          "https://www.udemy.com/user/alfonso-alcaide-cornejo/"
-        ],
-        "founder": {
-          "@id": "https://www.capacero3d.com/#person"
-        }
-      },
-      {
-        "@type": "Person",
-        "@id": "https://www.capacero3d.com/#person",
-        "name": "Alfonso Alcaide Cornejo",
-        "url": "https://www.capacero3d.com/",
-        "image": "https://www.capacero3d.com/logo-emblem.png",
-        "description": "Creador de CapaCero3D: tutoriales en español de impresión 3D, Bambu Studio y Fusion 360.",
-        "jobTitle": "Creador de contenido sobre impresión 3D",
-        "knowsAbout": ["Impresión 3D", "Bambu Studio", "Fusion 360", "Bambu Lab", "Modelado 3D", "Fabricación digital"],
-        "worksFor": {
-          "@id": "https://www.capacero3d.com/#organization"
-        },
-        "sameAs": [
-          "https://www.youtube.com/@CapaCero0",
-          "https://www.tiktok.com/@capacero",
-          "https://www.instagram.com/capa.cero_3d/",
-          "https://www.udemy.com/user/alfonso-alcaide-cornejo/",
-          "https://makerworld.com/en/@capa_cero"
-        ]
-      },
+      organizationNode,
+      personNode,
       {
         "@type": "ItemList",
         "@id": "https://www.capacero3d.com/#videoteca",
@@ -276,7 +248,7 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
 
   <!-- Social Media & SEO -->
   <meta name="description"
-    content="Aprende Bambu Studio e impresión 3D paso a paso. Videoteca oficial de Capa Cero con cursos estructurados, trucos de calibración y modelos 3D descargables en MakerWorld." />
+    content="Capa Cero 3D, de Alfonso Alcaide Cornejo: aprende impresión 3D y Bambu Studio paso a paso. Videoteca oficial con cursos estructurados, trucos de calibración y modelos 3D descargables en MakerWorld." />
   <meta name="keywords"
     content="tutoriales bambu studio, bambu lab espanol, cursos bambu studio, modelos 3d makerworld, fusion 360 impresion 3d, costuras scarf bambu studio, multicolor sin ams, capa cero 3d" />
   <meta name="author" content="Alfonso Alcaide Cornejo (Capa Cero 3D)" />
@@ -343,6 +315,7 @@ ${noscriptList}
         <a href="https://www.instagram.com/capa.cero_3d" rel="me noopener">Instagram</a> ·
         <a href="https://www.udemy.com/user/alfonso-alcaide-cornejo/" rel="me noopener">Udemy</a>
       </p>
+      <p><a href="https://www.capacero3d.com/sobre-mi">Más sobre Alfonso Alcaide Cornejo</a></p>
       <p><a href="https://www.capacero3d.com/politica-privacidad">Política de Privacidad</a></p>
     </main>
   </noscript>

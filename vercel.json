@@ -49,6 +49,10 @@
             "destination": "/video/:slug/index.html"
         },
         {
+            "source": "/sobre-mi",
+            "destination": "/sobre-mi/index.html"
+        },
+        {
             "source": "/tp",
             "destination": "/tp/index.html"
         },

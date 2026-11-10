@@ -1084,6 +1084,12 @@ Veremos cómo se integra en nuestro flujo de trabajo h</video:description>
     </video:video>
   </url>
   <url>
+    <loc>https://www.capacero3d.com/sobre-mi</loc>
+    <lastmod>2026-11-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.capacero3d.com/politica-privacidad</loc>
     <lastmod>2026-03-01</lastmod>
     <changefreq>yearly</changefreq>

@@ -10,7 +10,7 @@
     "update-data": "node scripts/update-videos.js",
     "update-seo": "node scripts/update-seo-sitemap.js",
     "prebuild": "node scripts/db/migrate.js --soft && npm run update-data && npm run update-seo",
-    "postbuild": "node scripts/prerender-videos.js && node scripts/prerender-tp.js",
+    "postbuild": "node scripts/prerender-videos.js && node scripts/prerender-tp.js && node scripts/prerender-sobre-mi.js",
     "db:migrate": "node scripts/db/migrate.js",
     "db:import": "node scripts/db/import-videos.js"
   },
