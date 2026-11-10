@@ -13,9 +13,25 @@ if (!url) {
   process.exit(soft ? 0 : 1);
 }
 
-const client = new pg.Client({ connectionString: url, connectionTimeoutMillis: 8000 });
+// La base de datos puede estar en reposo y tardar unos segundos en despertar: se reintenta la conexión.
+async function connectWithRetry(attempts = 4) {
+  for (let i = 1; ; i++) {
+    const c = new pg.Client({ connectionString: url, connectionTimeoutMillis: 15000 });
+    try {
+      await c.connect();
+      return c;
+    } catch (err) {
+      await c.end().catch(() => {});
+      if (i >= attempts) throw err;
+      console.warn(`Migraciones: intento ${i} de conexión fallido (${err.message}), se reintenta...`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+}
+
+let client;
 try {
-  await client.connect();
+  client = await connectWithRetry();
   await client.query('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())');
   const done = new Set((await client.query('SELECT name FROM schema_migrations')).rows.map(r => r.name));
   for (const file of fs.readdirSync(dir).filter(f => f.endsWith('.sql')).sort()) {
@@ -36,5 +52,5 @@ try {
   console.error('Migraciones:', err.message);
   process.exitCode = soft ? 0 : 1;
 } finally {
-  await client.end().catch(() => {});
+  if (client) await client.end().catch(() => {});
 }
