@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, Play, Pause, Minus, Plus, RotateCcw, RotateCw, ChevronUp, ChevronDown,
   FlipHorizontal2, Settings2, RectangleVertical, RectangleHorizontal, Crop, Camera, CameraOff, Circle, Square, Maximize, Minimize,
-  Download, Share2, Trash2, Pin, PinOff, Mic, MicOff, ListOrdered, X,
+  Download, Share2, Trash2, Pin, PinOff, Mic, MicOff, ListOrdered, X, Eye, EyeOff,
 } from 'lucide-react';
 import ScriptView from './ScriptView';
 import SettingsPanel, { MicMeter } from './SettingsPanel';
@@ -395,6 +395,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
   const rebuildRef = useRef(() => {});
   const followCursorRef = useRef(null);
   const [indexOpen, setIndexOpen] = useState(false);
+  const [textHidden, setTextHidden] = useState(false);
   const [curSection, setCurSection] = useState(-1);
   const indexPanelRef = useRef(null);
   const [ownTrack, setOwnTrack] = useState(null);
@@ -1164,6 +1165,9 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
         case '_':
           changeFont(-4);
           break;
+        case 'o':
+          setTextHidden(h => !h);
+          break;
         case 'm':
           update({ mirrorH: !settingsRef.current.mirrorH });
           break;
@@ -1305,7 +1309,7 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
         onWheel={onWheel}
       >
         <div className="tp-mirror" style={mirrorStyle}>
-          <div className="tp-content" ref={contentRef} style={contentStyle}>
+          <div className="tp-content" ref={contentRef} style={textHidden ? { ...contentStyle, visibility: 'hidden' } : contentStyle}>
             <ScriptView text={script.text} format={script.format} wrapWords={settings.karaokeOn} />
             <div className="tp-end">— Fin —</div>
           </div>
@@ -1422,6 +1426,15 @@ export default function Prompter({ script, settings, update, onExit, monitors = 
               <small>{settings.outputFormat === 'normal' ? 'Cám.' : settings.outputFormat === 'crop' ? 'Recorte' : 'Barras'}</small>
             </button>
           )}
+          <button
+            type="button"
+            className={`tp-ctrl${textHidden ? ' is-on' : ''}`}
+            onClick={() => setTextHidden(h => !h)}
+            aria-label={textHidden ? 'Mostrar el texto' : 'Ocultar el texto'}
+            title={textHidden ? 'Mostrar el texto (O)' : 'Ocultar el texto (O)'}
+          >
+            {textHidden ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
           <button
             type="button"
             className={`tp-ctrl${settings.mirrorH ? ' is-on' : ''}`}
