@@ -33,6 +33,10 @@
     ],
     "rewrites": [
         {
+            "source": "/api/dieta/:path*",
+            "destination": "/api/admin?p=dieta/:path*"
+        },
+        {
             "source": "/admin",
             "destination": "/api/admin"
         },
@@ -64,6 +68,32 @@
                 {
                     "key": "Cache-Control",
                     "value": "no-cache, no-store, must-revalidate"
+                }
+            ]
+        },
+        {
+            "source": "/dieta/:path*",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, nofollow"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store, private"
+                }
+            ]
+        },
+        {
+            "source": "/dieta",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, nofollow"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store, private"
                 }
             ]
         }
