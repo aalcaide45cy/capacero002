@@ -14,6 +14,11 @@ async function isShortVideo(id, seconds) {
   return seconds <= 60;
 }
 
+/** Quita restos de copiar/pegar ("Copiar título") y espacios repetidos de los títulos de YouTube. */
+export function cleanVideoTitle(t) {
+  return String(t || '').replace(/\s*copiar t[ií]tulo\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 export function generateSlug(title) {
   let s = String(title || '')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -51,7 +56,7 @@ export async function fetchCandidatesApi(apiKey) {
     const upcoming = item.snippet?.liveBroadcastContent === 'upcoming';
     return {
       id: item.id,
-      title: item.snippet?.title || '',
+      title: cleanVideoTitle(item.snippet?.title),
       description: item.snippet?.description || '',
       publishedAt: live.scheduledStartTime && upcoming ? live.scheduledStartTime : item.snippet?.publishedAt,
       duration: dur.label,
@@ -76,7 +81,7 @@ export async function fetchCandidatesRss() {
     const published = (entry.match(/<published>([^<]+)<\/published>/) || [])[1] || null;
     const href = (entry.match(/<link[^>]+href="([^"]+)"/) || [])[1] || '';
     const decoded = title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-    return { id, title: decoded, description: '', publishedAt: published, duration: null, durationSeconds: 0, views: 0, likes: 0, comments: 0, isScheduled: false, isShort: href.includes('/shorts/') };
+    return { id, title: cleanVideoTitle(decoded), description: '', publishedAt: published, duration: null, durationSeconds: 0, views: 0, likes: 0, comments: 0, isScheduled: false, isShort: href.includes('/shorts/') };
   }).filter(v => v.id);
 }
 
@@ -113,7 +118,7 @@ export async function fetchVideoById(id) {
     const live = item.liveStreamingDetails || {};
     const upcoming = item.snippet?.liveBroadcastContent === 'upcoming';
     return {
-      id, title: item.snippet?.title || '', description: item.snippet?.description || '',
+      id, title: cleanVideoTitle(item.snippet?.title), description: item.snippet?.description || '',
       publishedAt: live.scheduledStartTime && upcoming ? live.scheduledStartTime : item.snippet?.publishedAt,
       duration: dur.label, durationSeconds: dur.seconds,
       views: parseInt(item.statistics?.viewCount || 0, 10), likes: parseInt(item.statistics?.likeCount || 0, 10),

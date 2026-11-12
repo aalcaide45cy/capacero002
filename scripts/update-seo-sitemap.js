@@ -24,6 +24,12 @@ function escapeXml(unsafe) {
   });
 }
 
+/** "4:39" o "1:02:03" -> segundos (0 si no se puede leer). */
+function durationToSeconds(label) {
+  const m = String(label || '').match(/^(?:(\d+):)?(\d{1,2}):(\d{2})$/);
+  return m ? (Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3])) : 0;
+}
+
 function getLatestDate(videoList) {
   let latest = '2026-10-06';
   for (const v of videoList) {
@@ -58,18 +64,22 @@ export function updateSeoSitemap() {
   const rootLastMod = getLatestDate(publishedVideos);
 
   // 1. GENERAR SITEMAP.XML
-  const xmlVideos = publishedVideos.map(v => `    <video:video>
+  // Cada <video:video> va en la URL donde se reproduce (/video/<slug>), no en la portada.
+  const videoBlock = (v) => {
+    const seconds = durationToSeconds(v.duration);
+    const views = Number(v.views) || 0;
+    return `    <video:video>
       <video:thumbnail_loc>${v.thumbnail}</video:thumbnail_loc>
       <video:title>${escapeXml(v.title)}</video:title>
-      <video:description>${escapeXml((v.description || v.title).slice(0, 200))}</video:description>
-      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/${v.youtubeId}</video:player_loc>
+      <video:description>${escapeXml((v.description || v.title).slice(0, 2000))}</video:description>
+      <video:player_loc allow_embed="yes">https://www.youtube-nocookie.com/embed/${v.youtubeId}</video:player_loc>${seconds ? `
+      <video:duration>${seconds}</video:duration>` : ''}
       <video:publication_date>${v.publishedAt}</video:publication_date>
-      <video:family_friendly>yes</video:family_friendly>
-      <video:view_count>${v.views || 100}</video:view_count>
-      <video:category>${escapeXml(v.category || 'Bambu Studio')}</video:category>
-    </video:video>`).join('\n');
+      <video:family_friendly>yes</video:family_friendly>${views ? `
+      <video:view_count>${views}</video:view_count>` : ''}
+    </video:video>`;
+  };
 
-  // Si existen páginas individuales /video/<slug> (Fase 04), añadirlas al sitemap
   const videoUrlsXml = publishedVideos
     .filter(v => slugsMap[v.youtubeId])
     .map(v => {
@@ -80,16 +90,7 @@ export function updateSeoSitemap() {
     <lastmod>${videoDate}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <video:video>
-      <video:thumbnail_loc>${v.thumbnail}</video:thumbnail_loc>
-      <video:title>${escapeXml(v.title)}</video:title>
-      <video:description>${escapeXml((v.description || v.title).slice(0, 200))}</video:description>
-      <video:player_loc allow_embed="yes">https://www.youtube.com/embed/${v.youtubeId}</video:player_loc>
-      <video:publication_date>${v.publishedAt}</video:publication_date>
-      <video:family_friendly>yes</video:family_friendly>
-      <video:view_count>${v.views || 100}</video:view_count>
-      <video:category>${escapeXml(v.category || 'Bambu Studio')}</video:category>
-    </video:video>
+${videoBlock(v)}
   </url>`;
     }).join('\n');
 
@@ -101,7 +102,6 @@ export function updateSeoSitemap() {
     <lastmod>${rootLastMod}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
-${xmlVideos}
   </url>
 ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
     <loc>https://www.capacero3d.com/politica-privacidad</loc>
@@ -187,39 +187,13 @@ ${videoUrlsXml ? videoUrlsXml + '\n' : ''}  <url>
         "@id": "https://www.capacero3d.com/#videoteca",
         "name": "Videoteca de Tutoriales Bambu Studio e Impresión 3D",
         "description": "Lista completa de tutoriales, cursos y guías paso a paso de Capa Cero 3D",
-        "numberOfItems": publishedVideos.length,
-        "itemListElement": publishedVideos.map((v, idx) => ({
+        "numberOfItems": publishedVideos.filter(v => slugsMap[v.youtubeId]).length,
+        // Carrusel de Google: cada elemento apunta a su página de vídeo (/video/<slug>), donde está el VideoObject completo.
+        "itemListElement": publishedVideos.filter(v => slugsMap[v.youtubeId]).map((v, idx) => ({
           "@type": "ListItem",
           "position": idx + 1,
-          "item": {
-            "@type": "VideoObject",
-            "name": v.title,
-            "description": (v.description || v.title).slice(0, 200),
-            "thumbnailUrl": [v.thumbnail],
-            "uploadDate": v.publishedAt,
-            "contentUrl": v.youtubeUrl || `https://www.youtube.com/watch?v=${v.youtubeId}`,
-            "embedUrl": `https://www.youtube-nocookie.com/embed/${v.youtubeId}`,
-            "interactionStatistic": [
-              {
-                "@type": "InteractionCounter",
-                "interactionType": { "@type": "WatchAction" },
-                "userInteractionCount": v.views || 100
-              },
-              {
-                "@type": "InteractionCounter",
-                "interactionType": { "@type": "LikeAction" },
-                "userInteractionCount": v.likes || 10
-              }
-            ],
-            "author": {
-              "@id": "https://www.capacero3d.com/#person"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "Capa Cero 3D",
-              "logo": "https://www.capacero3d.com/logo-capa-cero.webp"
-            }
-          }
+          "url": `https://www.capacero3d.com/video/${slugsMap[v.youtubeId]}`,
+          "name": v.title
         }))
       }
     ]
