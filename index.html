@@ -16,8 +16,6 @@
     gtag('config', 'G-Y8RT9QWCD9');
 
     function loadGA4() {
-      // Sección privada /dieta: sin analítica pública.
-      if (location.pathname === '/dieta' || location.pathname.indexOf('/dieta/') === 0) return;
       if (window.__ga4_loaded) return;
       window.__ga4_loaded = true;
       var s = document.createElement('script');
