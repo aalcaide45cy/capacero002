@@ -1,7 +1,7 @@
 [
   {
     "id": "video-41",
-    "title": "¿Puedo convertir una imagen de IA en una pieza REAL impresa en 3D?  Copiar título",
+    "title": "¿Puedo convertir una imagen de IA en una pieza REAL impresa en 3D?",
     "youtubeUrl": "https://www.youtube.com/watch?v=jnPKcZaQ9ZM",
     "youtubeId": "jnPKcZaQ9ZM",
     "thumbnail": "https://img.youtube.com/vi/jnPKcZaQ9ZM/hqdefault.jpg",
@@ -21,7 +21,7 @@
     "chapterNumber": null,
     "popularityScore": 136,
     "publishedAt": "2026-11-06T13:18:57.806Z",
-    "duration": null,
+    "duration": "8:16",
     "views": 562,
     "likes": 8,
     "comments": 7,

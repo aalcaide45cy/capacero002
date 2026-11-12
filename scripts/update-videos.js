@@ -457,10 +457,15 @@ async function fetchLiveYouTubeStats(videoId) {
   }
 }
 
+/** Quita restos de copiar/pegar ("Copiar título") y espacios repetidos de los títulos de YouTube. */
+function cleanVideoTitle(t) {
+  return String(t || '').replace(/\s*copiar t[ií]tulo\s*$/i, '').replace(/\s{2,}/g, ' ').trim();
+}
+
 function normalizeVideoRow(raw, index = 0, apiStats = null, liveStats = null, existing = null, playlistInfo = null) {
   if (!raw || (typeof raw !== 'object' && !raw)) return null;
 
-  const title = String(raw.Titulo || raw.titulo || raw.Title || '').trim();
+  const title = cleanVideoTitle(raw.Titulo || raw.titulo || raw.Title || '');
   const rawUrl = String(raw.URL_Youtube || raw.url_youtube || raw.Youtube || raw.URL || '').trim();
   const videoId = extractYouTubeId(rawUrl);
   if (!videoId) return null;
