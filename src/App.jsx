@@ -10,6 +10,7 @@ const LazyEditor = lazy(() => import('./components/EditorMD/EditorEntry'));
 const LazyTeleprompter = lazy(() => import('./components/Teleprompter/TeleprompterEntry'));
 const LazyMonitor = lazy(() => import('./components/Teleprompter/remote/MonitorEntry'));
 const V4VideoPage = lazy(() => import('./components/V4/V4VideoPage'));
+const LazyDieta = lazy(() => import('./components/Dieta/DietaApp'));
 
 function RouteLoadingFallback() {
     return (
@@ -81,6 +82,15 @@ function App() {
         return (
             <Suspense fallback={<RouteLoadingFallback />}>
                 <LazyTeleprompter />
+            </Suspense>
+        );
+    }
+
+    // 4c. Sección privada de dieta (/dieta y subrutas): acceso de propietario validado en servidor
+    if (currentPath === '/dieta' || currentPath.startsWith('/dieta/')) {
+        return (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <LazyDieta />
             </Suspense>
         );
     }

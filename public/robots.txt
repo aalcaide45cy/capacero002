@@ -4,6 +4,7 @@ Allow: /
 Disallow: /estadisticas
 Disallow: /editor
 Disallow: /tp
+Disallow: /dieta
 
 User-agent: Googlebot
 Allow: /

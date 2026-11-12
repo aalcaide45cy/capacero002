@@ -8,6 +8,7 @@ import './index.css';
 // Registrar Service Worker para PWA y Web Push
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
+    if (/^\/dieta(\/|$)/.test(window.location.pathname)) return;
     registerServiceWorker();
   });
 }
@@ -15,7 +16,7 @@ if (typeof window !== 'undefined') {
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <App />
-        <CookieBanner />
+        {!/^\/dieta(\/|$)/.test(window.location.pathname) && <CookieBanner />}
     </React.StrictMode>
 );
 

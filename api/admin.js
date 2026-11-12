@@ -631,6 +631,11 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=3600');
     return res.status(410).setHeader('Content-Type', 'text/html; charset=utf-8').send('<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex"><title>Página eliminada</title><body style="font-family:system-ui;text-align:center;padding:60px"><h1>Esta página ya no existe</h1><p><a href="https://www.capacero3d.com/">Ir a Capa Cero 3D</a></p></body></html>');
   }
+  // Módulo privado /dieta: API JSON propia (se sirve aquí para no añadir otra función de Vercel).
+  if (route === 'dieta' || route.startsWith('dieta/')) {
+    const { dietaHandler } = await import('./_lib/dieta/handler.js');
+    return dietaHandler(req, res, route);
+  }
   const pool = getPool();
   try {
     if (route === 'login') return await handleLogin(pool, req, res, nonce);
