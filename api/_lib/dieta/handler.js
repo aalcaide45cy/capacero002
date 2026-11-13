@@ -4,9 +4,10 @@ import { getPool } from '../db.js';
 import { verifyPassword, verifyTotp, decrypt, sha256, randomToken, safeEqual, parseCookies } from '../adminSecurity.js';
 import {
   NUTRIENTS, QUALITIES, computeItems, sumResults, checkRestrictions, classifyAlternative, DEFAULT_TOLERANCES,
-  scaleItems, addDays, weekStart, madridDate, isYmd, costItems, itemGrams, packInfo
+  addDays, weekStart, madridDate, isYmd
 } from './nutrition.js';
-import { SEED_FOODS, SEED_RECIPES, buildWeek } from './menu.js';
+import { SEED_RECIPES, buildWeek } from './menu.js';
+import { CATALOG_FOODS } from './catalog.js';
 
 const COOKIE = '__Host-cc_diet';
 const SHORT_HOURS = 12;
@@ -88,40 +89,16 @@ async function login(pool, req, res) {
 }
 
 // ---------- Datos base ----------
-let seeded = false;
-async function ensureSeed(pool) {
-  if (seeded) return;
-  for (const f of SEED_FOODS) {
-    await pool.query(
-      `INSERT INTO diet_foods (owner_id, slug, name, state, basis, allergens, allergen_status, dairy, category, source)
-       VALUES (NULL,$1,$2,$3,$4,$5,$6,$7,$8,'Borrador inicial sin valores nutricionales')
-       ON CONFLICT ((COALESCE(owner_id, 0)), slug) DO NOTHING`,
-      [f.slug, f.name, f.state, f.basis, f.allergens, f.allergen_status, f.dairy, f.category]);
-  }
-  for (const r of SEED_RECIPES) {
-    await pool.query(
-      `INSERT INTO diet_recipes (owner_id, slug, name, slot, ingredients, servings, prep, active_minutes, tags)
-       VALUES (NULL,$1,$2,$3,$4,$5,$6,$7,$8)
-       ON CONFLICT ((COALESCE(owner_id, 0)), slug) DO NOTHING`,
-      [r.slug, r.name, r.slot, JSON.stringify(r.ingredients), r.servings, r.prep, r.active_minutes, r.tags]);
-  }
-  seeded = true;
-}
-
-const mergeBySlug = (rows) => {
-  const out = {};
-  for (const r of rows.filter(x => x.owner_id == null)) out[r.slug] = r;
-  for (const r of rows.filter(x => x.owner_id != null)) out[r.slug] = r; // lo del propietario prevalece sobre el catálogo
-  return out;
-};
+// El catálogo (alimentos USDA SR26 y menú de partida) vive en el código: no hay semilla que duplicar ni que pueda pisar datos.
+// En Neon solo se guardan las fichas que el propietario edita (owner_id), que prevalecen sobre el catálogo.
+const RECIPES = Object.fromEntries(SEED_RECIPES.map(r => [r.slug, r]));
 async function loadFoods(pool, ownerId) {
-  const { rows } = await pool.query('SELECT * FROM diet_foods WHERE owner_id IS NULL OR owner_id = $1', [ownerId]);
-  return mergeBySlug(rows);
+  const { rows } = await pool.query('SELECT * FROM diet_foods WHERE owner_id = $1', [ownerId]);
+  const out = { ...CATALOG_FOODS };
+  for (const r of rows) out[r.slug] = { ...(CATALOG_FOODS[r.slug] || {}), ...r, own: true };
+  return out;
 }
-async function loadRecipes(pool, ownerId) {
-  const { rows } = await pool.query('SELECT * FROM diet_recipes WHERE owner_id IS NULL OR owner_id = $1', [ownerId]);
-  return mergeBySlug(rows);
-}
+const loadRecipes = async () => RECIPES;
 async function loadPrices(pool, ownerId) {
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (food_slug) food_slug, pack_net_g, pack_drained_g, price_eur, store, price_date, origin, offer, conditions
@@ -138,11 +115,9 @@ const publicFood = (f) => ({
   slug: f.slug, name: f.name, state: f.state, basis: f.basis, density_g_ml: f.density_g_ml == null ? null : Number(f.density_g_ml),
   unit_g: f.unit_g == null ? null : Number(f.unit_g), allergens: f.allergens, allergen_status: f.allergen_status, dairy: f.dairy,
   category: f.category, nutrients: f.nutrients, source: f.source, source_id: f.source_id, source_version: f.source_version,
-  consulted_on: f.consulted_on, version: f.version, own: f.owner_id != null
+  consulted_on: f.consulted_on, version: f.version || 0, own: Boolean(f.own)
 });
-const publicRecipe = (r) => ({
-  slug: r.slug, name: r.name, slot: r.slot, ingredients: r.ingredients, prep: r.prep, active_minutes: r.active_minutes, tags: r.tags, own: r.owner_id != null
-});
+const publicRecipe = (r) => ({ slug: r.slug, name: r.name, slot: r.slot, ingredients: r.ingredients, prep: r.prep, active_minutes: r.active_minutes, tags: r.tags });
 // Para el motor: los números llegan como cadenas desde pg.
 const engineFoods = (foods) => Object.fromEntries(Object.entries(foods).map(([k, f]) => [k, {
   ...f, density_g_ml: f.density_g_ml == null ? null : Number(f.density_g_ml), unit_g: f.unit_g == null ? null : Number(f.unit_g)
@@ -170,7 +145,6 @@ const weekParam = (q) => {
 };
 
 async function bootstrap(pool, s, q) {
-  await ensureSeed(pool);
   const ws = weekParam(q);
   const [foods, recipes, prices, profile] = await Promise.all([loadFoods(pool, s.ownerId), loadRecipes(pool, s.ownerId), loadPrices(pool, s.ownerId), loadProfile(pool, s.ownerId)]);
   const plan = await getPlan(pool, s.ownerId, ws, recipes);
@@ -218,13 +192,6 @@ function cleanItems(items, foods) {
   });
 }
 
-function evaluateMeal(meal, newItems, foods, profile, tol) {
-  const restr = checkRestrictions(newItems, foods, profile);
-  const o = computeItems(meal.items, foods);
-  const a = computeItems(newItems, foods);
-  return { restr, o, a, cls: classifyAlternative(o, a, restr, tol) };
-}
-
 function findMeal(plan, day, mealId) {
   const d = plan.data.days?.[day];
   const m = d?.meals?.find(x => x.id === mealId);
@@ -232,61 +199,32 @@ function findMeal(plan, day, mealId) {
   return m;
 }
 
-const PRACTICAL_FACTORS = [0.8, 0.9, 1, 1.1, 1.2];
-
-async function swapCandidates(pool, s, body) {
-  const ws = weekParam({ week: body.week });
-  const [foods0, recipes, prices, profile] = await Promise.all([loadFoods(pool, s.ownerId), loadRecipes(pool, s.ownerId), loadPrices(pool, s.ownerId), loadProfile(pool, s.ownerId)]);
-  const foods = engineFoods(foods0);
-  const plan = await getPlan(pool, s.ownerId, ws, recipes);
-  if (!isYmd(body.day)) throw bad('Fecha no válida');
-  const meal = findMeal(plan, body.day, String(body.meal_id));
-  const mode = String(body.mode || 'todas');
-  const tol = { ...DEFAULT_TOLERANCES, ...(profile.data.tolerances || {}) };
-  const pantry = new Set((await pool.query('SELECT food_slug FROM diet_pantry_items WHERE owner_id=$1 AND grams > 0', [s.ownerId])).rows.map(r => r.food_slug));
-  const origCost = costItems(meal.items, foods, prices);
-  const origRecipe = recipes[meal.recipe];
-  const out = [];
-  for (const r of Object.values(recipes)) {
-    if (r.slot !== meal.slot || r.slug === meal.recipe) continue;
-    const items = r.ingredients;
-    if (mode === 'rapido' && !(origRecipe?.active_minutes != null && r.active_minutes != null && r.active_minutes < origRecipe.active_minutes)) continue;
-    if (mode === 'taper' && !r.tags.includes('táper')) continue;
-    if (mode === 'sin-cocinar' && !r.tags.includes('sin-cocinar')) continue;
-    const cost = costItems(items, foods, prices);
-    if (mode === 'barato' && !(origCost.complete && cost.complete && cost.value < origCost.value)) continue;
-    const inPantry = items.filter(i => pantry.has(i.food)).length;
-    if (mode === 'despensa' && inPantry === 0) continue;
-    const ev = evaluateMeal(meal, items, foods, profile.data, tol);
-    out.push({ recipe: r.slug, name: r.name, minutes: r.active_minutes, status: ev.cls.status, notes: ev.cls.notes, dims: ev.cls.dims, in_pantry: inPantry, ingredients: items, cost: { value: cost.value, complete: cost.complete }, factors: PRACTICAL_FACTORS });
-  }
-  const rank = { dentro: 0, con_diferencias: 1, datos_insuficientes: 2, no_compatible: 3 };
-  out.sort((a, b) => rank[a.status] - rank[b.status]);
-  return { ok: true, meal, candidates: out.filter(c => c.status !== 'no_compatible'), excluded: out.filter(c => c.status === 'no_compatible').map(c => ({ name: c.name, notes: c.notes })) };
-}
-
+/**
+ * Aplica un cambio de plato o de un alimento suelto. El cliente propone la lista de alimentos; el servidor NO se fía:
+ * valida alimentos y cantidades, vuelve a comprobar las restricciones firmes y guarda de forma atómica con historial.
+ */
 async function swapApply(pool, s, body) {
   const ws = weekParam({ week: body.week });
   if (!keyOk(body.client_key)) throw bad('Clave de operación no válida');
   const [foods0, recipes, profile] = await Promise.all([loadFoods(pool, s.ownerId), loadRecipes(pool, s.ownerId), loadProfile(pool, s.ownerId)]);
   const foods = engineFoods(foods0);
   const plan = await getPlan(pool, s.ownerId, ws, recipes);
-  if (Number(body.version) !== plan.version) throw new HttpError(409, 'El plan cambió en otro dispositivo. Recarga y vuelve a intentarlo.');
-  const meal = findMeal(plan, body.day, String(body.meal_id));
-  if (meal.locked) throw bad('La comida está bloqueada');
-  const r = recipes[String(body.recipe)];
-  if (!r || r.slot !== meal.slot) throw bad('Receta no válida para esta toma');
-  const factor = Number(body.factor ?? 1);
-  if (!PRACTICAL_FACTORS.includes(factor)) throw bad('Ajuste de cantidad no válido');
-  const items = factor === 1 ? r.ingredients : scaleItems(r.ingredients, factor);
-  const tol = { ...DEFAULT_TOLERANCES, ...(profile.data.tolerances || {}) };
-  const ev = evaluateMeal(meal, items, foods, profile.data, tol); // se vuelve a validar en servidor tras redondear
-  if (ev.cls.status === 'no_compatible') throw bad('La alternativa vulnera una restricción firme');
-  if (ev.restr.pending.length && body.accept_pending !== true) throw bad('Hay datos pendientes de confirmar; acéptalos explícitamente');
   const dup = await pool.query('SELECT 1 FROM diet_change_history WHERE owner_id=$1 AND summary LIKE $2', [s.ownerId, `%[${body.client_key}]`]);
   if (dup.rows[0]) return { ok: true, duplicate: true };
+  if (Number(body.version) !== plan.version) throw new HttpError(409, 'El plan cambió en otro dispositivo. Recarga y vuelve a intentarlo.');
+  if (!isYmd(body.day)) throw bad('Fecha no válida');
+  const meal = findMeal(plan, body.day, String(body.meal_id));
+  if (meal.locked) throw bad('La comida está bloqueada');
+  const items = cleanItems(body.items, foods);
+  if (new Set(items.map(i => i.food)).size !== items.length) throw bad('Alimento repetido');
+  const restr = checkRestrictions(items, foods, profile.data);
+  if (restr.violations.length) throw bad(`No compatible con tus restricciones: ${restr.violations[0]}`);
+  if (restr.pending.some(p => /lácteo pendiente/.test(p)) && body.accept_pending !== true) throw bad('Hay un lácteo pendiente de aclarar; acéptalo explícitamente o indícalo en Ajustes');
+  const name = String(body.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 120) || meal.name;
   const before = { ...meal };
-  const after = { ...meal, recipe: r.slug, name: r.name, items };
+  const after = { ...meal, recipe: String(body.recipe || 'personalizado').slice(0, 160), name, items,
+    prep: String(body.prep || '').replace(/[\u0000-\u001f<>]/g, '').slice(0, 600) || null,
+    minutes: body.minutes == null ? null : Math.round(num(body.minutes, 0, 600, 'Minutos')) };
   const data = JSON.parse(JSON.stringify(plan.data));
   const idx = data.days[body.day].meals.findIndex(m => m.id === meal.id);
   data.days[body.day].meals[idx] = after;
@@ -297,7 +235,7 @@ async function swapApply(pool, s, body) {
     if (!upd.rowCount) throw new HttpError(409, 'El plan cambió en otro dispositivo. Recarga y vuelve a intentarlo.');
     await client.query(
       'INSERT INTO diet_change_history (owner_id, plan_id, day, meal_id, summary, before, after) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [s.ownerId, plan.id, body.day, meal.id, `${meal.name} → ${r.name} [${body.client_key}]`, JSON.stringify(before), JSON.stringify(after)]);
+      [s.ownerId, plan.id, body.day, meal.id, `${meal.name} → ${name} [${body.client_key}]`, JSON.stringify(before), JSON.stringify(after)]);
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -538,7 +476,7 @@ async function listSessions(pool, s) {
 
 // ---------- Enrutador ----------
 const POST_ROUTES = {
-  'swap/candidates': swapCandidates, 'swap/apply': swapApply, 'swap/undo': swapUndo, 'meal/lock': toggleLock,
+  'swap/apply': swapApply, 'swap/undo': swapUndo, 'meal/lock': toggleLock,
   consume, 'food/save': saveFood, 'price/save': savePrice, 'pantry/save': savePantry, 'shopping/check': saveCheck,
   'profile/save': saveProfile, 'goal/save': saveGoal, 'goal/delete': deleteGoal, 'measure/save': saveMeasure, 'symptom/save': saveSymptom,
   'row/delete': deleteRow, 'data/delete': deleteAll
@@ -580,7 +518,6 @@ export async function dietaHandler(req, res, route) {
     if (req.method === 'POST') {
       const fn = POST_ROUTES[sub];
       if (!fn) throw new HttpError(404, 'No encontrado');
-      await ensureSeed(pool);
       return send(200, await fn(pool, session, req.body || {}));
     }
     throw new HttpError(405, 'Método no permitido');

@@ -69,30 +69,32 @@ if (!URL_DB) { test('integración dieta (omitida: falta TEST_DATABASE_URL)', { s
     // Semilla idempotente y plan idempotente
     const b1b = await mk('GET', 'bootstrap', { cookie: ck, query: { week: '2026-11-12' } });
     assert.equal(b1b.body.plan.id, b1.body.plan.id);
-    assert.equal((await pool.query('SELECT count(*)::int c FROM diet_foods')).rows[0].c, b1.body.foods.length);
-    assert.equal(b1.body.foods.every(f => Object.keys(f.nutrients).length === 0), true);
+    // El catálogo vive en el código (USDA SR26) y llega con nutrientes; la tabla solo guarda fichas propias
+    assert.equal((await pool.query('SELECT count(*)::int c FROM diet_foods')).rows[0].c, 0);
+    assert.ok(b1.body.foods.length >= 100);
+    assert.ok(b1.body.foods.every(f => f.nutrients.kcal && f.nutrients.protein));
 
-    // 4. Cambiar comida: candidatas, aplicar, nueva compra, deshacer
+    // 4. Cambiar comida: aplicar un plato elegido en el cliente, nueva compra, deshacer
     const day = '2026-11-09'; const mealId = `${day}-comida`;
-    const cand = await mk('POST', 'swap/candidates', { cookie: ck, body: { week: day, day, meal_id: mealId, mode: 'todas' } });
-    assert.equal(cand.status, 200);
-    assert.ok(cand.body.candidates.length > 3);
-    assert.ok(cand.body.candidates.every(c => c.status !== 'dentro'), 'sin datos nutricionales nunca hay verde global');
-    const target = cand.body.candidates.find(c => c.recipe === 'comida-garbanzos');
-    assert.ok(target);
-    // Leche/lácteo pendiente: la comida no tiene lácteo, así que se aplica sin aceptar pendientes si no hay alérgenos sin comprobar... pollo y verduras son 'known'; legumbres 'unknown' → exige aceptar
-    const noAccept = await mk('POST', 'swap/apply', { cookie: ck, body: { week: day, version: b1.body.plan.version, day, meal_id: mealId, recipe: 'comida-garbanzos', factor: 1, client_key: 'swap-key-0001' } });
-    assert.equal(noAccept.status, 400);
-    const apply = await mk('POST', 'swap/apply', { cookie: ck, body: { week: day, version: b1.body.plan.version, day, meal_id: mealId, recipe: 'comida-garbanzos', factor: 1, accept_pending: true, client_key: 'swap-key-0001' } });
+    const garb = { recipe: 'gen:garbanzos', name: 'Garbanzos con arroz y verduras', prep: 'Rehoga la verdura y añade los garbanzos.', minutes: 15,
+      items: [{ food: 'garbanzos-cocidos', g: 180 }, { food: 'arroz', g: 40 }, { food: 'calabacin', g: 150 }, { food: 'aceite-oliva', g: 10 }] };
+    const sw = (extra) => mk('POST', 'swap/apply', { cookie: ck, body: { week: day, day, meal_id: mealId, ...garb, ...extra } });
+    // El servidor valida lo que llega: alimento inexistente, repetido o cantidad absurda
+    assert.equal((await sw({ version: b1.body.plan.version, client_key: 'swap-key-bad1', items: [{ food: 'no-existe', g: 100 }] })).status, 400);
+    assert.equal((await sw({ version: b1.body.plan.version, client_key: 'swap-key-bad2', items: [{ food: 'arroz', g: 40 }, { food: 'arroz', g: 40 }] })).status, 400);
+    assert.equal((await sw({ version: b1.body.plan.version, client_key: 'swap-key-bad3', items: [{ food: 'arroz', g: -5 }] })).status, 400);
+    const apply = await sw({ version: b1.body.plan.version, client_key: 'swap-key-0001' });
     assert.equal(apply.status, 200, JSON.stringify(apply.body));
     // Doble envío no duplica
-    const again = await mk('POST', 'swap/apply', { cookie: ck, body: { week: day, version: b1.body.plan.version + 1, day, meal_id: mealId, recipe: 'comida-garbanzos', factor: 1, accept_pending: true, client_key: 'swap-key-0001' } });
+    const again = await sw({ version: b1.body.plan.version + 1, client_key: 'swap-key-0001' });
     assert.equal(again.body.duplicate, true);
     // Versión vieja: conflicto de concurrencia
-    const stale = await mk('POST', 'swap/apply', { cookie: ck, body: { week: day, version: b1.body.plan.version, day, meal_id: mealId, recipe: 'comida-lentejas', factor: 1, accept_pending: true, client_key: 'swap-key-0002' } });
+    const stale = await sw({ version: b1.body.plan.version, client_key: 'swap-key-0002' });
     assert.equal(stale.status, 409);
     const b2 = await mk('GET', 'bootstrap', { cookie: ck, query: { week: day } });
-    assert.equal(b2.body.plan.data.days[day].meals.find(m => m.id === mealId).recipe, 'comida-garbanzos');
+    const changed = b2.body.plan.data.days[day].meals.find(m => m.id === mealId);
+    assert.equal(changed.name, garb.name);
+    assert.equal(changed.minutes, 15);
     assert.equal(b2.body.history.length, 1);
     // Compra: el plan nuevo contiene garbanzos (lo que alimenta la lista de compra del cliente)
     const items = Object.values(b2.body.plan.data.days).flatMap(d => d.meals.flatMap(m => m.items.map(i => i.food)));
@@ -102,13 +104,14 @@ if (!URL_DB) { test('integración dieta (omitida: falta TEST_DATABASE_URL)', { s
     const b3 = await mk('GET', 'bootstrap', { cookie: ck, query: { week: day } });
     assert.equal(b3.body.plan.data.days[day].meals.find(m => m.id === mealId).recipe, 'comida-pollo-arroz');
 
-    // 5. Alergia a proteínas de leche: el desayuno con lácteo no compatible no se ofrece
+    // 5. Lácteos: pendiente exige aceptación; con alergia a proteínas de leche el servidor lo rechaza
+    const milkMeal = { week: day, day, meal_id: `${day}-desayuno`, name: 'Avena con leche', recipe: 'gen:avena-leche',
+      items: [{ food: 'leche-desnatada-sin-lactosa', ml: 250 }, { food: 'avena-copos', g: 45 }] };
+    const pend = await mk('POST', 'swap/apply', { cookie: ck, body: { ...milkMeal, version: b3.body.plan.version, client_key: 'swap-key-0003' } });
+    assert.equal(pend.status, 400, 'lácteo pendiente sin aceptar');
     const prof = await mk('POST', 'profile/save', { cookie: ck, body: { version: b3.body.profile_version, data: { milk_status: 'milk_protein_allergy' } } });
     assert.equal(prof.status, 200);
-    const cand2 = await mk('POST', 'swap/candidates', { cookie: ck, body: { week: day, day, meal_id: `${day}-desayuno`, mode: 'todas' } });
-    assert.ok(cand2.body.excluded.length >= 1);
-    assert.ok(!cand2.body.candidates.some(c => c.recipe === 'desayuno-b'));
-    const forced = await mk('POST', 'swap/apply', { cookie: ck, body: { week: day, version: b3.body.plan.version, day, meal_id: `${day}-desayuno`, recipe: 'desayuno-b', factor: 1, accept_pending: true, client_key: 'swap-key-0003' } });
+    const forced = await mk('POST', 'swap/apply', { cookie: ck, body: { ...milkMeal, version: b3.body.plan.version, accept_pending: true, client_key: 'swap-key-0004' } });
     assert.equal(forced.status, 400, 'el servidor revalida las restricciones');
 
     // 6. Cargar nutrientes de un alimento (valor de prueba) y registrar consumo con snapshot
@@ -160,7 +163,6 @@ if (!URL_DB) { test('integración dieta (omitida: falta TEST_DATABASE_URL)', { s
     assert.equal((await mk('POST', 'data/delete', { cookie: ck3, body: { confirm: 'no' } })).status, 400);
     assert.equal((await mk('POST', 'data/delete', { cookie: ck3, body: { confirm: 'BORRAR MIS DATOS DE DIETA' } })).status, 200);
     assert.equal((await pool.query('SELECT count(*)::int c FROM diet_consumption_entries')).rows[0].c, 0);
-    assert.ok((await pool.query('SELECT count(*)::int c FROM diet_foods WHERE owner_id IS NULL')).rows[0].c > 0, 'el catálogo compartido sigue');
     await pool.end();
   });
 }

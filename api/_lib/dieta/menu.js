@@ -1,44 +1,5 @@
 // Borrador orientativo inicial (propuesta nueva, NO es el plan del PDF antiguo ni un plan personalizado).
-// Los alimentos se siembran SIN valores nutricionales: sin una fuente verificable (BEDCA/USDA/etiqueta) no se inventan.
-// Se cargan a mano en /dieta → Alimentos (cada valor con su procedencia).
-
-const f = (slug, name, o = {}) => ({
-  slug, name, state: 'crudo', basis: '100g', allergens: [], allergen_status: 'known', dairy: 'none', category: 'otros', ...o
-});
-
-export const SEED_FOODS = [
-  f('leche-desnatada-sin-lactosa', 'Leche desnatada sin lactosa', { basis: '100ml', state: 'líquido', dairy: 'lactose_free', allergen_status: 'unknown', category: 'lácteos' }),
-  f('bebida-soja-enriquecida', 'Bebida de soja sin azúcar enriquecida', { basis: '100ml', state: 'líquido', allergens: ['soja'], allergen_status: 'unknown', category: 'lácteos' }),
-  f('avena-copos', 'Copos de avena', { state: 'seco', allergens: ['gluten'], allergen_status: 'unknown', category: 'cereales' }),
-  f('platano', 'Plátano', { state: 'parte comestible', category: 'fruta' }),
-  f('manzana', 'Manzana', { state: 'parte comestible', category: 'fruta' }),
-  f('naranja', 'Naranja', { state: 'parte comestible', category: 'fruta' }),
-  f('pan-integral', 'Pan integral', { state: 'pan', allergens: ['gluten'], allergen_status: 'unknown', category: 'cereales' }),
-  f('tomate', 'Tomate', { state: 'parte comestible', category: 'verdura' }),
-  f('tomate-triturado', 'Tomate triturado sin sal añadida', { state: 'conserva', allergen_status: 'unknown', category: 'verdura' }),
-  f('aceite-oliva', 'Aceite de oliva virgen extra', { state: 'aceite', category: 'grasas' }),
-  f('yogur-natural-sin-lactosa', 'Yogur natural sin azúcar y sin lactosa', { state: 'yogur', dairy: 'lactose_free', allergen_status: 'unknown', category: 'lácteos' }),
-  f('queso-fresco-sin-lactosa', 'Queso fresco sin lactosa', { state: 'queso', dairy: 'lactose_free', allergen_status: 'unknown', category: 'lácteos' }),
-  f('nueces', 'Nueces sin sal', { state: 'sin cáscara', allergens: ['frutos de cáscara'], category: 'frutos secos' }),
-  f('pollo-pechuga', 'Pollo (pechuga sin piel)', { state: 'crudo, sin hueso ni piel', category: 'carne' }),
-  f('lomo-cerdo-magro', 'Lomo magro de cerdo', { state: 'crudo, sin hueso', category: 'carne' }),
-  f('pescado-blanco', 'Pescado blanco (merluza o similar)', { state: 'crudo, sin espinas', allergens: ['pescado'], category: 'pescado' }),
-  f('sardinas-escurridas', 'Sardinas en conserva (peso escurrido)', { state: 'escurrido', allergens: ['pescado'], allergen_status: 'unknown', category: 'pescado' }),
-  f('huevo-m', 'Huevo talla M', { state: 'parte comestible (unidad)', allergens: ['huevo'], category: 'huevos' }),
-  f('arroz', 'Arroz', { state: 'seco', category: 'cereales' }),
-  f('pasta-integral', 'Pasta integral', { state: 'seca', allergens: ['gluten'], allergen_status: 'unknown', category: 'cereales' }),
-  f('patata', 'Patata', { state: 'crudo, parte comestible', category: 'verdura' }),
-  f('lentejas-cocidas', 'Lentejas cocidas y escurridas', { state: 'cocido y escurrido', allergen_status: 'unknown', category: 'legumbres' }),
-  f('garbanzos-cocidos', 'Garbanzos cocidos y escurridos', { state: 'cocido y escurrido', allergen_status: 'unknown', category: 'legumbres' }),
-  f('alubias-cocidas', 'Alubias cocidas y escurridas', { state: 'cocido y escurrido', allergen_status: 'unknown', category: 'legumbres' }),
-  f('guisantes-cocidos', 'Guisantes cocidos', { state: 'cocido', category: 'verdura' }),
-  f('hummus', 'Hummus', { state: 'preparado', allergens: ['sésamo'], allergen_status: 'unknown', category: 'legumbres' }),
-  f('calabacin', 'Calabacín', { state: 'crudo, parte comestible', category: 'verdura' }),
-  f('zanahoria', 'Zanahoria', { state: 'crudo, parte comestible', category: 'verdura' }),
-  f('judias-verdes', 'Judías verdes', { state: 'crudo, parte comestible', category: 'verdura' }),
-  f('calabaza', 'Calabaza', { state: 'crudo, parte comestible', category: 'verdura' }),
-  f('hojas-verdes', 'Hojas verdes (lechuga, canónigos…)', { state: 'crudo', category: 'verdura' })
-];
+// Los alimentos y sus nutrientes están en catalog.js (USDA SR26). Las alternativas se generan en menus.js.
 
 const I = (food, g) => ({ food, g });
 const U = (food, units) => ({ food, units });
