@@ -23,6 +23,10 @@ Tablas `diet_*` (migración `007_dieta.sql`). La interfaz es `src/components/Die
 - Acceso: solo el propietario del panel `/admin`. Se entra con el mismo email, contraseña y código TOTP; la sesión de dieta es
   independiente (`diet_sessions`, cookie `__Host-cc_diet` HttpOnly/Secure/SameSite=Strict, hash del token en Neon, rotación cada 24 h).
   «Mantener sesión» = 30 días; sin marcar, 12 horas. No hay variables de entorno nuevas.
-- Los alimentos se siembran **sin valores nutricionales** (no se inventan): se cargan en `/dieta` → Alimentos con su fuente.
+- Catálogo de alimentos: vive en el código (`api/_lib/dieta/data/foods.js`, generado por `scripts/dieta/build-foods.py` a partir de
+  USDA SR26, dominio público). `diet_foods` solo guarda las fichas que el propietario corrige. SR26 no trae yodo: queda «sin dato».
+  Los lácteos sin lactosa usan los valores del producto normal, marcados como estimados.
+- Alternativas: `api/_lib/dieta/menus.js` genera en el navegador los platos y sustituciones de un alimento ajustando gramos a los
+  macros de la toma; `nutrition.js` los clasifica y avisa de caídas de vitaminas y minerales. El servidor revalida lo que se guarda.
 - Pruebas: `npm test` (motor de cálculo) y `TEST_DATABASE_URL=<postgres de PRUEBA> npm run test:integration` (recorrido completo; borra el esquema public de esa base).
 - Olvido de contraseña: igual que el panel (procedimiento de propietario de `/admin`); «Cerrar todas las sesiones» en Ajustes revoca las de dieta.

@@ -2,25 +2,38 @@
 // Regla de oro: un dato desconocido (null) NUNCA es 0. El estado «incompleto» se propaga de alimento a comida, día y semana.
 
 export const NUTRIENTS = [
-  { key: 'kcal', label: 'Energía', unit: 'kcal', core: true },
-  { key: 'protein', label: 'Proteína', unit: 'g', core: true },
-  { key: 'carbs', label: 'Hidratos de carbono', unit: 'g', core: true },
-  { key: 'fat', label: 'Grasa total', unit: 'g', core: true },
-  { key: 'satfat', label: 'Grasa saturada', unit: 'g', core: true },
-  { key: 'fiber', label: 'Fibra', unit: 'g', core: true },
-  { key: 'sugars', label: 'Azúcares totales', unit: 'g', core: false },
-  { key: 'sodium', label: 'Sodio', unit: 'mg', core: true },
-  { key: 'calcium', label: 'Calcio', unit: 'mg', core: false },
-  { key: 'iron', label: 'Hierro', unit: 'mg', core: false },
-  { key: 'iodine', label: 'Yodo', unit: 'µg', core: false },
-  { key: 'vitD', label: 'Vitamina D', unit: 'µg', core: false },
-  { key: 'vitB12', label: 'Vitamina B12', unit: 'µg', core: false },
-  { key: 'folate', label: 'Folato', unit: 'µg', core: false },
-  { key: 'vitC', label: 'Vitamina C', unit: 'mg', core: false },
-  { key: 'potassium', label: 'Potasio', unit: 'mg', core: false },
-  { key: 'magnesium', label: 'Magnesio', unit: 'mg', core: false },
-  { key: 'epadha', label: 'EPA+DHA', unit: 'g', core: false }
+  { key: 'kcal', label: 'Energía', unit: 'kcal', core: true, group: 'macro' },
+  { key: 'protein', label: 'Proteína', unit: 'g', core: true, group: 'macro' },
+  { key: 'carbs', label: 'Hidratos de carbono', unit: 'g', core: true, group: 'macro' },
+  { key: 'fat', label: 'Grasa total', unit: 'g', core: true, group: 'macro' },
+  { key: 'satfat', label: 'Grasa saturada', unit: 'g', core: true, group: 'macro' },
+  { key: 'fiber', label: 'Fibra', unit: 'g', core: true, group: 'macro', ref: 25 },
+  { key: 'sugars', label: 'Azúcares totales', unit: 'g', core: false, group: 'macro' },
+  { key: 'sodium', label: 'Sodio', unit: 'mg', core: true, group: 'macro' },
+  { key: 'epadha', label: 'Omega 3 (EPA+DHA)', unit: 'g', core: false, group: 'macro', d: 2, ref: 0.25 },
+  { key: 'calcium', label: 'Calcio', unit: 'mg', group: 'mineral', ref: 800 },
+  { key: 'iron', label: 'Hierro', unit: 'mg', group: 'mineral', ref: 14 },
+  { key: 'magnesium', label: 'Magnesio', unit: 'mg', group: 'mineral', ref: 375 },
+  { key: 'phosphorus', label: 'Fósforo', unit: 'mg', group: 'mineral', ref: 700 },
+  { key: 'potassium', label: 'Potasio', unit: 'mg', group: 'mineral', ref: 2000 },
+  { key: 'zinc', label: 'Zinc', unit: 'mg', group: 'mineral', ref: 10 },
+  { key: 'selenium', label: 'Selenio', unit: 'µg', group: 'mineral', ref: 55 },
+  { key: 'iodine', label: 'Yodo', unit: 'µg', group: 'mineral', ref: 150 },
+  { key: 'vitA', label: 'Vitamina A (RAE)', unit: 'µg', group: 'vitamina', ref: 800 },
+  { key: 'vitC', label: 'Vitamina C', unit: 'mg', group: 'vitamina', ref: 80 },
+  { key: 'vitD', label: 'Vitamina D', unit: 'µg', group: 'vitamina', ref: 5 },
+  { key: 'vitE', label: 'Vitamina E', unit: 'mg', group: 'vitamina', ref: 12 },
+  { key: 'vitK', label: 'Vitamina K', unit: 'µg', group: 'vitamina', ref: 75 },
+  { key: 'vitB1', label: 'Tiamina (B1)', unit: 'mg', group: 'vitamina', ref: 1.1, d: 2 },
+  { key: 'vitB2', label: 'Riboflavina (B2)', unit: 'mg', group: 'vitamina', ref: 1.4, d: 2 },
+  { key: 'vitB3', label: 'Niacina (B3)', unit: 'mg', group: 'vitamina', ref: 16 },
+  { key: 'vitB6', label: 'Vitamina B6', unit: 'mg', group: 'vitamina', ref: 1.4, d: 2 },
+  { key: 'folate', label: 'Folato', unit: 'µg', group: 'vitamina', ref: 200 },
+  { key: 'vitB12', label: 'Vitamina B12', unit: 'µg', group: 'vitamina', ref: 2.5, d: 2 }
 ];
+// `ref` = valores de referencia de nutrientes del Reglamento (UE) 1169/2011, anexo XIII (fibra: 25 g/día, EFSA 2010;
+// EPA+DHA: 250 mg/día, EFSA 2010). Se usan SOLO como escala para
+// decidir si una diferencia entre dos platos es relevante; no son las necesidades personales de nadie.
 export const QUALITIES = ['available', 'estimated', 'zero', 'trace', 'unknown'];
 
 /** Sal equivalente (g) = sodio (mg) × 2,5 / 1000. */
@@ -125,7 +138,17 @@ export function checkRestrictions(items, foods, profile = {}) {
     }
     if (f.allergen_status !== 'known') pending.push(`${f.name}: alérgenos sin comprobar en etiqueta`);
   }
-  return { violations, pending };
+  // Avisos de «consumo ocasional» por el contexto de tensión, hígado graso y triglicéridos (no son prohibiciones):
+  // sal alta ≥ 1,5 g/100 g (≥ 600 mg de sodio) y saturadas altas ≥ 5 g/100 g, umbrales «alto» del etiquetado frontal británico (FSA).
+  const warnings = [];
+  for (const it of items) {
+    const f = foods[it.food];
+    if (!f) continue;
+    const na = knownValue(f, 'sodium'); const sat = knownValue(f, 'satfat');
+    if (na != null && na >= 600) warnings.push(`${f.name}: alto en sal`);
+    if (sat != null && sat >= 5 && !['grasas', 'frutos secos'].includes(f.category)) warnings.push(`${f.name}: alto en grasa saturada`);
+  }
+  return { violations, pending, warnings };
 }
 
 // ---------- Comparación de alternativas ----------
@@ -169,7 +192,8 @@ export function classifyAlternative(origRes, altRes, restr, tol = DEFAULT_TOLERA
       if (!ok) different = true;
     }
   }
-  if (restr.pending.length) { insufficient = true; notes.push(...restr.pending); }
+  if (restr.pending.length) notes.push(...restr.pending);
+  if (restr.pending.some(p => /lácteo pendiente/.test(p))) insufficient = true;
   const status = different ? 'con_diferencias' : insufficient ? 'datos_insuficientes' : 'dentro';
   // Si ya difiere en algo medible pero faltan otros datos, se indica que además hay datos incompletos.
   if (different && insufficient) notes.push('Además hay dimensiones sin datos suficientes.');
@@ -252,4 +276,66 @@ export function costItems(items, foods, prices) {
     value += g * packInfo(p).pricePerG;
   }
   return { value, complete: missing.length === 0, missing };
+}
+
+// ---------- Micronutrientes: diferencias relevantes entre dos platos ----------
+/**
+ * Compara vitaminas, minerales, fibra y omega 3 de la alternativa frente al original.
+ * Una bajada es «relevante» si supera el 15 % del valor de referencia de etiquetado Y además el 30 % de lo que aportaba el original.
+ * Devuelve {drops, gains, unknown}: unknown = nutrientes que no se pueden comparar por falta de datos.
+ */
+export function microDiff(origRes, altRes) {
+  const drops = []; const gains = []; const unknown = [];
+  const refs = NUTRIENTS.filter(n => n.ref);
+  for (const n of refs) {
+    const o = origRes[n.key], a = altRes[n.key];
+    if (!o.complete || !a.complete) { unknown.push(n.label); continue; }
+    const diff = a.value - o.value;
+    const pctRef = Math.abs(diff) / n.ref;
+    if (pctRef < 0.15) continue;
+    const entry = { key: n.key, label: n.label, unit: n.unit, from: o.value, to: a.value, pctRef: Math.round(pctRef * 100) };
+    if (diff < 0 && -diff > 0.3 * o.value) drops.push(entry);
+    else if (diff > 0) gains.push(entry);
+  }
+  return { drops, gains, unknown };
+}
+
+/** Distancia nutricional (0 = idéntico) para ordenar alternativas: macros + bajadas relevantes de micronutrientes. */
+export function similarityScore(origRes, altRes, micro) {
+  const rel = (k, floor) => (origRes[k].complete && altRes[k].complete ? Math.abs(altRes[k].value - origRes[k].value) / Math.max(origRes[k].value, floor) : 0.5);
+  return rel('kcal', 100) * 2 + rel('protein', 10) * 1.5 + rel('carbs', 15) + rel('fat', 8) + micro.drops.length * 0.25 + micro.unknown.length * 0.02;
+}
+
+/**
+ * Valora todas las recetas de la misma franja como alternativa a una comida. Función pura: la usan el servidor (validación) y el cliente (lista).
+ * Estado final: 'equivalente' (macros dentro de márgenes y sin bajadas relevantes de vitaminas/minerales), 'dentro' (macros dentro, alguna bajada),
+ * 'con_diferencias', 'datos_insuficientes', 'no_compatible'.
+ */
+export function rankAlternatives(meal, recipes, foods, profile = {}, tol = DEFAULT_TOLERANCES) {
+  const o = computeItems(meal.items, foods);
+  const out = [];
+  for (const r of recipes) {
+    if (r.slot !== meal.slot || r.slug === meal.recipe) continue;
+    const restr = checkRestrictions(r.ingredients, foods, profile);
+    const a = computeItems(r.ingredients, foods);
+    const cls = classifyAlternative(o, a, restr, tol);
+    const micro = microDiff(o, a);
+    let status = cls.status;
+    if (status === 'dentro' && micro.drops.length === 0 && restr.warnings.length === 0) status = 'equivalente';
+    out.push({ recipe: r.slug, name: r.name, minutes: r.active_minutes, tags: r.tags, ingredients: r.ingredients, status, dims: cls.dims,
+      notes: cls.notes, pending: restr.pending, violations: restr.violations, warnings: restr.warnings, micro,
+      score: similarityScore(o, a, micro) + restr.warnings.length * 0.3, prep: r.prep,
+      kcal: a.kcal, protein: a.protein, carbs: a.carbs, fat: a.fat, food: r.food, item: r.item });
+  }
+  const rank = { equivalente: 0, dentro: 1, con_diferencias: 2, datos_insuficientes: 3, no_compatible: 4 };
+  out.sort((x, y) => rank[x.status] - rank[y.status] || x.score - y.score);
+  // Variedad: dentro de cada estado se alterna el alimento principal para que no salgan veinte platos seguidos de lo mismo.
+  const result = [];
+  for (const st of Object.keys(rank)) {
+    const buckets = new Map();
+    for (const c of out) if (c.status === st) { const k = c.food || c.ingredients[0].food; if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(c); }
+    const lists = [...buckets.values()];
+    for (let i = 0, more = true; more; i += 1) { more = false; for (const l of lists) if (l[i]) { result.push(l[i]); more = true; } }
+  }
+  return result;
 }
