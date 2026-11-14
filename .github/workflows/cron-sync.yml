@@ -8,6 +8,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Llamar a /api/cron-sync
         env:
@@ -17,10 +18,22 @@ jobs:
             echo "::notice::Sin secreto CRON_SECRET en GitHub: se omite (la búsqueda diaria la hace Vercel Cron)."
             exit 0
           fi
-          status=$(curl -sS -m 60 -o response.json -w '%{http_code}' \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            https://www.capacero3d.com/api/cron-sync)
-          cat response.json; echo
+          # El DNS del dominio falla a veces de forma transitoria ("Could not resolve host"),
+          # así que se reintenta varias veces antes de dar el run por fallido.
+          status=000
+          for intento in 1 2 3 4 5 6; do
+            status=$(curl -sS -m 60 -o response.json -w '%{http_code}' \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              https://www.capacero3d.com/api/cron-sync) || status=000
+            if [ "$status" = "200" ]; then
+              break
+            fi
+            echo "Intento $intento/6: respuesta HTTP $status"
+            # Un 4xx (p. ej. 401 por secreto incorrecto) no se arregla reintentando.
+            case "$status" in 4*) break ;; esac
+            [ "$intento" -lt 6 ] && sleep $((intento * 20))
+          done
+          [ -f response.json ] && cat response.json; echo
           if [ "$status" != "200" ]; then
             echo "cron-sync respondió HTTP $status"
             exit 1
