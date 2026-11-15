@@ -46,18 +46,31 @@ function updateNodeFiles(nodes: FolderNode[], fileId: string, finalName: string)
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'ADD_FILE': {
-      // Only deduplicate files that have a real disk handle (opened from filesystem)
-      // New in-memory files can be created freely (no handle = no path dedup)
-      if (action.payload.handle) {
-        const existing = state.files.find(f => f.path === action.payload.path);
-        if (existing) {
-          return { ...state, activeFileId: existing.id };
-        }
-      }
       return {
         ...state,
         files: [...state.files, action.payload],
         activeFileId: action.payload.id,
+      };
+    }
+
+    case 'RELOAD_FILE': {
+      // Reemplaza el contenido de un archivo ya abierto con lo leído de disco
+      const { id, content, handle } = action.payload;
+      return {
+        ...state,
+        files: state.files.map(f =>
+          f.id === id
+            ? {
+                ...f,
+                content,
+                originalContent: content,
+                isDirty: false,
+                handle: handle ?? f.handle,
+                ...updateFileStats(f, content),
+              }
+            : f
+        ),
+        activeFileId: id,
       };
     }
 
@@ -183,6 +196,55 @@ function flattenFolderFiles(folder: FolderNode): EditorFile[] {
   ];
 }
 
+const TEXT_FILE_RE = /\.(md|markdown|txt)$/i;
+const ACCEPT_ATTR = '.md,.markdown,.txt,text/markdown,text/plain';
+
+/**
+ * Selector de archivos para navegadores sin File System Access API (Firefox, Safari...).
+ * El <input> debe estar dentro del DOM: un input suelto puede ser recogido por el
+ * recolector de basura antes de que se dispare 'change' y entonces el archivo elegido
+ * nunca se carga.
+ */
+function pickFilesFallback(opts: { multiple?: boolean; directory?: boolean }): Promise<File[]> {
+  return new Promise(resolve => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    if (!opts.directory) input.accept = ACCEPT_ATTR;
+    input.multiple = !!opts.multiple || !!opts.directory;
+    if (opts.directory) (input as any).webkitdirectory = true;
+    input.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(input);
+    let done = false;
+    const finish = (files: File[]) => {
+      if (done) return;
+      done = true;
+      input.remove();
+      resolve(files);
+    };
+    input.addEventListener('change', () => finish(Array.from(input.files || [])));
+    input.addEventListener('cancel', () => finish([]));
+    input.click();
+  });
+}
+
+/** Descarga un texto como archivo (fallback de «Guardar» sin File System Access API). */
+function downloadTextFile(name: string, content: string) {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.style.display = 'none';
+  // El enlace debe estar en el DOM para que Firefox lance la descarga
+  document.body.appendChild(a);
+  a.click();
+  // No revocar la URL enseguida: la descarga puede no haber empezado todavía
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 10000);
+}
+
 // ──────────────────────────────────────────────────────────
 // Context
 // ──────────────────────────────────────────────────────────
@@ -210,6 +272,8 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
 
   const activeFile = state.files.find(f => f.id === state.activeFileId) ?? null;
   const hasUnsavedChanges = state.files.some(f => f.isDirty);
+  const filesRef = useRef(state.files);
+  filesRef.current = state.files;
 
   const [editedFilesCount, setEditedFilesCount] = useState(0);
 
@@ -316,24 +380,43 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         });
         const file = await handle.getFile();
         const content = await file.text();
-        const newFile = createFile(handle.name, content, handle.name, handle);
-        dispatch({ type: 'ADD_FILE', payload: newFile });
+
+        // ¿Es exactamente el mismo archivo de disco que ya está abierto? (no basta el nombre:
+        // dos archivos de carpetas distintas pueden llamarse igual)
+        let existing: EditorFile | undefined;
+        for (const f of filesRef.current) {
+          if (!f.handle) continue;
+          try {
+            if (await (f.handle as any).isSameEntry(handle)) {
+              existing = f;
+              break;
+            }
+          } catch {
+            // ignorar
+          }
+        }
+        if (existing) {
+          if (existing.isDirty) {
+            // No pisar cambios sin guardar: solo activarlo
+            dispatch({ type: 'SET_ACTIVE', payload: existing.id });
+          } else {
+            dispatch({ type: 'RELOAD_FILE', payload: { id: existing.id, content, handle } });
+          }
+        } else {
+          dispatch({ type: 'ADD_FILE', payload: createFile(handle.name, content, handle.name, handle) });
+        }
       } else {
-        // Fallback: input[type=file]
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.md,.markdown,.txt';
-        input.onchange = async () => {
-          const file = input.files?.[0];
-          if (!file) return;
+        const picked = await pickFilesFallback({ multiple: true });
+        for (const file of picked) {
           const content = await file.text();
-          const newFile = createFile(file.name, content, file.name);
-          dispatch({ type: 'ADD_FILE', payload: newFile });
-        };
-        input.click();
+          dispatch({ type: 'ADD_FILE', payload: createFile(file.name, content, file.name) });
+        }
       }
     } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('Error opening file:', err);
+      if (err?.name !== 'AbortError') {
+        console.error('Error opening file:', err);
+        window.alert('No se pudo abrir el archivo: ' + (err?.message || err));
+      }
     }
   }, []);
 
@@ -344,35 +427,29 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
         const folderNode = await buildFolderTree(dirHandle, dirHandle.name);
         dispatch({ type: 'ADD_FOLDER', payload: folderNode });
       } else {
-        // Fallback: input with webkitdirectory
-        const input = document.createElement('input');
-        input.type = 'file';
-        (input as any).webkitdirectory = true;
-        input.multiple = true;
-        input.onchange = async () => {
-          const files = Array.from(input.files || []).filter(f =>
-            f.name.endsWith('.md') || f.name.endsWith('.markdown') || f.name.endsWith('.txt')
-          );
-          const editorFiles: EditorFile[] = await Promise.all(
-            files.map(async f => {
-              const content = await f.text();
-              return createFile(f.name, content, f.webkitRelativePath || f.name);
-            })
-          );
-          const folderName = editorFiles[0]?.path.split('/')[0] || 'Carpeta';
-          const folderNode: FolderNode = {
-            name: folderName,
-            path: folderName,
-            files: editorFiles,
-            children: [],
-            isExpanded: true,
-          };
-          dispatch({ type: 'ADD_FOLDER', payload: folderNode });
+        const picked = (await pickFilesFallback({ directory: true })).filter(f => TEXT_FILE_RE.test(f.name));
+        if (picked.length === 0) return;
+        const editorFiles: EditorFile[] = await Promise.all(
+          picked.map(async f => {
+            const content = await f.text();
+            return createFile(f.name, content, f.webkitRelativePath || f.name);
+          })
+        );
+        const folderName = editorFiles[0]?.path.split('/')[0] || 'Carpeta';
+        const folderNode: FolderNode = {
+          name: folderName,
+          path: folderName,
+          files: editorFiles,
+          children: [],
+          isExpanded: true,
         };
-        input.click();
+        dispatch({ type: 'ADD_FOLDER', payload: folderNode });
       }
     } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('Error opening folder:', err);
+      if (err?.name !== 'AbortError') {
+        console.error('Error opening folder:', err);
+        window.alert('No se pudo abrir la carpeta: ' + (err?.message || err));
+      }
     }
   }, []);
 
@@ -380,38 +457,42 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
     if (!file) return;
 
+    const fileName = TEXT_FILE_RE.test(file.name) ? file.name : `${file.name}.md`;
+    const download = () => {
+      downloadTextFile(fileName, file.content);
+      dispatch({ type: 'MARK_SAVED', payload: file.id });
+      incrementGlobalCounter();
+    };
+
+    if (!('showSaveFilePicker' in window)) {
+      download();
+      return;
+    }
     try {
-      const fileName = file.name.endsWith('.md') ? file.name : `${file.name}.md`;
-      if ('showSaveFilePicker' in window) {
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: fileName,
-          types: [
-            {
-              description: 'Archivo Markdown (*.md)',
-              accept: { 'text/markdown': ['.md'] },
-            },
-          ],
-        });
-        const writable = await handle.createWritable();
-        await writable.write(file.content);
-        await writable.close();
-        dispatch({ type: 'UPDATE_HANDLE', payload: { id: file.id, handle } });
-        dispatch({ type: 'MARK_SAVED', payload: file.id });
-        incrementGlobalCounter();
-      } else {
-        // Fallback: download
-        const blob = new Blob([file.content], { type: 'text/markdown;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-        dispatch({ type: 'MARK_SAVED', payload: file.id });
-        incrementGlobalCounter();
-      }
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          {
+            description: 'Archivo Markdown (*.md)',
+            accept: { 'text/markdown': ['.md'] },
+          },
+        ],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(file.content);
+      await writable.close();
+      dispatch({ type: 'UPDATE_HANDLE', payload: { id: file.id, handle } });
+      dispatch({ type: 'MARK_SAVED', payload: file.id });
+      incrementGlobalCounter();
     } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('Error saving file as:', err);
+      if (err?.name === 'AbortError') return;
+      console.error('Error saving file as:', err);
+      // El selector falló (permisos, iframe, política del navegador...): descargar como alternativa
+      try {
+        download();
+      } catch (e: any) {
+        window.alert('No se pudo guardar el archivo: ' + (e?.message || e));
+      }
     }
   }, [state.files, state.activeFileId, incrementGlobalCounter]);
 
@@ -419,20 +500,28 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     const file = state.files.find(f => f.id === (fileId ?? state.activeFileId));
     if (!file) return;
 
+    if (!file.handle) {
+      // Sin archivo en disco asociado → guardar como
+      await saveFileAs(file.id);
+      return;
+    }
     try {
-      if (file.handle) {
-        // Write directly back
-        const writable = await (file.handle as any).createWritable();
-        await writable.write(file.content);
-        await writable.close();
-        dispatch({ type: 'MARK_SAVED', payload: file.id });
-        incrementGlobalCounter();
-      } else {
-        // No handle → save as
-        await saveFileAs(file.id);
+      const h = file.handle as any;
+      if (h.queryPermission && (await h.queryPermission({ mode: 'readwrite' })) !== 'granted') {
+        if ((await h.requestPermission?.({ mode: 'readwrite' })) !== 'granted') {
+          throw new DOMException('Permiso de escritura denegado', 'NotAllowedError');
+        }
       }
+      const writable = await h.createWritable();
+      await writable.write(file.content);
+      await writable.close();
+      dispatch({ type: 'MARK_SAVED', payload: file.id });
+      incrementGlobalCounter();
     } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('Error saving file:', err);
+      if (err?.name === 'AbortError') return;
+      console.error('Error saving file:', err);
+      // El archivo ya no es accesible: pedir ubicación nueva
+      await saveFileAs(file.id);
     }
   }, [state.files, state.activeFileId, saveFileAs, incrementGlobalCounter]);
 

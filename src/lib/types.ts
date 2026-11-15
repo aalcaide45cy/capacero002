@@ -37,6 +37,7 @@ export interface EditorState {
 
 export type EditorAction =
   | { type: 'ADD_FILE'; payload: EditorFile }
+  | { type: 'RELOAD_FILE'; payload: { id: string; content: string; handle?: FileSystemFileHandle } }
   | { type: 'REMOVE_FILE'; payload: string }
   | { type: 'SET_ACTIVE'; payload: string }
   | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
