@@ -16,6 +16,12 @@ DOH = ["https://dns.google/resolve", "https://cloudflare-dns.com/dns-query"]
 REPO = os.environ.get("GITHUB_REPOSITORY", "")
 TOKEN = os.environ.get("GITHUB_TOKEN", "")
 ETIQUETA = "caida-monitor"
+# Valores esperados. Durante la migración de DNS se aceptan los NS de sered y los de IONOS.
+NS_VALIDOS = ("sered.net", "ui-dns.com", "ui-dns.de", "ui-dns.org", "ui-dns.biz")
+IP_RAIZ = "216.198.79.1"
+DKIM = [("s1-ionos._domainkey", "s1.dkim.ionos.com"),
+        ("s2-ionos._domainkey", "s2.dkim.ionos.com"),
+        ("s42582890._domainkey", "s42582890.dkim.ionos.com")]
 UA = {"User-Agent": "monitor-web"}
 
 
@@ -59,9 +65,20 @@ def comprobar():
         return fallos
     if st != 0 or not ns:
         fallos.append(f"DNS: los servidores de nombres no resuelven {DOMINIO} (estado {st})")
+    elif not all(n.lower().rstrip(".").endswith(NS_VALIDOS) for n in ns):
+        fallos.append(f"DNS: servidores de nombres inesperados: {ns}")
     st, a = doh(DOMINIO, "A")
     if st != 0 or not a:
         fallos.append(f"DNS: {DOMINIO} no devuelve IP (estado {st})")
+    elif IP_RAIZ not in a:
+        fallos.append(f"DNS: la IP de {DOMINIO} no es {IP_RAIZ}: {a}")
+    st, w = doh(f"www.{DOMINIO}", "CNAME")
+    if st != 0 or not any("vercel" in x.lower() for x in w):
+        fallos.append(f"DNS: www.{DOMINIO} no apunta a Vercel (estado {st}): {w}")
+    for host, destino in DKIM:
+        st, d = doh(f"{host}.{DOMINIO}", "CNAME")
+        if st != 0 or not any(destino in x.lower() for x in d):
+            fallos.append(f"CORREO: falta o es incorrecto el DKIM {host} (estado {st}): {d}")
     st, mx = doh(DOMINIO, "MX")
     if st != 0 or not mx:
         fallos.append(f"CORREO: no hay registros MX (estado {st})")
