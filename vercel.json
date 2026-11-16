@@ -1,6 +1,16 @@
 {
     "redirects": [
         {
+            "source": "/politica-privacidad/",
+            "destination": "/politica-privacidad",
+            "permanent": true
+        },
+        {
+            "source": "/video/:slug/",
+            "destination": "/video/:slug",
+            "permanent": true
+        },
+        {
             "source": "/cursos",
             "destination": "/",
             "permanent": true
@@ -441,12 +451,16 @@
             "destination": "/tp/index.html"
         },
         {
-            "source": "/(estadisticas|editor|politica-privacidad|dieta|tp/monitor|tp/monitor-obs)/",
+            "source": "/(estadisticas|editor|dieta|tp/monitor|tp/monitor-obs)/",
             "destination": "/index.html"
         },
         {
-            "source": "/(estadisticas|editor|politica-privacidad|dieta|tp/monitor|tp/monitor-obs)",
+            "source": "/(estadisticas|editor|dieta|tp/monitor|tp/monitor-obs)",
             "destination": "/index.html"
+        },
+        {
+            "source": "/politica-privacidad",
+            "destination": "/politica-privacidad/index.html"
         },
         {
             "source": "/dieta/:path*",

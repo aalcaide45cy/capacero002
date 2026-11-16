@@ -387,6 +387,44 @@ function prerender() {
   });
 
   console.log(`✅ Prerenderizados con éxito ${createdCount} vídeos en dist/video/<slug>/index.html`);
+  prerenderStaticPages(templateHtml);
+}
+
+/** Páginas estáticas indexables (hoy solo privacidad): cada una con su propio canonical, no el de la home. */
+function prerenderStaticPages(templateHtml) {
+  const pages = [
+    {
+      path: 'politica-privacidad',
+      title: 'Política de privacidad y cookies | Capa Cero 3D',
+      description: 'Política de privacidad y cookies de Capa Cero 3D: qué datos se tratan, para qué y cómo gestionar tus preferencias.',
+    },
+  ];
+  for (const page of pages) {
+    const url = `https://www.capacero3d.com/${page.path}`;
+    const crumbs = {
+      '@context': 'https://schema.org',
+      '@graph': [{
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Inicio', item: 'https://www.capacero3d.com/' },
+          { '@type': 'ListItem', position: 2, name: 'Política de privacidad', item: url },
+        ],
+      }],
+    };
+    let html = templateHtml
+      .replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(page.title)}</title>`)
+      .replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta name="description" content="${escapeHtml(page.description)}" />`)
+      .replace(/<link\s+rel=["']canonical["']\s+href=["'][\s\S]*?["']\s*\/?>/i, `<link rel="canonical" href="${url}" />`)
+      .replace(/<meta\s+property=["']og:title["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:title" content="${escapeHtml(page.title)}" />`)
+      .replace(/<meta\s+property=["']og:description["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:description" content="${escapeHtml(page.description)}" />`)
+      .replace(/<meta\s+property=["']og:url["']\s+content=["'][\s\S]*?["']\s*\/?>/i, `<meta property="og:url" content="${url}" />`)
+      .replace(/<script\s+type=["']application\/ld\+json["']\s+id=["']seo-jsonld["']>[\s\S]*?<\/script>/i,
+        `<script type="application/ld+json" id="seo-jsonld">\n${JSON.stringify(crumbs, null, 2)}\n  </script>`);
+    const dir = path.resolve(DIST_DIR, page.path);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf-8');
+    console.log(`✅ Prerenderizada /${page.path}`);
+  }
 }
 
 prerender();
