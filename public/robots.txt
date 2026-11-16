@@ -5,6 +5,7 @@ Disallow: /estadisticas
 Disallow: /editor
 Disallow: /tp
 Disallow: /dieta
+Disallow: /admin
 
 User-agent: Googlebot
 Allow: /
