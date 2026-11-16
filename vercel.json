@@ -57,7 +57,19 @@
             "destination": "/tp/index.html"
         },
         {
-            "source": "/(.*)",
+            "source": "/tp/",
+            "destination": "/tp/index.html"
+        },
+        {
+            "source": "/(estadisticas|editor|politica-privacidad|dieta|tp/monitor|tp/monitor-obs)/",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/(estadisticas|editor|politica-privacidad|dieta|tp/monitor|tp/monitor-obs)",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/dieta/:path*",
             "destination": "/index.html"
         }
     ],
