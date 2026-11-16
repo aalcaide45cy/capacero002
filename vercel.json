@@ -29,6 +29,386 @@
             "source": "/v4/:path*",
             "destination": "/",
             "permanent": true
+        },
+        {
+            "source": "/video/video-41",
+            "destination": "/video/puedo-convertir-una-imagen-de-ia-en-una-pieza-real-impresa-en-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/jnPKcZaQ9ZM",
+            "destination": "/video/puedo-convertir-una-imagen-de-ia-en-una-pieza-real-impresa-en-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-40",
+            "destination": "/video/asi-se-mide-una-pieza-impresa-con-pie-de-rey-y-no-pierdes-mas",
+            "permanent": true
+        },
+        {
+            "source": "/video/bDHWPCaP4EA",
+            "destination": "/video/asi-se-mide-una-pieza-impresa-con-pie-de-rey-y-no-pierdes-mas",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-39",
+            "destination": "/video/de-la-imagen-a-la-realidad-llaveros-3d-con-project-salvador-y-fusion",
+            "permanent": true
+        },
+        {
+            "source": "/video/xyFLeUqBZMQ",
+            "destination": "/video/de-la-imagen-a-la-realidad-llaveros-3d-con-project-salvador-y-fusion",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-38",
+            "destination": "/video/soportes-manuales-en-bambu-studio-asi-evitas-marcas-en-la-pieza",
+            "permanent": true
+        },
+        {
+            "source": "/video/2HOn4jPzqAY",
+            "destination": "/video/soportes-manuales-en-bambu-studio-asi-evitas-marcas-en-la-pieza",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-37",
+            "destination": "/video/el-truco-definitivo-para-grabar-logos-en-3d-facilmente",
+            "permanent": true
+        },
+        {
+            "source": "/video/aMl05b-tsVM",
+            "destination": "/video/el-truco-definitivo-para-grabar-logos-en-3d-facilmente",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-18",
+            "destination": "/video/textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber",
+            "permanent": true
+        },
+        {
+            "source": "/video/IFTgPS3a6v8",
+            "destination": "/video/textos-y-modificadores-en-bambustudio-todo-lo-que-necesitas-saber",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-36",
+            "destination": "/video/el-secreto-para-disenar-marcos-de-fotos-en-fusion-360-paso-a-paso",
+            "permanent": true
+        },
+        {
+            "source": "/video/6vrTY9sMXrQ",
+            "destination": "/video/el-secreto-para-disenar-marcos-de-fotos-en-fusion-360-paso-a-paso",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-35",
+            "destination": "/video/adios-a-los-defectos-de-contraccion-termica-truco-maestro-en-fusion",
+            "permanent": true
+        },
+        {
+            "source": "/video/wADs7VJXfRY",
+            "destination": "/video/adios-a-los-defectos-de-contraccion-termica-truco-maestro-en-fusion",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-34",
+            "destination": "/video/pintar-objetos-3d-nunca-fue-tan-facil-bambustudio",
+            "permanent": true
+        },
+        {
+            "source": "/video/3BtSMuvl8BQ",
+            "destination": "/video/pintar-objetos-3d-nunca-fue-tan-facil-bambustudio",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-33",
+            "destination": "/video/montaje-de-objetos-3d-lo-que-no-sabias-que-podias-hacer-en-bambustudio",
+            "permanent": true
+        },
+        {
+            "source": "/video/mzItWgN4a5c",
+            "destination": "/video/montaje-de-objetos-3d-lo-que-no-sabias-que-podias-hacer-en-bambustudio",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-32",
+            "destination": "/video/grupos-y-jerarquias-en-bambu-studio-la-guia-completa-de-mallas",
+            "permanent": true
+        },
+        {
+            "source": "/video/ozlbqVkcinE",
+            "destination": "/video/grupos-y-jerarquias-en-bambu-studio-la-guia-completa-de-mallas",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-31",
+            "destination": "/video/soporte-personalizzado-para-iphone-diseno-y-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/ThMrxVrY8cU",
+            "destination": "/video/soporte-personalizzado-para-iphone-diseno-y-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-30",
+            "destination": "/video/guia-definitiva-de-bocetos-en-fusion-360-restricciones-y-el-comando",
+            "permanent": true
+        },
+        {
+            "source": "/video/EdGZKop2NcE",
+            "destination": "/video/guia-definitiva-de-bocetos-en-fusion-360-restricciones-y-el-comando",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-22",
+            "destination": "/video/no-hagas-esto-al-cortar-en-bambustudio-guia-completa-del-tutorial",
+            "permanent": true
+        },
+        {
+            "source": "/video/STc2U-cqecQ",
+            "destination": "/video/no-hagas-esto-al-cortar-en-bambustudio-guia-completa-del-tutorial",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-29",
+            "destination": "/video/diseno-de-logotipos-en-fusion-360-consejos-y-trucos-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/xf4K9wCJzdU",
+            "destination": "/video/diseno-de-logotipos-en-fusion-360-consejos-y-trucos-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-23",
+            "destination": "/video/escala-rota-y-posiciona-aprende-los-controles-esenciales-de",
+            "permanent": true
+        },
+        {
+            "source": "/video/RNWxu9tsB-k",
+            "destination": "/video/escala-rota-y-posiciona-aprende-los-controles-esenciales-de",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-28",
+            "destination": "/video/diseno-de-cajas-en-fusion-360-consejos-y-trucos-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/utIYIcUG0tM",
+            "destination": "/video/diseno-de-cajas-en-fusion-360-consejos-y-trucos-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-24",
+            "destination": "/video/interfaz-de-bambu-studio-el-secreto-para-laminar-mas-rapido",
+            "permanent": true
+        },
+        {
+            "source": "/video/sIzQPJSVdvo",
+            "destination": "/video/interfaz-de-bambu-studio-el-secreto-para-laminar-mas-rapido",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-25",
+            "destination": "/video/laminado-perfecto-a-la-primera-los-trucos-de-bambu-studio-que-nadie",
+            "permanent": true
+        },
+        {
+            "source": "/video/D6zKWJAS6G0",
+            "destination": "/video/laminado-perfecto-a-la-primera-los-trucos-de-bambu-studio-que-nadie",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-1",
+            "destination": "/video/adios-a-las-costuras-el-truco-definitivo-en-bambu-studio",
+            "permanent": true
+        },
+        {
+            "source": "/video/PCbMinEbUd4",
+            "destination": "/video/adios-a-las-costuras-el-truco-definitivo-en-bambu-studio",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-2",
+            "destination": "/video/el-truco-definitivo-para-organizar-tus-piezas-en-3d-facil-y-rapido",
+            "permanent": true
+        },
+        {
+            "source": "/video/hZvIHMnxb3w",
+            "destination": "/video/el-truco-definitivo-para-organizar-tus-piezas-en-3d-facil-y-rapido",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-3",
+            "destination": "/video/fusion-360-desde-cero-crea-tu-primera-mesa-en-menos-de-15-minutos",
+            "permanent": true
+        },
+        {
+            "source": "/video/9otbdJPW1WA",
+            "destination": "/video/fusion-360-desde-cero-crea-tu-primera-mesa-en-menos-de-15-minutos",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-4",
+            "destination": "/video/el-ajuste-critico-de-los-perfiles-de-impresion-que-estas-olvidando",
+            "permanent": true
+        },
+        {
+            "source": "/video/-uD_McDZ3Qk",
+            "destination": "/video/el-ajuste-critico-de-los-perfiles-de-impresion-que-estas-olvidando",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-5",
+            "destination": "/video/bambu-studio-imprime-por-objeto-y-reduce-tus-placas-a-la-mitad-3",
+            "permanent": true
+        },
+        {
+            "source": "/video/oDGtU6Z2VYM",
+            "destination": "/video/bambu-studio-imprime-por-objeto-y-reduce-tus-placas-a-la-mitad-3",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-6",
+            "destination": "/video/perfiles-vs-filamentos-en-bambu-studio-cual-es-la-diferencia-real",
+            "permanent": true
+        },
+        {
+            "source": "/video/-ZIU1pywxiQ",
+            "destination": "/video/perfiles-vs-filamentos-en-bambu-studio-cual-es-la-diferencia-real",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-7",
+            "destination": "/video/el-truco-de-bambu-studio-que-el-90-ignora-adios-torres-de-purga",
+            "permanent": true
+        },
+        {
+            "source": "/video/OHLka3HAwn0",
+            "destination": "/video/el-truco-de-bambu-studio-que-el-90-ignora-adios-torres-de-purga",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-8",
+            "destination": "/video/algolaser-pixi-10w-la-mejor-laser-por-menos-de-300",
+            "permanent": true
+        },
+        {
+            "source": "/video/fpvQEW7-9vo",
+            "destination": "/video/algolaser-pixi-10w-la-mejor-laser-por-menos-de-300",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-9",
+            "destination": "/video/mas-detalle-o-mas-velocidad-la-verdad-sobre-las-boquillas-bambu-lab",
+            "permanent": true
+        },
+        {
+            "source": "/video/DNouZLKOnpk",
+            "destination": "/video/mas-detalle-o-mas-velocidad-la-verdad-sobre-las-boquillas-bambu-lab",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-10",
+            "destination": "/video/textos-perfectos-en-3d-el-ajuste-que-cambia-todo",
+            "permanent": true
+        },
+        {
+            "source": "/video/w-DRE8UtD9s",
+            "destination": "/video/textos-perfectos-en-3d-el-ajuste-que-cambia-todo",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-11",
+            "destination": "/video/aprende-a-configurar-las-placas-de-impresion-para-el-exito-en-bambu",
+            "permanent": true
+        },
+        {
+            "source": "/video/zXLmMLsKLe4",
+            "destination": "/video/aprende-a-configurar-las-placas-de-impresion-para-el-exito-en-bambu",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-12",
+            "destination": "/video/deja-de-imprimir-basura-arreglando-modelos-generados-por-ia",
+            "permanent": true
+        },
+        {
+            "source": "/video/kYbpS-vwqJM",
+            "destination": "/video/deja-de-imprimir-basura-arreglando-modelos-generados-por-ia",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-13",
+            "destination": "/video/lo-que-chatgpt-hace-con-bambu-studio-te-sorprendera",
+            "permanent": true
+        },
+        {
+            "source": "/video/v3SFbjI8BEE",
+            "destination": "/video/lo-que-chatgpt-hace-con-bambu-studio-te-sorprendera",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-14",
+            "destination": "/video/configura-tu-primer-setup-en-bambu-studio-correctamente",
+            "permanent": true
+        },
+        {
+            "source": "/video/cfs1ctvUC-8",
+            "destination": "/video/configura-tu-primer-setup-en-bambu-studio-correctamente",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-15",
+            "destination": "/video/aprende-a-laminar-como-un-pro-en-bambu-studio",
+            "permanent": true
+        },
+        {
+            "source": "/video/lP0FvQZ6uwk",
+            "destination": "/video/aprende-a-laminar-como-un-pro-en-bambu-studio",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-16",
+            "destination": "/video/ecosistema-bambu-lab-guia-completa-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/YUMNakCgUJs",
+            "destination": "/video/ecosistema-bambu-lab-guia-completa-para-principiantes",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-17",
+            "destination": "/video/instalacion-de-bambu-studio-guia-paso-a-paso",
+            "permanent": true
+        },
+        {
+            "source": "/video/hVCS-uyGflk",
+            "destination": "/video/instalacion-de-bambu-studio-guia-paso-a-paso",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-26",
+            "destination": "/video/probando-madimaker-la-mejor-alternativa-para-descargar-modelos-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/1ol3BaUnJ8Y",
+            "destination": "/video/probando-madimaker-la-mejor-alternativa-para-descargar-modelos-3d",
+            "permanent": true
+        },
+        {
+            "source": "/video/video-27",
+            "destination": "/video/adios-a-las-limitaciones-del-ams-imprime-multicolor-asi",
+            "permanent": true
+        },
+        {
+            "source": "/video/nPaTKz9Zqcs",
+            "destination": "/video/adios-a-las-limitaciones-del-ams-imprime-multicolor-asi",
+            "permanent": true
         }
     ],
     "rewrites": [
