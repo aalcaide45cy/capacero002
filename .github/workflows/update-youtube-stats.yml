@@ -37,6 +37,7 @@ jobs:
         run: node scripts/update-redirects.js
 
       - name: Verificar si hay cambios y guardar
+        id: guardar
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,4 +47,13 @@ jobs:
           else
             git commit -m "Auto-sync: Actualizar estadísticas de YouTube, videoteca, sitemap y HTML estático"
             git push origin main
+            echo "pushed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Avisar a IndexNow de vídeos nuevos
+        if: steps.guardar.outputs.pushed == 'true'
+        continue-on-error: true
+        run: |
+          # Espera a que Vercel despliegue el sitemap nuevo antes de avisar
+          sleep 150
+          node scripts/indexnow.js
