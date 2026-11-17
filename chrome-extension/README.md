@@ -3,6 +3,8 @@
 Selecciona un teléfono, un texto con número o un enlace (`tel:` o una URL) y el iPhone recibe una notificación push. Al tocarla se abre la app **Llamadas rápidas** con un botón grande «Llamar».
 
 ## Instalación (modo desarrollador)
+La forma más cómoda: descarga el ZIP desde la página `/qpush/` de la web (botón «Descargar extensión»); ya trae la URL base y solo falta pegar el token. Chrome no permite instalarla con un clic fuera de la Chrome Web Store.
+
 1. Abre `chrome://extensions` y activa **Modo de desarrollador**.
 2. **Cargar descomprimida** y elige esta carpeta `chrome-extension/`.
 3. Abre las **Opciones** de la extensión (clic en su icono) y rellena:

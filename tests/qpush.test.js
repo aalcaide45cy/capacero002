@@ -151,3 +151,35 @@ test('BASE_PATH distinta de vercel.json -> error de configuración claro', async
 });
 
 test('el código de emparejamiento no usa caracteres ambiguos', () => { for (let i = 0; i < 50; i++) assert.match(pairingCode(), /^[A-HJ-NP-Z2-9]{8}$/); });
+
+// ---------- ZIP de la extensión ----------
+import { buildZip, buildExtensionZip, crc32 } from '../api/_lib/qpush/core.js';
+import { readExtensionFiles } from '../scripts/qpush-bundle-ext.js';
+import { EXTENSION_FILES } from '../api/_lib/qpush/extension-files.js';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+test('crc32 conocido', () => assert.equal(crc32(Buffer.from('123456789')), 0xcbf43926));
+
+test('extension-files.js está al día con chrome-extension/ (ejecuta npm run qpush:ext)', () => {
+  assert.deepEqual(EXTENSION_FILES, readExtensionFiles());
+});
+
+test('extension.zip: válido, con config.json y sin secretos', async () => {
+  const store = memStore();
+  const out = await new Promise(async (resolve) => {
+    const o = { status: 200, headers: {}, body: null };
+    const res = { setHeader: (k, v) => { o.headers[k.toLowerCase()] = v; }, status(c) { o.status = c; return this; }, send(b) { o.body = b; resolve(o); return this; }, json(b) { o.body = b; resolve(o); return this; }, end() { resolve(o); return this; } };
+    await qpushHandler({ method: 'GET', headers: { host: 'www.capacero3d.com' }, query: { b: '/qpush' } }, res, 'extension.zip', { store, env: { CALL_API_TOKEN: 'tok-secreto' } });
+  });
+  assert.equal(out.status, 200); assert.equal(out.headers['content-type'], 'application/zip');
+  assert.match(out.headers['content-disposition'], /attachment/);
+  assert.ok(!out.body.includes(Buffer.from('tok-secreto')));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'qz-'));
+  const f = path.join(dir, 'x.zip'); fs.writeFileSync(f, out.body);
+  const py = 'import zipfile,sys,json;z=zipfile.ZipFile(sys.argv[1]);assert z.testzip() is None;n=z.namelist();assert "llamar-con-iphone/manifest.json" in n and "llamar-con-iphone/icons/icon128.png" in n;print(json.loads(z.read("llamar-con-iphone/config.json"))["baseUrl"])';
+  const base = execFileSync('python3', ['-I', '-c', py, f]).toString().trim();
+  assert.equal(base, 'https://www.capacero3d.com/qpush');
+});
