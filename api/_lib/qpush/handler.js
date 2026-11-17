@@ -2,13 +2,15 @@
 // Seguridad: acceso solo con CALL_API_TOKEN (o un código de emparejamiento de un solo uso), CORS solo para la extensión,
 // límite de peticiones por IP y sin registrar nunca el token.
 import webpush from 'web-push';
+import QRCode from 'qrcode';
 import {
-  resolveBase, normalizePhone, prettyPhone, clip, cleanSourceUrl, safeEq, sha256, randomKey, pairingCode, allowedOrigin,
+  resolveBase, normalizePhone, findPhone, isHttpUrl, prettyPhone, clip, cleanSourceUrl, safeEq, sha256, randomKey, pairingCode, allowedOrigin,
   buildManifest, buildHtml, buildAppJs, buildServiceWorker, buildExtensionZip, CSS
 } from './core.js';
 import { ICONS } from './icons.js';
+import { JSQR_SOURCE } from './jsqr-source.js';
 
-const PAIR_MINUTES = 10;
+const CODE_MINUTES = 10;
 const PUSH_HOSTS = /^(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.notify\.windows\.com|[a-z0-9.-]+\.push\.apple\.com)$/;
 const clientIp = (req) => String(req.headers['x-vercel-forwarded-for'] || req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'desconocida';
 
@@ -23,7 +25,7 @@ function pageHeaders(res, type, cache) {
   res.setHeader('X-Frame-Options', 'DENY');
 }
 
-const PAGE_CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+const PAGE_CSP = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; media-src 'self' blob:; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 /**
  * @param route  ruta tras el prefijo qpush (p. ej. "", "sw.js", "api/call/send")
@@ -61,6 +63,10 @@ export async function qpushHandler(req, res, route, deps) {
     if (path === 'app.js') {
       pageHeaders(res, 'text/javascript; charset=utf-8', 'no-store');
       return res.status(200).send(buildAppJs(base, env.VAPID_PUBLIC_KEY));
+    }
+    if (path === 'jsqr.js') {
+      pageHeaders(res, 'text/javascript; charset=utf-8', 'public, max-age=86400');
+      return res.status(200).send(JSQR_SOURCE);
     }
     if (path === 'app.css') {
       pageHeaders(res, 'text/css; charset=utf-8', 'no-cache');
@@ -106,6 +112,19 @@ function body(req) {
   return b && typeof b === 'object' ? b : {};
 }
 
+function hostOf(req) {
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  return /^[a-z0-9.-]+(:\d+)?$/i.test(host) ? host : null;
+}
+
+function validSubscription(b) {
+  let host;
+  try { const u = new URL(String(b.endpoint)); if (u.protocol !== 'https:') throw 0; host = u.hostname; } catch { return null; }
+  const p256dh = String(b.p256dh || ''), auth = String(b.auth || '');
+  if (!PUSH_HOSTS.test(host) || String(b.endpoint).length > 600 || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(auth)) return null;
+  return { endpoint: String(b.endpoint), p256dh, auth };
+}
+
 async function api(req, res, action, base, env, { store, push }) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -114,43 +133,96 @@ async function api(req, res, action, base, env, { store, push }) {
   const fail = (e) => res.status(e.status).json({ ok: false, error: e.code, message: e.message });
   try {
     const ip = clientIp(req);
-    const expected = env.CALL_API_TOKEN;
+    const adminToken = env.CALL_API_TOKEN; // opcional: permite enviar a todos los iPhone vinculados
 
     const bearer = () => { const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || '')); return m ? m[1].trim() : ''; };
     // Los intentos fallidos cuentan: 10 cada 15 minutos por IP y luego 429.
-    const failAuth = async () => { await store.addHit('authfail', ip); throw new HttpError(401, 'unauthorized', 'Token o código no válido.'); };
+    const failAuth = async () => { await store.addHit('authfail', ip); throw new HttpError(401, 'unauthorized', 'Clave o código no válido.'); };
     const checkBlocked = async () => { if (await store.countHits('authfail', ip, 900) >= 10) throw new HttpError(429, 'rate_limited', 'Demasiados intentos. Espera unos minutos.'); };
-    const requireToken = async () => {
-      if (!expected) throw new HttpError(503, 'not_configured', 'CALL_API_TOKEN no está configurado en el servidor.');
+    /** Clave de la extensión (o token de administrador). Devuelve { linkId, admin }. */
+    const requireSender = async () => {
       await checkBlocked();
       const t = bearer();
-      if (!t || !safeEq(t, expected)) await failAuth();
+      if (!t) await failAuth();
+      if (adminToken && safeEq(t, adminToken)) return { linkId: null, admin: true };
+      const link = await store.linkByKey(sha256(t));
+      if (!link) await failAuth();
+      return { linkId: link.id, admin: false };
     };
     const requireDevice = async () => {
       await checkBlocked();
       const k = String(req.headers['x-device-key'] || '');
-      if (k.length < 20 || !(await store.deviceExists(sha256(k)))) await failAuth();
+      const dev = k.length >= 20 ? await store.deviceByKey(sha256(k)) : null;
+      if (!dev) await failAuth();
+      return dev;
+    };
+    const newCode = async (linkId) => {
+      const host = hostOf(req);
+      if (!host) throw new HttpError(400, 'invalid_host', 'Host no válido.');
+      const code = pairingCode();
+      await store.createLinkCode(linkId, sha256(code), CODE_MINUTES);
+      const url = `https://${host}${base}/?link=${code}`;
+      const qr = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      return { code, url, qr, expires_in: CODE_MINUTES * 60 };
     };
 
-    if (action === 'ping' && req.method === 'GET') { await requireToken(); return res.status(200).json({ ok: true }); }
+    // ----- Vinculación por QR -----
+    if (action === 'link/start' && req.method === 'POST') {
+      if (await store.countHits('linkstart', ip, 3600) >= 10) throw new HttpError(429, 'rate_limited', 'Demasiadas vinculaciones. Prueba más tarde.');
+      await store.addHit('linkstart', ip);
+      const key = randomKey(32);
+      const linkId = await store.createLink(sha256(key));
+      return res.status(200).json({ ok: true, key, ...(await newCode(linkId)) });
+    }
+    if (action === 'link/code' && req.method === 'POST') {
+      const { linkId, admin } = await requireSender();
+      if (admin) throw new HttpError(400, 'invalid_request', 'Usa la clave de una extensión vinculada.');
+      return res.status(200).json({ ok: true, ...(await newCode(linkId)) });
+    }
+    if (action === 'link/status' && req.method === 'GET') {
+      const { linkId, admin } = await requireSender();
+      return res.status(200).json({ ok: true, phones: admin ? null : await store.countPhones(linkId) });
+    }
+    if (action === 'link/claim' && req.method === 'POST') {
+      const b = body(req);
+      await checkBlocked();
+      const sub = validSubscription(b);
+      if (!sub) throw new HttpError(400, 'invalid_subscription', 'Suscripción no válida.');
+      const code = String(b.code || '').trim().toUpperCase();
+      const linkId = /^[A-Z2-9]{8}$/.test(code) ? await store.consumeLinkCode(sha256(code)) : null;
+      if (!linkId) await failAuth();
+      const deviceKey = randomKey(32);
+      await store.upsertSubscription({ ...sub, deviceKeyHash: sha256(deviceKey), userAgent: clip(req.headers['user-agent'], 300), linkId });
+      return res.status(200).json({ ok: true, deviceKey });
+    }
 
+    if (action === 'ping' && req.method === 'GET') { await requireSender(); return res.status(200).json({ ok: true }); }
+
+    // ----- Envío -----
     if (action === 'send' && req.method === 'POST') {
-      await requireToken();
+      const { linkId } = await requireSender();
       if (await store.countHits('send', ip, 60) >= 30) throw new HttpError(429, 'rate_limited', 'Demasiados envíos por minuto.');
       await store.addHit('send', ip);
       const b = body(req);
-      const number = normalizePhone(b.number);
-      if (!number) throw new HttpError(400, 'invalid_number', 'El número no es válido.');
-      const raw = clip(b.raw, 200), sourceUrl = cleanSourceUrl(b.source_url);
-      await store.addHistory({ number, raw, sourceUrl });
-      const subs = await store.listSubscriptions();
-      if (!subs.length) throw new HttpError(409, 'no_subscription', 'Ningún dispositivo emparejado. Abre la PWA e instala/activa las notificaciones.');
-      const payload = JSON.stringify({
-        title: `Llamar a ${prettyPhone(number)}`,
-        body: sourceUrl ? `Desde ${new URL(sourceUrl).host}. Toca para llamar.` : 'Toca para llamar.',
-        number,
-        url: `${base}/?n=${encodeURIComponent(number)}`
-      });
+      let kind, number = null, text = null;
+      if (b.number != null && String(b.number).trim() !== '') {
+        number = normalizePhone(b.number);
+        if (!number) throw new HttpError(400, 'invalid_number', 'El número no es válido.');
+        kind = 'phone';
+      } else {
+        const t = String(b.text ?? b.raw ?? '').trim().slice(0, 500);
+        if (!t) throw new HttpError(400, 'invalid_request', 'Falta number o text.');
+        number = findPhone(t);
+        if (number) kind = 'phone'; else if (isHttpUrl(t)) { kind = 'url'; text = t; } else { kind = 'text'; text = t; }
+      }
+      const sourceUrl = cleanSourceUrl(b.source_url);
+      const itemId = await store.addHistory({ kind, number, raw: kind === 'phone' ? clip(b.raw ?? b.text, 200) : text, sourceUrl, linkId });
+      const subs = await store.listSubscriptions(linkId);
+      if (!subs.length) throw new HttpError(409, 'no_subscription', 'Ningún iPhone vinculado. Vincúlalo escaneando el QR desde la app.');
+      const fromHost = sourceUrl ? new URL(sourceUrl).host : '';
+      const payload = JSON.stringify(kind === 'phone'
+        ? { title: `Llamar a ${prettyPhone(number)}`, body: fromHost ? `Desde ${fromHost}. Toca para llamar.` : 'Toca para llamar.', number, url: `${base}/?n=${encodeURIComponent(number)}&i=${itemId}` }
+        : { title: kind === 'url' ? 'Enlace recibido' : 'Texto recibido', body: text.slice(0, 100), url: `${base}/?i=${itemId}` });
       const sender = push || defaultPush(env);
       let sent = 0; const dead = [];
       await Promise.all(subs.map(async (s) => {
@@ -158,52 +230,37 @@ async function api(req, res, action, base, env, { store, push }) {
         catch (err) { if (err && (err.statusCode === 404 || err.statusCode === 410)) dead.push(s.id); }
       }));
       await store.removeSubscriptions(dead);
-      if (!sent) throw new HttpError(502, 'push_failed', 'El servicio de notificaciones rechazó el envío. Vuelve a emparejar el iPhone.');
-      return res.status(200).json({ ok: true, number, sent });
+      if (!sent) throw new HttpError(502, 'push_failed', 'El servicio de notificaciones rechazó el envío. Vuelve a vincular el iPhone.');
+      return res.status(200).json({ ok: true, kind, number, sent });
     }
 
-    if (action === 'pair' && req.method === 'POST') {
-      await requireToken();
-      const code = pairingCode();
-      await store.createPairCode(sha256(code), PAIR_MINUTES);
-      return res.status(200).json({ ok: true, code, expires_in: PAIR_MINUTES * 60 });
-    }
-
+    // ----- Administrador: suscripción directa con el token (opcional) -----
     if (action === 'subscribe' && req.method === 'POST') {
-      const b = body(req);
       await checkBlocked();
-      // Autorización: token (cabecera Bearer) o código de un solo uso (cuerpo).
       const t = bearer();
-      let authorized = false;
-      if (t && expected && safeEq(t, expected)) authorized = true;
-      else if (typeof b.code === 'string' && /^[A-Z2-9]{8}$/.test(b.code)) authorized = await store.consumePairCode(sha256(b.code));
-      if (!authorized) await failAuth();
-      let host;
-      try { const u = new URL(String(b.endpoint)); if (u.protocol !== 'https:') throw 0; host = u.hostname; } catch { throw new HttpError(400, 'invalid_subscription', 'Suscripción no válida.'); }
-      const p256dh = String(b.p256dh || ''), auth = String(b.auth || '');
-      if (!PUSH_HOSTS.test(host) || String(b.endpoint).length > 600 || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(auth)) {
-        throw new HttpError(400, 'invalid_subscription', 'Suscripción no válida.');
-      }
+      if (!(t && adminToken && safeEq(t, adminToken))) await failAuth();
+      const sub = validSubscription(body(req));
+      if (!sub) throw new HttpError(400, 'invalid_subscription', 'Suscripción no válida.');
       const deviceKey = randomKey(32);
-      await store.upsertSubscription({ endpoint: b.endpoint, p256dh, auth, deviceKeyHash: sha256(deviceKey), userAgent: clip(req.headers['user-agent'], 300) });
+      await store.upsertSubscription({ ...sub, deviceKeyHash: sha256(deviceKey), userAgent: clip(req.headers['user-agent'], 300) });
       return res.status(200).json({ ok: true, deviceKey });
     }
 
+    // ----- Historial (la app del iPhone, con la clave de su dispositivo) -----
     if (action === 'history' && req.method === 'GET') {
-      await requireDevice();
-      return res.status(200).json({ ok: true, items: await store.listHistory() });
+      const dev = await requireDevice();
+      return res.status(200).json({ ok: true, items: await store.listHistory(dev.linkId) });
     }
-
     if (action === 'delete' && req.method === 'POST') {
-      await requireDevice();
+      const dev = await requireDevice();
       const b = body(req);
-      if (b.all === true) await store.deleteHistory(null);
-      else if (/^\d{1,18}$/.test(String(b.id))) await store.deleteHistory(String(b.id));
+      if (b.all === true) await store.deleteHistory(dev.linkId, null);
+      else if (/^\d{1,18}$/.test(String(b.id))) await store.deleteHistory(dev.linkId, String(b.id));
       else throw new HttpError(400, 'invalid_request', 'Indica id o all.');
       return res.status(200).json({ ok: true });
     }
 
-    throw new HttpError(action.match(/^(ping|send|pair|subscribe|history|delete)$/) ? 405 : 404, 'not_found', 'Ruta no encontrada.');
+    throw new HttpError(/^(ping|send|subscribe|history|delete|link\/(start|code|status|claim))$/.test(action) ? 405 : 404, 'not_found', 'Ruta no encontrada.');
   } catch (err) {
     if (err instanceof HttpError) return fail(err);
     console.error('qpush api error:', err && err.message);

@@ -52,19 +52,22 @@ test('CORS: solo extensiones de Chrome', () => {
 
 // ---------- Handler con almacén en memoria ----------
 function memStore() {
-  const s = { hits: [], codes: new Map(), subs: [], hist: [], nid: 1 };
+  const s = { hits: [], codes: new Map(), links: new Map(), subs: [], hist: [], nid: 1 };
   return Object.assign(s, {
     async countHits(k, ip, secs) { return s.hits.filter((h) => h.k === k && (!ip || h.ip === ip) && Date.now() - h.t < secs * 1000).length; },
     async addHit(k, ip) { s.hits.push({ k, ip, t: Date.now() }); },
-    async createPairCode(h) { s.codes.set(h, false); },
-    async consumePairCode(h) { if (s.codes.get(h) === false) { s.codes.set(h, true); return true; } return false; },
-    async upsertSubscription(x) { s.subs = s.subs.filter((y) => y.endpoint !== x.endpoint); s.subs.push({ id: s.nid++, ...x }); },
-    async listSubscriptions() { return s.subs.map((x) => ({ id: x.id, endpoint: x.endpoint, p256dh: x.p256dh, auth: x.auth })); },
+    async createLink(h) { const id = String(s.nid++); s.links.set(h, id); return id; },
+    async linkByKey(h) { return s.links.has(h) ? { id: s.links.get(h) } : null; },
+    async countPhones(linkId) { return s.subs.filter((x) => x.linkId === linkId).length; },
+    async createLinkCode(linkId, h) { s.codes.set(h, { linkId, used: false }); },
+    async consumeLinkCode(h) { const c = s.codes.get(h); if (c && !c.used) { c.used = true; return c.linkId; } return null; },
+    async upsertSubscription(x) { s.subs = s.subs.filter((y) => y.endpoint !== x.endpoint); s.subs.push({ id: s.nid++, linkId: x.linkId ?? null, ...x }); },
+    async listSubscriptions(linkId = null) { return s.subs.filter((x) => linkId == null || x.linkId === linkId).map((x) => ({ id: x.id, endpoint: x.endpoint, p256dh: x.p256dh, auth: x.auth })); },
     async removeSubscriptions(ids) { s.subs = s.subs.filter((x) => !ids.includes(x.id)); },
-    async deviceExists(h) { return s.subs.some((x) => x.deviceKeyHash === h); },
-    async addHistory(x) { s.hist.unshift({ id: String(s.nid++), number: x.number, source_url: x.sourceUrl, created_at: new Date().toISOString() }); s.hist = s.hist.slice(0, 20); },
-    async listHistory() { return s.hist; },
-    async deleteHistory(id) { s.hist = id == null ? [] : s.hist.filter((h) => h.id !== id); }
+    async deviceByKey(h) { const d = s.subs.find((x) => x.deviceKeyHash === h); return d ? { linkId: d.linkId ?? null } : null; },
+    async addHistory(x) { const id = String(s.nid++); s.hist.unshift({ id, kind: x.kind, number: x.number, raw: x.raw, source_url: x.sourceUrl, linkId: x.linkId ?? null, created_at: new Date().toISOString() }); return id; },
+    async listHistory(linkId) { return s.hist.filter((h) => h.linkId === (linkId ?? null)); },
+    async deleteHistory(linkId, id) { s.hist = s.hist.filter((h) => !(h.linkId === (linkId ?? null) && (id == null || h.id === id))); }
   });
 }
 function call(method, route, { headers = {}, body, query = {} } = {}, deps) {
@@ -82,12 +85,12 @@ const SUB = { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', p256dh: 'B'.r
 const EXT = 'chrome-extension://' + 'a'.repeat(32);
 
 for (const base of ['/qpush', '/tp2', '']) {
-  test(`flujo completo con BASE="${base}"`, async () => {
+  test(`recursos y flujo completo con BASE="${base}"`, async () => {
     const store = memStore(); const pushed = [];
-    const env = { BASE_PATH: base || '/', CALL_API_TOKEN: 'tok-secreto', VAPID_PUBLIC_KEY: 'PUB' };
+    const env = { BASE_PATH: base || '/', VAPID_PUBLIC_KEY: 'PUB' };
     const deps = { store, env, push: async (sub, payload) => { pushed.push(JSON.parse(payload)); } };
     const q = { b: base };
-    const auth = { authorization: 'Bearer tok-secreto', origin: EXT };
+    const host = { host: 'www.capacero3d.com' };
 
     let r = await call('GET', '', { query: q }, deps);
     assert.equal(r.status, 200); assert.match(r.headers['content-type'], /text\/html/); assert.match(r.headers['x-robots-tag'], /noindex/);
@@ -95,10 +98,10 @@ for (const base of ['/qpush', '/tp2', '']) {
     assert.match(r.headers['content-type'], /application\/manifest\+json/); assert.equal(JSON.parse(r.body).scope, `${base}/`);
     r = await call('GET', 'sw.js', { query: q }, deps);
     assert.match(r.headers['content-type'], /javascript/); assert.equal(r.headers['service-worker-allowed'], `${base}/`);
-    r = await call('GET', 'icons/icon-512.png', { query: q }, deps);
-    assert.equal(r.headers['content-type'], 'image/png');
+    r = await call('GET', 'icons/icon-512.png', { query: q }, deps); assert.equal(r.headers['content-type'], 'image/png');
     r = await call('GET', 'icons/nada.png', { query: q }, deps); assert.equal(r.status, 404);
     r = await call('GET', 'app.js', { query: q }, deps); assert.ok(r.body.includes('"vapid":"PUB"'));
+    r = await call('GET', 'jsqr.js', { query: q }, deps); assert.match(r.headers['content-type'], /javascript/); assert.ok(r.body.includes('jsQR'));
 
     // CORS
     r = await call('OPTIONS', 'api/call/send', { headers: { origin: EXT }, query: q }, deps);
@@ -106,42 +109,88 @@ for (const base of ['/qpush', '/tp2', '']) {
     r = await call('OPTIONS', 'api/call/send', { headers: { origin: 'https://evil.com' }, query: q }, deps);
     assert.equal(r.status, 403); assert.equal(r.headers['access-control-allow-origin'], undefined);
 
-    // Sin token -> 401; sin suscripciones -> 409
+    // Sin clave -> 401
     r = await call('POST', 'api/call/send', { body: { number: '600112233' }, query: q }, deps); assert.equal(r.status, 401);
-    r = await call('POST', 'api/call/send', { headers: auth, body: { number: 'hola' }, query: q }, deps); assert.equal(r.status, 400);
+
+    // La extensión inicia la vinculación y recibe clave + QR (con la ruta correcta)
+    r = await call('POST', 'api/call/link/start', { headers: { ...host, origin: EXT }, query: q }, deps);
+    assert.equal(r.status, 200);
+    const start = JSON.parse(r.body);
+    assert.match(start.code, /^[A-Z2-9]{8}$/); assert.ok(start.qr.startsWith('<?xml') || start.qr.startsWith('<svg'));
+    assert.equal(start.url, `https://www.capacero3d.com${base}/?link=${start.code}`);
+    const auth = { authorization: `Bearer ${start.key}`, origin: EXT };
+
+    // Aún sin iPhone: la clave sirve pero no hay a quién enviar (409)
+    r = await call('GET', 'api/call/link/status', { headers: auth, query: q }, deps); assert.equal(JSON.parse(r.body).phones, 0);
     r = await call('POST', 'api/call/send', { headers: auth, body: { number: '600112233' }, query: q }, deps); assert.equal(r.status, 409);
 
-    // Emparejamiento con código de un solo uso
-    r = await call('POST', 'api/call/pair', { headers: auth, query: q }, deps);
-    const code = JSON.parse(r.body).code; assert.match(code, /^[A-Z2-9]{8}$/);
-    r = await call('POST', 'api/call/subscribe', { body: { ...SUB, code }, query: q }, deps);
-    assert.equal(r.status, 200); const key = JSON.parse(r.body).deviceKey;
-    r = await call('POST', 'api/call/subscribe', { body: { ...SUB, code }, query: q }, deps); assert.equal(r.status, 401); // ya usado
+    // El iPhone escanea el QR (código de un solo uso)
+    r = await call('POST', 'api/call/link/claim', { body: { ...SUB, code: 'AAAAAAAA' }, query: q }, deps); assert.equal(r.status, 401);
+    r = await call('POST', 'api/call/link/claim', { body: { ...SUB, code: start.code }, query: q }, deps);
+    assert.equal(r.status, 200); const dkey = JSON.parse(r.body).deviceKey;
+    r = await call('POST', 'api/call/link/claim', { body: { ...SUB, code: start.code }, query: q }, deps); assert.equal(r.status, 401); // ya usado
+    r = await call('GET', 'api/call/link/status', { headers: auth, query: q }, deps); assert.equal(JSON.parse(r.body).phones, 1);
 
+    // Teléfono, enlace y texto
     r = await call('POST', 'api/call/send', { headers: auth, body: { number: '600 11 22 33', raw: 'x', source_url: 'https://ejemplo.es/a' }, query: q }, deps);
-    assert.equal(r.status, 200); assert.equal(JSON.parse(r.body).number, '+34600112233');
-    assert.equal(pushed[0].url, `${base}/?n=%2B34600112233`);
+    assert.equal(r.status, 200); assert.equal(JSON.parse(r.body).kind, 'phone'); assert.equal(JSON.parse(r.body).number, '+34600112233');
+    assert.match(pushed.at(-1).title, /Llamar a \+34 600 11 22 33/); assert.ok(pushed.at(-1).url.startsWith(`${base}/?n=%2B34600112233&i=`));
+    r = await call('POST', 'api/call/send', { headers: auth, body: { text: 'Llámame al (600) 11-22-44 mañana' }, query: q }, deps);
+    assert.equal(JSON.parse(r.body).kind, 'phone'); assert.equal(JSON.parse(r.body).number, '+34600112244');
+    r = await call('POST', 'api/call/send', { headers: auth, body: { text: 'https://ejemplo.es/articulo' }, query: q }, deps);
+    assert.equal(JSON.parse(r.body).kind, 'url'); assert.equal(pushed.at(-1).title, 'Enlace recibido');
+    r = await call('POST', 'api/call/send', { headers: auth, body: { text: 'una nota cualquiera' }, query: q }, deps);
+    assert.equal(JSON.parse(r.body).kind, 'text');
+    r = await call('POST', 'api/call/send', { headers: auth, body: { number: 'hola' }, query: q }, deps); assert.equal(r.status, 400);
+    r = await call('POST', 'api/call/send', { headers: auth, body: {}, query: q }, deps); assert.equal(r.status, 400);
 
-    // Historial y borrado con la clave del dispositivo
+    // Historial por dispositivo y borrado
     r = await call('GET', 'api/call/history', { query: q }, deps); assert.equal(r.status, 401);
-    r = await call('GET', 'api/call/history', { headers: { 'x-device-key': key }, query: q }, deps);
-    assert.equal(JSON.parse(r.body).items.length, 2); // el envío sin dispositivo (409) también queda en el historial
-    r = await call('POST', 'api/call/delete', { headers: { 'x-device-key': key }, body: { all: true }, query: q }, deps);
+    r = await call('GET', 'api/call/history', { headers: { 'x-device-key': dkey }, query: q }, deps);
+    const items = JSON.parse(r.body).items; assert.deepEqual(items.map((i) => i.kind), ['text', 'url', 'phone', 'phone', 'phone']);
+    r = await call('POST', 'api/call/delete', { headers: { 'x-device-key': dkey }, body: { id: items[0].id }, query: q }, deps);
+    assert.equal(store.hist.length, 4);
+    r = await call('POST', 'api/call/delete', { headers: { 'x-device-key': dkey }, body: { all: true }, query: q }, deps);
     assert.equal(store.hist.length, 0);
   });
 }
 
-test('suscripción caducada (410) se elimina; sin token configurado -> 503; límite de intentos -> 429', async () => {
-  const store = memStore();
-  await store.upsertSubscription({ ...SUB, deviceKeyHash: 'h' });
-  const env = { CALL_API_TOKEN: 't' };
+test('un link no envía a los iPhone de otro link; el token de administrador envía a todos', async () => {
+  const store = memStore(); const sent = [];
+  const env = { CALL_API_TOKEN: 'tok-admin' };
+  const deps = { store, env, push: async (sub) => { sent.push(sub.endpoint); } };
+  const host = { host: 'www.capacero3d.com' };
+  const mk = async (endpoint) => {
+    const st = JSON.parse((await call('POST', 'api/call/link/start', { headers: host }, deps)).body);
+    await call('POST', 'api/call/link/claim', { body: { ...SUB, endpoint, code: st.code } }, deps);
+    return { authorization: `Bearer ${st.key}` };
+  };
+  const A = await mk('https://fcm.googleapis.com/fcm/send/AAA'), B = await mk('https://fcm.googleapis.com/fcm/send/BBB');
+  await call('POST', 'api/call/send', { headers: A, body: { number: '600112233' } }, deps);
+  assert.deepEqual(sent, ['https://fcm.googleapis.com/fcm/send/AAA']);
+  sent.length = 0;
+  await call('POST', 'api/call/send', { headers: { authorization: 'Bearer tok-admin' }, body: { number: '600112233' } }, deps);
+  assert.deepEqual(sent.sort(), ['https://fcm.googleapis.com/fcm/send/AAA', 'https://fcm.googleapis.com/fcm/send/BBB']);
+  // el token de otro no vale
+  const r = await call('POST', 'api/call/send', { headers: { authorization: 'Bearer nada' }, body: { number: '600112233' } }, deps);
+  assert.equal(r.status, 401); void B;
+});
+
+test('suscripción caducada (410) se elimina; límite de intentos -> 429; límite de vinculaciones', async () => {
+  const store = memStore(); const host = { host: 'www.capacero3d.com' };
   const gone = async () => { throw Object.assign(new Error('gone'), { statusCode: 410 }); };
-  let r = await call('POST', 'api/call/send', { headers: { authorization: 'Bearer t' }, body: { number: '600112233' } }, { store, env, push: gone });
+  const deps = { store, env: {}, push: gone };
+  const st = JSON.parse((await call('POST', 'api/call/link/start', { headers: host }, deps)).body);
+  await call('POST', 'api/call/link/claim', { body: { ...SUB, code: st.code } }, deps);
+  const auth = { authorization: `Bearer ${st.key}` };
+  let r = await call('POST', 'api/call/send', { headers: auth, body: { number: '600112233' } }, deps);
   assert.equal(r.status, 502); assert.equal(store.subs.length, 0);
-  r = await call('POST', 'api/call/send', { headers: { authorization: 'Bearer t' }, body: { number: '600112233' } }, { store, env: {}, push: gone });
-  assert.equal(r.status, 503);
-  for (let i = 0; i < 10; i++) await call('POST', 'api/call/send', { headers: { authorization: 'Bearer mal' }, body: {} }, { store, env, push: gone });
-  r = await call('POST', 'api/call/send', { headers: { authorization: 'Bearer t' }, body: { number: '600112233' } }, { store, env, push: gone });
+  for (let i = 0; i < 10; i++) await call('POST', 'api/call/send', { headers: { authorization: 'Bearer mal' }, body: {} }, deps);
+  r = await call('POST', 'api/call/send', { headers: auth, body: { number: '600112233' } }, deps);
+  assert.equal(r.status, 429);
+  const s2 = memStore();
+  for (let i = 0; i < 10; i++) await call('POST', 'api/call/link/start', { headers: host }, { store: s2, env: {} });
+  r = await call('POST', 'api/call/link/start', { headers: host }, { store: s2, env: {} });
   assert.equal(r.status, 429);
 });
 
@@ -150,7 +199,8 @@ test('BASE_PATH distinta de vercel.json -> error de configuración claro', async
   assert.equal(r.status, 500); assert.match(JSON.parse(r.body).message, /vercel\.json/);
 });
 
-test('el código de emparejamiento no usa caracteres ambiguos', () => { for (let i = 0; i < 50; i++) assert.match(pairingCode(), /^[A-HJ-NP-Z2-9]{8}$/); });
+test('el código de vinculación no usa caracteres ambiguos', () => { for (let i = 0; i < 50; i++) assert.match(pairingCode(), /^[A-HJ-NP-Z2-9]{8}$/); });
+
 
 // ---------- ZIP de la extensión ----------
 import { buildZip, buildExtensionZip, crc32 } from '../api/_lib/qpush/core.js';
