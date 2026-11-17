@@ -423,6 +423,14 @@
     ],
     "rewrites": [
         {
+            "source": "/qpush",
+            "destination": "/api/admin?p=qpush&b=/qpush"
+        },
+        {
+            "source": "/qpush/:path*",
+            "destination": "/api/admin?p=qpush/:path*&b=/qpush"
+        },
+        {
             "source": "/api/dieta/:path*",
             "destination": "/api/admin?p=dieta/:path*"
         },
