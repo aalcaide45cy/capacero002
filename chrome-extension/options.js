@@ -3,7 +3,11 @@ import { normalizeBaseUrl } from './phone.js';
 const $ = (id) => document.getElementById(id);
 const msg = (t, ok) => { $('msg').textContent = t; $('msg').className = ok ? 'ok' : 'bad'; };
 
-chrome.storage.local.get(['baseUrl', 'token']).then(({ baseUrl, token }) => { $('base').value = baseUrl || ''; $('token').value = token || ''; });
+async function bundledBase() {
+  // El ZIP descargado desde la web trae config.json con la URL base (nunca el token).
+  try { const r = await fetch(chrome.runtime.getURL('config.json')); return (await r.json()).baseUrl || ''; } catch { return ''; }
+}
+chrome.storage.local.get(['baseUrl', 'token']).then(async ({ baseUrl, token }) => { $('base').value = baseUrl || await bundledBase(); $('token').value = token || ''; });
 
 async function ensureHostPermission(base) {
   const origins = [new URL(base).origin + '/*'];

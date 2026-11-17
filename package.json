@@ -12,6 +12,7 @@
     "prebuild": "node scripts/db/migrate.js --soft && npm run update-data && npm run update-seo",
     "postbuild": "node scripts/prerender-videos.js && node scripts/prerender-tp.js && node scripts/seo-audit.js",
     "test": "node --test tests/dieta.test.js tests/qpush.test.js",
+    "qpush:ext": "node scripts/qpush-bundle-ext.js",
     "qpush:base": "node scripts/qpush-set-base.js",
     "test:integration": "node --test tests/dieta.integration.test.js",
     "db:migrate": "node scripts/db/migrate.js",

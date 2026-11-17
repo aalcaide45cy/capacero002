@@ -4,7 +4,7 @@
 import webpush from 'web-push';
 import {
   resolveBase, normalizePhone, prettyPhone, clip, cleanSourceUrl, safeEq, sha256, randomKey, pairingCode, allowedOrigin,
-  buildManifest, buildHtml, buildAppJs, buildServiceWorker, CSS
+  buildManifest, buildHtml, buildAppJs, buildServiceWorker, buildExtensionZip, CSS
 } from './core.js';
 import { ICONS } from './icons.js';
 
@@ -65,6 +65,15 @@ export async function qpushHandler(req, res, route, deps) {
     if (path === 'app.css') {
       pageHeaders(res, 'text/css; charset=utf-8', 'no-cache');
       return res.status(200).send(CSS);
+    }
+    if (path === 'extension.zip') {
+      const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+      if (!/^[a-z0-9.-]+(:\d+)?$/i.test(host)) return res.status(400).send('Host no válido');
+      const { EXTENSION_FILES } = await import('./extension-files.js');
+      const zip = buildExtensionZip(EXTENSION_FILES, `https://${host}${base}`);
+      pageHeaders(res, 'application/zip', 'no-store');
+      res.setHeader('Content-Disposition', 'attachment; filename="llamar-con-iphone.zip"');
+      return res.status(200).send(zip);
     }
     const icon = /^icons\/([a-z0-9-]+\.png)$/.exec(path);
     if (icon && ICONS[icon[1]]) {

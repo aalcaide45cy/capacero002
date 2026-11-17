@@ -75,6 +75,45 @@ export function pairingCode() {
   return out;
 }
 
+// ---------- ZIP (sin compresión, sin dependencias) ----------
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+export function crc32(buf) { let c = 0xffffffff; for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+
+/** files: { "ruta/archivo": Buffer }. Devuelve un Buffer con un .zip válido (método "stored"). */
+export function buildZip(files) {
+  const locals = [], centrals = [];
+  let offset = 0;
+  const DATE = (46 << 9) | (11 << 5) | 17, TIME = 0; // fecha fija (2026-11-17) para que el zip sea reproducible
+  for (const [name, data] of Object.entries(files)) {
+    const nameBuf = Buffer.from(name, 'utf8'), crc = crc32(data);
+    const lh = Buffer.alloc(30);
+    lh.writeUInt32LE(0x04034b50, 0); lh.writeUInt16LE(20, 4); lh.writeUInt16LE(0x0800, 6); lh.writeUInt16LE(0, 8);
+    lh.writeUInt16LE(TIME, 10); lh.writeUInt16LE(DATE, 12); lh.writeUInt32LE(crc, 14);
+    lh.writeUInt32LE(data.length, 18); lh.writeUInt32LE(data.length, 22); lh.writeUInt16LE(nameBuf.length, 26); lh.writeUInt16LE(0, 28);
+    locals.push(lh, nameBuf, data);
+    const ch = Buffer.alloc(46);
+    ch.writeUInt32LE(0x02014b50, 0); ch.writeUInt16LE(20, 4); ch.writeUInt16LE(20, 6); ch.writeUInt16LE(0x0800, 8); ch.writeUInt16LE(0, 10);
+    ch.writeUInt16LE(TIME, 12); ch.writeUInt16LE(DATE, 14); ch.writeUInt32LE(crc, 16);
+    ch.writeUInt32LE(data.length, 20); ch.writeUInt32LE(data.length, 24); ch.writeUInt16LE(nameBuf.length, 28);
+    ch.writeUInt32LE(0, 38); ch.writeUInt32LE(offset, 42);
+    centrals.push(ch, nameBuf);
+    offset += 30 + nameBuf.length + data.length;
+  }
+  const cd = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(Object.keys(files).length, 8); end.writeUInt16LE(Object.keys(files).length, 10);
+  end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
+}
+
+/** Zip de la extensión con config.json (URL base de esta web). El token nunca se incluye. */
+export function buildExtensionZip(filesB64, baseUrl) {
+  const files = {};
+  for (const [name, b64] of Object.entries(filesB64)) files[`llamar-con-iphone/${name}`] = Buffer.from(b64, 'base64');
+  files['llamar-con-iphone/config.json'] = Buffer.from(JSON.stringify({ baseUrl }, null, 2) + '\n');
+  return buildZip(files);
+}
+
 // ---------- CORS (solo la extensión de Chrome) ----------
 /** Devuelve el origen permitido o null. Solo `chrome-extension://<id>`; si CALL_EXTENSION_ID existe, solo ese id. */
 export function allowedOrigin(origin, env) {
@@ -245,6 +284,10 @@ function render() {
     kids.push($('p', { class: 'hint ok' }, 'Notificaciones activas en este dispositivo.'));
     kids.push($('button', { class: 'sec', onclick: () => { store.del(); status = ''; render(); } }, 'Olvidar emparejamiento'));
   }
+  kids.push($('div', { class: 'card' }, $('h2', {}, 'Extensión de Chrome (en el ordenador)'),
+    $('a', { class: 'btn', href: CFG.base + '/extension.zip', download: 'llamar-con-iphone.zip' }, 'Descargar extensión'),
+    $('p', { class: 'hint' }, '1) Descomprime el ZIP.  2) En Chrome abre chrome://extensions y activa «Modo de desarrollador».  3) Pulsa «Cargar descomprimida» y elige la carpeta llamar-con-iphone.  4) En sus Opciones solo falta pegar el token (la URL ya viene puesta).'),
+    $('p', { class: 'hint' }, 'Chrome no permite instalar extensiones con un solo clic desde una web: la carga manual es el único método sin publicarla en la Chrome Web Store.')));
   app.replaceChildren(...kids);
 }
 
