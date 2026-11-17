@@ -360,11 +360,17 @@ function render() {
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'refresh' && !scanning) { loadItems().then(render); return; }
     if (e.data && e.data.type === 'open') { current = { n: validNum(e.data.number) ? e.data.number : null, i: /^\\d{1,18}$/.test(e.data.id || '') ? e.data.id : null }; loadItems().then(render); }
   });
   if (store.get() && 'Notification' in window && Notification.permission === 'granted') navigator.serviceWorker.register(CFG.base + '/sw.js', { scope: CFG.base + '/' }).catch(() => {});
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !scanning) loadItems().then(render); });
+const refresh = () => { if (!document.hidden && !scanning && store.get()) loadItems().then(() => { if (!scanning) render(); }); };
+document.addEventListener('visibilitychange', refresh);
+window.addEventListener('pageshow', refresh);
+window.addEventListener('focus', refresh);
+window.addEventListener('online', refresh);
+setInterval(refresh, 15000); // respaldo: iOS no siempre entrega el aviso del service worker a la app abierta
 render();
 loadItems().then(() => { if (!scanning) render(); });
 })();
@@ -381,14 +387,19 @@ self.addEventListener('push', (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch { d = {}; }
   const title = d.title || 'Llamada rápida';
-  event.waitUntil(self.registration.showNotification(title, {
+  event.waitUntil((async () => {
+    // Avisa a la app si está abierta para que actualice la lista sin tener que refrescar.
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) w.postMessage({ type: 'refresh' });
+    await self.registration.showNotification(title, {
     body: d.body || 'Toca para llamar',
     icon: new URL('icons/icon-192.png', SCOPE).href,
     badge: new URL('icons/icon-192.png', SCOPE).href,
     tag: 'call',
     renotify: true,
     data: { number: d.number || '', url: d.url || SCOPE }
-  }));
+    });
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

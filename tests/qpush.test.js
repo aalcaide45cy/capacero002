@@ -239,3 +239,13 @@ test('vercel.json enruta /qpush, /qpush/ (start_url) y /qpush/* a la función', 
   const q = cfg.rewrites.filter((r) => /p=qpush/.test(r.destination)).map((r) => r.source);
   assert.deepEqual(q, ['/qpush', '/qpush/', '/qpush/:path*']);
 });
+
+test('el service worker avisa a la app abierta al llegar un push y la app se refresca (mensaje, foco y sondeo)', () => {
+  const sw = buildServiceWorker('/qpush');
+  assert.match(sw, /postMessage\(\{ type: 'refresh' \}\)/);
+  assert.ok(sw.indexOf("type: 'refresh'") < sw.indexOf('showNotification'));
+  const js = buildAppJs('/qpush', 'K');
+  assert.match(js, /e\.data\.type === 'refresh'/);
+  for (const ev of ["'visibilitychange'", "'pageshow'", "'focus'", "'online'"]) assert.ok(js.includes(ev), ev);
+  assert.match(js, /setInterval\(refresh, 15000\)/);
+});
