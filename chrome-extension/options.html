@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Llamar con iPhone · Opciones</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;max-width:560px;margin:32px auto;padding:0 16px;color:#171a26}
+  label{display:block;margin:16px 0 4px;font-weight:600}
+  input{width:100%;padding:9px 10px;border:1px solid #c9ceda;border-radius:8px;font:inherit;box-sizing:border-box}
+  button{margin:14px 8px 0 0;padding:9px 16px;border:0;border-radius:8px;background:#4f46e5;color:#fff;font:inherit;font-weight:600;cursor:pointer}
+  button.sec{background:#e5e7f0;color:#171a26}
+  small{color:#636a80}#msg{margin-top:16px;font-weight:600}.ok{color:#0f9d6a}.bad{color:#d93a3a}
+  code{background:#eef0f7;padding:2px 6px;border-radius:5px;font-size:20px;letter-spacing:2px}
+</style>
+</head>
+<body>
+<h1>Llamar con iPhone</h1>
+<label for="base">URL base de la web</label>
+<input id="base" type="url" placeholder="https://capacero3d.com/qpush" autocomplete="off">
+<small>Raíz o subcarpeta, sin barra final. Ejemplo: <code style="font-size:13px;letter-spacing:0">https://capacero3d.com/qpush</code></small>
+<label for="token">Token (CALL_API_TOKEN)</label>
+<input id="token" type="password" autocomplete="off" spellcheck="false">
+<small>Se guarda solo en este navegador (chrome.storage), nunca en el código.</small>
+<div>
+  <button id="save">Guardar</button>
+  <button id="test" class="sec">Probar conexión</button>
+  <button id="pair" class="sec">Código de emparejamiento</button>
+</div>
+<div id="msg" role="status"></div>
+<script src="options.js" type="module"></script>
+</body>
+</html>

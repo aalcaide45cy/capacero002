@@ -615,6 +615,12 @@ const POST_ACTIONS = {
 
 // ---------- Enrutador ----------
 export default async function handler(req, res) {
+  // Llamadas rápidas (/qpush): PWA oculta + API propia, aditiva. Se enruta aquí para no añadir otra función de Vercel.
+  const qroute = String(req.query.p || '').replace(/^\/+|\/+$/g, '');
+  if (qroute === 'qpush' || qroute.startsWith('qpush/')) {
+    const [{ qpushHandler }, { pgStore }] = await Promise.all([import('./_lib/qpush/handler.js'), import('./_lib/qpush/store.js')]);
+    return qpushHandler(req, res, qroute.slice(5), { store: pgStore() });
+  }
   const nonce = crypto.randomBytes(16).toString('base64');
   res.setHeader('Cache-Control', 'no-store, private');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
