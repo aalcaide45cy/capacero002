@@ -427,6 +427,10 @@
             "destination": "/api/admin?p=qpush&b=/qpush"
         },
         {
+            "source": "/qpush/",
+            "destination": "/api/admin?p=qpush&b=/qpush"
+        },
+        {
             "source": "/qpush/:path*",
             "destination": "/api/admin?p=qpush/:path*&b=/qpush"
         },

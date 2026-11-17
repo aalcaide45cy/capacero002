@@ -18,6 +18,7 @@ const isQ = (r) => /[?&]p=qpush/.test(r.destination || '');
 const rest = cfg.rewrites.filter((r) => !isQ(r));
 const mk = [
   { source: base === '' ? '/' : base, destination: `/api/admin?p=qpush&b=${base}` },
+  ...(base === '' ? [] : [{ source: `${base}/`, destination: `/api/admin?p=qpush&b=${base}` }]), // con barra final (start_url del manifest)
   { source: `${base}/:path*`, destination: `/api/admin?p=qpush/:path*&b=${base}` }
 ];
 cfg.rewrites = [...mk, ...rest];

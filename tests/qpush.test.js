@@ -183,3 +183,9 @@ test('extension.zip: válido, con config.json y sin secretos', async () => {
   const base = execFileSync('python3', ['-I', '-c', py, f]).toString().trim();
   assert.equal(base, 'https://www.capacero3d.com/qpush');
 });
+
+test('vercel.json enruta /qpush, /qpush/ (start_url) y /qpush/* a la función', () => {
+  const cfg = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  const q = cfg.rewrites.filter((r) => /p=qpush/.test(r.destination)).map((r) => r.source);
+  assert.deepEqual(q, ['/qpush', '/qpush/', '/qpush/:path*']);
+});
