@@ -1,4 +1,4 @@
-import { findPhone, findPhoneInHtml, normalizePhone, looksLikeUrl, normalizeBaseUrl } from './phone.js';
+import { findPhone, findPhoneInHtml, normalizePhone, normalizeBaseUrl } from './phone.js';
 
 const MENU_ID = 'call-iphone';
 
@@ -21,24 +21,28 @@ function report(kind, message) {
 }
 
 async function getConfig() {
-  const { baseUrl, token } = await chrome.storage.local.get(['baseUrl', 'token']);
+  const { baseUrl, key } = await chrome.storage.local.get(['baseUrl', 'key']);
   const base = normalizeBaseUrl(baseUrl);
-  if (!base || !token) return null;
-  return { base, token };
+  if (!base || !key) return null;
+  return { base, key };
 }
 
-async function sendNumber({ number, raw, sourceUrl }) {
+async function send({ number, text, raw, sourceUrl }) {
   const cfg = await getConfig();
-  if (!cfg) { report('error', 'Configura la URL y el token en las opciones de la extensión.'); chrome.runtime.openOptionsPage(); return; }
+  if (!cfg) { report('error', 'Primero vincula el iPhone: abre las opciones de la extensión y pulsa «Vincular iPhone».'); chrome.runtime.openOptionsPage(); return; }
   try {
     const r = await fetch(`${cfg.base}/api/call/send`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.token}` },
-      body: JSON.stringify({ number, raw, source_url: sourceUrl || '' })
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.key}` },
+      body: JSON.stringify({ number, text, raw, source_url: sourceUrl || '' })
     });
     const data = await r.json().catch(() => ({}));
-    if (r.ok && data.ok) return report('ok', `${data.number || number} enviado. Mira la notificación del iPhone.`);
+    if (r.ok && data.ok) {
+      const what = data.kind === 'phone' ? `Teléfono ${data.number}` : data.kind === 'url' ? 'Enlace' : 'Texto';
+      return report('ok', `${what} enviado. Mira la notificación del iPhone.`);
+    }
     if (data.error === 'invalid_number') return report('invalid', `«${raw || number}» no es un teléfono válido.`);
+    if (data.error === 'unauthorized') return report('error', 'Esta extensión ya no está vinculada. Vuelve a vincular el iPhone en las opciones.');
     report('error', data.message || `El servidor respondió ${r.status}.`);
   } catch {
     report('error', 'No se pudo conectar con el servidor. Revisa la URL en las opciones.');
@@ -72,22 +76,26 @@ async function phoneFromPage(url, tab) {
 
 async function handle({ linkUrl, selection, pageUrl }, tab) {
   try {
-    let hit = null, source = pageUrl || '';
     if (linkUrl && /^tel:/i.test(linkUrl)) {
       const n = normalizePhone(linkUrl);
       if (!n) return report('invalid', `«${linkUrl}» no es un teléfono válido.`);
-      hit = { n, raw: linkUrl };
-    } else if (linkUrl && /^https?:/i.test(linkUrl)) {
-      hit = await phoneFromPage(linkUrl, tab);
-      source = linkUrl;
-    } else if (selection) {
-      hit = findPhone(selection);
-      if (!hit && looksLikeUrl(selection)) { hit = await phoneFromPage(selection.trim(), tab); source = selection.trim(); }
+      return send({ number: n, raw: linkUrl, sourceUrl: pageUrl });
     }
-    if (!hit) return report('invalid', 'No se encontró ningún teléfono en la selección.');
-    await sendNumber({ number: hit.n, raw: hit.raw, sourceUrl: source });
+    if (linkUrl && /^https?:/i.test(linkUrl)) {
+      // Enlace normal: si la página tiene un teléfono se envía; si no, se envía el propio enlace.
+      let hit = null;
+      try { hit = await phoneFromPage(linkUrl, tab); } catch { /* sin permiso o sin acceso: se envía el enlace */ }
+      return hit ? send({ number: hit.n, raw: hit.raw, sourceUrl: linkUrl }) : send({ text: linkUrl, sourceUrl: pageUrl });
+    }
+    if (selection) {
+      const hit = findPhone(selection);
+      if (hit) return send({ number: hit.n, raw: hit.raw, sourceUrl: pageUrl });
+      // Sin teléfono: se envía como enlace o como texto (el iPhone lo distingue).
+      return send({ text: selection.trim().slice(0, 500), sourceUrl: pageUrl });
+    }
+    report('invalid', 'No hay nada seleccionado.');
   } catch (e) {
-    report('error', e && e.message ? e.message : 'No se pudo leer el teléfono.');
+    report('error', e && e.message ? e.message : 'No se pudo enviar.');
   }
 }
 
@@ -101,7 +109,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   try {
     const [t] = tab && tab.id != null ? [tab] : await chrome.tabs.query({ active: true, currentWindow: true });
     const [{ result }] = await chrome.scripting.executeScript({ target: { tabId: t.id }, func: () => String(getSelection() || '') });
-    if (!result.trim()) return report('invalid', 'Selecciona primero un teléfono o un enlace.');
+    if (!result.trim()) return report('invalid', 'Selecciona primero un teléfono, un enlace o un texto.');
     handle({ selection: result.trim(), pageUrl: t.url }, t);
   } catch {
     report('error', 'No se pudo leer la selección en esta página.');

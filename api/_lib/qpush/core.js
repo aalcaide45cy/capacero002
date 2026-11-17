@@ -44,6 +44,19 @@ export function normalizePhone(input, defaultCountry = '34') {
 }
 const decodeURIComponent_ = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
 
+const CANDIDATE = /(?:\+|00)?\d[\d\s().\-\u00a0]{6,}\d/g;
+/** Primer teléfono válido dentro de un texto, o null. Prioriza los que traen prefijo internacional. */
+export function findPhone(text) {
+  const found = [];
+  for (const m of String(text || '').matchAll(CANDIDATE)) {
+    const n = normalizePhone(m[0].trim());
+    if (n) found.push({ n, plus: /^(\+|00)/.test(m[0].trim()) });
+  }
+  const hit = found.find((f) => f.plus) || found[0];
+  return hit ? hit.n : null;
+}
+export const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test(String(s || '').trim());
+
 /** Formato legible para humanos: +34 600 11 22 33. */
 export function prettyPhone(n) {
   const m = /^\+34(\d{3})(\d{2})(\d{2})(\d{2})$/.exec(n);
@@ -190,6 +203,9 @@ a.big{font-size:30px;padding:30px 12px;border-radius:22px;background:linear-grad
 .row:first-of-type{border-top:0}.row .info{flex:1;min-width:0}.row .n{font-weight:650}.row .s{color:var(--mut);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row a.btn{width:auto;padding:10px 16px;background:linear-gradient(135deg,#10b981,#059669)}.row button{width:auto;padding:10px 14px}
 .hint{font-size:14px;color:var(--mut);margin:8px 0 0}
+.cam{width:100%;border-radius:14px;background:#000;margin:10px 0;aspect-ratio:1/1;object-fit:cover}
+a.big.blue{background:linear-gradient(135deg,#0ea5e9,#6366f1);box-shadow:0 10px 30px rgba(99,102,241,.35)}
+.row a.btn.open{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
 `;
 
 /** Script de la PWA. La configuración (BASE y clave pública VAPID) se incrusta al servirlo. */
@@ -210,10 +226,12 @@ const validNum = (n) => /^\\+[1-9]\\d{7,14}$/.test(n || '');
 const when = (iso) => new Date(iso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
 const host = (u) => { try { return new URL(u).host; } catch { return ''; } };
 const b64ToBytes = (s) => { const p = '='.repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+const codeFrom = (text) => { const t = String(text || '').trim(); try { const c = new URL(t).searchParams.get('link'); if (c) return c.toUpperCase(); } catch {} return /^[A-Za-z2-9]{8}$/.test(t) ? t.toUpperCase() : null; };
 
-let current = new URLSearchParams(location.search).get('n');
-if (!validNum(current)) current = null;
-let history = [], status = '', busy = false;
+const qs = new URLSearchParams(location.search);
+let current = { n: validNum(qs.get('n')) ? qs.get('n') : null, i: /^\\d{1,18}$/.test(qs.get('i') || '') ? qs.get('i') : null };
+let pendingCode = codeFrom(qs.get('link'));
+let items = [], status = '', busy = false, scanning = false, stream = null;
 
 async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -224,81 +242,131 @@ async function api(path, opts = {}) {
   if (!r.ok) throw Object.assign(new Error(data.message || 'Error ' + r.status), { status: r.status, code: data.error });
   return data;
 }
-
-async function loadHistory() {
+async function loadItems() {
   if (!store.get()) return;
-  try { history = (await api('/history')).items; }
-  catch (e) { if (e.status === 401) { store.del(); status = 'El dispositivo ya no está emparejado. Vuelve a emparejarlo.'; } else status = e.message; }
+  try { items = (await api('/history')).items; }
+  catch (e) { if (e.status === 401) { store.del(); status = 'El iPhone ya no está vinculado. Vuelve a escanear el QR.'; } else status = e.message; }
 }
 
-async function enable(secret) {
+function stopScan() { scanning = false; if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
+
+async function claim(code) {
   busy = true; status = ''; render();
   try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) throw new Error(isIOS && !isStandalone() ? 'En iPhone primero hay que instalar la app: Compartir → Añadir a pantalla de inicio, y abrirla desde el icono.' : 'Este navegador no admite notificaciones push.');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) throw new Error(isIOS && !isStandalone() ? 'Primero instala la app: Compartir → Añadir a pantalla de inicio, y ábrela desde el icono.' : 'Este navegador no admite notificaciones push.');
     if (!CFG.vapid) throw new Error('El servidor no tiene VAPID_PUBLIC_KEY configurada.');
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') throw new Error('Permiso de notificaciones denegado. Actívalo en Ajustes del iPhone → Notificaciones → Llamar.');
     const reg = await navigator.serviceWorker.register(CFG.base + '/sw.js', { scope: CFG.base + '/' });
     await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(CFG.vapid) });
     const j = sub.toJSON();
-    const body = { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth };
-    const headers = { 'Content-Type': 'application/json' };
-    if (/^[A-Z2-9]{8}$/.test(secret.trim().toUpperCase())) body.code = secret.trim().toUpperCase(); else headers.Authorization = 'Bearer ' + secret.trim();
-    const r = await fetch(API + '/subscribe', { method: 'POST', headers, body: JSON.stringify(body), cache: 'no-store' });
+    const r = await fetch(API + '/link/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }), cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.message || 'Error ' + r.status);
+    if (!r.ok) throw new Error(r.status === 401 ? 'Código caducado o ya usado. Genera otro QR en la extensión.' : (data.message || 'Error ' + r.status));
     store.set(data.deviceKey);
-    status = 'Notificaciones activadas.';
-    await loadHistory();
+    pendingCode = null;
+    history.replaceState(null, '', CFG.base + '/');
+    status = 'iPhone vinculado.';
+    await loadItems();
   } catch (e) { status = e.message; }
   busy = false; render();
 }
 
-async function del(id) { try { await api('/delete', { method: 'POST', body: JSON.stringify(id ? { id } : { all: true }) }); await loadHistory(); } catch (e) { status = e.message; } render(); }
+// El permiso de notificaciones se pide en el toque del usuario (iOS lo exige), antes de abrir la cámara.
+async function askPermission() {
+  if (!('Notification' in window)) throw new Error(isIOS && !isStandalone() ? 'Primero instala la app: Compartir → Añadir a pantalla de inicio, y ábrela desde el icono.' : 'Este navegador no admite notificaciones.');
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('Permiso de notificaciones denegado. Actívalo en Ajustes del iPhone → Notificaciones → Llamar.');
+}
+
+async function startScan() {
+  status = '';
+  try { await askPermission(); } catch (e) { status = e.message; return render(); }
+  try {
+    if (!window.jsQR) await new Promise((ok, ko) => { const s = document.createElement('script'); s.src = CFG.base + '/jsqr.js'; s.onload = ok; s.onerror = () => ko(new Error('No se pudo cargar el lector de QR.')); document.head.append(s); });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+  } catch (e) { status = e.name === 'NotAllowedError' ? 'Permiso de cámara denegado. Actívalo en Ajustes del iPhone o escribe el código.' : e.message; return render(); }
+  scanning = true; render();
+  const video = document.getElementById('cam');
+  video.srcObject = stream; video.setAttribute('playsinline', ''); video.muted = true; await video.play().catch(() => {});
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const tick = () => {
+    if (!scanning) return;
+    if (video.readyState >= 2 && video.videoWidth) {
+      const w = 480, h = Math.round(w * video.videoHeight / video.videoWidth);
+      canvas.width = w; canvas.height = h; ctx.drawImage(video, 0, 0, w, h);
+      const res = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+      const code = res && codeFrom(res.data);
+      if (code) { stopScan(); claim(code); return; }
+    }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+async function del(id) { try { await api('/delete', { method: 'POST', body: JSON.stringify(id ? { id } : { all: true }) }); await loadItems(); } catch (e) { status = e.message; } render(); }
+
+function itemRow(h, big) {
+  const meta = when(h.created_at) + (h.source_url ? ' · ' + host(h.source_url) : '');
+  const label = h.kind === 'phone' ? pretty(h.number) : (h.raw || '');
+  const action = h.kind === 'phone' ? $('a', { class: big ? 'btn big' : 'btn call', href: 'tel:' + h.number }, 'Llamar')
+    : h.kind === 'url' ? $('a', { class: big ? 'btn big blue' : 'btn open', href: h.raw, target: '_blank', rel: 'noopener noreferrer' }, 'Abrir')
+    : null;
+  if (big) return $('div', { class: 'card' }, $('div', { class: 'num' }, label), ...(action ? [action] : []), $('p', { class: 'hint' }, meta));
+  return $('div', { class: 'row' },
+    $('div', { class: 'info' }, $('div', { class: 'n' }, (h.kind === 'url' ? '🔗 ' : h.kind === 'text' ? '📝 ' : '📞 ') + label), $('div', { class: 's' }, meta)),
+    ...(action ? [action] : []),
+    $('button', { class: 'sec', 'aria-label': 'Borrar', onclick: () => del(h.id) }, '✕'));
+}
 
 function render() {
   const paired = !!store.get();
-  const kids = [$('h1', {}, 'Llamadas rápidas'), $('p', { class: 'mut' }, 'Teléfonos enviados desde Chrome.')];
-  if (status) kids.push($('p', { class: /activad/.test(status) ? 'ok' : 'bad' }, status));
-  if (current) {
-    kids.push($('div', { class: 'card' }, $('div', { class: 'num' }, pretty(current)), $('a', { class: 'btn big', href: 'tel:' + current }, 'Llamar')));
+  const kids = [$('h1', {}, 'Llamadas rápidas'), $('p', { class: 'mut' }, 'Lo que envías desde Chrome llega aquí.')];
+  if (status) kids.push($('p', { class: /^iPhone vinculado\\./.test(status) ? 'ok' : 'bad' }, status));
+  if (scanning) {
+    kids.push($('div', { class: 'card' }, $('h2', {}, 'Apunta al QR de tu ordenador'), $('video', { id: 'cam', class: 'cam', playsinline: '', muted: '' }),
+      $('button', { class: 'sec', onclick: () => { stopScan(); render(); } }, 'Cancelar')));
+    return app.replaceChildren(...kids);
   }
-  if (!paired) {
-    const input = $('input', { type: 'text', placeholder: 'Código de emparejamiento o token', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', id: 'secret' });
-    const card = $('div', { class: 'card' }, $('h2', {}, 'Emparejar este dispositivo'), input,
-      $('button', { id: 'enable', onclick: () => input.value.trim() ? enable(input.value) : (status = 'Escribe el código o el token.', render()) }, busy ? 'Activando…' : 'Activar notificaciones'),
-      $('p', { class: 'hint' }, 'Genera el código en las opciones de la extensión de Chrome (válido 10 minutos y de un solo uso).'));
-    if (isIOS && !isStandalone()) card.append($('p', { class: 'hint bad' }, 'En iPhone: abre esto en Safari, pulsa Compartir → «Añadir a pantalla de inicio» y abre la app desde el icono. Si no, iOS no permite las notificaciones.'));
-    kids.push(card);
-  } else {
-    const list = $('div', { class: 'card' }, $('h2', {}, 'Últimos números'));
-    if (!history.length) list.append($('p', { class: 'mut' }, 'Todavía no has recibido ninguno.'));
-    for (const h of history) list.append($('div', { class: 'row' },
-      $('div', { class: 'info' }, $('div', { class: 'n' }, pretty(h.number)), $('div', { class: 's' }, when(h.created_at) + (h.source_url ? ' · ' + host(h.source_url) : ''))),
-      $('a', { class: 'btn', href: 'tel:' + h.number }, 'Llamar'),
-      $('button', { class: 'sec', 'aria-label': 'Borrar', onclick: () => del(h.id) }, 'Borrar')));
+  if (paired) {
+    const cur = items.find((h) => h.id === current.i) || (current.n && items.find((h) => h.number === current.n));
+    if (cur) kids.push(itemRow(cur, true));
+    else if (current.n) kids.push($('div', { class: 'card' }, $('div', { class: 'num' }, pretty(current.n)), $('a', { class: 'btn big', href: 'tel:' + current.n }, 'Llamar')));
+    const list = $('div', { class: 'card' }, $('h2', {}, 'Últimos envíos'));
+    if (!items.length) list.append($('p', { class: 'mut' }, 'Todavía no has enviado nada. En Chrome selecciona un teléfono o un enlace, clic derecho → «Llamar con iPhone».'));
+    for (const h of items) list.append(itemRow(h, false));
     kids.push(list);
-    if (history.length) kids.push($('button', { class: 'sec danger', onclick: () => confirm('¿Borrar todo el historial?') && del(null) }, 'Borrar todo'));
-    kids.push($('p', { class: 'hint ok' }, 'Notificaciones activas en este dispositivo.'));
-    kids.push($('button', { class: 'sec', onclick: () => { store.del(); status = ''; render(); } }, 'Olvidar emparejamiento'));
+    if (items.length) kids.push($('button', { class: 'sec danger', onclick: () => confirm('¿Borrar todo?') && del(null) }, 'Borrar todo'));
+    kids.push($('p', { class: 'hint ok' }, 'Notificaciones activas en este iPhone.'));
+    kids.push($('button', { class: 'sec', onclick: () => { store.del(); items = []; status = ''; render(); } }, 'Desvincular este iPhone'));
+  } else {
+    const input = $('input', { type: 'text', placeholder: 'Código de 8 letras (si no puedes escanear)', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false', id: 'code' });
+    const card = $('div', { class: 'card' }, $('h2', {}, 'Vincular este iPhone'),
+      $('p', { class: 'hint' }, 'En Chrome, abre las opciones de la extensión «Llamar con iPhone» y pulsa «Vincular iPhone»: aparecerá un QR.'),
+      pendingCode
+        ? $('button', { id: 'link', onclick: async () => { try { await askPermission(); } catch (e) { status = e.message; return render(); } claim(pendingCode); } }, busy ? 'Vinculando…' : 'Vincular con el código recibido')
+        : $('button', { id: 'scan', onclick: startScan }, 'Escanear QR'),
+      $('p', { class: 'hint' }, 'O escribe el código que aparece bajo el QR:'), input,
+      $('button', { class: 'sec', onclick: async () => { const c = codeFrom(input.value); if (!c) { status = 'El código tiene 8 letras o números.'; return render(); } try { await askPermission(); } catch (e) { status = e.message; return render(); } claim(c); } }, 'Vincular con el código'));
+    if (isIOS && !isStandalone()) card.append($('p', { class: 'hint bad' }, 'En iPhone: abre esta página en Safari, pulsa Compartir → «Añadir a pantalla de inicio» y abre la app desde el icono. Si no, iOS no permite las notificaciones.'));
+    kids.push(card);
   }
   kids.push($('div', { class: 'card' }, $('h2', {}, 'Extensión de Chrome (en el ordenador)'),
     $('a', { class: 'btn', href: CFG.base + '/extension.zip', download: 'llamar-con-iphone.zip' }, 'Descargar extensión'),
-    $('p', { class: 'hint' }, '1) Descomprime el ZIP.  2) En Chrome abre chrome://extensions y activa «Modo de desarrollador».  3) Pulsa «Cargar descomprimida» y elige la carpeta llamar-con-iphone.  4) En sus Opciones solo falta pegar el token (la URL ya viene puesta).'),
-    $('p', { class: 'hint' }, 'Chrome no permite instalar extensiones con un solo clic desde una web: la carga manual es el único método sin publicarla en la Chrome Web Store.')));
+    $('p', { class: 'hint' }, '1) Descomprime el ZIP.  2) En Chrome abre chrome://extensions y activa «Modo de desarrollador».  3) «Cargar descomprimida» → carpeta llamar-con-iphone.  4) En sus Opciones pulsa «Vincular iPhone» y escanea el QR desde aquí.'),
+    $('p', { class: 'hint' }, 'Chrome no permite instalar extensiones con un solo clic desde una web; la carga manual es lo único posible sin publicarla en la Chrome Web Store.')));
   app.replaceChildren(...kids);
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'call' && validNum(e.data.number)) { current = e.data.number; loadHistory().then(render); } });
-  // Si ya hay permiso, se mantiene registrado el service worker sin pedir nada.
-  if (store.get() && Notification.permission === 'granted') navigator.serviceWorker.register(CFG.base + '/sw.js', { scope: CFG.base + '/' }).catch(() => {});
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'open') { current = { n: validNum(e.data.number) ? e.data.number : null, i: /^\\d{1,18}$/.test(e.data.id || '') ? e.data.id : null }; loadItems().then(render); }
+  });
+  if (store.get() && 'Notification' in window && Notification.permission === 'granted') navigator.serviceWorker.register(CFG.base + '/sw.js', { scope: CFG.base + '/' }).catch(() => {});
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) loadHistory().then(render); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !scanning) loadItems().then(render); });
 render();
-loadHistory().then(render);
+loadItems().then(() => { if (!scanning) render(); });
 })();
 `;
 }
@@ -333,7 +401,7 @@ self.addEventListener('notificationclick', (event) => {
     const mine = wins.find((w) => w.url.startsWith(SCOPE));
     if (mine) {
       await mine.focus();
-      mine.postMessage({ type: 'call', number: data.number });
+      mine.postMessage({ type: 'open', number: data.number, id: new URL(target).searchParams.get('i') || '' });
       return;
     }
     await self.clients.openWindow(target.href);
