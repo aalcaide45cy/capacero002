@@ -5,6 +5,9 @@ import { PatreonIcon } from './PatreonIcon';
 import { MakerWorldIcon } from './MakerWorldIcon';
 import { trackSubscribe } from '../../utils/analytics';
 
+// Poner a true para volver a mostrar los botones de Patreon
+const SHOW_PATREON = false;
+
 export default function V4StickySubscribe({ isSticky = false, onOpenCollaboration }) {
   // Estados para PC: cada una de las tarjetas se puede minimizar individualmente
   const [isPatreonDismissed, setIsPatreonDismissed] = useState(false);
@@ -16,6 +19,51 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
   const [mobileExpanded, setMobileExpanded] = useState(true);
   const mobileTimerRef = useRef(null);
   const prevStickyRef = useRef(false);
+
+  // Escritorio: las cajitas se esconden solas a los 3 s y reaparecen al hacer scroll
+  // o al acercar el ratón a la esquina inferior derecha.
+  const DESKTOP_HIDE_MS = 3000;
+  const [desktopVisible, setDesktopVisible] = useState(true);
+  const desktopHoverRef = useRef(false);
+  const desktopTimerRef = useRef(null);
+
+  const scheduleDesktopHide = () => {
+    if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
+    desktopTimerRef.current = setTimeout(() => {
+      if (!desktopHoverRef.current) setDesktopVisible(false);
+    }, DESKTOP_HIDE_MS);
+  };
+
+  const showDesktop = () => {
+    setDesktopVisible(true);
+    scheduleDesktopHide();
+  };
+
+  // Al aparecer (sticky) se muestran 3 s y se esconden; al subir arriba se reinicia
+  useEffect(() => {
+    if (isSticky) {
+      showDesktop();
+    } else if (desktopTimerRef.current) {
+      clearTimeout(desktopTimerRef.current);
+      setDesktopVisible(true);
+    }
+    return () => {
+      if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSticky]);
+
+  // Scroll en escritorio vuelve a mostrarlas (y se esconden otra vez a los 3 s)
+  useEffect(() => {
+    if (!isSticky) return undefined;
+    const onScroll = () => {
+      if (window.matchMedia && !window.matchMedia('(min-width: 768px)').matches) return;
+      showDesktop();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSticky]);
 
   const patreonUrl = "https://www.patreon.com/Capacero3d";
   const makerWorldUrl = "https://makerworld.com/@capa_cero";
@@ -59,6 +107,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
         }`}
       >
         {/* Botón 1 Móvil: PATREON */}
+        {SHOW_PATREON && (
         <a
           href={patreonUrl}
           target="_blank"
@@ -88,6 +137,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
             </span>
           </div>
         </a>
+        )}
 
         {/* Botón 2 Móvil: MAKERWORLD */}
         <a
@@ -209,13 +259,29 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           - Mensajes completos sin recortar con ganchos comerciales potentes.
           - Cada una con su aspa (✕) independiente para encogerse a su icono flotante.
           ============================================================================== */}
+      {/* Zona sensible invisible en la esquina: al pasar el ratón reaparecen las cajitas */}
+      {isSticky && !desktopVisible && (
+        <div
+          className="hidden md:block fixed bottom-0 right-0 z-30 w-[460px] h-24"
+          onMouseEnter={showDesktop}
+          aria-hidden="true"
+        />
+      )}
       <div
-        className={`hidden md:flex fixed bottom-5 right-6 z-40 flex-col items-end gap-2.5 w-[410px] max-w-[calc(100vw-3rem)] transform transition-all duration-500 ease-out ${
-          isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
+        onMouseEnter={() => {
+          desktopHoverRef.current = true;
+          if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
+        }}
+        onMouseLeave={() => {
+          desktopHoverRef.current = false;
+          scheduleDesktopHide();
+        }}
+        className={`hidden md:flex fixed bottom-5 right-6 z-40 flex-col items-end gap-2.5 w-[410px] max-w-[calc(100vw-3rem)] transform transition-all duration-700 ease-out ${
+          isSticky && desktopVisible ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
         }`}
       >
         {/* Cajita / Botón 1 PC: PATREON */}
-        {!isPatreonDismissed ? (
+        {SHOW_PATREON && (!isPatreonDismissed ? (
           <div className="bg-zinc-950/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-amber-500/20 shadow-amber-950/40 w-full animate-fade-in transition-all">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-amber-500/30 border border-amber-300/50">
@@ -261,7 +327,7 @@ export default function V4StickySubscribe({ isSticky = false, onOpenCollaboratio
           >
             <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
           </a>
-        )}
+        ))}
 
         {/* Cajita / Botón 2 PC: MAKERWORLD */}
         {!isMakerWorldDismissed ? (

@@ -5,6 +5,9 @@ import { MakerWorldIcon } from './MakerWorldIcon';
 import { trackSocialClick, trackSubscribe, trackVideoOpen, trackDownload } from '../../utils/analytics';
 import { getVideoPlaybackTime, formatSecondsToTime } from '../../utils/courseProgress';
 
+// Poner a true para volver a mostrar los botones de Patreon
+const SHOW_PATREON = false;
+
 function parseDurationToSeconds(durationStr) {
   if (!durationStr || typeof durationStr !== 'string') return 0;
   const parts = durationStr.split(':').map(Number);
@@ -184,7 +187,9 @@ export default function V4Hero({
           {/* Grupo de Acciones: En móvil: Fila 1 (Patreon a la izq, MakerWorld a la dcha), Fila 2 (Colaboraciones), Fila 3 (Instalar App). En desktop: los 4 alineados */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-2">
             
+            {/* Patreon oculto temporalmente: poner SHOW_PATREON = true para volver a mostrarlo */}
             {/* Botón Destacado: PATREON (En móvil orden 1 a la izquierda, en desktop orden 3) */}
+            {SHOW_PATREON && (
             <a
               href="https://www.patreon.com/Capacero3d"
               target="_blank"
@@ -199,6 +204,7 @@ export default function V4Hero({
               </span>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[150%] skew-x-[-30deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] pointer-events-none"></div>
             </a>
+            )}
 
             {/* Botón Destacado: MAKERWORLD (En móvil orden 2 a la derecha de Patreon, en desktop orden 4 a la derecha) */}
             <a
