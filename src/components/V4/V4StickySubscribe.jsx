@@ -1,486 +1,242 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Youtube, Mail } from 'lucide-react';
 import { YouTubeIcon } from './YouTubeIcon';
 import { PatreonIcon } from './PatreonIcon';
 import { MakerWorldIcon } from './MakerWorldIcon';
+import { EnvelopeIcon } from './EnvelopeIcon';
 import { trackSubscribe } from '../../utils/analytics';
 
 // Poner a true para volver a mostrar los botones de Patreon
 const SHOW_PATREON = false;
 
+// Tiempo que se muestran grandes al aparecer, antes de encogerse a iconos
+const EXPANDED_MS = 2000;
+
+const patreonUrl = "https://www.patreon.com/Capacero3d";
+const makerWorldUrl = "https://makerworld.com/@capa_cero";
+const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
+
 export default function V4StickySubscribe({ isSticky = false, onOpenCollaboration }) {
-  // Estados para PC: cada una de las tarjetas se puede minimizar individualmente
-  const [isPatreonDismissed, setIsPatreonDismissed] = useState(false);
-  const [isMakerWorldDismissed, setIsMakerWorldDismissed] = useState(false);
-  const [isCollabDismissed, setIsCollabDismissed] = useState(false);
-  const [isYoutubeDismissed, setIsYoutubeDismissed] = useState(false);
-
-  // Estado para Móvil: expandido durante 2 segundos y luego se encoge suavemente
-  const [mobileExpanded, setMobileExpanded] = useState(true);
-  const mobileTimerRef = useRef(null);
+  // Grandes unos 2 s al aparecer (scroll) y luego se encogen a iconos.
+  const [expanded, setExpanded] = useState(true);
+  // Escritorio: icono concreto expandido por ratón / foco / toque.
+  const [activeId, setActiveId] = useState(null);
+  const timerRef = useRef(null);
   const prevStickyRef = useRef(false);
+  const desktopRef = useRef(null);
 
-  // Escritorio: las cajitas se esconden solas a los 3 s y reaparecen al hacer scroll
-  // o al acercar el ratón a la esquina inferior derecha.
-  const DESKTOP_HIDE_MS = 3000;
-  const [desktopVisible, setDesktopVisible] = useState(true);
-  const desktopHoverRef = useRef(false);
-  const desktopTimerRef = useRef(null);
-
-  const scheduleDesktopHide = () => {
-    if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
-    desktopTimerRef.current = setTimeout(() => {
-      if (!desktopHoverRef.current) setDesktopVisible(false);
-    }, DESKTOP_HIDE_MS);
-  };
-
-  const showDesktop = () => {
-    setDesktopVisible(true);
-    scheduleDesktopHide();
-  };
-
-  // Al aparecer (sticky) se muestran 3 s y se esconden; al subir arriba se reinicia
-  useEffect(() => {
-    if (isSticky) {
-      showDesktop();
-    } else if (desktopTimerRef.current) {
-      clearTimeout(desktopTimerRef.current);
-      setDesktopVisible(true);
-    }
-    return () => {
-      if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSticky]);
-
-  // Scroll en escritorio vuelve a mostrarlas (y se esconden otra vez a los 3 s)
-  useEffect(() => {
-    if (!isSticky) return undefined;
-    const onScroll = () => {
-      if (window.matchMedia && !window.matchMedia('(min-width: 768px)').matches) return;
-      showDesktop();
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSticky]);
-
-  const patreonUrl = "https://www.patreon.com/Capacero3d";
-  const makerWorldUrl = "https://makerworld.com/@capa_cero";
-  const subscribeUrl = "https://www.youtube.com/@CapaCero0?sub_confirmation=1";
-
-  // Control de la animación de 2 segundos en móvil al hacerse sticky
   useEffect(() => {
     if (isSticky && !prevStickyRef.current) {
-      setMobileExpanded(true);
-      if (mobileTimerRef.current) clearTimeout(mobileTimerRef.current);
-      mobileTimerRef.current = setTimeout(() => {
-        setMobileExpanded(false);
-      }, 2000);
+      setExpanded(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setExpanded(false), EXPANDED_MS);
     } else if (!isSticky && prevStickyRef.current) {
-      // Al subir arriba, cancelamos el timer activo si lo hubiera
-      if (mobileTimerRef.current) clearTimeout(mobileTimerRef.current);
-      // Mantenemos la forma actual durante el desvanecimiento (sin forzar expansión).
-      // Tras completarse la transición de salida (600ms), reseteamos a true en segundo plano invisible.
-      mobileTimerRef.current = setTimeout(() => {
-        setMobileExpanded(true);
-      }, 600);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setActiveId(null);
+      // Tras el desvanecimiento, se reinicia a expandido en segundo plano invisible.
+      timerRef.current = setTimeout(() => setExpanded(true), 700);
     }
     prevStickyRef.current = isSticky;
-
     return () => {
-      if (mobileTimerRef.current) clearTimeout(mobileTimerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [isSticky]);
+
+  // Táctil: tocar fuera encoge el icono expandido
+  useEffect(() => {
+    if (!activeId) return undefined;
+    const onDown = (e) => {
+      if (desktopRef.current && !desktopRef.current.contains(e.target)) setActiveId(null);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [activeId]);
+
+  // Orden (arriba -> abajo): Colaboraciones, YouTube, MakerWorld (y Patreon si se activa)
+  const items = [
+    {
+      id: 'collab',
+      title: 'Colaboraciones & Marcas',
+      desc: '¿Tienes una marca o producto? Llega a miles de makers y apasionados de la impresión 3D.',
+      cta: 'Contactar',
+      label: 'COLABORACIONES',
+      aria: 'Contactar para Colaboraciones',
+      onClick: () => onOpenCollaboration && onOpenCollaboration(),
+      icon: <EnvelopeIcon className="w-5 h-5 text-white drop-shadow" />,
+      circle: 'bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 border-cyan-300/70 shadow-[0_0_18px_rgba(37,117,196,0.75)]',
+      card: 'ring-cyan-500/40 shadow-blue-950/40',
+      button: 'bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 border-cyan-300/40',
+    },
+    {
+      id: 'youtube',
+      title: 'Canal Oficial Capa Cero 3D',
+      desc: 'Domina Bambu Studio y Fusion 360 con tutoriales claros, directos al grano y sin rodeos.',
+      cta: 'Suscribirme',
+      label: 'IR AL CANAL',
+      aria: 'Ir al canal de YouTube',
+      href: subscribeUrl,
+      track: 'Botón Flotante YouTube',
+      icon: <YouTubeIcon className="w-5 h-5 text-white drop-shadow" />,
+      circle: 'bg-[#ff0000] border-red-300/80 shadow-[0_0_18px_rgba(255,0,0,0.6)]',
+      card: 'ring-red-500/40 shadow-red-950/40',
+      button: 'bg-[#ff0000] hover:bg-[#e60000] border-red-300/50',
+    },
+    {
+      id: 'makerworld',
+      title: 'MakerWorld Capa Cero 3D',
+      desc: 'Descarga gratis mis diseños 3D oficiales, perfiles de impresión afinados y proyectos 3MF.',
+      cta: 'Ver Diseños',
+      label: 'MAKERWORLD',
+      aria: 'Ir a MakerWorld',
+      href: makerWorldUrl,
+      icon: <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />,
+      circle: 'bg-gradient-to-tr from-[#00c853] via-[#00ae42] to-[#008f37] border-emerald-300/70 shadow-[0_0_18px_rgba(0,174,66,0.65)]',
+      card: 'ring-emerald-500/40 shadow-emerald-950/40',
+      button: 'bg-gradient-to-r from-[#00c853] via-[#00ae42] to-[#008f37] hover:from-[#00df5d] hover:to-[#00a33e] border-emerald-300/50',
+    },
+  ];
+  if (SHOW_PATREON) {
+    items.push({
+      id: 'patreon',
+      title: 'Patreon & Licencia Comercial',
+      desc: 'Descarga modelos 3D exclusivos y obtén tu licencia oficial para vender las impresiones.',
+      cta: 'Unirme',
+      label: 'IR A PATREON',
+      aria: 'Ir a Patreon',
+      href: patreonUrl,
+      icon: <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />,
+      circle: 'bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 border-amber-300/70 shadow-[0_0_18px_rgba(245,158,11,0.65)]',
+      card: 'ring-amber-500/40 shadow-amber-950/40',
+      button: 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 border-amber-300/50',
+    });
+  }
+
+  const isTouchOnly = () =>
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: none)').matches;
+
+  // Contenido interactivo común (enlace o botón)
+  const renderAction = (item, className, children, extra = {}) =>
+    item.href ? (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => item.track && trackSubscribe && trackSubscribe(item.track)}
+        className={className}
+        {...extra}
+      >
+        {children}
+      </a>
+    ) : (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          item.onClick && item.onClick();
+        }}
+        className={className}
+        {...extra}
+      >
+        {children}
+      </button>
+    );
 
   return (
     <>
-      {/* ==============================================================================
-          1. DISPOSITIVOS MÓVILES (md:hidden)
-          3 Botones flotantes abajo a la derecha:
-          - Al hacer scroll aparecen expandidos mostrando texto (Ir a Patreon, COLABORACIONES, Ir al canal).
-          - A los 2 segundos exactos se encogen suavemente a círculos con su respectivo icono.
-          ============================================================================== */}
+      {/* MÓVIL: pastillas con texto durante 2 s y luego círculos con icono */}
       <div
         className={`fixed bottom-5 right-4 z-40 flex flex-col items-end gap-2.5 md:hidden transform transition-all duration-500 ease-out ${
           isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
         }`}
       >
-        {/* Botón 1 Móvil: PATREON */}
-        {SHOW_PATREON && (
-        <a
-          href={patreonUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="h-11 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white flex items-center shadow-[0_0_18px_rgba(245,158,11,0.65)] border-2 border-amber-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
-          title="Ir a Patreon"
-          aria-label="Ir a Patreon"
-        >
-          <div className="w-11 h-11 flex items-center justify-center shrink-0">
-            <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
-          </div>
-          <div
-            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
-              mobileExpanded
-                ? 'max-w-[140px] pr-3.5 duration-350 delay-0'
-                : 'max-w-0 pr-0 duration-300 delay-100'
-            }`}
-          >
-            <span
-              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
-                mobileExpanded
-                  ? 'opacity-100 duration-200 ease-out delay-150'
-                  : 'opacity-0 duration-100 ease-in delay-0'
-              }`}
-            >
-              IR A PATREON
-            </span>
-          </div>
-        </a>
-        )}
-
-        {/* Botón 2 Móvil: MAKERWORLD */}
-        <a
-          href={makerWorldUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="h-11 rounded-full bg-gradient-to-r from-[#00c853] via-[#00ae42] to-[#008f37] text-white flex items-center shadow-[0_0_18px_rgba(0,174,66,0.65)] border-2 border-emerald-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
-          title="Ir a MakerWorld"
-          aria-label="Ir a MakerWorld"
-        >
-          <div className="w-11 h-11 flex items-center justify-center shrink-0">
-            <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
-          </div>
-          <div
-            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
-              mobileExpanded
-                ? 'max-w-[140px] pr-3.5 duration-350 delay-0'
-                : 'max-w-0 pr-0 duration-300 delay-100'
-            }`}
-          >
-            <span
-              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
-                mobileExpanded
-                  ? 'opacity-100 duration-200 ease-out delay-150'
-                  : 'opacity-0 duration-100 ease-in delay-0'
-              }`}
-            >
-              MAKERWORLD
-            </span>
-          </div>
-        </a>
-
-        {/* Botón 3 Móvil: COLABORACIONES */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            onOpenCollaboration && onOpenCollaboration();
-          }}
-          className="h-11 rounded-full bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 text-white flex items-center shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0"
-          title="Colaboraciones"
-          aria-label="Contactar para Colaboraciones"
-        >
-          <div className="w-11 h-11 flex items-center justify-center shrink-0">
-            <Mail className="w-5 h-5 text-white drop-shadow" />
-          </div>
-          <div
-            className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
-              mobileExpanded
-                ? 'max-w-[160px] pr-3.5 duration-350 delay-0'
-                : 'max-w-0 pr-0 duration-300 delay-100'
-            }`}
-          >
-            <span
-              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
-                mobileExpanded
-                  ? 'opacity-100 duration-200 ease-out delay-150'
-                  : 'opacity-0 duration-100 ease-in delay-0'
-              }`}
-            >
-              COLABORACIONES
-            </span>
-          </div>
-        </button>
-
-        {/* Botón 3 Móvil: YOUTUBE (Rojo cuando está extendido, azul cuando está contraído) */}
-        <a
-          href={subscribeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => trackSubscribe && trackSubscribe('Botón Flotante YouTube (Mobile)')}
-          className={`relative h-11 rounded-full text-white flex items-center active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0 border-2 ${
-            mobileExpanded
-              ? 'border-red-300/80 shadow-[0_0_20px_rgba(239,68,68,0.75)]'
-              : 'border-cyan-300/70 shadow-[0_0_18px_rgba(37,117,196,0.75)]'
-          }`}
-          title="Ir al canal de YouTube"
-          aria-label="Ir al canal de YouTube"
-        >
-          {/* Fondo azul base (visible cuando está contraído a icono) */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 transition-opacity duration-500 ease-in-out ${
-              mobileExpanded ? 'opacity-0' : 'opacity-100'
-            }`}
-          />
-          {/* Fondo rojo YouTube (visible cuando está extendido con texto) */}
-          <div
-            className={`absolute inset-0 bg-gradient-to-r from-red-700 via-red-600 to-rose-500 transition-opacity duration-500 ease-in-out ${
-              mobileExpanded ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-
-          <div className="relative z-10 w-11 h-11 flex items-center justify-center shrink-0">
-            <YouTubeIcon className="w-5 h-5 text-white drop-shadow" />
-          </div>
-          <div
-            className={`relative z-10 overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
-              mobileExpanded
-                ? 'max-w-[130px] pr-3.5 duration-350 delay-0'
-                : 'max-w-0 pr-0 duration-300 delay-100'
-            }`}
-          >
-            <span
-              className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
-                mobileExpanded
-                  ? 'opacity-100 duration-200 ease-out delay-150'
-                  : 'opacity-0 duration-100 ease-in delay-0'
-              }`}
-            >
-              IR AL CANAL
-            </span>
-          </div>
-        </a>
+        {items.map((item) => (
+          <React.Fragment key={item.id}>
+          {renderAction(
+            item,
+            `h-11 rounded-full text-white flex items-center border-2 active:scale-95 transition-all duration-500 ease-in-out overflow-hidden cursor-pointer shrink-0 ${item.circle}`,
+            <>
+              <div className="w-11 h-11 flex items-center justify-center shrink-0">{item.icon}</div>
+              <div
+                className={`overflow-hidden whitespace-nowrap flex items-center transition-[max-width,padding] ease-in-out ${
+                  expanded ? 'max-w-[160px] pr-3.5 duration-300' : 'max-w-0 pr-0 duration-300 delay-100'
+                }`}
+              >
+                <span
+                  className={`font-black text-[11px] tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition-opacity ${
+                    expanded ? 'opacity-100 duration-200 delay-150' : 'opacity-0 duration-100'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </div>
+            </>,
+            { title: item.aria, 'aria-label': item.aria }
+          )}
+          </React.Fragment>
+        ))}
       </div>
 
-      {/* ==============================================================================
-          2. ESCRITORIO / PC (hidden md:flex)
-          3 Cajitas Flotantes Apiladas abajo a la derecha:
-          - Ancho ampliado a 410px manteniendo right-6 intacto.
-          - Mensajes completos sin recortar con ganchos comerciales potentes.
-          - Cada una con su aspa (✕) independiente para encogerse a su icono flotante.
-          ============================================================================== */}
-      {/* Zona sensible invisible en la esquina: al pasar el ratón reaparecen las cajitas */}
-      {isSticky && !desktopVisible && (
-        <div
-          className="hidden md:block fixed bottom-0 right-0 z-30 w-[460px] h-24"
-          onMouseEnter={showDesktop}
-          aria-hidden="true"
-        />
-      )}
+      {/* ESCRITORIO: tarjetas grandes 2 s y luego iconos; al pasar el ratón se expande solo ese */}
       <div
-        onMouseEnter={() => {
-          desktopHoverRef.current = true;
-          if (desktopTimerRef.current) clearTimeout(desktopTimerRef.current);
-        }}
-        onMouseLeave={() => {
-          desktopHoverRef.current = false;
-          scheduleDesktopHide();
-        }}
-        className={`hidden md:flex fixed bottom-5 right-6 z-40 flex-col items-end gap-2.5 w-[410px] max-w-[calc(100vw-3rem)] transform transition-all duration-700 ease-out ${
-          isSticky && desktopVisible ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
+        ref={desktopRef}
+        className={`hidden md:flex fixed bottom-5 right-6 z-40 flex-col items-end gap-2.5 transform transition-all duration-700 ease-out ${
+          isSticky ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
         }`}
       >
-        {/* Cajita / Botón 1 PC: PATREON */}
-        {SHOW_PATREON && (!isPatreonDismissed ? (
-          <div className="bg-zinc-950/95 backdrop-blur-md border border-amber-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-amber-500/20 shadow-amber-950/40 w-full animate-fade-in transition-all">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-amber-500/30 border border-amber-300/50">
-                <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-black text-white leading-tight">
-                  Patreon & Licencia Comercial
-                </h4>
-                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">
-                  Descarga modelos 3D exclusivos y obtén tu licencia oficial para vender las impresiones.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <a
-                href={patreonUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-amber-300/50 cursor-pointer"
+        {items.map((item) => {
+          const open = expanded || activeId === item.id;
+          return (
+            <div
+              key={item.id}
+              onMouseEnter={() => setActiveId(item.id)}
+              onMouseLeave={() => setActiveId((cur) => (cur === item.id ? null : cur))}
+              onFocus={() => setActiveId(item.id)}
+              onBlur={() => setActiveId((cur) => (cur === item.id ? null : cur))}
+              className={`flex items-center overflow-hidden transition-all duration-500 ease-in-out ${
+                open
+                  ? `w-[410px] max-w-[calc(100vw-3rem)] h-[88px] px-3 rounded-2xl bg-zinc-950/95 backdrop-blur-md ring-1 shadow-2xl ${item.card}`
+                  : 'w-11 h-11 px-0 rounded-full ring-0 shadow-none'
+              }`}
+            >
+              {renderAction(
+                item,
+                `shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center text-white cursor-pointer transition-transform duration-200 ${item.circle} ${
+                  open ? '' : 'hover:scale-110 active:scale-95'
+                }`,
+                item.icon,
+                {
+                  title: item.aria,
+                  'aria-label': item.aria,
+                  onClickCapture: (e) => {
+                    // En pantallas táctiles el primer toque solo expande
+                    if (!open && isTouchOnly()) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setActiveId(item.id);
+                    }
+                  },
+                }
+              )}
+              <div
+                className={`ml-3 w-[230px] shrink-0 text-left transition-opacity ${
+                  open ? 'opacity-100 duration-300 delay-150' : 'opacity-0 duration-100'
+                }`}
+                aria-hidden={!open}
               >
-                Unirme
-              </a>
-              <button
-                onClick={() => setIsPatreonDismissed(true)}
-                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Minimizar a icono"
-                aria-label="Minimizar cajita Patreon"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <a
-            href={patreonUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-600 text-white shadow-[0_0_18px_rgba(245,158,11,0.65)] border-2 border-amber-300/70 hover:scale-110 active:scale-95 transition-all duration-200"
-            title="Ir a Patreon"
-            aria-label="Ir a Patreon"
-          >
-            <PatreonIcon className="w-5 h-5 text-white fill-current drop-shadow" />
-          </a>
-        ))}
-
-        {/* Cajita / Botón 2 PC: MAKERWORLD */}
-        {!isMakerWorldDismissed ? (
-          <div className="bg-zinc-950/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-emerald-500/20 shadow-emerald-950/40 w-full animate-fade-in transition-all">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00c853] via-[#00ae42] to-[#008f37] flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/30 border border-emerald-300/50">
-                <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
+                <h4 className="text-xs font-black text-white leading-tight">{item.title}</h4>
+                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">{item.desc}</p>
               </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-black text-white leading-tight">
-                  MakerWorld Capa Cero 3D
-                </h4>
-                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">
-                  Descarga gratis mis diseños 3D oficiales, perfiles de impresión afinados y proyectos 3MF.
-                </p>
-              </div>
+              {renderAction(
+                item,
+                `ml-3 shrink-0 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md border transition-all active:scale-95 whitespace-nowrap cursor-pointer ${item.button} ${
+                  open ? 'opacity-100 duration-300 delay-150' : 'opacity-0 pointer-events-none duration-100'
+                }`,
+                item.cta,
+                { tabIndex: open ? 0 : -1 }
+              )}
             </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <a
-                href={makerWorldUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-[#00c853] via-[#00ae42] to-[#008f37] hover:from-[#00df5d] hover:to-[#00a33e] text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-emerald-300/50 cursor-pointer"
-              >
-                Ver Diseños
-              </a>
-              <button
-                onClick={() => setIsMakerWorldDismissed(true)}
-                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Minimizar a icono"
-                aria-label="Minimizar cajita MakerWorld"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <a
-            href={makerWorldUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-[#00c853] via-[#00ae42] to-[#008f37] text-white shadow-[0_0_18px_rgba(0,174,66,0.65)] border-2 border-emerald-300/70 hover:scale-110 active:scale-95 transition-all duration-200"
-            title="Ir a MakerWorld"
-            aria-label="Ir a MakerWorld"
-          >
-            <MakerWorldIcon className="w-5 h-5 text-white fill-current drop-shadow" />
-          </a>
-        )}
-
-        {/* Cajita / Botón 3 PC: COLABORACIONES */}
-        {!isCollabDismissed ? (
-          <div className="bg-zinc-950/95 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-cyan-500/20 shadow-blue-950/40 w-full animate-fade-in transition-all">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-500/30 border border-cyan-300/40">
-                <Mail className="w-4 h-4 text-white drop-shadow" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-black text-white leading-tight">
-                  Colaboraciones & Marcas
-                </h4>
-                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">
-                  ¿Tienes una marca o producto? Llega a miles de makers y apasionados de la impresión 3D.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  onOpenCollaboration && onOpenCollaboration();
-                }}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-cyan-300/40 cursor-pointer"
-              >
-                Contactar
-              </button>
-              <button
-                onClick={() => setIsCollabDismissed(true)}
-                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Minimizar a icono"
-                aria-label="Minimizar cajita Colaboraciones"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              onOpenCollaboration && onOpenCollaboration();
-            }}
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 text-white shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer"
-            title="Colaboraciones"
-            aria-label="Contactar para Colaboraciones"
-          >
-            <Mail className="w-5 h-5 text-white drop-shadow" />
-          </button>
-        )}
-
-        {/* Cajita / Botón 3 PC: YOUTUBE */}
-        {!isYoutubeDismissed ? (
-          <div className="bg-zinc-950/95 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-3 sm:p-3.5 shadow-2xl flex items-center justify-between gap-3.5 text-left ring-1 ring-cyan-500/20 shadow-blue-950/40 w-full animate-fade-in transition-all">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-500/30 border border-cyan-300/40">
-                <Youtube className="w-5 h-5 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs font-black text-white leading-tight">
-                  Canal Oficial Capa Cero 3D
-                </h4>
-                <p className="text-[11px] text-zinc-300 leading-snug mt-0.5">
-                  Domina Bambu Studio y Fusion 360 con tutoriales claros, directos al grano y sin rodeos.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <a
-                href={subscribeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackSubscribe && trackSubscribe('Barra Flotante Desktop')}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap border border-cyan-300/40 cursor-pointer"
-              >
-                Suscribirme
-              </a>
-              <button
-                onClick={() => setIsYoutubeDismissed(true)}
-                className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                title="Minimizar a icono"
-                aria-label="Minimizar cajita YouTube"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <a
-            href={subscribeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackSubscribe && trackSubscribe('Botón Flotante YouTube (Desktop)')}
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-tr from-blue-700 via-blue-500 to-cyan-400 text-white shadow-[0_0_18px_rgba(37,117,196,0.75)] border-2 border-cyan-300/70 hover:scale-110 active:scale-95 transition-all duration-200"
-            title="Suscribirme al Canal de YouTube"
-            aria-label="Suscribirme al Canal de YouTube"
-          >
-            <YouTubeIcon className="w-5 h-5 text-white drop-shadow" />
-          </a>
-        )}
+          );
+        })}
       </div>
     </>
   );
 }
-
